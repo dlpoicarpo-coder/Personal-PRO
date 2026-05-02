@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Student Form Pages (v2)
+// PERSONAL PRO — student Form Pages (v2)
 // Pre-workout and Post-workout forms via link
 // ========================================
 import db from '../db.js';
