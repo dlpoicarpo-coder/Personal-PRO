@@ -44,7 +44,7 @@ export async function renderStudents() {  // <-- CORRIGIDO AQUI (S maiúsculo)
   `;
 }
 
-function renderStudentCards(students) {
+export function initStudents(navigateFn) {
   return `<div class="students-grid stagger-children">${students.map(s => `
     <div class="card student-card" data-id="${s.id}" data-status="${s.status}" data-name="${s.name.toLowerCase()}">
       <div class="flex items-center gap-md mb-md">
