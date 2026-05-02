@@ -5,7 +5,7 @@ import { renderSidebar, initSidebar } from './components/sidebar.js';
 import { isAuthenticated, renderLogin, initLogin } from './pages/login.js';
 
 import { renderDashboard } from './pages/dashboard.js';
-import { renderStudents, initStudents } from './pages/students.js';
+import { renderstudents, initstudents } from './pages/students.js';
 import { renderWorkouts, initWorkouts } from './pages/workouts.js';
 import { renderTracker, initTracker } from './pages/live-tracker.js';
 import { renderReports, initReports } from './pages/reports.js';
