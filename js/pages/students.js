@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Students Page
+// PERSONAL PRO — students Page
 // ========================================
 
 import db from '../db.js';
@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 
-export async function renderStudents() {
+export async function renderstudents() {
   const students = await db.getAll('students');
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
