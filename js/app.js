@@ -27,12 +27,12 @@ export async function navigateTo(path) {
   
   // Create layout if missing
   if (!document.querySelector('.sidebar')) {
-    appContainer.innerHTML = \`
-      \${renderSidebar()}
+    appContainer.innerHTML = `
+      ${renderSidebar()}
       <main class="main-content" id="pageContent">
         <div class="page-loading"><div class="spinner"></div></div>
       </main>
-    \`;
+    `;
     initSidebar(navigateTo);
   }
 
@@ -51,7 +51,7 @@ export async function navigateTo(path) {
     content.innerHTML = await route.render();
     if (route.init) await route.init(navigateTo);
   } catch (err) {
-    content.innerHTML = \`<div class="card"><div class="text-danger">Erro ao carregar página: \${err.message}</div></div>\`;
+    content.innerHTML = `<div class="card"><div class="text-danger">Erro ao carregar página: ${err.message}</div></div>`;
   }
 }
 
@@ -64,9 +64,15 @@ window.addEventListener('hashchange', () => {
 });
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   const path = window.location.hash.slice(1) || '/';
   if (!path.startsWith('/form/')) {
     navigateTo(path);
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
