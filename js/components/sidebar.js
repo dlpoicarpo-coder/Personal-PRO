@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Sidebar Component (Cloud Edition)
+// PERSONAL PRO — Sidebar Component (Cloud Edition v2)
 // ========================================
 import { ICONS } from '../utils/icons.js';
 
@@ -48,16 +48,18 @@ export function renderSidebar(currentPath) {
       </nav>
       
       <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="avatar avatar-sm" id="trainerAvatar">PRO</div>
-          <div class="sidebar-user-info">
-            <span class="sidebar-user-name" id="trainerName">Treinador</span>
-            <span class="sidebar-user-role">Administrador</span>
+        <div class="sidebar-user" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="avatar avatar-sm" id="trainerAvatar">PRO</div>
+            <div class="sidebar-user-info">
+              <span class="sidebar-user-name" id="trainerName">Treinador</span>
+              <span class="sidebar-user-role">Administrador</span>
+            </div>
           </div>
+          <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; padding: 5px; opacity: 0.8; transition: 0.2s;">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
         </div>
-        <button id="logoutBtn" class="btn btn-danger btn-sm" style="width: 100%; margin-top: 10px; font-weight: bold; background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger);">
-          <i class="fas fa-sign-out-alt"></i> Sair do Sistema
-        </button>
       </div>
     </aside>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -70,7 +72,6 @@ export function initSidebar() {
   const overlay = document.getElementById('sidebarOverlay');
   const logoutBtn = document.getElementById('logoutBtn');
 
-  // Toggle do Menu Mobile
   if (toggle) {
     toggle.addEventListener('click', () => {
       sidebar.classList.toggle('collapsed');
@@ -84,12 +85,11 @@ export function initSidebar() {
     });
   }
 
-  // Lógica do Botão de Sair Segura
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      if(window.confirm('Tem a certeza que deseja trancar o ginásio e sair?')) {
-        localStorage.removeItem('pp_session'); // Remove a chave de acesso
-        window.location.reload(); // Atualiza a página e volta para o Login
+      if(window.confirm('Tem a certeza que deseja sair do sistema?')) {
+        localStorage.removeItem('pp_session'); 
+        window.location.reload(); 
       }
     });
   }
