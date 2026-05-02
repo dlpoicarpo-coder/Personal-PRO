@@ -81,6 +81,9 @@ class Database {
   }
 
   async put(storeName, item) {
+    // Corrige a diferença entre 'key' e 'id' que existe no login.js do seu Github
+    if (!item.id && item.key) item.id = item.key;
+    
     if (!item.id) item.id = crypto.randomUUID();
     item.updatedAt = new Date().toISOString();
     if (!item.createdAt) item.createdAt = new Date().toISOString();
