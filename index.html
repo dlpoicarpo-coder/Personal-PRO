@@ -2,10 +2,26 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0;url=app/index.html">
-    <title>Personal PRO — Redirecionando...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal PRO — Gestão de Treino</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="components.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <p>Redirecionando para <a href="app/index.html">Personal PRO</a>...</p>
+
+    <div id="app">
+        <div class="page-loading">
+            <div class="spinner"></div>
+            <p>A preparar o teu ginásio...</p>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+
 </body>
 </html>
