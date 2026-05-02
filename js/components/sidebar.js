@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Sidebar Component (Cloud Edition v2)
+// PERSONAL PRO — Sidebar Component
 // ========================================
 import { ICONS } from '../utils/icons.js';
 
@@ -26,7 +26,7 @@ export function renderSidebar(currentPath) {
         <div class="sidebar-logo">
           <div class="logo-text">
             <span class="logo-title">Personal<strong class="logo-pro">PRO</strong></span>
-            <span class="logo-subtitle">Cloud Edition</span>
+            <span class="logo-subtitle">Sistema de Treinamento</span>
           </div>
         </div>
         <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">
@@ -56,7 +56,7 @@ export function renderSidebar(currentPath) {
               <span class="sidebar-user-role">Administrador</span>
             </div>
           </div>
-          <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; padding: 5px; opacity: 0.8; transition: 0.2s;">
+          <button onclick="if(confirm('Tem a certeza que deseja sair do sistema?')) { localStorage.removeItem('pp_session'); window.location.hash = '/'; window.location.reload(); }" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; padding: 5px; opacity: 0.8; transition: 0.2s;">
             <i class="fas fa-sign-out-alt"></i>
           </button>
         </div>
@@ -70,7 +70,6 @@ export function initSidebar() {
   const toggle = document.getElementById('sidebarToggle');
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
-  const logoutBtn = document.getElementById('logoutBtn');
 
   if (toggle) {
     toggle.addEventListener('click', () => {
@@ -82,15 +81,6 @@ export function initSidebar() {
   if (overlay) {
     overlay.addEventListener('click', () => {
       sidebar.classList.remove('mobile-open');
-    });
-  }
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      if(window.confirm('Tem a certeza que deseja sair do sistema?')) {
-        localStorage.removeItem('pp_session'); 
-        window.location.reload(); 
-      }
     });
   }
 }
