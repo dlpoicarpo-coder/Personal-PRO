@@ -100,6 +100,10 @@ window.addEventListener('hashchange', () => {
 
 // Initialize app
 function initApp() {
+  import('./db.js').then(({ default: db }) => {
+    db.seedTemplates().catch(console.error);
+  });
+  
   const path = window.location.hash.slice(1) || '/';
   if (!path.startsWith('/form/')) {
     navigateTo(path);
