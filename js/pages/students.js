@@ -1,7 +1,9 @@
 // ========================================
-// PERSONAL PRO — Students Page (Cloud Ready)
+// PERSONAL PRO — Students Page (Cloud Ready v2)
 // ========================================
 import db from '../db.js';
+import { openModal, closeModal } from '../components/modal.js';
+import { notify } from '../components/toast.js';
 
 export async function renderStudents() {
   return `
@@ -33,15 +35,12 @@ export async function renderStudents() {
 }
 
 export async function initStudents() {
-  // 1. Carrega os alunos da Nuvem
   await loadStudents();
 
-  // 2. Ativa o botão de Adicionar Aluno
   const addBtn = document.getElementById('addStudentBtn');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
-      // Por enquanto, um alerta para testar. Depois ligamos ao teu Modal!
-      alert('O formulário de Adicionar Aluno está a ser preparado para a Nuvem! Em breve abrirá aqui.');
+      openAddStudentModal();
     });
   }
 }
@@ -50,7 +49,6 @@ async function loadStudents() {
   const tbody = document.querySelector('#studentsTable tbody');
   
   try {
-    // Pede os alunos à gaveta "students" lá do Supabase
     const studentsList = await db.getAll('students');
     
     if (!studentsList || studentsList.length === 0) {
@@ -64,7 +62,6 @@ async function loadStudents() {
       return;
     }
 
-    // Desenha os alunos na tabela
     tbody.innerHTML = studentsList.map(student => `
       <tr style="border-bottom: 1px solid #eee;">
         <td style="padding: 12px 8px;"><strong>${student.data.nome || 'Aluno Sem Nome'}</strong></td>
@@ -78,6 +75,62 @@ async function loadStudents() {
     
   } catch (err) {
     console.error("Erro ao carregar alunos:", err);
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: red;">Erro ao ligar à base de dados. Verifica o F12.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: red;">Erro ao ligar à base de dados.</td></tr>`;
   }
+}
+
+function openAddStudentModal() {
+  const formHtml = `
+    <form id="addStudentForm" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+      <div>
+        <label style="font-weight: bold; margin-bottom: 5px; display: block;">Nome Completo</label>
+        <input type="text" id="stuName" class="form-control" required placeholder="Ex: Maria Silva" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+      </div>
+      <div>
+        <label style="font-weight: bold; margin-bottom: 5px; display: block;">Objetivo Principal</label>
+        <select id="stuObjective" class="form-control" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+          <option value="Emagrecimento">Emagrecimento</option>
+          <option value="Hipertrofia">Hipertrofia</option>
+          <option value="Saúde e Qualidade de Vida">Saúde / Qualidade de Vida</option>
+          <option value="Performance Desportiva">Performance Desportiva</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top: 15px; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+        Guardar Aluno na Nuvem
+      </button>
+    </form>
+  `;
+
+  openModal('Adicionar Novo Aluno', formHtml);
+
+  document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('stuName').value;
+    const objetivo = document.getElementById('stuObjective').value;
+    const btn = e.target.querySelector('button');
+    
+    btn.innerText = 'A guardar...';
+    btn.disabled = true;
+
+    // Cria o pacote de dados do aluno
+    const novoAluno = {
+      data: {
+        nome: nome,
+        objetivo: objetivo,
+        dataCadastro: new Date().toISOString()
+      }
+    };
+
+    try {
+      await db.add('students', novoAluno); // Envia para o Supabase!
+      closeModal();
+      if(typeof notify === 'function') notify('Aluno guardado com sucesso na Nuvem!', 'success');
+      await loadStudents(); // Recarrega a tabela para mostrar o novo aluno
+    } catch (error) {
+      console.error(error);
+      if(typeof notify === 'function') notify('Erro ao guardar aluno.', 'error');
+      btn.innerText = 'Tentar Novamente';
+      btn.disabled = false;
+    }
+  });
 }
