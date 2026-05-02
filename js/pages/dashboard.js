@@ -144,9 +144,11 @@ export async function renderDashboard() {
   `;
 }
 
-export function initDashboardCharts(workouts) {
+export async function initDashboardCharts() {
   const canvas = document.getElementById('weeklyChart');
   if (!canvas || typeof Chart === 'undefined') return;
+
+  const workouts = await db.getAll('workouts');
 
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const now = new Date();
