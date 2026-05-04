@@ -92,8 +92,10 @@ export function initSidebar() {
       e.stopPropagation();
       if (window.confirm('Tem certeza que deseja sair do sistema?')) {
         localStorage.removeItem('pp_session');
-        window.location.hash = '#/';
-        window.location.reload();
+        // Use full URL to prevent GitHub Pages 404
+        const baseUrl = window.location.href.split('#')[0];
+        window.location.href = baseUrl + '#/';
+        setTimeout(() => window.location.reload(), 100);
       }
     });
   }

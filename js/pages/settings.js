@@ -150,9 +150,10 @@ export function initSettings(navigateFn) {
   document.getElementById('logoutSettingsBtn')?.addEventListener('click', (e) => {
     e.preventDefault();
     if (window.confirm('Tem certeza que deseja sair da conta?')) {
-      localStorage.removeItem('pp_session');
-      window.location.hash = '#/';
-      window.location.reload();
+        localStorage.removeItem('pp_session');
+        const baseUrl = window.location.href.split('#')[0];
+        window.location.href = baseUrl + '#/';
+        setTimeout(() => window.location.reload(), 100);
     }
   });
 
@@ -171,7 +172,9 @@ export function initSettings(navigateFn) {
           notify.success('Base de dados limpa. Reiniciando...');
           setTimeout(() => {
             localStorage.clear();
-            window.location.reload();
+            const baseUrl = window.location.href.split('#')[0];
+            window.location.href = baseUrl + '#/';
+            setTimeout(() => window.location.reload(), 100);
           }, 2000);
         } catch (err) {
           notify.error('Erro ao limpar a base de dados.');
