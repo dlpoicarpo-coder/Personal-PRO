@@ -87,6 +87,7 @@ export async function navigateTo(path) {
     if (route.init) await route.init(navigateTo);
   } catch (err) {
     content.innerHTML = `<div class="card"><div class="text-danger">Erro ao carregar página: ${err.message}</div></div>`;
+    console.error('Page load error:', err);
   }
 }
 

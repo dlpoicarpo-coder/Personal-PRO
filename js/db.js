@@ -1,15 +1,13 @@
 // ========================================
-// PERSONAL PRO — Supabase Wrapper (NoSQL Mode)
+// PERSONAL PRO — Supabase Wrapper (Cloud Edition)
 // ========================================
 
 const supabaseUrl = 'https://vbxedlloesvjpqzunqyv.supabase.co'; 
 const supabaseKey = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
 
-// Initialize Supabase client
-const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
-
 class Database {
   constructor() {
+    // Single Supabase instance (fixes "Multiple GoTrueClient instances" warning)
     this.supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
     if (!this.supabase) {
       console.warn("Supabase client não encontrado. Usando LocalStorage (Offline Mode).");
@@ -81,7 +79,7 @@ class Database {
   }
 
   async put(storeName, item) {
-    // Corrige a diferença entre 'key' e 'id' que existe no login.js do seu Github
+    // Compatibilidade: converte 'key' para 'id' se necessário
     if (!item.id && item.key) item.id = item.key;
     
     if (!item.id) item.id = crypto.randomUUID();

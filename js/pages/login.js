@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Login Page (v2)
+// PERSONAL PRO — Login Page (Cloud Edition v2)
 // Email ou CREF — simplificado para produção
 // ========================================
 import db from '../db.js';
@@ -35,7 +35,7 @@ export function renderLogin() {
           <div id="loginFormArea"></div>
         </div>
         <div class="login-footer">
-          <p class="text-muted text-xs">© 2026 Personal PRO. Todos os dados são armazenados localmente.</p>
+          <p class="text-muted text-xs">© 2026 Personal PRO · Cloud Edition</p>
         </div>
       </div>
     </div>
@@ -67,6 +67,12 @@ export async function initLogin(onSuccess) {
       const { credential } = Object.fromEntries(fd);
       const trainer = await db.get('settings', 'trainer_auth');
 
+      if (!trainer) {
+        const errEl = document.getElementById('loginError');
+        if (errEl) { errEl.style.display = ''; errEl.textContent = 'Conta não encontrada. Verifique seus dados.'; }
+        return;
+      }
+
       const credLower = credential.toLowerCase().trim();
       const emailMatch = trainer.email && trainer.email.toLowerCase().trim() === credLower;
       const crefMatch = trainer.cref && trainer.cref.toLowerCase().trim() === credLower;
@@ -94,23 +100,33 @@ export async function initLogin(onSuccess) {
     `;
     document.getElementById('setupForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
-      const d = Object.fromEntries(fd);
-      if (!d.trainerName || !d.email) { notify.error('Nome e email são obrigatórios'); return; }
+      const btn = e.target.querySelector('button');
+      btn.textContent = 'Criando conta...';
+      btn.disabled = true;
 
-      await db.put('settings', {
-        key: 'trainer_auth',
-        trainerName: d.trainerName,
-        email: d.email,
-        cref: d.cref,
-        isSetup: true,
-        createdAt: new Date().toISOString(),
-      });
-      await db.put('settings', { key: 'trainer', trainerName: d.trainerName, cref: d.cref, email: d.email });
+      try {
+        const fd = new FormData(e.target);
+        const d = Object.fromEntries(fd);
+        if (!d.trainerName || !d.email) { notify.error('Nome e email são obrigatórios'); btn.textContent = 'Criar Conta'; btn.disabled = false; return; }
 
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ user: d.trainerName, ts: Date.now() }));
-      notify.success('Conta criada! Bem-vindo ao Personal PRO!');
-      onSuccess();
+        await db.put('settings', {
+          id: 'trainer_auth',
+          trainerName: d.trainerName,
+          email: d.email,
+          cref: d.cref,
+          isSetup: true,
+          createdAt: new Date().toISOString(),
+        });
+        await db.put('settings', { id: 'trainer', trainerName: d.trainerName, cref: d.cref, email: d.email });
+
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ user: d.trainerName, ts: Date.now() }));
+        notify.success('Conta criada! Bem-vindo ao Personal PRO!');
+        onSuccess();
+      } catch (err) {
+        notify.error('Erro ao criar conta. Tente novamente.');
+        btn.textContent = 'Criar Conta';
+        btn.disabled = false;
+      }
     });
   }
 }
