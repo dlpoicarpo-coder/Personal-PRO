@@ -12,7 +12,7 @@ export async function renderReports() {
   const active = students.filter(s => s.status === 'Ativo');
   return `
     <div class="page-header">
-      <div><h1>Relatórios de Performance</h1><p class="subtitle">Dossiê completo do aluno com seleção de ciclo</p></div>
+      <div><h1>📊 Relatórios de Performance</h1><p class="subtitle">Dossiê completo com gráficos de evolução e comparação entre ciclos</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <select class="form-select" id="reportStudent" style="min-width:220px">
           <option value="">Selecione um aluno</option>
@@ -191,6 +191,12 @@ async function renderStudentReport(studentId, cycleFilter = '') {
         <p class="text-xs text-muted mb-sm">Média dos últimos 5 check-ins. Quanto mais expandido o radar, melhor o estado geral do aluno. Áreas "encolhidas" indicam pontos de atenção (ex: sono baixo, estresse alto).</p>
         <div style="height:250px;position:relative"><canvas id="radarChart"></canvas></div>
       </div>
+    </div>
+
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">🔄 Comparação entre Ciclos</span></div>
+      <p class="text-xs text-muted mb-sm">Mostra a <strong>média de cada indicador</strong> dividida por período (primeira metade vs segunda metade dos dados). Barras maiores na segunda metade indicam <strong>melhora</strong> (exceto estresse, onde menos é melhor). Ideal para demonstrar ao aluno a evolução ao longo do tempo.</p>
+      <div style="height:280px;position:relative"><canvas id="cycleDiffChart"></canvas></div>
     </div>
 
     ${assessments.length ? `
@@ -441,5 +447,48 @@ async function initReportCharts(studentId) {
     if (sorted.some(a => a.weight)) ds.push({ label: 'Peso (kg)', data: sorted.map(a => a.weight || null), borderColor: '#10b981', tension: 0.3, yAxisID: 'y' });
     if (sorted.some(a => a.bodyFat)) ds.push({ label: 'BF %', data: sorted.map(a => a.bodyFat || null), borderColor: '#f59e0b', tension: 0.3, yAxisID: 'y1' });
     if (ds.length) new Chart(mCtx, { type: 'line', data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y1: { position: 'right', ticks: { color: '#f59e0b' }, grid: { display: false } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } } });
+  }
+
+  // ── CYCLE COMPARISON CHART ──
+  const cdCtx = document.getElementById('cycleDiffChart');
+  if (cdCtx && bf.length >= 4) {
+    const mid = Math.floor(bf.length / 2);
+    const first = bf.slice(0, mid);
+    const second = bf.slice(mid);
+    const avgOf = (arr, key) => arr.length ? (arr.reduce((s, b) => s + (b[key] || 0), 0) / arr.length).toFixed(1) : 0;
+    const metrics = ['sleep', 'mood', 'energy', 'stress', 'pse'];
+    const labels = ['Sono', 'Humor', 'Energia', 'Estresse', 'PSE'];
+    const firstData = metrics.map(k => parseFloat(avgOf(first, k)));
+    const secondData = metrics.map(k => parseFloat(avgOf(second, k)));
+
+    new Chart(cdCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: `Período 1 (${first.length} registros)`, data: firstData, backgroundColor: 'rgba(148,163,184,0.5)', borderColor: '#94a3b8', borderWidth: 1, borderRadius: 4 },
+          { label: `Período 2 (${second.length} registros)`, data: secondData, backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10b981', borderWidth: 1, borderRadius: 4 },
+        ]
+      },
+      options: {
+        ...co,
+        scales: { ...co.scales, y: { ...co.scales.y, min: 0, max: 10 } },
+        plugins: {
+          legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              afterBody: (items) => {
+                const idx = items[0]?.dataIndex;
+                if (idx === undefined) return '';
+                const diff = secondData[idx] - firstData[idx];
+                const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '=';
+                const sign = diff > 0 ? '+' : '';
+                return `Variação: ${arrow} ${sign}${diff.toFixed(1)}`;
+              }
+            }
+          }
+        }
+      }
+    });
   }
 }

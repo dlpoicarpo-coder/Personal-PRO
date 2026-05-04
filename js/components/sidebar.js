@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Sidebar Component (Cloud Edition v2)
+// PERSONAL PRO — Sidebar Component (Cloud Edition v3)
 // ========================================
 import { ICONS } from '../utils/icons.js';
 
@@ -26,7 +26,7 @@ export function renderSidebar(currentPath) {
         <div class="sidebar-logo">
           <div class="logo-text">
             <span class="logo-title">Personal<strong class="logo-pro">PRO</strong></span>
-            <span class="logo-subtitle">Cloud Edition</span>
+            <span class="logo-subtitle">Sistema de Treinamento</span>
           </div>
         </div>
         <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">
@@ -56,7 +56,7 @@ export function renderSidebar(currentPath) {
               <span class="sidebar-user-role">Administrador</span>
             </div>
           </div>
-          <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 6px; opacity: 0.7; transition: 0.2s; display: flex; align-items: center;">
+          <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 8px; opacity: 0.8; transition: all 0.2s; display: flex; align-items: center; border-radius: 6px;" onmouseover="this.style.opacity='1';this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.opacity='0.8';this.style.background='none'">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           </button>
         </div>
@@ -85,10 +85,14 @@ export function initSidebar() {
     });
   }
 
+  // LOGOUT — limpa sessão e recarrega
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       if (window.confirm('Tem certeza que deseja sair do sistema?')) {
         localStorage.removeItem('pp_session');
+        window.location.hash = '#/';
         window.location.reload();
       }
     });

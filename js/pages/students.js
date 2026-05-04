@@ -74,21 +74,21 @@ function studentFormHTML(student = {}) {
     <form id="studentForm" class="student-form">
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Nome Completo *</label>
+          <label class="form-label"><span style="margin-right:6px">👤</span> Nome Completo *</label>
           <input class="form-input" name="name" value="${student.name || ''}" required placeholder="Ex: João da Silva" />
         </div>
         <div class="form-group">
-          <label class="form-label">Código</label>
+          <label class="form-label"><span style="margin-right:6px">🏷️</span> Código</label>
           <input class="form-input" name="code" value="${student.code || ''}" placeholder="Ex: JOA-001" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Data de Nascimento</label>
+          <label class="form-label"><span style="margin-right:6px">📅</span> Data de Nascimento</label>
           <input class="form-input" name="birthDate" type="date" value="${student.birthDate || ''}" />
         </div>
         <div class="form-group">
-          <label class="form-label">Gênero</label>
+          <label class="form-label"><span style="margin-right:6px">⚧️</span> Gênero</label>
           <select class="form-select" name="gender">
             <option value="">Selecione</option>
             <option value="M" ${student.gender === 'M' ? 'selected' : ''}>Masculino</option>
@@ -98,17 +98,17 @@ function studentFormHTML(student = {}) {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Telefone</label>
+          <label class="form-label"><span style="margin-right:6px">📱</span> Telefone</label>
           <input class="form-input" name="phone" value="${student.phone || ''}" placeholder="(00) 00000-0000" />
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label"><span style="margin-right:6px">📧</span> Email</label>
           <input class="form-input" name="email" type="email" value="${student.email || ''}" placeholder="email@exemplo.com" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Objetivo Principal</label>
+          <label class="form-label"><span style="margin-right:6px">🎯</span> Objetivo Principal</label>
           <select class="form-select" name="goal">
             <option value="">Selecione</option>
             <option ${student.goal === 'Hipertrofia' ? 'selected' : ''}>Hipertrofia</option>
@@ -120,7 +120,7 @@ function studentFormHTML(student = {}) {
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Status</label>
+          <label class="form-label"><span style="margin-right:6px">📊</span> Status</label>
           <select class="form-select" name="status">
             <option value="Ativo" ${student.status === 'Ativo' || !student.status ? 'selected' : ''}>Ativo</option>
             <option value="Inativo" ${student.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
@@ -129,7 +129,7 @@ function studentFormHTML(student = {}) {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Observações</label>
+        <label class="form-label"><span style="margin-right:6px">📝</span> Observações</label>
         <textarea class="form-textarea" name="notes" rows="3" placeholder="Observações adicionais...">${student.notes || ''}</textarea>
       </div>
     </form>

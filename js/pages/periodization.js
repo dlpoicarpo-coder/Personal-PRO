@@ -53,16 +53,23 @@ export async function renderPeriodization() {
           <div class="week-timeline">${(m.weeks || []).map((w, i) => {
       const phase = MESOCYCLE_PHASES.find(p => p.id === w.phase);
       const bgColor = phase ? phase.color : '#64748b';
-      return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="--week-color:${bgColor}" title="Sem ${w.week}: ${w.label}\nVolume: ${w.volumePct}% | Intensidade: ${w.intensityPct}%\nReps: ${w.repsRange}">
-              <div class="week-num">S${w.week}</div>
-              <div class="week-bar-vol" style="height:${w.volumePct * 0.5}px;background:${bgColor}80"></div>
-              <div class="week-bar-int" style="height:${w.intensityPct * 0.5}px;background:${bgColor}"></div>
-              <div class="week-label">${w.label?.substring(0, 4) || ''}</div>
+      // Intensity-based color: green(low) → yellow → orange → red(high) → blue(deload)
+      const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
+      const intLabel = w.phase === 'deload' ? '🧊 Deload' : w.intensityPct >= 85 ? '🔴 Muito Alta' : w.intensityPct >= 75 ? '🟠 Alta' : w.intensityPct >= 65 ? '🟡 Moderada' : '🟢 Leve';
+      return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="--week-color:${intColor};border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label}\nVolume: ${w.volumePct}% | Intensidade: ${w.intensityPct}%\n${intLabel}\nReps: ${w.repsRange}">
+              <div class="week-num" style="color:${intColor}">S${w.week}</div>
+              <div class="week-bar-vol" style="height:${w.volumePct * 0.5}px;background:${intColor}40"></div>
+              <div class="week-bar-int" style="height:${w.intensityPct * 0.5}px;background:${intColor}"></div>
+              <div class="week-label" style="font-size:0.6rem">${w.label?.substring(0, 4) || ''}</div>
             </div>`;
     }).join('')}</div>
         </div>
-        <div class="flex gap-lg mt-md text-xs text-muted">
-          <span>█ Intensidade</span><span style="opacity:0.5">█ Volume</span>
+        <div class="flex gap-lg mt-md text-xs text-muted" style="flex-wrap:wrap">
+          <span style="color:#22c55e">● Leve (&lt;65%)</span>
+          <span style="color:#eab308">● Moderada (65-74%)</span>
+          <span style="color:#f97316">● Alta (75-84%)</span>
+          <span style="color:#ef4444">● Muito Alta (≥85%)</span>
+          <span style="color:#3b82f6">● Deload</span>
         </div>
         <div class="mt-md"><canvas id="macroChart_${m.id}" height="150"></canvas></div>
         ${m.weekDetails ? `
@@ -71,13 +78,17 @@ export async function renderPeriodization() {
           <div class="table-container"><table class="data-table"><thead><tr>
             <th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Vol Δ</th><th>Treino A</th><th>Treino B</th>
           </tr></thead><tbody>
-          ${m.weekDetails.map(wd => `<tr style="${wd.phase === 'Deload' ? 'opacity:0.6' : ''}">
-            <td><strong>S${wd.week}</strong></td>
-            <td><span class="badge badge-info">${wd.phase}</span></td>
-            <td>${wd.sets}</td><td>${wd.reps}</td><td>${wd.intensity}%</td><td>${wd.rpe}</td>
+          ${m.weekDetails.map(wd => {
+            const intColor = wd.phase === 'Deload' ? '#3b82f6' : wd.intensity >= 85 ? '#ef4444' : wd.intensity >= 75 ? '#f97316' : wd.intensity >= 65 ? '#eab308' : '#22c55e';
+            const intEmoji = wd.phase === 'Deload' ? '🧊' : wd.intensity >= 85 ? '🔴' : wd.intensity >= 75 ? '🟠' : wd.intensity >= 65 ? '🟡' : '🟢';
+            return `<tr style="${wd.phase === 'Deload' ? 'opacity:0.7' : ''};border-left:3px solid ${intColor}">
+            <td><strong style="color:${intColor}">S${wd.week}</strong></td>
+            <td><span class="badge" style="background:${intColor}20;color:${intColor}">${intEmoji} ${wd.phase}</span></td>
+            <td>${wd.sets}</td><td>${wd.reps}</td><td style="color:${intColor};font-weight:600">${wd.intensity}%</td><td>${wd.rpe}</td>
             <td style="color:${wd.volDelta > 0 ? 'var(--success)' : wd.volDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)'}">${wd.volDelta > 0 ? '+' : ''}${wd.volDelta}%</td>
             <td class="text-sm">${wd.trainA || '-'}</td><td class="text-sm">${wd.trainB || '-'}</td>
-          </tr>`).join('')}
+          </tr>`;
+          }).join('')}
           </tbody></table></div>
         </div>`: ''}
       </div>`;
@@ -95,25 +106,25 @@ export function initPeriodization(navigateFn) {
       title: '+ Novo Macrociclo Completo', size: 'xl',
       content: `<form id="macroForm">
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Aluno *</label><select class="form-select" name="studentId" required><option value="">Selecione</option>${students.map(s => `<option value="${s.id}">${s.name} — ${s.goal || 'Geral'}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label">Nome do Macrociclo</label><input class="form-input" name="name" value="Macrociclo 1" /></div>
+          <div class="form-group"><label class="form-label"><span style="margin-right:6px">👤</span> Aluno *</label><select class="form-select" name="studentId" required><option value="">Selecione</option>${students.map(s => `<option value="${s.id}">${s.name} — ${s.goal || 'Geral'}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label"><span style="margin-right:6px">📋</span> Nome do Macrociclo</label><input class="form-input" name="name" value="Macrociclo 1" /></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Modelo de Periodização *</label><select class="form-select" name="type">${PERIODIZATION_TYPES.map(t => `<option value="${t.id}">${t.name} — ${t.desc}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label">Objetivo</label><select class="form-select" name="goal"><option>Hipertrofia</option><option>Força</option><option>Resistência</option><option>Condicionamento</option><option>Saúde</option></select></div>
+          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🔄</span> Modelo de Periodização *</label><select class="form-select" name="type">${PERIODIZATION_TYPES.map(t => `<option value="${t.id}">${t.name} — ${t.desc}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🎯</span> Objetivo</label><select class="form-select" name="goal"><option>Hipertrofia</option><option>Força</option><option>Resistência</option><option>Condicionamento</option><option>Saúde</option></select></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Duração (semanas)</label><input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" /></div>
-          <div class="form-group"><label class="form-label">Data de Início</label><input class="form-input" name="startDate" type="date" value="${new Date().toISOString().slice(0, 10)}" /></div>
-          <div class="form-group"><label class="form-label">Deload a cada (sem)</label><input class="form-input" name="deloadEvery" type="number" min="0" max="8" value="4" /><div class="form-hint">0 = sem deload</div></div>
+          <div class="form-group"><label class="form-label"><span style="margin-right:6px">📅</span> Duração (semanas)</label><input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" /></div>
+          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🗓️</span> Data de Início</label><input class="form-input" name="startDate" type="date" value="${new Date().toISOString().slice(0, 10)}" /></div>
+          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🧊</span> Deload a cada (sem)</label><input class="form-input" name="deloadEvery" type="number" min="0" max="8" value="4" /><div class="form-hint">0 = sem deload</div></div>
         </div>
 
         <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:12px">
-          <h4 class="mb-sm">Dias e Horários de Treino</h4>
+          <h4 class="mb-sm"><span style="margin-right:6px">⏰</span> Dias e Horários de Treino</h4>
           <p class="text-muted text-sm mb-md">Selecione os dias da semana e horário de treino do aluno</p>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Dias da Semana</label>
+              <label class="form-label"><span style="margin-right:6px">📆</span> Dias da Semana</label>
               <div class="flex gap-sm" style="flex-wrap:wrap">
                 ${TRAINING_DAYS.map(d => `<label class="flex items-center gap-xs" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer">
                   <input type="checkbox" name="trainingDays" value="${d.id}" ${[1, 3, 5].includes(d.id) ? 'checked' : ''}/>
@@ -121,17 +132,17 @@ export function initPeriodization(navigateFn) {
                 </label>`).join('')}
               </div>
             </div>
-            <div class="form-group"><label class="form-label">Horário</label>
+            <div class="form-group"><label class="form-label"><span style="margin-right:6px">🕐</span> Horário</label>
               <select class="form-select" name="trainingTime">${HOURS.map(h => `<option value="${h}" ${h === '07:00' ? 'selected' : ''}>${h}</option>`).join('')}</select>
             </div>
-            <div class="form-group"><label class="form-label">Duração da Sessão</label>
+            <div class="form-group"><label class="form-label"><span style="margin-right:6px">⏱️</span> Duração da Sessão</label>
               <select class="form-select" name="sessionDuration"><option value="45">45 min</option><option value="60" selected>60 min</option><option value="75">75 min</option><option value="90">90 min</option></select>
             </div>
           </div>
         </div>
 
         <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:12px">
-          <h4 class="mb-sm">Grupos Musculares</h4>
+          <h4 class="mb-sm"><span style="margin-right:6px">💪</span> Grupos Musculares</h4>
           <p class="text-muted text-sm mb-md">Exercícios serão puxados automaticamente da Biblioteca</p>
           <div class="flex gap-sm" style="flex-wrap:wrap">
             ${muscleGroups.map(g => `<label class="flex items-center gap-xs" style="padding:5px 10px;border:1px solid var(--border-color);border-radius:6px;cursor:pointer">
