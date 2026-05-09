@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Supabase Wrapper (Cloud Edition)
+// PERSONAL PRO — Supabase Wrapper (Sistema de Treinamento)
 // ========================================
 
 const supabaseUrl = 'https://vbxedlloesvjpqzunqyv.supabase.co'; 

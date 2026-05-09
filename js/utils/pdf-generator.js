@@ -35,6 +35,12 @@ export async function generateWorkoutPDF(student, workout, exercises) {
   doc.text(`Ficha de Treino — ${workout.name}`, 14, 22);
   doc.text(Calc.formatDate(workout.date), W - 14, 14, { align: 'right' });
 
+  // Trainer info (name + CREF)
+  if (workout._trainerName) {
+    doc.setFontSize(8);
+    doc.text(`Prof. ${workout._trainerName}${workout._trainerCref ? ' | CREF ' + workout._trainerCref : ''}`, W - 14, 22, { align: 'right' });
+  }
+
   // Student info
   doc.setTextColor(...COLORS.dark);
   doc.setFontSize(11);

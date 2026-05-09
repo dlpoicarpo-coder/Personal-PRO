@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Login Page (Cloud Edition v3)
+// PERSONAL PRO — Login Page (v4)
 // ========================================
 import db from '../db.js';
 import { notify } from '../components/toast.js';
@@ -28,8 +28,7 @@ export function renderLogin() {
       <div class="login-card">
         <div class="login-header">
           <h1 class="login-title">Personal<strong class="logo-pro">PRO</strong></h1>
-          <p class="login-subtitle" style="color:var(--primary);font-weight:600;font-size:0.85rem;letter-spacing:1px">CLOUD EDITION</p>
-          <p class="login-subtitle" style="margin-top:4px;font-size:0.8rem">Sistema de Treinamento</p>
+          <p class="login-subtitle" style="margin-top:6px;font-size:0.8rem;letter-spacing:1.5px">SISTEMA DE TREINAMENTO</p>
         </div>
         <div class="login-body" id="loginBody">
           <div id="loginFormArea"></div>
@@ -48,25 +47,22 @@ export async function initLogin(onSuccess) {
   const hasAcc = await hasAccount();
 
   if (hasAcc) {
-    // Login — with tab to switch between login and create account
     area.innerHTML = `
       <div class="login-tabs" style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border-color)">
         <button class="login-tab active" id="tabLogin" style="flex:1;padding:10px;border:none;background:none;color:var(--primary);font-weight:600;cursor:pointer;border-bottom:2px solid var(--primary);margin-bottom:-2px;font-size:0.95rem">
-          <span style="margin-right:6px">🔑</span> Entrar
+          Entrar
         </button>
         <button class="login-tab" id="tabCreate" style="flex:1;padding:10px;border:none;background:none;color:var(--text-secondary);cursor:pointer;margin-bottom:-2px;font-size:0.95rem">
-          <span style="margin-right:6px">➕</span> Nova Conta
+          Nova Conta
         </button>
       </div>
       <div id="loginPanel">
         <form id="loginForm">
           <div class="form-group">
-            <label class="form-label"><span style="margin-right:6px">📧</span> E-mail ou CREF</label>
+            <label class="form-label">E-mail ou CREF</label>
             <input class="form-input" name="credential" autocomplete="email" required placeholder="coach@email.com ou 012345-G/SP" />
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:12px">
-            <span style="margin-right:6px">🚀</span> Entrar no Sistema
-          </button>
+          <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:12px">Entrar no Sistema</button>
           <p id="loginError" class="text-danger text-sm text-center mt-md" style="display:none"></p>
         </form>
         <p class="text-muted text-xs text-center mt-md">Acesso exclusivo para treinadores cadastrados</p>
@@ -76,11 +72,9 @@ export async function initLogin(onSuccess) {
       </div>
     `;
 
-    // Tab switching
     document.getElementById('tabLogin')?.addEventListener('click', () => switchTab('login'));
     document.getElementById('tabCreate')?.addEventListener('click', () => switchTab('create'));
 
-    // Login handler
     document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
@@ -107,13 +101,11 @@ export async function initLogin(onSuccess) {
       }
     });
 
-    // Create account handler (in tab)
     bindCreateForm(onSuccess);
 
   } else {
-    // First time — show create account directly
     area.innerHTML = `
-      <h3 style="text-align:center;margin-bottom:8px"><span style="margin-right:6px">🎉</span> Primeiro Acesso</h3>
+      <h3 style="text-align:center;margin-bottom:8px">Primeiro Acesso</h3>
       <p class="text-muted text-sm text-center mb-lg">Configure sua conta de treinador para começar</p>
       ${renderCreateForm()}
     `;
@@ -125,24 +117,22 @@ function renderCreateForm() {
   return `
     <form id="setupForm">
       <div class="form-group">
-        <label class="form-label"><span style="margin-right:6px">👤</span> Nome completo</label>
+        <label class="form-label">Nome completo</label>
         <input class="form-input" name="trainerName" required placeholder="Ex: João da Silva" />
       </div>
       <div class="form-group">
-        <label class="form-label"><span style="margin-right:6px">📧</span> E-mail</label>
+        <label class="form-label">E-mail</label>
         <input class="form-input" name="email" type="email" required placeholder="coach@email.com" />
       </div>
       <div class="form-group">
-        <label class="form-label"><span style="margin-right:6px">🏋️</span> CREF</label>
+        <label class="form-label">CREF</label>
         <input class="form-input" name="cref" required placeholder="Ex: 012345-G/SP" />
       </div>
       <div class="form-group">
-        <label class="form-label"><span style="margin-right:6px">📱</span> WhatsApp (opcional)</label>
+        <label class="form-label">WhatsApp (opcional)</label>
         <input class="form-input" name="phone" placeholder="(00) 00000-0000" />
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:12px">
-        <span style="margin-right:6px">✨</span> Criar Conta e Entrar
-      </button>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:12px">Criar Conta e Entrar</button>
     </form>
   `;
 }
@@ -178,13 +168,13 @@ function bindCreateForm(onSuccess) {
   document.getElementById('setupForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
-    btn.innerHTML = '<span style="margin-right:6px">⏳</span> Criando conta...';
+    btn.textContent = 'Criando conta...';
     btn.disabled = true;
 
     try {
       const fd = new FormData(e.target);
       const d = Object.fromEntries(fd);
-      if (!d.trainerName || !d.email) { notify.error('Nome e email são obrigatórios'); btn.innerHTML = '<span style="margin-right:6px">✨</span> Criar Conta e Entrar'; btn.disabled = false; return; }
+      if (!d.trainerName || !d.email) { notify.error('Nome e email são obrigatórios'); btn.textContent = 'Criar Conta e Entrar'; btn.disabled = false; return; }
 
       await db.put('settings', {
         id: 'trainer_auth',
@@ -202,7 +192,7 @@ function bindCreateForm(onSuccess) {
       onSuccess();
     } catch (err) {
       notify.error('Erro ao criar conta. Tente novamente.');
-      btn.innerHTML = '<span style="margin-right:6px">✨</span> Criar Conta e Entrar';
+      btn.textContent = 'Criar Conta e Entrar';
       btn.disabled = false;
     }
   });

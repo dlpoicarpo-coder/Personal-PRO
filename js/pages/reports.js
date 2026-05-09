@@ -12,7 +12,7 @@ export async function renderReports() {
   const active = students.filter(s => s.status === 'Ativo');
   return `
     <div class="page-header">
-      <div><h1>📊 Relatórios de Performance</h1><p class="subtitle">Dossiê completo com gráficos de evolução e comparação entre ciclos</p></div>
+      <div><h1>Relatórios de Performance</h1><p class="subtitle">Dossiê compacto com gráficos de evolução e comparação entre ciclos</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <select class="form-select" id="reportStudent" style="min-width:220px">
           <option value="">Selecione um aluno</option>
@@ -140,32 +140,18 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <p class="text-sm" style="line-height:1.7">${parecerTecnico}</p>
     </div>
 
-    ${completed.length ? `
-    <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">Sessões Realizadas — Detalhamento</span></div>
-      <p class="text-xs text-muted mb-md">Registro de cada sessão de treino concluída pelo aluno, com métricas de volume e intensidade.</p>
-      <div class="table-container"><table class="data-table">
-        <thead><tr><th>Data</th><th>Treino</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th>Densidade</th></tr></thead>
-        <tbody>${completed.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15).map(se => `
-          <tr>
-            <td>${Calc.formatDate(se.date)}</td>
-            <td><strong>${se.workoutName || '-'}</strong></td>
-            <td>${se.totalDuration ? Math.round(se.totalDuration / 60) + 'min' : '-'}</td>
-            <td>${se.totalVolume || '-'} kg</td>
-            <td>${se.totalSets || '-'}</td>
-            <td><span class="badge badge-${(se.postBiofeedback?.pse || 0) > 8 ? 'danger' : (se.postBiofeedback?.pse || 0) > 6 ? 'warning' : 'success'}">${se.postBiofeedback?.pse || '-'}</span></td>
-            <td>${se.density ? se.density.toFixed(2) : '-'}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table></div>
-    </div>` : ''}
-
     ${workouts.length ? `
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Treinos Prescritos no Ciclo</span></div>
       <p class="text-xs text-muted mb-md">Fichas de treino criadas pelo treinador para este período.</p>
       ${workoutSummary}
     </div>` : ''}
+
+    <div class="card mb-lg" style="border-left:3px solid var(--accent)">
+      <div class="card-header"><span class="card-title">Periodização Atual</span></div>
+      <p class="text-xs text-muted mb-sm">Macrociclo ativo do aluno com distribuição de volume e intensidade ao longo das semanas.</p>
+      <div id="reportPeriodization"></div>
+    </div>
 
     <div class="grid-2 mb-lg">
       <div class="card">
@@ -194,7 +180,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     </div>
 
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">🔄 Comparação entre Ciclos</span></div>
+      <div class="card-header"><span class="card-title">Comparação entre Ciclos</span></div>
       <p class="text-xs text-muted mb-sm">Mostra a <strong>média de cada indicador</strong> dividida por período (primeira metade vs segunda metade dos dados). Barras maiores na segunda metade indicam <strong>melhora</strong> (exceto estresse, onde menos é melhor). Ideal para demonstrar ao aluno a evolução ao longo do tempo.</p>
       <div style="height:280px;position:relative"><canvas id="cycleDiffChart"></canvas></div>
     </div>
@@ -252,6 +238,7 @@ export async function initReports(navigateFn) {
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
     content.innerHTML = await renderStudentReport(sid);
     initReportCharts(sid);
+    loadPeriodizationForReport(sid);
   });
 
   // Cycle filter change
@@ -491,4 +478,35 @@ async function initReportCharts(studentId) {
       }
     });
   }
+}
+
+async function loadPeriodizationForReport(studentId) {
+  const container = document.getElementById('reportPeriodization');
+  if (!container) return;
+  const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === studentId);
+  const active = macros.find(m => m.status === 'active') || macros[0];
+  if (!active || !active.weeks) {
+    container.innerHTML = '<p class="text-muted text-sm">Nenhuma periodização encontrada para este aluno.</p>';
+    return;
+  }
+  const currentWeek = Math.ceil((Date.now() - new Date(active.startDate).getTime()) / (7 * 86400000));
+  container.innerHTML = `
+    <div class="text-sm text-muted mb-sm"><strong>${active.name}</strong> · ${active.totalWeeks} semanas · Início: ${new Date(active.startDate).toLocaleDateString('pt-BR')}</div>
+    <div class="week-timeline" style="min-height:60px">
+      ${active.weeks.map((w, i) => {
+        const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
+        return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label} — Vol: ${w.volumePct}% | Int: ${w.intensityPct}%">
+          <div class="week-num" style="color:${intColor}">S${w.week}</div>
+          <div class="week-bar-int" style="height:${w.intensityPct * 0.4}px;background:${intColor}"></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="flex gap-md mt-sm text-xs text-muted" style="flex-wrap:wrap">
+      <span style="color:#22c55e">● Leve</span>
+      <span style="color:#eab308">● Moderada</span>
+      <span style="color:#f97316">● Alta</span>
+      <span style="color:#ef4444">● Muito Alta</span>
+      <span style="color:#3b82f6">● Deload</span>
+    </div>
+  `;
 }

@@ -106,25 +106,25 @@ export function initPeriodization(navigateFn) {
       title: '+ Novo Macrociclo Completo', size: 'xl',
       content: `<form id="macroForm">
         <div class="form-row">
-          <div class="form-group"><label class="form-label"><span style="margin-right:6px">👤</span> Aluno *</label><select class="form-select" name="studentId" required><option value="">Selecione</option>${students.map(s => `<option value="${s.id}">${s.name} — ${s.goal || 'Geral'}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label"><span style="margin-right:6px">📋</span> Nome do Macrociclo</label><input class="form-input" name="name" value="Macrociclo 1" /></div>
+          <div class="form-group"><label class="form-label">Aluno *</label><select class="form-select" name="studentId" required><option value="">Selecione</option>${students.map(s => `<option value="${s.id}">${s.name} — ${s.goal || 'Geral'}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Nome do Macrociclo</label><input class="form-input" name="name" value="Macrociclo 1" /></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🔄</span> Modelo de Periodização *</label><select class="form-select" name="type">${PERIODIZATION_TYPES.map(t => `<option value="${t.id}">${t.name} — ${t.desc}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🎯</span> Objetivo</label><select class="form-select" name="goal"><option>Hipertrofia</option><option>Força</option><option>Resistência</option><option>Condicionamento</option><option>Saúde</option></select></div>
+          <div class="form-group"><label class="form-label">Modelo de Periodização *</label><select class="form-select" name="type">${PERIODIZATION_TYPES.map(t => `<option value="${t.id}">${t.name} — ${t.desc}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Objetivo</label><select class="form-select" name="goal"><option>Hipertrofia</option><option>Força</option><option>Resistência</option><option>Condicionamento</option><option>Saúde</option></select></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label"><span style="margin-right:6px">📅</span> Duração (semanas)</label><input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" /></div>
-          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🗓️</span> Data de Início</label><input class="form-input" name="startDate" type="date" value="${new Date().toISOString().slice(0, 10)}" /></div>
-          <div class="form-group"><label class="form-label"><span style="margin-right:6px">🧊</span> Deload a cada (sem)</label><input class="form-input" name="deloadEvery" type="number" min="0" max="8" value="4" /><div class="form-hint">0 = sem deload</div></div>
+          <div class="form-group"><label class="form-label">Duração (semanas)</label><input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" /></div>
+          <div class="form-group"><label class="form-label">Data de Início</label><input class="form-input" name="startDate" type="date" value="${new Date().toISOString().slice(0, 10)}" /></div>
+          <div class="form-group"><label class="form-label">Deload a cada (sem)</label><input class="form-input" name="deloadEvery" type="number" min="0" max="8" value="4" /><div class="form-hint">0 = sem deload</div></div>
         </div>
 
         <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:12px">
-          <h4 class="mb-sm"><span style="margin-right:6px">⏰</span> Dias e Horários de Treino</h4>
+          <h4 class="mb-sm">Dias e Horários de Treino</h4>
           <p class="text-muted text-sm mb-md">Selecione os dias da semana e horário de treino do aluno</p>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label"><span style="margin-right:6px">📆</span> Dias da Semana</label>
+              <label class="form-label">Dias da Semana</label>
               <div class="flex gap-sm" style="flex-wrap:wrap">
                 ${TRAINING_DAYS.map(d => `<label class="flex items-center gap-xs" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer">
                   <input type="checkbox" name="trainingDays" value="${d.id}" ${[1, 3, 5].includes(d.id) ? 'checked' : ''}/>
@@ -132,18 +132,23 @@ export function initPeriodization(navigateFn) {
                 </label>`).join('')}
               </div>
             </div>
-            <div class="form-group"><label class="form-label"><span style="margin-right:6px">🕐</span> Horário</label>
+            <div class="form-group"><label class="form-label">Horário</label>
               <select class="form-select" name="trainingTime">${HOURS.map(h => `<option value="${h}" ${h === '07:00' ? 'selected' : ''}>${h}</option>`).join('')}</select>
             </div>
-            <div class="form-group"><label class="form-label"><span style="margin-right:6px">⏱️</span> Duração da Sessão</label>
+            <div class="form-group"><label class="form-label">Duração da Sessão</label>
               <select class="form-select" name="sessionDuration"><option value="45">45 min</option><option value="60" selected>60 min</option><option value="75">75 min</option><option value="90">90 min</option></select>
             </div>
           </div>
         </div>
 
         <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:12px">
-          <h4 class="mb-sm"><span style="margin-right:6px">💪</span> Grupos Musculares</h4>
-          <p class="text-muted text-sm mb-md">Exercícios serão puxados automaticamente da Biblioteca</p>
+          <h4 class="mb-sm">Modelo de Treino</h4>
+          <p class="text-muted text-sm mb-md">Selecione treinos existentes do aluno ou use exercícios da biblioteca</p>
+          <div class="form-group mb-md">
+            <label class="form-label">Usar treinos criados pelo personal</label>
+            <select class="form-select" id="workoutModelSelect"><option value="">Gerar automaticamente da biblioteca</option></select>
+          </div>
+          <h4 class="mb-sm">Grupos Musculares (se geração automática)</h4>
           <div class="flex gap-sm" style="flex-wrap:wrap">
             ${muscleGroups.map(g => `<label class="flex items-center gap-xs" style="padding:5px 10px;border:1px solid var(--border-color);border-radius:6px;cursor:pointer">
               <input type="checkbox" name="muscleGroups" value="${g}" checked/> ${g}
@@ -178,11 +183,20 @@ export function initPeriodization(navigateFn) {
             // Generate weekly plan
             d.weeks = generateWeeklyPlan(d.type, d.totalWeeks, phases.length ? phases : null, d.deloadEvery);
 
-            // Get exercises from library for selected muscle groups
-            const allExercises = await db.getAll('exercises');
-            const filteredExercises = selectedGroups.length > 0
-              ? allExercises.filter(ex => selectedGroups.includes(ex.muscleGroup))
-              : allExercises;
+            // Check if personal selected existing workout model (item 14)
+            const selectedModelId = document.getElementById('workoutModelSelect')?.value;
+            let filteredExercises;
+            if (selectedModelId) {
+              const modelWk = await db.get('workouts', selectedModelId);
+              filteredExercises = modelWk?.exercises || [];
+              d.workoutModelName = modelWk?.name || '';
+            } else {
+              // Get exercises from library for selected muscle groups
+              const allExercises = await db.getAll('exercises');
+              filteredExercises = selectedGroups.length > 0
+                ? allExercises.filter(ex => selectedGroups.includes(ex.muscleGroup))
+                : allExercises;
+            }
 
             // Generate week details for display
             const weekDetails = d.weeks.map((w, i) => {
@@ -283,12 +297,23 @@ export function initPeriodization(navigateFn) {
       ]
     });
 
-    // Show/hide block phases
+    // Show/hide block phases + populate workout models when student changes
     setTimeout(() => {
       const typeSel = document.querySelector('[name="type"]');
       const blockGroup = document.getElementById('blockPhasesGroup');
       typeSel?.addEventListener('change', () => {
         blockGroup.style.display = typeSel.value === 'block' ? '' : 'none';
+      });
+
+      // Populate workout model dropdown when student is selected (item 14)
+      const studentSel = document.querySelector('[name="studentId"]');
+      const modelSel = document.getElementById('workoutModelSelect');
+      studentSel?.addEventListener('change', async () => {
+        const sid = studentSel.value;
+        if (!sid || !modelSel) return;
+        const wks = (await db.getAll('workouts')).filter(w => w.studentId === sid);
+        modelSel.innerHTML = '<option value="">Gerar automaticamente da biblioteca</option>' +
+          wks.map(w => `<option value="${w.id}">${w.name} (${(w.exercises||[]).length} exercícios)</option>`).join('');
       });
     }, 100);
   });

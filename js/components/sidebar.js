@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Sidebar Component (Cloud Edition v3)
+// PERSONAL PRO — Sidebar Component (v4)
 // ========================================
 import { ICONS } from '../utils/icons.js';
 
@@ -16,6 +16,7 @@ const MENU_ITEMS = [
   { id: 'financial', icon: 'financial', label: 'Financeiro', path: '/financeiro' },
   { id: 'exercises', icon: 'exercises', label: 'Exercícios', path: '/exercicios' },
   { id: 'reports', icon: 'reports', label: 'Relatórios', path: '/relatorios' },
+  { id: 'anamnesis', icon: 'assessments', label: 'Anamnese', path: '/anamnese' },
   { id: 'settings', icon: 'settings', label: 'Configurações', path: '/config' },
 ];
 
@@ -29,17 +30,19 @@ export function renderSidebar(currentPath) {
             <span class="logo-subtitle">Sistema de Treinamento</span>
           </div>
         </div>
-        <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">
-          ☰
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Minimizar menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
         </button>
       </div>
+      <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">☰</button>
       
       <nav class="sidebar-nav">
         ${MENU_ITEMS.map(item => `
           <a href="#${item.path}" 
              class="sidebar-link ${currentPath === item.path ? 'active' : ''} ${item.highlight ? 'sidebar-link-highlight' : ''}" 
              data-page="${item.id}"
-             id="nav-${item.id}">
+             id="nav-${item.id}"
+             title="${item.label}">
             <span class="sidebar-icon-svg">${ICONS[item.icon] || '•'}</span>
             <span class="sidebar-label">${item.label}</span>
             ${item.highlight ? '<span class="live-dot"></span>' : ''}
@@ -53,7 +56,7 @@ export function renderSidebar(currentPath) {
             <div class="avatar avatar-sm" id="trainerAvatar">PRO</div>
             <div class="sidebar-user-info">
               <span class="sidebar-user-name" id="trainerName">Treinador</span>
-              <span class="sidebar-user-role">Administrador</span>
+              <span class="sidebar-user-role">Personal Trainer</span>
             </div>
           </div>
           <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 8px; opacity: 0.8; transition: all 0.2s; display: flex; align-items: center; border-radius: 6px;" onmouseover="this.style.opacity='1';this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.opacity='0.8';this.style.background='none'">
@@ -71,10 +74,11 @@ export function initSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
   const logoutBtn = document.getElementById('logoutBtn');
+  const collapseBtn = document.getElementById('sidebarCollapseBtn');
 
+  // Mobile toggle
   if (toggle) {
     toggle.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
       sidebar.classList.toggle('mobile-open');
     });
   }
@@ -85,14 +89,25 @@ export function initSidebar() {
     });
   }
 
-  // LOGOUT — limpa sessão e recarrega
+  // Desktop collapse/expand
+  if (collapseBtn) {
+    // Restore collapsed state
+    if (localStorage.getItem('pp_sidebar_collapsed') === '1') {
+      sidebar.classList.add('collapsed');
+    }
+    collapseBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem('pp_sidebar_collapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+    });
+  }
+
+  // LOGOUT
   if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       if (window.confirm('Tem certeza que deseja sair do sistema?')) {
         localStorage.removeItem('pp_session');
-        // Use full URL to prevent GitHub Pages 404
         const baseUrl = window.location.href.split('#')[0];
         window.location.href = baseUrl + '#/';
         setTimeout(() => window.location.reload(), 100);

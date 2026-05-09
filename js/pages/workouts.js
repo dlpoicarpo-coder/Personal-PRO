@@ -245,6 +245,9 @@ export function initWorkouts(navigateFn) {
       const w = await db.get('workouts', btn.dataset.id);
       if (!w) return;
       const st = await db.get('students', w.studentId) || { name: 'Aluno', code: '---' };
+      const trainerSettings = await db.get('settings', 'trainer') || {};
+      w._trainerName = trainerSettings.trainerName || '';
+      w._trainerCref = trainerSettings.cref || '';
       try {
         const doc = await generateWorkoutPDF(st, w, w.exercises);
         downloadPDF(doc, `Treino_${w.name.replace(/\s/g,'_')}_${st.code}.pdf`);

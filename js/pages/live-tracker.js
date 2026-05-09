@@ -203,6 +203,25 @@ export function initTracker(navigateFn) {
       wSel.innerHTML = '<option value="">Selecione</option>' + wks.map(w => `<option value="${w.id}">${w.name} (${Calc.formatDate(w.date)})</option>`).join('');
     });
     wSel?.addEventListener('change', () => { sBtn.disabled = !wSel.value; });
+
+    // Auto-fill from agenda (item 7)
+    const autoData = sessionStorage.getItem('pp_autostart');
+    if (autoData) {
+      sessionStorage.removeItem('pp_autostart');
+      try {
+        const { studentId, workoutId } = JSON.parse(autoData);
+        if (studentId) {
+          sSel.value = studentId;
+          sSel.dispatchEvent(new Event('change'));
+          setTimeout(() => {
+            if (workoutId && wSel) {
+              wSel.value = workoutId;
+              wSel.dispatchEvent(new Event('change'));
+            }
+          }, 300);
+        }
+      } catch(e) { /* ignore */ }
+    }
   }
 
   // Generate pre-workout link for student

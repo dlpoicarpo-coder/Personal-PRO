@@ -18,6 +18,60 @@
   overflow: hidden;
 }
 
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed);
+}
+
+.sidebar.collapsed .sidebar-label,
+.sidebar.collapsed .sidebar-user-info,
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed #logoutBtn {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-link {
+  justify-content: center;
+  padding: 11px 0;
+}
+
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 20px 10px;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 16px 10px;
+}
+
+.sidebar.collapsed .sidebar-user {
+  justify-content: center !important;
+}
+
+.sidebar.collapsed .sidebar-collapse-btn svg {
+  transform: rotate(180deg);
+}
+
+.sidebar.collapsed ~ .main-content {
+  margin-left: var(--sidebar-collapsed);
+}
+
+.sidebar-collapse-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-collapse-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
 .sidebar-header {
   padding: 20px;
   display: flex;

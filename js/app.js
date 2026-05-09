@@ -15,6 +15,8 @@ import { renderExercisesLibrary, initExercisesLibrary } from './pages/exercises-
 import { renderPeriodization, initPeriodization } from './pages/periodization.js';
 import { renderWeeklySummary, initWeeklySummary } from './pages/weekly-summary.js';
 import { renderSettings, initSettings } from './pages/settings.js';
+import { renderPreForm, initPreForm, renderPostForm, initPostForm } from './pages/student-forms.js';
+import { renderAnamnesis, initAnamnesis, renderAnamneseForm, initAnamneseForm } from './pages/anamnesis.js';
 
 // Central Router
 const routes = {
@@ -30,13 +32,36 @@ const routes = {
   '/financeiro': { render: renderFinancial, init: initFinancial },
   '/exercicios': { render: renderExercisesLibrary, init: initExercisesLibrary },
   '/relatorios': { render: renderReports, init: initReports },
+  '/anamnese': { render: renderAnamnesis, init: initAnamnesis },
   '/config': { render: renderSettings, init: initSettings }
 };
 
 export async function navigateTo(path) {
   const appContainer = document.getElementById('app');
   
-  // 1. Verificação de Segurança (Login)
+  // ── FORM ROUTES (no auth required, no sidebar) ──
+  if (path.startsWith('/form/pre/')) {
+    const studentId = path.split('/form/pre/')[1];
+    appContainer.className = '';
+    appContainer.innerHTML = await renderPreForm(studentId);
+    initPreForm();
+    return;
+  }
+  if (path.startsWith('/form/post/')) {
+    const sessionId = path.split('/form/post/')[1];
+    appContainer.className = '';
+    appContainer.innerHTML = await renderPostForm(sessionId);
+    initPostForm();
+    return;
+  }
+  if (path === '/form/anamnese') {
+    appContainer.className = '';
+    appContainer.innerHTML = await renderAnamneseForm();
+    initAnamneseForm();
+    return;
+  }
+
+  // 1. Auth check
   const isAuth = await isAuthenticated();
   if (!isAuth) {
     appContainer.innerHTML = renderLogin();
@@ -45,6 +70,7 @@ export async function navigateTo(path) {
   }
   
   // 2. Create layout if missing
+  appContainer.className = 'app-layout';
   if (!document.querySelector('.sidebar')) {
     appContainer.innerHTML = `
       ${renderSidebar(path)}
@@ -63,7 +89,7 @@ export async function navigateTo(path) {
     if (a.getAttribute('href') === '#' + path) a.classList.add('active');
   });
 
-  // Atualiza as iniciais e o nome do treinador na sidebar
+  // Update trainer name/avatar in sidebar
   import('./db.js').then(({ default: db }) => {
     db.get('settings', 'trainer_auth').then(trainer => {
       if (trainer && trainer.trainerName) {
@@ -78,7 +104,7 @@ export async function navigateTo(path) {
     });
   });
 
-  // 4. Carrega a Aba Solicitada
+  // 4. Load page
   const route = routes[path] || routes['/'];
   content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
   
@@ -91,24 +117,24 @@ export async function navigateTo(path) {
   }
 }
 
-// Handle hash changes
+// Handle hash changes — now includes /form/ routes
 window.addEventListener('hashchange', () => {
   const path = window.location.hash.slice(1) || '/';
-  if (!path.startsWith('/form/')) {
-    navigateTo(path);
-  }
+  navigateTo(path);
 });
 
-// Initialize app
+// Initialize app  
 function initApp() {
+  // Apply saved theme — default to light mode (item 16)
+  const savedTheme = localStorage.getItem('pp_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+
   import('./db.js').then(({ default: db }) => {
     db.seedTemplates().catch(console.error);
   });
   
   const path = window.location.hash.slice(1) || '/';
-  if (!path.startsWith('/form/')) {
-    navigateTo(path);
-  }
+  navigateTo(path);
 }
 
 if (document.readyState === 'loading') {

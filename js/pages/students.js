@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Students Page (Cloud Edition)
+// PERSONAL PRO — Students Page (Sistema de Treinamento)
 // ========================================
 
 import db from '../db.js';
@@ -74,21 +74,21 @@ function studentFormHTML(student = {}) {
     <form id="studentForm" class="student-form">
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">👤</span> Nome Completo *</label>
+          <label class="form-label">Nome Completo *</label>
           <input class="form-input" name="name" value="${student.name || ''}" required placeholder="Ex: João da Silva" />
         </div>
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">🏷️</span> Código</label>
+          <label class="form-label">Código</label>
           <input class="form-input" name="code" value="${student.code || ''}" placeholder="Ex: JOA-001" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">📅</span> Data de Nascimento</label>
+          <label class="form-label">Data de Nascimento</label>
           <input class="form-input" name="birthDate" type="date" value="${student.birthDate || ''}" />
         </div>
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">⚧️</span> Gênero</label>
+          <label class="form-label">Gênero</label>
           <select class="form-select" name="gender">
             <option value="">Selecione</option>
             <option value="M" ${student.gender === 'M' ? 'selected' : ''}>Masculino</option>
@@ -98,17 +98,17 @@ function studentFormHTML(student = {}) {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">📱</span> Telefone</label>
+          <label class="form-label">Telefone</label>
           <input class="form-input" name="phone" value="${student.phone || ''}" placeholder="(00) 00000-0000" />
         </div>
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">📧</span> Email</label>
+          <label class="form-label">Email</label>
           <input class="form-input" name="email" type="email" value="${student.email || ''}" placeholder="email@exemplo.com" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">🎯</span> Objetivo Principal</label>
+          <label class="form-label">Objetivo Principal</label>
           <select class="form-select" name="goal">
             <option value="">Selecione</option>
             <option ${student.goal === 'Hipertrofia' ? 'selected' : ''}>Hipertrofia</option>
@@ -120,7 +120,7 @@ function studentFormHTML(student = {}) {
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label"><span style="margin-right:6px">📊</span> Status</label>
+          <label class="form-label">Status</label>
           <select class="form-select" name="status">
             <option value="Ativo" ${student.status === 'Ativo' || !student.status ? 'selected' : ''}>Ativo</option>
             <option value="Inativo" ${student.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
@@ -128,8 +128,32 @@ function studentFormHTML(student = {}) {
           </select>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Zona-Alvo de Treino</label>
+          <select class="form-select" name="trainingZone">
+            <option value="">Selecione</option>
+            <option ${student.trainingZone === 'Hipertrofia (65-80% 1RM)' ? 'selected' : ''}>Hipertrofia (65-80% 1RM)</option>
+            <option ${student.trainingZone === 'Força (80-95% 1RM)' ? 'selected' : ''}>Força (80-95% 1RM)</option>
+            <option ${student.trainingZone === 'Resistência (<65% 1RM)' ? 'selected' : ''}>Resistência (<65% 1RM)</option>
+            <option ${student.trainingZone === 'Potência (30-60% 1RM)' ? 'selected' : ''}>Potência (30-60% 1RM)</option>
+            <option ${student.trainingZone === 'Misto' ? 'selected' : ''}>Misto</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Frequência Semanal</label>
+          <select class="form-select" name="weeklyFrequency">
+            <option value="">Selecione</option>
+            ${[2,3,4,5,6].map(n => `<option ${student.weeklyFrequency == n ? 'selected' : ''}>${n}x por semana</option>`).join('')}
+          </select>
+        </div>
+      </div>
       <div class="form-group">
-        <label class="form-label"><span style="margin-right:6px">📝</span> Observações</label>
+        <label class="form-label">Foco Muscular Prioritário</label>
+        <input class="form-input" name="muscleFocus" value="${student.muscleFocus || ''}" placeholder="Ex: Glúteos, Peitoral, Costas" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
         <textarea class="form-textarea" name="notes" rows="3" placeholder="Observações adicionais...">${student.notes || ''}</textarea>
       </div>
     </form>
