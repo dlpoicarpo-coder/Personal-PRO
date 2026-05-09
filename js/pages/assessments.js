@@ -47,8 +47,16 @@ export async function renderAssessments() {
     <!-- Zonas de Treino -->
     <div id="panel-zonas" class="assessment-panel hidden">
       <div class="card">
-        <div class="card-header"><span class="card-title">Calculadora de Zonas de Treino</span></div>
+        <div class="card-header"><span class="card-title">Calculadora de Zonas de Treino (Karvonen)</span></div>
+        <p class="text-muted text-sm mb-md">Selecione um aluno para preencher a idade automaticamente, ou insira manualmente.</p>
         <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Selecionar Aluno (opcional)</label>
+            <select class="form-select" id="zonaStudentSel">
+              <option value="">Preencher manualmente</option>
+              ${activeStudents.map(s => `<option value="${s.id}" data-birth="${s.birthDate || ''}">${s.name}</option>`).join('')}
+            </select>
+          </div>
           <div class="form-group">
             <label class="form-label">Idade</label>
             <input class="form-input" id="zonaIdade" type="number" placeholder="Ex: 30" />
@@ -58,10 +66,14 @@ export async function renderAssessments() {
             <input class="form-input" id="zonaFcRep" type="number" placeholder="Ex: 65" />
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end">
-            <button class="btn btn-primary" id="calcZonas">Calcular</button>
+            <button class="btn btn-primary" id="calcZonas">Calcular Zonas</button>
           </div>
         </div>
         <div id="zonasResult" class="mt-lg"></div>
+      </div>
+      <div class="card mt-lg" id="zonasPorAluno" style="display:none">
+        <div class="card-header"><span class="card-title">Zonas Salvas do Aluno</span></div>
+        <div id="zonasAlunoContent"></div>
       </div>
     </div>
   `;
@@ -150,6 +162,31 @@ export function initAssessments(navigateFn) {
       document.querySelectorAll('.assessment-panel').forEach(p => p.classList.add('hidden'));
       document.getElementById(`panel-${tab.dataset.type}`)?.classList.remove('hidden');
     });
+  });
+
+  // Auto-fill age from student (item 2)
+  document.getElementById('zonaStudentSel')?.addEventListener('change', async (e) => {
+    const opt = e.target.selectedOptions[0];
+    const birth = opt?.dataset.birth;
+    const idadeInput = document.getElementById('zonaIdade');
+    if (birth && idadeInput) {
+      const age = Calc.calcularIdade(birth);
+      idadeInput.value = age;
+      // Auto-trigger calculation if FC repouso is filled
+      const fcRep = parseInt(document.getElementById('zonaFcRep').value);
+      if (fcRep) document.getElementById('calcZonas')?.click();
+    }
+    // Show saved zones for this student
+    const sid = e.target.value;
+    const savedCard = document.getElementById('zonasPorAluno');
+    const savedContent = document.getElementById('zonasAlunoContent');
+    if (sid && savedCard && savedContent) {
+      const assessments = await db.getAll('assessments');
+      const zones = assessments.filter(a => a.studentId === sid && a.type === 'zonas').sort((a,b) => new Date(b.date)-new Date(a.date));
+      savedCard.style.display = zones.length ? '' : 'none';
+      savedContent.innerHTML = zones.length ? `<div class="table-container"><table class="data-table"><thead><tr><th>Data</th><th>FC Max</th><th>Z1</th><th>Z2</th><th>Z3</th><th>Z4</th><th>Z5</th></tr></thead>
+        <tbody>${zones.slice(0,5).map(z => `<tr><td>${Calc.formatDate(z.date)}</td><td>${z.fcMax} bpm</td><td>${z.z1}</td><td>${z.z2}</td><td>${z.z3}</td><td>${z.z4}</td><td>${z.z5}</td></tr>`).join('')}</tbody></table></div>` : '';
+    }
   });
 
   // Zonas calc

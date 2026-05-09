@@ -17,6 +17,7 @@ import { renderWeeklySummary, initWeeklySummary } from './pages/weekly-summary.j
 import { renderSettings, initSettings } from './pages/settings.js';
 import { renderPreForm, initPreForm, renderPostForm, initPostForm } from './pages/student-forms.js';
 import { renderAnamnesis, initAnamnesis, renderAnamneseForm, initAnamneseForm } from './pages/anamnesis.js';
+import { renderTutorial, initTutorial } from './pages/tutorial.js';
 
 // Central Router
 const routes = {
@@ -33,6 +34,7 @@ const routes = {
   '/exercicios': { render: renderExercisesLibrary, init: initExercisesLibrary },
   '/relatorios': { render: renderReports, init: initReports },
   '/anamnese': { render: renderAnamnesis, init: initAnamnesis },
+  '/tutorial': { render: renderTutorial, init: initTutorial },
   '/config': { render: renderSettings, init: initSettings }
 };
 

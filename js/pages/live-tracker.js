@@ -439,13 +439,21 @@ export function initTracker(navigateFn) {
       ]
     });
 
-    // Post link
+    // Post link — copy and close modal to proceed
     setTimeout(() => {
-      document.getElementById('genPostLink')?.addEventListener('click', () => {
+      document.getElementById('genPostLink')?.addEventListener('click', async () => {
         if (!state.session) return;
         const url = `${window.location.origin}${window.location.pathname}#/form/post/${state.session.id}`;
         navigator.clipboard?.writeText(url);
-        notify.success('Link copiado para o aluno!');
+        notify.success('Link copiado! Finalizando sessão...');
+        // Auto-save with empty post data and close
+        setTimeout(async () => {
+          try {
+            const fd = new FormData(document.getElementById('postF'));
+            const post = Object.fromEntries(fd);
+            await finishSession(dur, vol, dens, post, navigateFn);
+          } catch(e) { console.error(e); }
+        }, 800);
       });
     }, 200);
   });

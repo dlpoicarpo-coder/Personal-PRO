@@ -140,16 +140,10 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <p class="text-sm" style="line-height:1.7">${parecerTecnico}</p>
     </div>
 
-    ${workouts.length ? `
-    <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">Treinos Prescritos no Ciclo</span></div>
-      <p class="text-xs text-muted mb-md">Fichas de treino criadas pelo treinador para este período.</p>
-      ${workoutSummary}
-    </div>` : ''}
 
     <div class="card mb-lg" style="border-left:3px solid var(--accent)">
       <div class="card-header"><span class="card-title">Periodização Atual</span></div>
-      <p class="text-xs text-muted mb-sm">Macrociclo ativo do aluno com distribuição de volume e intensidade ao longo das semanas.</p>
+      <p class="text-xs text-muted mb-sm">Macrociclo ativo com distribuição de volume e intensidade.</p>
       <div id="reportPeriodization"></div>
     </div>
 

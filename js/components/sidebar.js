@@ -17,6 +17,7 @@ const MENU_ITEMS = [
   { id: 'exercises', icon: 'exercises', label: 'Exercícios', path: '/exercicios' },
   { id: 'reports', icon: 'reports', label: 'Relatórios', path: '/relatorios' },
   { id: 'anamnesis', icon: 'assessments', label: 'Anamnese', path: '/anamnese' },
+  { id: 'tutorial', icon: 'weekly', label: 'Tutorial', path: '/tutorial' },
   { id: 'settings', icon: 'settings', label: 'Configurações', path: '/config' },
 ];
 

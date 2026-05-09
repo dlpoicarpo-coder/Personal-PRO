@@ -25,14 +25,24 @@ export async function renderPeriodization() {
 
   return `
     <div class="page-header"><div><h1>Periodização</h1><p class="subtitle">Planejamento de macrociclos e variação de volume/intensidade</p></div>
-      <button class="btn btn-primary" id="addMacroBtn">+ Novo Macrociclo</button>
+      <div class="flex gap-sm" style="flex-wrap:wrap">
+        <select class="form-select" id="perioStudentFilter" style="min-width:180px">
+          <option value="">Todos os alunos</option>
+          ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+        </select>
+        <select class="form-select" id="perioMacroFilter" style="min-width:200px" disabled>
+          <option value="">Todos os macrociclos</option>
+        </select>
+        <button class="btn btn-primary" id="addMacroBtn">+ Novo Macrociclo</button>
+      </div>
     </div>
+    <div id="periodizationContent">
     ${macros.length ? macros.map(m => {
     const st = students.find(s => s.id === m.studentId);
     const typeInfo = PERIODIZATION_TYPES.find(t => t.id === m.type) || {};
     const currentWeek = Math.ceil((Date.now() - new Date(m.startDate).getTime()) / (7 * 86400000));
     return `
-      <div class="card mb-lg">
+      <div class="card mb-lg" data-student="${m.studentId || ''}" data-macro="${m.id || ''}">
         <div class="card-header">
           <span class="card-title"><span class="avatar avatar-sm">${st ? st.name[0] : '?'}</span> ${st ? st.name : '?'} — ${m.name}</span>
           <div class="flex gap-sm">
@@ -93,10 +103,46 @@ export async function renderPeriodization() {
         </div>`: ''}
       </div>`;
   }).join('') : `<div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Nenhum macrociclo criado</h3><p>Crie um planejamento de periodização para seus alunos</p></div>`}
+    </div>
   `;
 }
 
 export function initPeriodization(navigateFn) {
+  // Item 1: Student filter → populate macrocycle dropdown
+  const studentFilterSel = document.getElementById('perioStudentFilter');
+  const macroFilterSel = document.getElementById('perioMacroFilter');
+  const contentDiv = document.getElementById('periodizationContent');
+
+  studentFilterSel?.addEventListener('change', async () => {
+    const sid = studentFilterSel.value;
+    macroFilterSel.disabled = !sid;
+    macroFilterSel.innerHTML = '<option value="">Todos os macrociclos</option>';
+    if (sid) {
+      const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === sid);
+      macros.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id; opt.textContent = `${m.name} (${m.totalWeeks}sem)`;
+        macroFilterSel.appendChild(opt);
+      });
+      macroFilterSel.disabled = false;
+    }
+    applyPeriodizationFilter(sid, '');
+  });
+
+  macroFilterSel?.addEventListener('change', () => {
+    applyPeriodizationFilter(studentFilterSel?.value || '', macroFilterSel.value);
+  });
+
+  function applyPeriodizationFilter(sid, macroId) {
+    document.querySelectorAll('#periodizationContent .card').forEach(card => {
+      const cardSid = card.dataset.student || '';
+      const cardMid = card.dataset.macro || '';
+      const matchStu = !sid || cardSid === sid;
+      const matchMac = !macroId || cardMid === macroId;
+      card.style.display = matchStu && matchMac ? '' : 'none';
+    });
+  }
+
   document.getElementById('addMacroBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
     const exercises = await db.getAll('exercises');
@@ -104,7 +150,37 @@ export function initPeriodization(navigateFn) {
 
     openModal({
       title: '+ Novo Macrociclo Completo', size: 'xl',
-      content: `<form id="macroForm">
+      content: `
+        <div style="margin-bottom:16px;border-bottom:1px solid var(--border-color);padding-bottom:16px">
+          <label class="form-label mb-sm">Templates Padrão do Sistema (clique para preencher)</label>
+          <div class="periodi-template-grid">
+            <div class="periodi-template-card" data-tpl='{"name":"Hipertrofia 12 Semanas","type":"linear","goal":"Hipertrofia","totalWeeks":12,"deloadEvery":4}'>
+              <div class="ptc-name">Hipertrofia 12 Sem.</div>
+              <div class="ptc-desc">Linear · Deload a cada 4 sem · Foco em ganho de massa</div>
+            </div>
+            <div class="periodi-template-card" data-tpl='{"name":"Emagrecimento 12 Semanas","type":"undulating","goal":"Emagrecimento","totalWeeks":12,"deloadEvery":4}'>
+              <div class="ptc-name">Emagrecimento 12 Sem.</div>
+              <div class="ptc-desc">Ondulatório · Força + Condicionamento</div>
+            </div>
+            <div class="periodi-template-card" data-tpl='{"name":"Força Máxima 16 Semanas","type":"block","goal":"Força","totalWeeks":16,"deloadEvery":4}'>
+              <div class="ptc-name">Força Máxima 16 Sem.</div>
+              <div class="ptc-desc">Bloco · Fases: Adaptação → Hipertrofia → Força</div>
+            </div>
+            <div class="periodi-template-card" data-tpl='{"name":"Condicionamento 8 Semanas","type":"undulating","goal":"Condicionamento","totalWeeks":8,"deloadEvery":4}'>
+              <div class="ptc-name">Condicionamento 8 Sem.</div>
+              <div class="ptc-desc">Ondulatório diário · Cardio + Força</div>
+            </div>
+            <div class="periodi-template-card" data-tpl='{"name":"Iniciante 4 Semanas","type":"linear","goal":"Saúde","totalWeeks":4,"deloadEvery":0}'>
+              <div class="ptc-name">Iniciante 4 Sem.</div>
+              <div class="ptc-desc">Linear simples · Sem deload · Adaptação anatômica</div>
+            </div>
+            <div class="periodi-template-card" data-tpl='{"name":"Manutenção 8 Semanas","type":"linear","goal":"Saúde","totalWeeks":8,"deloadEvery":4}'>
+              <div class="ptc-name">Manutenção 8 Sem.</div>
+              <div class="ptc-desc">Linear · Volume moderado · Saúde e qualidade de vida</div>
+            </div>
+          </div>
+        </div>
+        <form id="macroForm">
         <div class="form-row">
           <div class="form-group"><label class="form-label">Aluno *</label><select class="form-select" name="studentId" required><option value="">Selecione</option>${students.map(s => `<option value="${s.id}">${s.name} — ${s.goal || 'Geral'}</option>`).join('')}</select></div>
           <div class="form-group"><label class="form-label">Nome do Macrociclo</label><input class="form-input" name="name" value="Macrociclo 1" /></div>
@@ -299,6 +375,27 @@ export function initPeriodization(navigateFn) {
 
     // Show/hide block phases + populate workout models when student changes
     setTimeout(() => {
+      // System template click handler (item 5)
+      document.querySelectorAll('.periodi-template-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.periodi-template-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          try {
+            const tpl = JSON.parse(card.dataset.tpl);
+            const form = document.getElementById('macroForm');
+            if (!form) return;
+            if (tpl.name) form.querySelector('[name="name"]').value = tpl.name;
+            if (tpl.type) form.querySelector('[name="type"]').value = tpl.type;
+            if (tpl.goal) form.querySelector('[name="goal"]').value = tpl.goal;
+            if (tpl.totalWeeks !== undefined) form.querySelector('[name="totalWeeks"]').value = tpl.totalWeeks;
+            if (tpl.deloadEvery !== undefined) form.querySelector('[name="deloadEvery"]').value = tpl.deloadEvery;
+            // Trigger block phases visibility
+            const typeChange = new Event('change');
+            form.querySelector('[name="type"]')?.dispatchEvent(typeChange);
+          } catch(e) { console.warn('Template parse error', e); }
+        });
+      });
+
       const typeSel = document.querySelector('[name="type"]');
       const blockGroup = document.getElementById('blockPhasesGroup');
       typeSel?.addEventListener('change', () => {

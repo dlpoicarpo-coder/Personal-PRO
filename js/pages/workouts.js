@@ -12,8 +12,15 @@ export async function renderWorkouts() {
   const students = await db.getAll('students');
   const workouts = await db.getAll('workouts');
   const exercises = await db.getAll('exercises');
+  const macros = await db.getAll('macrocycles');
   const activeStudents = students.filter(s => s.status === 'Ativo');
   workouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Build cycle options per student for filter
+  const cycleOptions = macros.map(m => {
+    const st = students.find(s => s.id === m.studentId);
+    return `<option value="${m.id}" data-student="${m.studentId}">${st ? st.name.split(' ')[0] : '?'} — ${m.name}</option>`;
+  }).join('');
 
   return `
     <div class="page-header">
@@ -24,9 +31,16 @@ export async function renderWorkouts() {
       <button class="btn btn-primary" id="addWorkoutBtn">+ Novo Treino</button>
     </div>
 
-    <div class="tabs" id="workoutTabs">
-      <button class="tab active" data-filter="all">Todos</button>
-      ${activeStudents.map(s => `<button class="tab" data-filter="${s.id}">${s.name.split(' ')[0]}</button>`).join('')}
+    <div class="flex gap-sm mb-md" style="flex-wrap:wrap;align-items:center">
+      <div class="tabs" id="workoutTabs" style="margin-bottom:0">
+        <button class="tab active" data-filter="all">Todos</button>
+        ${activeStudents.map(s => `<button class="tab" data-filter="${s.id}">${s.name.split(' ')[0]}</button>`).join('')}
+      </div>
+      <select class="form-select" id="workoutCycleFilter" style="min-width:220px">
+        <option value="">Todos os ciclos</option>
+        <option value="active">Apenas ciclo ativo</option>
+        ${cycleOptions}
+      </select>
     </div>
 
     <div id="workoutsList">
@@ -39,7 +53,7 @@ export async function renderWorkouts() {
             <tbody>
               ${workouts.map(w => {
                 const st = students.find(s => s.id === w.studentId);
-                return `<tr data-student="${w.studentId}">
+                return `<tr data-student="${w.studentId}" data-macroid="${w.macrocycleId || ''}">
                   <td><div class="flex items-center gap-sm"><div class="avatar avatar-sm">${st?st.name[0]:'?'}</div>${st?st.name:'?'}</div></td>
                   <td><strong>${w.name||'Treino'}</strong>${w.cycle?` <span class="text-muted text-xs">(${w.cycle})</span>`:''}</td>
                   <td>${Calc.formatDate(w.date)}</td>
@@ -203,16 +217,47 @@ export function initWorkouts(navigateFn) {
     }, 100);
   });
 
-  // Tab filter
+  // Tab filter (student)
+  let activeStudentFilter = 'all';
+  let activeCycleFilter = '';
+
+  function applyWorkoutFilters() {
+    document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+      const matchStudent = activeStudentFilter === 'all' || row.dataset.student === activeStudentFilter;
+      const matchCycle = !activeCycleFilter || row.dataset.macro === activeCycleFilter || row.dataset.macro === 'active_match';
+      row.style.display = matchStudent && matchCycle ? '' : 'none';
+    });
+  }
+
   document.querySelectorAll('#workoutTabs .tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('#workoutTabs .tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      const f = tab.dataset.filter;
-      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
-        row.style.display = (f === 'all' || row.dataset.student === f) ? '' : 'none';
-      });
+      activeStudentFilter = tab.dataset.filter;
+      applyWorkoutFilters();
     });
+  });
+
+  // Cycle filter (item 6)
+  document.getElementById('workoutCycleFilter')?.addEventListener('change', async (e) => {
+    const val = e.target.value;
+    if (val === 'active') {
+      // Get active macrocycles and mark matching workout rows
+      const macros = await db.getAll('macrocycles');
+      const activeMacros = macros.filter(m => m.status === 'active');
+      const activeMacroIds = new Set(activeMacros.map(m => m.id));
+      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+        row.dataset.macro = activeMacroIds.has(row.dataset.macroid) ? 'active_match' : '';
+      });
+      activeCycleFilter = 'active_match';
+    } else {
+      // Mark rows matching selected macro
+      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+        row.dataset.macro = val ? (row.dataset.macroid === val ? val : '') : val;
+      });
+      activeCycleFilter = val;
+    }
+    applyWorkoutFilters();
   });
 
   // View
