@@ -1128,4 +1128,41 @@
 .periodi-template-card .ptc-desc {
   font-size: 0.75rem;
   color: var(--text-muted);
-}
+}
+
+/* --- Login Tabs (v3 Auth) --- */
+.login-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.login-tab {
+  flex: 1;
+  padding: 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.login-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.login-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+/* Confirmation badge */
+#panelConfirmation .card {
+  text-align: center;
+}
+

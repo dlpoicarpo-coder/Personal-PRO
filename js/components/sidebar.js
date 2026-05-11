@@ -102,12 +102,17 @@ export function initSidebar() {
     });
   }
 
-  // LOGOUT
+  // LOGOUT — uses Supabase Auth
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
+    logoutBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
       if (window.confirm('Tem certeza que deseja sair do sistema?')) {
+        try {
+          const { getSupabase } = await import('../utils/auth.js');
+          const sb = getSupabase();
+          if (sb) await sb.auth.signOut();
+        } catch(err) { console.warn('signOut error:', err); }
         localStorage.removeItem('pp_session');
         const baseUrl = window.location.href.split('#')[0];
         window.location.href = baseUrl + '#/';

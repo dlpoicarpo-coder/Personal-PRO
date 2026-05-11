@@ -1,5 +1,7 @@
 import { renderSidebar, initSidebar } from './components/sidebar.js';
-import { isAuthenticated, renderLogin, initLogin } from './pages/login.js';
+import { renderLogin, initLogin } from './pages/login.js';
+import { isAuthenticated, getCurrentUser, onAuthChange, signOut } from './utils/auth.js';
+import db from './db.js';
 
 // Import Renders and Inits
 import { renderDashboard, initDashboardCharts } from './pages/dashboard.js';
@@ -40,8 +42,8 @@ const routes = {
 
 export async function navigateTo(path) {
   const appContainer = document.getElementById('app');
-  
-  // ── FORM ROUTES (no auth required, no sidebar) ──
+
+  // ── PUBLIC FORM ROUTES (no auth required) ──
   if (path.startsWith('/form/pre/')) {
     const studentId = path.split('/form/pre/')[1];
     appContainer.className = '';
@@ -63,15 +65,21 @@ export async function navigateTo(path) {
     return;
   }
 
-  // 1. Auth check
-  const isAuth = await isAuthenticated();
-  if (!isAuth) {
+  // ── AUTH CHECK ──
+  const auth = await isAuthenticated();
+  if (!auth) {
+    appContainer.className = '';
     appContainer.innerHTML = renderLogin();
-    initLogin(() => navigateTo('/'));
+    await initLogin(async (user) => {
+      // After login: set user in db, seed, navigate
+      db.setUser(user);
+      await db.seedTemplates().catch(console.error);
+      await navigateTo('/');
+    });
     return;
   }
-  
-  // 2. Create layout if missing
+
+  // ── ENSURE SIDEBAR ──
   appContainer.className = 'app-layout';
   if (!document.querySelector('.sidebar')) {
     appContainer.innerHTML = `
@@ -81,35 +89,41 @@ export async function navigateTo(path) {
       </main>
     `;
     initSidebar(navigateTo);
+    // Bind logout
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+      await signOut();
+      db.setUser(null);
+      document.querySelector('.sidebar')?.remove();
+      appContainer.className = '';
+      await navigateTo('/login');
+    });
   }
 
-  const content = document.getElementById('pageContent');
-  
-  // 3. Highlight active menu
+  // ── UPDATE SIDEBAR TRAINER INFO ──
+  const user = await getCurrentUser();
+  if (user) {
+    db.setUser(user);
+    const trainerName = user.user_metadata?.trainer_name || user.email;
+    const nameEl = document.getElementById('trainerName');
+    const avatarEl = document.getElementById('trainerAvatar');
+    if (nameEl) nameEl.textContent = trainerName;
+    if (avatarEl) {
+      const initials = trainerName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+      avatarEl.textContent = initials;
+    }
+  }
+
+  // ── HIGHLIGHT ACTIVE MENU ──
   document.querySelectorAll('.sidebar-nav a').forEach(a => {
     a.classList.remove('active');
     if (a.getAttribute('href') === '#' + path) a.classList.add('active');
   });
 
-  // Update trainer name/avatar in sidebar
-  import('./db.js').then(({ default: db }) => {
-    db.get('settings', 'trainer_auth').then(trainer => {
-      if (trainer && trainer.trainerName) {
-        const nameEl = document.getElementById('trainerName');
-        const avatarEl = document.getElementById('trainerAvatar');
-        if (nameEl) nameEl.textContent = trainer.trainerName;
-        if (avatarEl) {
-          const initials = trainer.trainerName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-          avatarEl.textContent = initials;
-        }
-      }
-    });
-  });
-
-  // 4. Load page
+  // ── LOAD PAGE ──
+  const content = document.getElementById('pageContent');
   const route = routes[path] || routes['/'];
   content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
-  
+
   try {
     content.innerHTML = await route.render();
     if (route.init) await route.init(navigateTo);
@@ -119,22 +133,53 @@ export async function navigateTo(path) {
   }
 }
 
-// Handle hash changes — now includes /form/ routes
+// Hash navigation
 window.addEventListener('hashchange', () => {
   const path = window.location.hash.slice(1) || '/';
   navigateTo(path);
 });
 
-// Initialize app  
-function initApp() {
-  // Apply saved theme — default to light mode (item 16)
+// Initialize app
+async function initApp() {
+  // Theme
   const savedTheme = localStorage.getItem('pp_theme') || 'light';
   document.documentElement.setAttribute('data-theme', savedTheme);
 
-  import('./db.js').then(({ default: db }) => {
-    db.seedTemplates().catch(console.error);
+  // Handle Supabase auth redirect (email confirmation)
+  const hash = window.location.hash;
+  if (hash.includes('access_token') || hash.includes('type=signup')) {
+    // Let login page handle the session from URL
+    const appContainer = document.getElementById('app');
+    appContainer.className = '';
+    appContainer.innerHTML = renderLogin();
+    await initLogin(async (user) => {
+      db.setUser(user);
+      await db.seedTemplates().catch(console.error);
+      window.location.hash = '/';
+      await navigateTo('/');
+    });
+    return;
+  }
+
+  // Listen for Supabase auth state changes (e.g., token refresh)
+  onAuthChange(async (event, session) => {
+    if (event === 'SIGNED_OUT') {
+      db.setUser(null);
+      document.querySelector('.sidebar')?.remove();
+      window.location.hash = '/';
+      await navigateTo('/');
+    } else if (event === 'SIGNED_IN' && session?.user) {
+      db.setUser(session.user);
+    }
   });
-  
+
+  // Seed on startup if authenticated
+  const user = await getCurrentUser();
+  if (user) {
+    db.setUser(user);
+    db.seedTemplates().catch(console.error);
+  }
+
   const path = window.location.hash.slice(1) || '/';
   navigateTo(path);
 }
