@@ -9,6 +9,7 @@ import { PERIODIZATION_TYPES, MESOCYCLE_PHASES, generateWeeklyPlan } from '../ut
 import { generateWorkouts } from '../utils/workout-generator.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
+import { generateProgression, PERIODIZATION_MODELS, TRAINING_GOALS, formatRest, intensityColor } from '../utils/periodization-engine.js';
 
 const TRAINING_DAYS = [
   { id: 0, label: 'Dom' }, { id: 1, label: 'Seg' }, { id: 2, label: 'Ter' },
@@ -82,6 +83,13 @@ export async function renderPeriodization() {
           <span style="color:#3b82f6">● Deload</span>
         </div>
         <div class="mt-md"><canvas id="macroChart_${m.id}" height="150"></canvas></div>
+        <div class="mt-md" style="border-top:1px solid var(--border-color);padding-top:14px">
+          <div class="flex gap-sm items-center">
+            <span class="text-sm font-medium">📋 Fichas Prescritas</span>
+            <button class="btn btn-primary btn-sm add-prescription-btn" data-macro-id="${m.id}" data-student-id="${m.studentId}" data-macro-weeks="${m.totalWeeks}" data-macro-type="${m.type}" data-macro-deload="${m.deloadEvery||4}">+ Adicionar Ficha</button>
+          </div>
+          <div class="prescription-list" id="prescList_${m.id}" style="margin-top:10px"></div>
+        </div>
         ${m.weekDetails ? `
         <div class="mt-lg" style="border-top:1px solid var(--border-color);padding-top:16px">
           <h4 class="mb-md">Detalhamento Semanal</h4>
@@ -187,7 +195,7 @@ export function initPeriodization(navigateFn) {
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Modelo de Periodização *</label><select class="form-select" name="type">${PERIODIZATION_TYPES.map(t => `<option value="${t.id}">${t.name} — ${t.desc}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label">Objetivo</label><select class="form-select" name="goal"><option>Hipertrofia</option><option>Força</option><option>Resistência</option><option>Condicionamento</option><option>Saúde</option></select></div>
+          <div class="form-group"><label class="form-label">Objetivo</label><select class="form-select" name="goal">${TRAINING_GOALS.map(g => `<option value="${g.id}">${g.icon} ${g.label}</option>`).join('')}</select></div>
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Duração (semanas)</label><input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" /></div>
@@ -433,6 +441,243 @@ export function initPeriodization(navigateFn) {
   });
 
   initMacroCharts();
+  initPrescriptions();
+}
+
+// ── PRESCRIPTION SYSTEM ──────────────────────────────────────
+async function initPrescriptions() {
+  // Load existing prescriptions into each macrocycle card
+  const prescriptions = await db.getAll('prescriptions').catch(() => []);
+  prescriptions.forEach(p => {
+    const list = document.getElementById(`prescList_${p.macrocycleId}`);
+    if (list) list.appendChild(buildPrescriptionChip(p));
+  });
+
+  // "+ Adicionar Ficha" click
+  document.querySelectorAll('.add-prescription-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const macroId    = btn.dataset.macroId;
+      const studentId  = btn.dataset.studentId;
+      const totalWeeks = parseInt(btn.dataset.macroWeeks) || 12;
+      const macroType  = btn.dataset.macroType || 'linear';
+      const deloadEvery= parseInt(btn.dataset.macroDeload) || 4;
+
+      // Load workout MODELS only (not sessions) for this student
+      const allWorkouts = await db.getAll('workouts');
+      const studentWorkouts = allWorkouts.filter(w =>
+        (!w.studentId || w.studentId === studentId) && !w.sessionId
+      );
+      if (!studentWorkouts.length) {
+        notify.warning('Nenhuma ficha de treino cadastrada para este aluno. Crie uma ficha em Treinos primeiro.');
+        return;
+      }
+
+      openModal({
+        title: '📋 Prescrição de Ficha com Periodização',
+        size: 'xl',
+        content: `
+          <div class="form-group mb-md">
+            <label class="form-label">Selecione a Ficha de Treino *</label>
+            <select class="form-select" id="prescWorkoutSel">
+              <option value="">— Escolha uma ficha —</option>
+              ${studentWorkouts.map(w => `<option value="${w.id}">${w.name} (${(w.exercises||[]).length} exercícios)</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group mb-md">
+            <label class="form-label">Modelo de Periodização</label>
+            <select class="form-select" id="prescModelSel">
+              ${Object.values(PERIODIZATION_MODELS).map(m => `<option value="${m.id}">${m.icon} ${m.label} — ${m.desc}</option>`).join('')}
+            </select>
+            <div class="form-hint mt-xs" id="prescModelHint">Modelo do macrociclo: <strong>${macroType}</strong></div>
+          </div>
+          <div id="prescExercisesArea" style="display:none">
+            <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:4px">
+              <h4 class="mb-sm">⚖️ Carga Inicial por Exercício (kg)</h4>
+              <p class="text-muted text-sm mb-md">Informe a carga inicial de trabalho do aluno. O sistema calculará a progressão automaticamente.</p>
+              <div id="prescLoadInputs"></div>
+            </div>
+          </div>
+          <div id="prescPreview" style="margin-top:16px"></div>
+        `,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', id: 'cancelPresc', onClick: () => closeModal() },
+          { label: '✓ Salvar Prescrição', class: 'btn-primary', id: 'savePresc', onClick: async () => {
+            const wkId = document.getElementById('prescWorkoutSel').value;
+            const model = document.getElementById('prescModelSel').value;
+            if (!wkId) { notify.error('Selecione uma ficha'); return; }
+
+            const wk = await db.get('workouts', wkId);
+            const exercises = (wk?.exercises || []).map(ex => ({
+              id: ex.exerciseId || ex.id,
+              name: ex.name,
+              initialLoadKg: parseFloat(document.getElementById(`load_${ex.exerciseId||ex.id}`)?.value) || 20
+            }));
+
+            const { weekSchedule, exerciseProgression, modelDef } = generateProgression({
+              model, totalWeeks, deloadEvery, exercises
+            });
+
+            const presc = {
+              macrocycleId: macroId,
+              studentId,
+              workoutId: wkId,
+              workoutName: wk.name,
+              model,
+              modelLabel: modelDef.label,
+              totalWeeks,
+              deloadEvery,
+              exercises,
+              weekSchedule,
+              exerciseProgression,
+              createdAt: new Date().toISOString(),
+            };
+            const saved = await db.add('prescriptions', presc);
+            const list = document.getElementById(`prescList_${macroId}`);
+            if (list) list.appendChild(buildPrescriptionChip(saved));
+            notify.success(`Prescrição "${wk.name}" salva com progressão ${modelDef.label}!`);
+            closeModal();
+          }}
+        ]
+      });
+
+      // Set default model = macrocycle type
+      setTimeout(() => {
+        const modelSel = document.getElementById('prescModelSel');
+        if (modelSel && PERIODIZATION_MODELS[macroType]) modelSel.value = macroType;
+
+        // Load exercises when workout selected
+        document.getElementById('prescWorkoutSel')?.addEventListener('change', async e => {
+          const wk = await db.get('workouts', e.target.value);
+          const area = document.getElementById('prescExercisesArea');
+          const inputs = document.getElementById('prescLoadInputs');
+          if (!wk || !wk.exercises?.length) { area.style.display = 'none'; return; }
+          area.style.display = '';
+          inputs.innerHTML = wk.exercises.map(ex => `
+            <div class="form-row" style="align-items:center;margin-bottom:8px">
+              <div class="form-group" style="flex:2;margin-bottom:0">
+                <label class="form-label text-sm">${ex.name}</label>
+              </div>
+              <div class="form-group" style="flex:1;margin-bottom:0">
+                <input class="form-input" id="load_${ex.exerciseId||ex.id}" type="number" min="1" step="0.5" value="20" placeholder="kg" />
+              </div>
+            </div>`).join('');
+          updatePrescPreview();
+        });
+
+        // Update preview when model changes
+        document.getElementById('prescModelSel')?.addEventListener('change', updatePrescPreview);
+
+        function updatePrescPreview() {
+          const wkSel = document.getElementById('prescWorkoutSel').value;
+          const mdl = document.getElementById('prescModelSel').value;
+          const preview = document.getElementById('prescPreview');
+          if (!wkSel || !mdl) return;
+          const modelDef = PERIODIZATION_MODELS[mdl];
+          if (!modelDef) return;
+          const goalSuggested = Object.values(TRAINING_GOALS).filter(g => g.suggested.includes(mdl));
+          preview.innerHTML = `
+            <div class="card" style="background:rgba(16,185,129,0.04);border:1px solid var(--border-color)">
+              <div class="flex gap-sm items-center mb-sm">
+                <span style="font-size:1.5rem">${modelDef.icon}</span>
+                <div>
+                  <strong>${modelDef.label}</strong>
+                  <div class="text-xs text-muted">${modelDef.desc}</div>
+                </div>
+              </div>
+              <div class="text-xs text-muted">${goalSuggested.length ? `✅ Ideal para: ${goalSuggested.map(g=>`${g.icon} ${g.label}`).join(' · ')}` : ''}</div>
+              <div class="text-xs mt-sm" style="color:var(--primary)">📅 ${totalWeeks} semanas · Deload a cada ${deloadEvery} sem.</div>
+            </div>`;
+        }
+      }, 80);
+    });
+  });
+}
+
+// Chip visual para uma prescrição salva
+function buildPrescriptionChip(p) {
+  const div = document.createElement('div');
+  div.className = 'prescription-chip';
+  div.dataset.prescId = p.id;
+  div.innerHTML = `
+    <button class="prescription-chip-inner" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%">
+      <span class="badge" style="background:var(--primary-glow);color:var(--primary)">${PERIODIZATION_MODELS[p.model]?.icon || '📋'}</span>
+      <span class="text-sm font-medium">${p.workoutName}</span>
+      <span class="text-xs text-muted">· ${PERIODIZATION_MODELS[p.model]?.label || p.model}</span>
+      <span class="text-xs text-muted">${p.exercises?.length || 0} exercícios · ${p.totalWeeks} sem.</span>
+    </button>
+    <button class="view-presc-btn btn btn-ghost btn-sm" data-presc-id="${p.id}" title="Ver progressão">📊 Ver</button>
+    <button class="del-presc-btn btn btn-ghost btn-sm" data-presc-id="${p.id}" style="color:var(--danger)" title="Remover">✕</button>
+  `;
+
+  div.querySelector('.view-presc-btn').addEventListener('click', () => openPrescriptionView(p));
+  div.querySelector('.del-presc-btn').addEventListener('click', async () => {
+    if (window.confirm(`Remover prescrição "${p.workoutName}"?`)) {
+      await db.delete('prescriptions', p.id);
+      div.remove();
+      notify.success('Prescrição removida.');
+    }
+  });
+  return div;
+}
+
+// Modal de visualização da progressão científica
+function openPrescriptionView(p) {
+  const modelDef = PERIODIZATION_MODELS[p.model] || {};
+  const weeks = p.weekSchedule || [];
+
+  const tableRows = (p.exerciseProgression || []).map(ex => {
+    const weekCols = ex.weeks.map(wk => {
+      const color = intensityColor(wk.intensityPct, wk.isDeload);
+      return `<td style="text-align:center;padding:6px 8px;border:1px solid var(--border-color);min-width:72px">
+        <div style="font-weight:700;color:${color}">${wk.sets}×${wk.reps}</div>
+        <div style="font-size:0.7rem;color:${color}">${wk.loadKg}kg</div>
+        <div style="font-size:0.6rem;color:var(--text-muted)">${formatRest(wk.restSeconds)}</div>
+        ${wk.isDeload ? '<div style="font-size:0.6rem;color:#3b82f6">🧊</div>' : ''}
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td style="padding:6px 10px;border:1px solid var(--border-color);white-space:nowrap;font-weight:500">${ex.name}</td>
+      ${weekCols}
+    </tr>`;
+  }).join('');
+
+  const headerCols = weeks.map(wk => {
+    const color = intensityColor(wk.intensityPct, wk.isDeload);
+    return `<th style="text-align:center;padding:4px 6px;border:1px solid var(--border-color);color:${color};font-size:0.75rem">
+      <div>S${wk.week}</div>
+      <div style="font-size:0.6rem;font-weight:400">${wk.phase?.substring(0,6)}</div>
+    </th>`;
+  }).join('');
+
+  openModal({
+    title: `📊 Progressão — ${p.workoutName}`,
+    size: 'xl',
+    content: `
+      <div class="flex gap-md mb-md" style="flex-wrap:wrap">
+        <div class="badge" style="background:${modelDef.color}20;color:${modelDef.color}">${modelDef.icon||''} ${modelDef.label || p.model}</div>
+        <div class="text-xs text-muted">📅 ${p.totalWeeks} semanas · Deload a cada ${p.deloadEvery} sem.</div>
+        <div class="text-xs text-muted">${p.exercises?.length || 0} exercícios</div>
+      </div>
+      <div class="legend-row flex gap-md mb-md" style="flex-wrap:wrap">
+        <span class="text-xs" style="color:#22c55e">● Leve (&lt;65%)</span>
+        <span class="text-xs" style="color:#eab308">● Moderada (65-74%)</span>
+        <span class="text-xs" style="color:#f97316">● Alta (75-84%)</span>
+        <span class="text-xs" style="color:#ef4444">● Muito Alta (≥85%)</span>
+        <span class="text-xs" style="color:#3b82f6">🧊 Deload</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="border-collapse:collapse;min-width:100%;font-size:0.82rem">
+          <thead><tr>
+            <th style="padding:6px 10px;border:1px solid var(--border-color);text-align:left">Exercício</th>
+            ${headerCols}
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <p class="text-xs text-muted mt-md">Formato: Séries × Reps · Carga · Descanso</p>
+    `,
+    actions: [{ label: 'Fechar', class: 'btn-secondary', id: 'closePrescView', onClick: () => closeModal() }]
+  });
 }
 
 async function initMacroCharts() {
