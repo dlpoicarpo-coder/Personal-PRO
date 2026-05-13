@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Personal PRO — Sistema Profissional de Personal Trainer. Gestão de alunos, prescrição de treinos, avaliações físicas e monitoramento de biofeedback.">
   <meta name="theme-color" content="#0a0e17">
+
+  <!-- PWA / App install -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Personal PRO">
+
+  <!-- Open Graph (compartilhamento) -->
+  <meta property="og:title" content="Personal PRO — Sistema de Treinamento">
+  <meta property="og:description" content="Gestão de alunos, prescrição de treinos com periodização científica, avaliações físicas e biofeedback.">
+  <meta property="og:type" content="website">
+
   <title>Personal PRO — Sistema Profissional de Personal Trainer</title>
 
   <!-- Fonts -->
@@ -25,12 +37,14 @@
   <link rel="stylesheet" href="css/index.css">
   <link rel="stylesheet" href="css/components.css">
 
-  <!-- Favicon (inline SVG) -->
+  <!-- Favicon inline SVG -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2310b981'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-weight='900' font-size='50' fill='%230a0e17'>P</text></svg>">
+
+  <!-- Apple Touch Icon inline -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2310b981'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-weight='900' font-size='50' fill='%230a0e17'>P</text></svg>">
 </head>
 <body>
   <div id="app" class="app-layout">
-    <!-- App content rendered by JS -->
     <div class="page-loading" style="width:100%;min-height:100vh">
       <div class="spinner"></div>
       <p style="color:#94a3b8;font-size:0.9rem;margin-top:16px">Carregando Personal PRO...</p>
