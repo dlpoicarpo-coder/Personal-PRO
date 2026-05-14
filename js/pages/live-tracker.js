@@ -10,19 +10,22 @@ import { openModal, closeModal } from '../components/modal.js';
 // Persistent state across re-renders
 const state = {
   session: null,
-  workoutTimer: null,
-  restTimer: null,
+  workoutTimer: null,  // cronômetro total da sessão
+  restTimer: null,     // cronômetro de descanso (countdown)
+  workTimer: null,     // cronômetro de trabalho (stopwatch) — NOVO
   exIdx: 0,
   setIdx: 0,
   setLog: [],
-  workSec: 0,
+  workSec: 0,          // segundos acumulados de trabalho
+  isResting: false,    // flag: está no descanso ou no trabalho
 };
 
 function resetState() {
   if (state.workoutTimer) { state.workoutTimer.stop(); state.workoutTimer = null; }
-  if (state.restTimer) { state.restTimer.stop(); state.restTimer = null; }
+  if (state.restTimer)    { state.restTimer.stop();    state.restTimer = null; }
+  if (state.workTimer)    { state.workTimer.stop();    state.workTimer = null; }
   state.session = null; state.exIdx = 0; state.setIdx = 0;
-  state.setLog = []; state.workSec = 0;
+  state.setLog = []; state.workSec = 0; state.isResting = false;
 }
 
 function totalVolume() {
@@ -81,23 +84,10 @@ export async function renderTracker() {
     </div>
     ${completed.length ? `
     <div class="card mt-lg"><div class="card-header"><span class="card-title">Sessões Recentes</span></div>
-      <div class="table-container"><table class="data-table"><thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Densidade</th><th>Volume</th><th>PSE</th><th></th></tr></thead>
+      <div class="table-container"><table class="data-table"><thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Densidade</th><th>Volume</th><th>PSE</th></tr></thead>
       <tbody>${completed.map(s => {
         const st = students.find(x => x.id === s.studentId);
-        return `<tr>
-          <td>${st ? st.name : '?'}</td>
-          <td>${s.workoutName || '-'}</td>
-          <td>${Calc.formatDate(s.date)}</td>
-          <td>${formatTimeHMS(s.totalDuration || 0)}</td>
-          <td>${s.density ? s.density.toFixed(2) : '-'}</td>
-          <td>${s.totalVolume || '-'} kg</td>
-          <td>${s.postBiofeedback?.pse || '-'}</td>
-          <td>
-            <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir sessão" style="color:var(--danger);padding:4px 6px">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-            </button>
-          </td>
-        </tr>`;
+        return `<tr><td>${st ? st.name : '?'}</td><td>${s.workoutName || '-'}</td><td>${Calc.formatDate(s.date)}</td><td>${formatTimeHMS(s.totalDuration || 0)}</td><td>${s.density ? s.density.toFixed(2) : '-'}</td><td>${s.totalVolume || '-'} kg</td><td>${s.postBiofeedback?.pse || '-'}</td></tr>`;
       }).join('')}</tbody></table></div>
     </div>` : ''}
   `;
@@ -174,12 +164,13 @@ function renderLiveView(students) {
             <label class="flex items-center gap-sm text-sm"><input type="checkbox" id="sndToggle" ${s.soundEnabled !== false ? 'checked' : ''} /> Som</label>
           </div>
           <div class="timer-display">
-            <div class="timer-value" id="restCount">${formatTime(parseInt(ex.rest) || 60)}</div>
-            <div class="timer-label text-muted" id="restLbl">Pronto</div>
+            <div class="timer-value" id="restCount" style="transition:color 0.3s">${formatTime(parseInt(ex.rest) || 60)}</div>
+            <div class="timer-label text-muted" id="restLbl">Pronto para descansar</div>
+            <div id="restStateTag" style="font-size:0.72rem;margin-top:4px;font-weight:600;letter-spacing:0.05em"></div>
           </div>
           <div class="flex gap-sm" style="justify-content:center">
-            <button class="btn btn-primary" id="goRest">▶ Descanso</button>
-            <button class="btn btn-secondary" id="rstRest">↺</button>
+            <button class="btn btn-primary" id="goRest">▶ Iniciar Descanso</button>
+            <button class="btn btn-secondary" id="rstRest">↺ Reset</button>
           </div>
           <div class="flex gap-sm mt-md" style="justify-content:center;flex-wrap:wrap">
             ${[30, 45, 60, 90, 120].map(t => `<button class="btn btn-ghost btn-sm rp" data-t="${t}">${t}s</button>`).join('')}
@@ -202,16 +193,6 @@ function renderLiveView(students) {
 // ======================== INIT ========================
 
 export function initTracker(navigateFn) {
-  // --- DELETE SESSION ---
-  document.querySelectorAll('.delete-session').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!window.confirm('Excluir esta sessão? Esta ação não pode ser desfeita.')) return;
-      await db.delete('sessions', btn.dataset.id);
-      notify.success('Sessão excluída.');
-      navigateFn('/tracker');
-    });
-  });
-
   // --- SETUP MODE ---
   const sSel = document.getElementById('trkStudent');
   const wSel = document.getElementById('trkWorkout');
@@ -298,7 +279,7 @@ export function initTracker(navigateFn) {
   // --- LIVE MODE ---
   if (!state.session) return;
 
-  // Total timer
+  // Total timer (sempre rodando)
   if (!state.workoutTimer) {
     const elapsed0 = Math.floor((Date.now() - state.session.startTime) / 1000);
     state.workoutTimer = new Timer({ mode: 'stopwatch' });
@@ -306,25 +287,47 @@ export function initTracker(navigateFn) {
     state.workoutTimer.start();
   }
 
+  // Work timer (conta apenas quando NÃO está descansando)
+  if (!state.workTimer) {
+    state.workTimer = new Timer({ mode: 'stopwatch' });
+    state.workTimer.elapsed = state.workSec;
+    if (!state.isResting) state.workTimer.start();
+  }
+
   // Update display loop
   const updateUI = () => {
     if (!state.session) return;
-    const el = state.workoutTimer?.getElapsed() || 0;
-    const totalEl = document.getElementById('liveTotal');
-    const workEl = document.getElementById('liveWork');
-    const restEl = document.getElementById('liveRest');
-    const densEl = document.getElementById('liveDens');
-    if (totalEl) totalEl.textContent = formatTime(el);
-    if (workEl) workEl.textContent = formatTime(state.workSec);
-    const rs = Math.max(0, el - state.workSec);
-    if (restEl) restEl.textContent = formatTime(rs);
-    if (densEl) densEl.textContent = el > 0 ? (state.workSec / el).toFixed(2) : '0.00';
+    const totalEl = state.workoutTimer?.getElapsed() || 0;
+    const workEl  = state.workTimer?.getElapsed()   || 0;
+    state.workSec = workEl; // sincronizar
+
+    const t = document.getElementById('liveTotal');
+    const w = document.getElementById('liveWork');
+    const r = document.getElementById('liveRest');
+    const d = document.getElementById('liveDens');
+    const tag = document.getElementById('restStateTag');
+
+    if (t) t.textContent = formatTime(totalEl);
+    if (w) {
+      w.textContent = formatTime(workEl);
+      w.style.color = state.isResting ? 'var(--text-muted)' : 'var(--success)';
+    }
+    const restSec = Math.max(0, totalEl - workEl);
+    if (r) {
+      r.textContent = formatTime(restSec);
+      r.style.color = state.isResting ? 'var(--warning)' : 'var(--text-muted)';
+    }
+    if (d) d.textContent = totalEl > 0 ? (workEl / totalEl).toFixed(2) : '0.00';
+    if (tag) {
+      tag.textContent = state.isResting ? '⏸ DESCANSANDO' : '▶ TRABALHANDO';
+      tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)';
+    }
   };
   const uiInterval = setInterval(updateUI, 500);
   state._uiInterval = uiInterval;
   updateUI();
 
-  // Rest timer
+  // Rest timer (countdown)
   const curEx = (state.session.exercises || [])[state.exIdx] || {};
   const restDur = parseInt(curEx.rest) || 60;
   if (state.restTimer) { state.restTimer.stop(); }
@@ -334,20 +337,46 @@ export function initTracker(navigateFn) {
     onTick: (rem) => {
       const c = document.getElementById('restCount');
       const l = document.getElementById('restLbl');
-      if (c) { c.textContent = formatTime(rem); c.style.color = rem <= 5 ? 'var(--danger)' : rem <= 15 ? 'var(--warning)' : ''; }
+      if (c) {
+        c.textContent = formatTime(rem);
+        c.style.color = rem <= 5 ? 'var(--danger)' : rem <= 15 ? 'var(--warning)' : 'var(--accent)';
+      }
       if (l) l.textContent = 'Descansando...';
     },
     onComplete: () => {
+      const c = document.getElementById('restCount');
       const l = document.getElementById('restLbl');
+      const b = document.getElementById('goRest');
+      if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
       if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
-      notify.success('Descanso finalizado!');
+      if (b) { b.textContent = '▶ Iniciar Descanso'; }
+      // Retomar timer de trabalho automaticamente
+      state.isResting = false;
+      state.workTimer?.start();
+      notify.success('Descanso finalizado — vamos treinar!');
     }
   });
 
   document.getElementById('goRest')?.addEventListener('click', () => {
     state.restTimer.soundEnabled = document.getElementById('sndToggle')?.checked !== false;
-    if (state.restTimer.running) state.restTimer.stop();
-    else { state.restTimer.reset(); state.restTimer.start(); }
+    const btn = document.getElementById('goRest');
+    if (state.restTimer.running) {
+      // Pausar descanso → retomar trabalho
+      state.restTimer.stop();
+      state.isResting = false;
+      state.workTimer?.start();
+      if (btn) btn.textContent = '▶ Iniciar Descanso';
+    } else {
+      // Iniciar descanso → pausar trabalho
+      state.restTimer.reset();
+      state.restTimer.start();
+      state.isResting = true;
+      state.workTimer?.stop();
+      state.workSec = state.workTimer?.getElapsed() || 0;
+      if (btn) btn.textContent = '⏸ Pausar Descanso';
+      const l = document.getElementById('restLbl');
+      if (l) { l.textContent = 'Descansando...'; l.style.color = ''; }
+    }
   });
   document.getElementById('rstRest')?.addEventListener('click', () => {
     state.restTimer.reset();
@@ -370,7 +399,18 @@ export function initTracker(navigateFn) {
       const pse = parseInt(row.querySelector('.set-pse')?.value) || 0;
 
       state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps, load, pse, time: Date.now() });
-      state.workSec += 30;
+      // NÃO mais state.workSec += 30 — agora é medido em tempo real pelo workTimer
+
+      // Auto-iniciar descanso → parar trabalho
+      state.isResting = true;
+      state.workTimer?.stop();
+      state.workSec = state.workTimer?.getElapsed() || 0;
+      state.restTimer?.reset();
+      state.restTimer?.start();
+      const restBtn = document.getElementById('goRest');
+      if (restBtn) restBtn.textContent = '⏸ Pausar Descanso';
+      const restLbl = document.getElementById('restLbl');
+      if (restLbl) { restLbl.textContent = 'Descansando...'; restLbl.style.color = ''; }
 
       // Update row visually (no re-render!)
       row.classList.add('set-done');
@@ -430,7 +470,8 @@ export function initTracker(navigateFn) {
     // Stop all timers immediately
     if (state._uiInterval) { clearInterval(state._uiInterval); state._uiInterval = null; }
     if (state.workoutTimer) { state.workoutTimer.stop(); }
-    if (state.restTimer) { state.restTimer.stop(); }
+    if (state.restTimer)    { state.restTimer.stop(); }
+    if (state.workTimer)    { state.workTimer.stop(); state.workSec = state.workTimer.getElapsed(); }
     const dur = state.workoutTimer?.getElapsed() || 0;
     const vol = totalVolume();
     const dens = dur > 0 ? state.workSec / dur : 0;
