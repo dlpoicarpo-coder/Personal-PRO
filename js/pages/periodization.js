@@ -65,8 +65,6 @@ const SYSTEM_TEMPLATES = [
   },
 ];
 
-const muscleGroups = ['Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posterior', 'Glúteos', 'Core'];
-
 export async function renderPeriodization() {
   const students = await db.getAll('students');
   const macros = await db.getAll('macrocycles');
@@ -197,9 +195,10 @@ export function initPeriodization(navigateFn) {
   }
 
   // ── MODAL NOVO MACROCICLO ────────────────────────────────────
-  document.getElementById('addMacroBtn')?.addEventListener('click', async () => {
+document.getElementById('addMacroBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
     const exercises = await db.getAll('exercises');
+    const muscleGroups = ['Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posterior', 'Glúteos', 'Core'];
 
     // Treinos criados pelo personal na aba Treinos (sem sessionId, sem macrocycleId = são modelos/templates)
     const trainerWorkouts = (await db.getAll('workouts')).filter(w => !w.sessionId && !w.macrocycleId);
