@@ -75,11 +75,11 @@ export async function renderPreForm(studentId) {
             <input type="hidden" name="studentId" value="${studentId}" />
 
             ${[
-              { id: 'sleep',  label: 'Como você dormiu?',              hint: '1 = muito mal  ·  10 = muito bem' },
-              { id: 'energy', label: 'Como está sua energia agora?',   hint: '1 = sem energia  ·  10 = muito disposto' },
-              { id: 'mood',   label: 'Como está seu humor?',           hint: '1 = péssimo  ·  10 = excelente' },
-              { id: 'stress', label: 'Quanto estresse você está sentindo?', hint: '1 = nenhum  ·  10 = muito estressado' },
-              { id: 'pain',   label: 'Sente alguma dor ou desconforto?', hint: '1 = nenhuma  ·  10 = dor intensa',
+              { id: 'sleep',  label: 'Como você dormiu?',                    hint: '1 = muito mal  ·  10 = muito bem' },
+              { id: 'energy', label: 'Como está sua energia agora?',         hint: '1 = sem energia  ·  10 = muito disposto' },
+              { id: 'mood',   label: 'Como está sua disposição hoje?',       hint: '1 = péssima  ·  10 = excelente' },
+              { id: 'stress', label: 'Quanto estresse você está sentindo?',  hint: '1 = nenhum  ·  10 = muito estressado' },
+              { id: 'pain',   label: 'Sente alguma dor ou desconforto?',     hint: '1 = nenhuma  ·  10 = dor intensa',
                 extra: `document.getElementById('painGroup').style.display=this.value>=3?'block':'none'` },
             ].map(f => `
               <div class="form-group" style="margin-bottom:22px">
