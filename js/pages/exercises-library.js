@@ -92,6 +92,7 @@ export async function renderExercisesLibrary() {
             <span class="card-title">${t.name} <span class="badge badge-info">${t.goal || 'Geral'}</span></span>
             <div class="flex gap-sm">
               <button class="btn btn-primary btn-sm apply-custom-tpl" data-id="${t.id}">Aplicar</button>
+              <button class="btn btn-secondary btn-sm edit-custom-tpl" data-id="${t.id}">Editar</button>
               <button class="btn btn-ghost btn-sm delete-custom-tpl" data-id="${t.id}" style="color:var(--danger)">✕</button>
             </div>
           </div>
@@ -223,6 +224,153 @@ export function initExercisesLibrary(navigateFn) {
       const tpl = await db.get('cycles', btn.dataset.id);
       if (!tpl) return;
       await showApplyTemplateModal(tpl, navigateFn);
+    });
+  });
+
+  // Edit custom template
+  document.querySelectorAll('.edit-custom-tpl').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tpl = await db.get('cycles', btn.dataset.id);
+      if (!tpl) return;
+      const allExercises = await db.getAll('exercises');
+      let workoutCount = (tpl.workouts || []).length;
+
+      // Montar HTML dos treinos existentes
+      const workoutsHTML = (tpl.workouts || []).map((w, wi) => `
+        <div class="card mb-md tpl-workout" data-wi="${wi}">
+          <div class="flex items-center justify-between mb-sm">
+            <div class="form-group" style="flex:1;margin-bottom:0">
+              <label class="form-label">Nome do Treino</label>
+              <input class="form-input" name="wk_name_${wi}" value="${w.name || ''}" placeholder="Ex: Treino A" />
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm rm-tpl-workout" style="color:var(--danger);margin-left:8px;margin-top:20px">✕ Remover treino</button>
+          </div>
+          <div class="tpl-exercises" data-wi="${wi}">
+            ${(w.exercises || []).map((ex, ei) => `
+              <div class="flex items-center gap-sm mb-sm tpl-ex-row" data-ei="${ei}">
+                <input class="form-input" name="wk_${wi}_ex_${ei}" list="tplExListEdit" value="${ex.name || ''}" placeholder="Exercício" style="flex:2" />
+                <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${ex.sets || 3}" min="1" style="width:60px" title="Séries" />
+                <input class="form-input" name="wk_${wi}_reps_${ei}" value="${ex.reps || '12'}" style="width:70px" title="Reps" />
+                <input class="form-input" name="wk_${wi}_rest_${ei}" value="${ex.rest || '60'}" style="width:60px" title="Descanso (s)" />
+                <input class="form-input" name="wk_${wi}_method_${ei}" value="${ex.method || ''}" style="width:80px" placeholder="Método" />
+                <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger)">✕</button>
+              </div>`).join('')}
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm add-tpl-ex" data-wi="${wi}">+ Exercício</button>
+        </div>`).join('');
+
+      openModal({
+        title: `Editar: ${tpl.name}`, size: 'xl',
+        content: `<form id="editTplForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nome do Modelo *</label>
+              <input class="form-input" name="name" value="${tpl.name || ''}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Objetivo</label>
+              <select class="form-select" name="goal">
+                ${['Hipertrofia','Força','Condicionamento','Saúde','Performance'].map(g => `<option ${tpl.goal === g ? 'selected' : ''}>${g}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-textarea" name="description" rows="2">${tpl.description || ''}</textarea>
+          </div>
+          <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:16px">
+            <div class="flex items-center justify-between mb-md">
+              <h4>Treinos do Modelo</h4>
+              <button type="button" class="btn btn-secondary btn-sm" id="addTplWorkoutEdit">+ Treino</button>
+            </div>
+            <div id="tplWorkoutsEdit">${workoutsHTML}</div>
+          </div>
+          <datalist id="tplExListEdit">${allExercises.map(e => `<option value="${e.name}">`).join('')}</datalist>
+        </form>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', id: 'cancelEditTpl', onClick: () => closeModal() },
+          {
+            label: 'Salvar Alterações', class: 'btn-primary', id: 'saveEditTpl', onClick: async () => {
+              const fd = new FormData(document.getElementById('editTplForm'));
+              const name = fd.get('name');
+              if (!name) { notify.error('Nome obrigatório'); return; }
+
+              const workouts = [];
+              document.querySelectorAll('#tplWorkoutsEdit .tpl-workout').forEach(wkEl => {
+                const wi = wkEl.dataset.wi;
+                const wkName = fd.get(`wk_name_${wi}`) || `Treino ${parseInt(wi) + 1}`;
+                const exercises = [];
+                wkEl.querySelectorAll('.tpl-ex-row').forEach(exEl => {
+                  const ei = exEl.dataset.ei;
+                  const exName = fd.get(`wk_${wi}_ex_${ei}`);
+                  if (exName) {
+                    exercises.push({
+                      name: exName,
+                      sets: parseInt(fd.get(`wk_${wi}_sets_${ei}`)) || 3,
+                      reps: fd.get(`wk_${wi}_reps_${ei}`) || '12',
+                      rest: fd.get(`wk_${wi}_rest_${ei}`) || '60',
+                      method: fd.get(`wk_${wi}_method_${ei}`) || '',
+                      load: '',
+                    });
+                  }
+                });
+                if (exercises.length) workouts.push({ name: wkName, exercises });
+              });
+
+              await db.put('cycles', {
+                ...tpl,
+                name, goal: fd.get('goal'), description: fd.get('description'),
+                isTemplate: true, workouts, daysPerWeek: workouts.length,
+              });
+              notify.success('Modelo atualizado!');
+              closeModal();
+              navigateFn('/exercicios');
+            }
+          }
+        ]
+      });
+
+      // Bind eventos do modal de edição
+      setTimeout(() => {
+        // Remover treino
+        document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-workout').forEach(b => {
+          b.onclick = () => b.closest('.tpl-workout')?.remove();
+        });
+
+        // Adicionar treino
+        document.getElementById('addTplWorkoutEdit')?.addEventListener('click', () => {
+          const wi = workoutCount++;
+          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', `
+            <div class="card mb-md tpl-workout" data-wi="${wi}">
+              <div class="flex items-center justify-between mb-sm">
+                <div class="form-group" style="flex:1;margin-bottom:0">
+                  <label class="form-label">Nome do Treino</label>
+                  <input class="form-input" name="wk_name_${wi}" placeholder="Ex: Treino ${String.fromCharCode(65 + wi)}" />
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm rm-tpl-workout" style="color:var(--danger);margin-left:8px;margin-top:20px">✕ Remover treino</button>
+              </div>
+              <div class="tpl-exercises" data-wi="${wi}">
+                <div class="flex items-center gap-sm mb-sm tpl-ex-row" data-ei="0">
+                  <input class="form-input" name="wk_${wi}_ex_0" list="tplExListEdit" placeholder="Exercício" style="flex:2" />
+                  <input class="form-input" name="wk_${wi}_sets_0" type="number" value="3" min="1" style="width:60px" />
+                  <input class="form-input" name="wk_${wi}_reps_0" value="12" style="width:70px" />
+                  <input class="form-input" name="wk_${wi}_rest_0" value="60" style="width:60px" />
+                  <input class="form-input" name="wk_${wi}_method_0" value="" style="width:80px" placeholder="Método" />
+                  <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger)">✕</button>
+                </div>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm add-tpl-ex" data-wi="${wi}">+ Exercício</button>
+            </div>`);
+
+          // Rebind eventos
+          document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-workout').forEach(b => {
+            b.onclick = () => b.closest('.tpl-workout')?.remove();
+          });
+          bindTplEventsEdit();
+        });
+
+        bindTplEventsEdit();
+      }, 100);
     });
   });
 
@@ -364,6 +512,31 @@ function bindTplEvents() {
 function bindRemoveTplEx() {
   document.querySelectorAll('.rm-tpl-ex').forEach(btn => {
     btn.onclick = () => btn.closest('.tpl-ex-row')?.remove();
+  });
+}
+
+function bindTplEventsEdit() {
+  document.querySelectorAll('#tplWorkoutsEdit .add-tpl-ex').forEach(btn => {
+    btn.onclick = () => {
+      const wi = btn.dataset.wi;
+      const container = btn.previousElementSibling;
+      const ei = container.querySelectorAll('.tpl-ex-row').length;
+      container.insertAdjacentHTML('beforeend', `
+        <div class="flex items-center gap-sm mb-sm tpl-ex-row" data-ei="${ei}">
+          <input class="form-input" name="wk_${wi}_ex_${ei}" list="tplExListEdit" placeholder="Exercício" style="flex:2" />
+          <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="3" min="1" style="width:60px" />
+          <input class="form-input" name="wk_${wi}_reps_${ei}" value="12" style="width:70px" />
+          <input class="form-input" name="wk_${wi}_rest_${ei}" value="60" style="width:60px" />
+          <input class="form-input" name="wk_${wi}_method_${ei}" value="" style="width:80px" placeholder="Método" />
+          <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger)">✕</button>
+        </div>`);
+      document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-ex').forEach(b => {
+        b.onclick = () => b.closest('.tpl-ex-row')?.remove();
+      });
+    };
+  });
+  document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-ex').forEach(b => {
+    b.onclick = () => b.closest('.tpl-ex-row')?.remove();
   });
 }
 
