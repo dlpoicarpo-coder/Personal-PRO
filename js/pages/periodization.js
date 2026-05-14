@@ -198,7 +198,6 @@ export function initPeriodization(navigateFn) {
 document.getElementById('addMacroBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
     const exercises = await db.getAll('exercises');
-    const muscleGroups = ['Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps', 'Quadríceps', 'Posterior', 'Glúteos', 'Core'];
 
     // Treinos criados pelo personal na aba Treinos (sem sessionId, sem macrocycleId = são modelos/templates)
     const trainerWorkouts = (await db.getAll('workouts')).filter(w => !w.sessionId && !w.macrocycleId);
