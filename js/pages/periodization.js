@@ -327,7 +327,8 @@ export function initPeriodization(navigateFn) {
 
   document.getElementById('addMacroBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
-    const trainerWorkouts = (await db.getAll('workouts')).filter(w => !w.studentId && !w.sessionId && !w.macrocycleId);
+    // Busca modelos personalizados da aba Exercícios → Meus Modelos (store cycles com isTemplate)
+    const customCycles = (await db.getAll('cycles')).filter(c => c.isTemplate);
 
     let selectedTemplate = null;
 
@@ -338,13 +339,16 @@ export function initPeriodization(navigateFn) {
         <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t.sessions.length} sessões · ${t.sessions.reduce((a,s) => a + s.exercises.length, 0)} exercícios</div>
       </div>`).join('');
 
-    const personalHTML = trainerWorkouts.length
-      ? trainerWorkouts.map(w => `
-        <div class="periodo-tpl-card" data-tpl-id="custom_${w.id}" style="padding:10px 12px;border:1px solid var(--border-color);border-radius:7px;cursor:pointer;transition:border-color 0.15s,background 0.15s">
-          <div style="font-weight:600;font-size:0.84rem">${w.name}</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${(w.exercises||[]).length} exercícios</div>
-        </div>`).join('')
-      : `<p class="text-xs text-muted" style="padding:8px 0">Nenhum modelo criado. Crie treinos sem aluno na aba <a href="#/treinos" style="color:var(--primary)">Treinos</a>.</p>`;
+    const personalHTML = customCycles.length
+      ? customCycles.map(c => {
+          const totalEx = (c.workouts || []).reduce((a, w) => a + (w.exercises || []).length, 0);
+          return `
+          <div class="periodo-tpl-card" data-tpl-id="cycle_${c.id}" style="padding:10px 12px;border:1px solid var(--border-color);border-radius:7px;cursor:pointer;transition:border-color 0.15s,background 0.15s">
+            <div style="font-weight:600;font-size:0.84rem">${c.name}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${c.goal || 'Geral'} · ${(c.workouts||[]).length} treinos · ${totalEx} exercícios</div>
+            ${c.description ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">${c.description}</div>` : ''}
+          </div>`;}).join('')
+      : `<p class="text-xs text-muted" style="padding:8px 0">Nenhum modelo criado. Vá em <a href="#/exercicios" style="color:var(--primary)">Exercícios → Meus Modelos</a> para criar.</p>`;
 
     openModal({
       title: 'Novo Macrociclo', size: 'xl',
@@ -544,12 +548,25 @@ export function initPeriodization(navigateFn) {
           card.style.background = 'rgba(16,185,129,0.05)';
 
           const tplId = card.dataset.tplId;
-          if (tplId.startsWith('custom_')) {
-            const wkId = tplId.replace('custom_', '');
-            db.get('workouts', wkId).then(wk => {
-              if (!wk) return;
-              selectedTemplate = { ...wk, sessions: [{ name: wk.name, exercises: wk.exercises || [] }] };
-              renderLoadInputs(wk.exercises || []);
+          if (tplId.startsWith('cycle_')) {
+            const cycleId = tplId.replace('cycle_', '');
+            db.get('cycles', cycleId).then(cycle => {
+              if (!cycle) return;
+              // Converter estrutura cycles → sessions para o sistema
+              selectedTemplate = {
+                name: cycle.name,
+                sessions: (cycle.workouts || []).map(w => ({
+                  name: w.name,
+                  exercises: (w.exercises || []).map(ex => ({
+                    name: ex.name,
+                    sets: ex.sets || 3,
+                    reps: ex.reps || '10-12',
+                    rest: ex.rest || 60,
+                  }))
+                }))
+              };
+              const allEx = selectedTemplate.sessions.flatMap(s => s.exercises);
+              renderLoadInputs(allEx);
             });
           } else {
             selectedTemplate = BUILT_IN_WORKOUT_TEMPLATES.find(t => t.id === tplId);
