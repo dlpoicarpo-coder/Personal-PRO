@@ -60,9 +60,29 @@ export function renderSidebar(currentPath) {
               <span class="sidebar-user-role">Personal Trainer</span>
             </div>
           </div>
-          <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 8px; opacity: 0.8; transition: all 0.2s; display: flex; align-items: center; border-radius: 6px;" onmouseover="this.style.opacity='1';this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.opacity='0.8';this.style.background='none'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-          </button>
+          <div style="display:flex;align-items:center;gap:4px">
+            <!-- Sino de notificações -->
+            <button id="notifBtn" title="Notificações" style="position:relative;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:7px;border-radius:6px;transition:all 0.2s"
+              onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='var(--text-primary)'"
+              onmouseout="this.style.background='none';this.style.color='var(--text-muted)'">
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span id="notifBadge" style="display:none;position:absolute;top:2px;right:2px;background:var(--danger);color:white;font-size:0.55rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;line-height:1;padding:0 3px"></span>
+            </button>
+            <!-- Logout -->
+            <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 8px; opacity: 0.8; transition: all 0.2s; display: flex; align-items: center; border-radius: 6px;" onmouseover="this.style.opacity='1';this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.opacity='0.8';this.style.background='none'">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </button>
+          </div>
+        </div>
+        <!-- Painel de notificações (dropdown) -->
+        <div id="notifPanel" style="display:none;position:absolute;bottom:70px;left:8px;right:8px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:1000;overflow:hidden">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between">
+            <span style="font-weight:600;font-size:0.9rem">Notificações</span>
+            <button id="closeNotifPanel" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem">✕</button>
+          </div>
+          <div id="notifPanelContent">
+            <div style="padding:20px;text-align:center" class="text-muted text-sm">Carregando...</div>
+          </div>
         </div>
       </div>
     </aside>
@@ -92,7 +112,6 @@ export function initSidebar() {
 
   // Desktop collapse/expand
   if (collapseBtn) {
-    // Restore collapsed state
     if (localStorage.getItem('pp_sidebar_collapsed') === '1') {
       sidebar.classList.add('collapsed');
     }
@@ -102,7 +121,68 @@ export function initSidebar() {
     });
   }
 
-  // LOGOUT — uses Supabase Auth
+  // ── SINO DE NOTIFICAÇÕES ──────────────────────────────────
+  const notifBtn   = document.getElementById('notifBtn');
+  const notifPanel = document.getElementById('notifPanel');
+  const closePanel = document.getElementById('closeNotifPanel');
+
+  if (notifBtn && notifPanel) {
+    notifBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const isOpen = notifPanel.style.display !== 'none';
+      notifPanel.style.display = isOpen ? 'none' : '';
+
+      if (!isOpen) {
+        // Carregar conteúdo do painel
+        const contentEl = document.getElementById('notifPanelContent');
+        if (contentEl) {
+          try {
+            const { renderNotificationsPanel, requestNotificationPermission } = await import('../utils/notifications-manager.js');
+            await requestNotificationPermission();
+            contentEl.innerHTML = await renderNotificationsPanel();
+
+            // Handler: enviar lembrete WhatsApp
+            contentEl.querySelectorAll('.send-reminder').forEach(btn => {
+              btn.addEventListener('click', async () => {
+                const { sendWorkoutReminder } = await import('../utils/notifications-manager.js');
+                const db = (await import('../db.js')).default;
+                const student  = await db.get('students', btn.dataset.studentId);
+                const schedule = await db.get('schedules', btn.dataset.scheduleId);
+                if (!student || !schedule) return;
+                const wa = sendWorkoutReminder(student, schedule);
+                if (wa) window.open(wa, '_blank');
+                else {
+                  const { notify } = await import('../components/toast.js');
+                  notify.warning('Aluno sem telefone cadastrado.');
+                }
+              });
+            });
+
+            // Limpar badge após abrir
+            const badge = document.getElementById('notifBadge');
+            if (badge) badge.style.display = 'none';
+            localStorage.setItem('pp_last_notif_check', new Date().toISOString());
+          } catch (err) {
+            console.error('Notif panel error:', err);
+            document.getElementById('notifPanelContent').innerHTML =
+              '<p class="text-sm text-muted" style="padding:16px">Erro ao carregar notificações.</p>';
+          }
+        }
+      }
+    });
+
+    // Fechar painel
+    closePanel?.addEventListener('click', () => { notifPanel.style.display = 'none'; });
+
+    // Fechar ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!notifPanel.contains(e.target) && e.target !== notifBtn) {
+        notifPanel.style.display = 'none';
+      }
+    });
+  }
+
+  // LOGOUT
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async (e) => {
       e.preventDefault();
