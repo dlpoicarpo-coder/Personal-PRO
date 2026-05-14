@@ -87,7 +87,7 @@ function renderBfContent(entries, students, filterStudentId) {
       <div class="card-header"><span class="card-title">Registros ${student ? `— ${student.name}` : ''}</span></div>
       ${recent.length ? `
       <div class="table-container"><table class="data-table">
-        <thead><tr><th>Data</th>${!student ? '<th>Aluno</th>' : ''}<th>Sono</th><th>Humor</th><th>Energia</th><th>Estresse</th><th>Dor</th><th>PSE</th><th>Carga</th><th>Status</th><th>Recomendação</th></tr></thead>
+        <thead><tr><th>Data</th>${!student ? '<th>Aluno</th>' : ''}<th>Sono</th><th>Humor</th><th>Energia</th><th>Estresse</th><th>Dor</th><th>PSE</th><th>Carga</th><th>Status</th><th>Recomendação</th><th></th></tr></thead>
         <tbody>${recent.map(e => {
     const st = students.find(s => s.id === e.studentId);
     const status = overallStatus(e);
@@ -108,6 +108,11 @@ function renderBfContent(entries, students, filterStudentId) {
             <td>${e.trainingLoad || '-'}</td>
             <td><span class="badge badge-${status.color}">${status.icon} ${status.label}</span></td>
             <td class="text-sm">${rec.label}</td>
+            <td>
+              <button class="btn btn-ghost btn-sm delete-bf" data-id="${e.id}" title="Excluir" style="color:var(--danger);padding:4px 6px">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </td>
           </tr>`;
   }).join('')}</tbody>
       </table></div>` : '<div class="empty-state" style="padding:40px"><p class="text-muted">Nenhum registro ainda</p></div>'}
@@ -134,13 +139,34 @@ function computeWeeklyLoads(entries) {
 }
 
 export function initBiofeedback(navigateFn) {
+  // Delete biofeedback
+  document.querySelectorAll('.delete-bf').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!window.confirm('Excluir este registro de biofeedback?')) return;
+      await db.delete('biofeedback', btn.dataset.id);
+      notify.success('Registro excluído.');
+      navigateFn('/biofeedback');
+    });
+  });
+
   // Student filter
   document.getElementById('bfStudentFilter')?.addEventListener('change', async (e) => {
     const sid = e.target.value;
     const students = await db.getAll('students');
     const allBf = await db.getAll('biofeedback');
     const contentEl = document.getElementById('bfContent');
-    if (contentEl) contentEl.innerHTML = renderBfContent(allBf, students, sid);
+    if (contentEl) {
+      contentEl.innerHTML = renderBfContent(allBf, students, sid);
+      // Recriar handlers após re-render
+      contentEl.querySelectorAll('.delete-bf').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!window.confirm('Excluir este registro de biofeedback?')) return;
+          await db.delete('biofeedback', btn.dataset.id);
+          notify.success('Registro excluído.');
+          navigateFn('/biofeedback');
+        });
+      });
+    }
   });
 
   // Add biofeedback
