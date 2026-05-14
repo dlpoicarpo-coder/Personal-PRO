@@ -81,10 +81,23 @@ export async function renderTracker() {
     </div>
     ${completed.length ? `
     <div class="card mt-lg"><div class="card-header"><span class="card-title">Sessões Recentes</span></div>
-      <div class="table-container"><table class="data-table"><thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Densidade</th><th>Volume</th><th>PSE</th></tr></thead>
+      <div class="table-container"><table class="data-table"><thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Densidade</th><th>Volume</th><th>PSE</th><th></th></tr></thead>
       <tbody>${completed.map(s => {
         const st = students.find(x => x.id === s.studentId);
-        return `<tr><td>${st ? st.name : '?'}</td><td>${s.workoutName || '-'}</td><td>${Calc.formatDate(s.date)}</td><td>${formatTimeHMS(s.totalDuration || 0)}</td><td>${s.density ? s.density.toFixed(2) : '-'}</td><td>${s.totalVolume || '-'} kg</td><td>${s.postBiofeedback?.pse || '-'}</td></tr>`;
+        return `<tr>
+          <td>${st ? st.name : '?'}</td>
+          <td>${s.workoutName || '-'}</td>
+          <td>${Calc.formatDate(s.date)}</td>
+          <td>${formatTimeHMS(s.totalDuration || 0)}</td>
+          <td>${s.density ? s.density.toFixed(2) : '-'}</td>
+          <td>${s.totalVolume || '-'} kg</td>
+          <td>${s.postBiofeedback?.pse || '-'}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir sessão" style="color:var(--danger);padding:4px 6px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </td>
+        </tr>`;
       }).join('')}</tbody></table></div>
     </div>` : ''}
   `;
@@ -189,6 +202,16 @@ function renderLiveView(students) {
 // ======================== INIT ========================
 
 export function initTracker(navigateFn) {
+  // --- DELETE SESSION ---
+  document.querySelectorAll('.delete-session').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!window.confirm('Excluir esta sessão? Esta ação não pode ser desfeita.')) return;
+      await db.delete('sessions', btn.dataset.id);
+      notify.success('Sessão excluída.');
+      navigateFn('/tracker');
+    });
+  });
+
   // --- SETUP MODE ---
   const sSel = document.getElementById('trkStudent');
   const wSel = document.getElementById('trkWorkout');
