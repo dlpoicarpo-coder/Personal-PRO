@@ -75,13 +75,32 @@ export function renderSidebar(currentPath) {
           </div>
         </div>
         <!-- Painel de notificações (dropdown) -->
-        <div id="notifPanel" style="display:none;position:absolute;bottom:70px;left:8px;right:8px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:1000;overflow:hidden">
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between">
-            <span style="font-weight:600;font-size:0.9rem">Notificações</span>
-            <button id="closeNotifPanel" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem">✕</button>
+        <div id="notifPanel" style="
+          display:none;
+          position:fixed;
+          bottom:80px;
+          left:16px;
+          width:340px;
+          max-height:520px;
+          background:#1e293b;
+          border:1px solid rgba(255,255,255,0.12);
+          border-radius:12px;
+          box-shadow:0 16px 48px rgba(0,0,0,0.5);
+          z-index:9999;
+          overflow:hidden;
+          color:#f1f5f9;
+        ">
+          <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between;background:#0f172a">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span style="font-weight:700;font-size:0.95rem;color:#f1f5f9">Notificações</span>
+            </div>
+            <button id="closeNotifPanel" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1.1rem;line-height:1;padding:2px 6px;border-radius:4px" 
+              onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#f1f5f9'"
+              onmouseout="this.style.background='none';this.style.color='#94a3b8'">✕</button>
           </div>
-          <div id="notifPanelContent">
-            <div style="padding:20px;text-align:center" class="text-muted text-sm">Carregando...</div>
+          <div id="notifPanelContent" style="overflow-y:auto;max-height:460px">
+            <div style="padding:24px;text-align:center;color:#94a3b8;font-size:0.85rem">Carregando...</div>
           </div>
         </div>
       </div>
