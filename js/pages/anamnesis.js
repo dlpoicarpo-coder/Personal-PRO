@@ -88,15 +88,26 @@ export async function renderAnamnesis() {
 }
 
 export function initAnamnesis(navigateFn) {
-  document.getElementById('genAnamneseLinkBtn')?.addEventListener('click', () => {
-    const url = `${window.location.origin}${window.location.pathname}#/form/anamnese`;
+  document.getElementById('genAnamneseLinkBtn')?.addEventListener('click', async () => {
+    const { getCurrentUser } = await import('../utils/auth.js');
+    const user = await getCurrentUser();
+    if (!user) { notify.error('Você precisa estar logado'); return; }
+    const baseUrl = window.location.href.split('#')[0];
+    const url = `${baseUrl}#/form/anamnese?trainer=${user.id}`;
     navigator.clipboard?.writeText(url);
     notify.success('Link copiado!');
     openModal({
       title: 'Link de Anamnese', size: 'md',
-      content: `<p class="text-muted mb-md">Envie este link para o aluno preencher o formulário de anamnese:</p>
-        <div class="form-input" style="word-break:break-all;padding:12px;background:var(--bg-card)">${url}</div>
-        <p class="text-muted text-sm mt-md">O aluno abrirá o formulário no navegador. Após preencher, os dados serão salvos automaticamente no sistema.</p>`,
+      content: `
+        <p class="text-muted mb-md">Envie este link para o aluno preencher a anamnese:</p>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <input class="form-input" value="${url}" readonly onclick="this.select()" style="flex:1;font-size:0.78rem" />
+          <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='✓ Copiado!'">Copiar</button>
+        </div>
+        <a href="https://wa.me/?text=${encodeURIComponent('Olá! Preencha sua anamnese: ' + url)}" target="_blank" class="btn btn-secondary btn-sm">Enviar via WhatsApp</a>
+        <p class="text-muted text-xs mt-md">O aluno abrirá no navegador. Após preencher, os dados são salvos automaticamente no seu sistema.</p>
+      `,
+      actions: [{ label: 'Fechar', class: 'btn-primary', onClick: () => closeModal() }]
     });
   });
 
@@ -183,8 +194,32 @@ export function initAnamneseForm() {
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd);
     data.submittedAt = new Date().toISOString();
+
+    // Capturar trainerId da URL para salvar no banco correto
+    const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    const trainerId = params.get('trainer');
+    if (trainerId) data.trainer_id = trainerId;
+
     const { default: db } = await import('../db.js');
-    await db.add('anamnesis', data);
+
+    // Salvar via Supabase diretamente com o trainer_id
+    if (trainerId) {
+      try {
+        const { getSupabase } = await import('../utils/auth.js');
+        const sb = getSupabase();
+        if (sb) {
+          const { error } = await sb.from('anamneses').insert([{ ...data, trainer_id: trainerId }]);
+          if (error) throw error;
+        }
+      } catch (err) {
+        console.error('Anamnese save error:', err);
+        // Fallback: salvar no localStorage para o personal resgatar depois
+        await db.add('anamnesis', data);
+      }
+    } else {
+      await db.add('anamnesis', data);
+    }
+
     e.target.style.display = 'none';
     document.getElementById('anamneseSuccess').style.display = '';
   });
