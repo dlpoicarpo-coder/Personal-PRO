@@ -10,30 +10,59 @@ import { PERIODIZATION_MODELS } from '../utils/periodization-engine.js';
 
 // ── GERADOR DE SEMANAS INTERNO ─────────────────────────────
 function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
-  const models = {
-    linear:        { start: 55, end: 92, volStart: 85, volEnd: 55 },
-    reverse_linear:{ start: 85, end: 50, volStart: 55, volEnd: 90 },
-    undulating:    { start: 60, end: 85, volStart: 80, volEnd: 70 },
-    block:         { start: 60, end: 95, volStart: 90, volEnd: 45 },
-    conjugate:     { start: 70, end: 90, volStart: 75, volEnd: 65 },
-    concurrent:    { start: 60, end: 78, volStart: 80, volEnd: 75 },
-    polarized:     { start: 55, end: 80, volStart: 85, volEnd: 70 },
-    hiit:          { start: 65, end: 90, volStart: 80, volEnd: 65 },
-    lsd:           { start: 50, end: 70, volStart: 90, volEnd: 80 },
-    threshold:     { start: 60, end: 82, volStart: 85, volEnd: 70 },
-    fartlek:       { start: 58, end: 80, volStart: 82, volEnd: 68 },
-  };
-  const m = models[modelType] || models.linear;
   const weeks = [];
 
   for (let w = 1; w <= totalWeeks; w++) {
-    // Só deload se deloadEvery > 0
     const isDeload = deloadEvery > 0 && w % deloadEvery === 0;
-    const progress = (w - 1) / Math.max(totalWeeks - 1, 1);
 
     if (isDeload) {
       weeks.push({ week: w, phase: 'deload', label: 'Deload', intensityPct: 50, volumePct: 40, repsRange: '12-15' });
+      continue;
+    }
+
+    const progress = (w - 1) / Math.max(totalWeeks - 1, 1);
+
+    if (modelType === 'undulating') {
+      // DUP: alterna Força / Hipertrofia / Metabólico a cada semana com leve progressão
+      const cycle = (w - 1) % 3;
+      const progressBonus = Math.round(progress * 10);
+      if (cycle === 0) weeks.push({ week: w, phase: 'Força', label: `Semana ${w} — Força`, intensityPct: 82 + progressBonus, volumePct: 55, repsRange: '4-6' });
+      else if (cycle === 1) weeks.push({ week: w, phase: 'Hipertrofia', label: `Semana ${w} — Hipertrofia`, intensityPct: 70 + Math.round(progressBonus * 0.7), volumePct: 80, repsRange: '8-12' });
+      else weeks.push({ week: w, phase: 'Metabólico', label: `Semana ${w} — Metabólico`, intensityPct: 58 + Math.round(progressBonus * 0.5), volumePct: 95, repsRange: '15-20' });
+
+    } else if (modelType === 'block') {
+      // Blocos: Acumulação → Intensificação → Realização
+      const third = Math.ceil(totalWeeks / 3);
+      if (w <= third) weeks.push({ week: w, phase: 'Acumulação', label: `Semana ${w} — Acumulação`, intensityPct: 60 + Math.round((w / third) * 8), volumePct: 90, repsRange: '12-15' });
+      else if (w <= third * 2) weeks.push({ week: w, phase: 'Intensificação', label: `Semana ${w} — Intensificação`, intensityPct: 75 + Math.round(((w - third) / third) * 10), volumePct: 65, repsRange: '5-8' });
+      else weeks.push({ week: w, phase: 'Realização', label: `Semana ${w} — Realização`, intensityPct: 88 + Math.round(((w - third * 2) / third) * 7), volumePct: 40, repsRange: '2-4' });
+
+    } else if (modelType === 'conjugate') {
+      // Conjugada: alterna Esforço Máximo / Esforço Dinâmico
+      const isME = w % 2 !== 0;
+      weeks.push({ week: w, phase: isME ? 'Esforço Máximo' : 'Esforço Dinâmico', label: `Semana ${w} — ${isME ? 'ME' : 'DE'}`, intensityPct: isME ? 92 + Math.round(progress * 3) : 55, volumePct: isME ? 40 : 70, repsRange: isME ? '1-3' : '3-5' });
+
+    } else if (modelType === 'concurrent') {
+      // Concorrente: alterna Força / Metabólico
+      const isStrength = w % 2 !== 0;
+      weeks.push({ week: w, phase: isStrength ? 'Força' : 'Metabólico', label: `Semana ${w}`, intensityPct: isStrength ? 68 + Math.round(progress * 12) : 58, volumePct: isStrength ? 70 : 90, repsRange: isStrength ? '8-12' : '15-20' });
+
+    } else if (modelType === 'polarized') {
+      // Polarizado: 80% baixa intensidade, 20% alta
+      const isHighInt = w % 5 === 0;
+      weeks.push({ week: w, phase: isHighInt ? 'Alta Intensidade (Z4/Z5)' : 'Baixa Intensidade (Z1/Z2)', label: `Semana ${w}`, intensityPct: isHighInt ? 88 : 55, volumePct: isHighInt ? 50 : 90, repsRange: isHighInt ? '4-6' : '15-20' });
+
     } else {
+      // Modelos lineares e outros: progressão suave
+      const models = {
+        linear:        { start: 55, end: 92, volStart: 85, volEnd: 55 },
+        reverse_linear:{ start: 85, end: 50, volStart: 55, volEnd: 90 },
+        hiit:          { start: 65, end: 90, volStart: 80, volEnd: 65 },
+        lsd:           { start: 50, end: 70, volStart: 90, volEnd: 80 },
+        threshold:     { start: 60, end: 82, volStart: 85, volEnd: 70 },
+        fartlek:       { start: 58, end: 80, volStart: 82, volEnd: 68 },
+      };
+      const m = models[modelType] || models.linear;
       const intensityPct = Math.round(m.start + (m.end - m.start) * progress);
       const volumePct    = Math.round(m.volStart + (m.volEnd - m.volStart) * progress);
       const repsRange    = intensityPct >= 88 ? '2-4' : intensityPct >= 78 ? '4-6' :
@@ -727,8 +756,8 @@ function renderLoadInputs(exercises) {
 
   container.innerHTML = exercises.map(ex => {
     const nameLower = ex.name.toLowerCase();
-    const isTimed = TIMED_PATTERN.test(String(ex.reps || ''));
-    const isBodyweight = BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k));
+    const isTimed = ex.loadType === 'time' || TIMED_PATTERN.test(String(ex.reps || ''));
+    const isBodyweight = ex.loadType === 'bodyweight' || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k));
 
     if (isTimed) {
       const defaultSec = parseInt(String(ex.reps).replace('s','')) || 30;
