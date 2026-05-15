@@ -156,53 +156,61 @@ export async function renderNotificationsPanel() {
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return `
-    <div style="min-width:320px;max-width:400px;max-height:500px;overflow-y:auto">
+    <div style="font-family:system-ui,sans-serif">
 
       ${todaySchedules.length > 0 ? `
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border-color)">
-        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">
-          Treinos de Hoje (${todaySchedules.length})
+      <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#10b981;margin-bottom:10px">
+          Treinos hoje (${todaySchedules.length})
         </div>
         ${todaySchedules.map(s => {
           const st = students.find(x => x.id === s.studentId);
           return `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color)">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
             <div>
-              <div style="font-size:0.85rem;font-weight:500">${st?.name || 'Aluno'}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted)">${s.time || ''} · ${s.workoutName || 'Treino'}</div>
+              <div style="font-size:0.88rem;font-weight:600;color:#f1f5f9">${st?.name || 'Aluno'}</div>
+              <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">${s.time || ''} · ${s.workoutName || 'Treino'}</div>
             </div>
             <button class="btn btn-ghost btn-sm send-reminder"
               data-student-id="${s.studentId}"
               data-schedule-id="${s.id}"
               title="Enviar lembrete via WhatsApp"
-              style="padding:4px 8px;color:var(--primary)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              style="padding:6px 8px;color:#10b981;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:6px;cursor:pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             </button>
           </div>`;
         }).join('')}
-      </div>` : ''}
+      </div>` : `
+      <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#10b981;margin-bottom:6px">Treinos hoje</div>
+        <p style="font-size:0.82rem;color:#64748b;margin:0">Nenhum treino agendado para hoje</p>
+      </div>`}
 
-      <div style="padding:12px 16px">
-        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">
-          Respostas Recentes (48h)
+      <div style="padding:14px 18px">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6366f1;margin-bottom:10px">
+          Respostas recentes (48h)
         </div>
-        ${recentResponses.length > 0 ? recentResponses.slice(0, 10).map(r => {
+        ${recentResponses.length > 0 ? recentResponses.slice(0, 8).map(r => {
           const st = students.find(x => x.id === r.studentId);
           const isPost = r.type === 'post' || r.type === 'post_session';
           const pse = r.type === 'post_session' ? r.data.postBiofeedback?.pse : r.data.pse;
           const icon = isPost ? '✅' : '📋';
           const label = isPost ? 'Pós-treino' : 'Pré-treino';
+          const labelColor = isPost ? '#10b981' : '#6366f1';
           const time = new Date(r.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           const dateStr = new Date(r.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
           return `
-          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color)">
-            <span style="font-size:1.2rem">${icon}</span>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <span style="font-size:1.1rem;min-width:22px">${icon}</span>
             <div style="flex:1">
-              <div style="font-size:0.85rem;font-weight:500">${st?.name || 'Aluno'}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted)">${label} · ${dateStr} às ${time}${pse ? ` · PSE ${pse}/10` : ''}</div>
+              <div style="font-size:0.88rem;font-weight:600;color:#f1f5f9">${st?.name || 'Aluno'}</div>
+              <div style="font-size:0.72rem;margin-top:2px">
+                <span style="color:${labelColor}">${label}</span>
+                <span style="color:#64748b"> · ${dateStr} às ${time}${pse ? ` · PSE ${pse}/10` : ''}</span>
+              </div>
             </div>
           </div>`;
-        }).join('') : `<p class="text-sm text-muted text-center" style="padding:16px 0">Nenhuma resposta nas últimas 48h</p>`}
+        }).join('') : `<p style="font-size:0.82rem;color:#64748b;margin:0;padding:8px 0">Nenhuma resposta nas últimas 48h</p>`}
       </div>
     </div>
   `;
