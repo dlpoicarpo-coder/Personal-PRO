@@ -286,82 +286,166 @@ export async function renderPeriodization() {
         <button class="btn btn-primary" id="addMacroBtn">+ Novo Macrociclo</button>
       </div>
     </div>
+
+    ${macros.length ? `
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+      <div class="stat-card" style="text-align:center;padding:12px">
+        <div class="stat-label">ATIVOS</div>
+        <div class="stat-value text-gradient">${macros.filter(m=>m.status==='active').length}</div>
+        <div class="stat-change">macrociclos em curso</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:12px">
+        <div class="stat-label">FINALIZADOS</div>
+        <div class="stat-value" style="color:var(--accent)">${macros.filter(m=>m.status!=='active').length}</div>
+        <div class="stat-change">ciclos concluídos</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:12px">
+        <div class="stat-label">TREINOS GERADOS</div>
+        <div class="stat-value" style="color:var(--success)">${macros.reduce((t,m)=>t+(m.generatedWorkouts||0),0)}</div>
+        <div class="stat-change">no total</div>
+      </div>
+    </div>` : ''}
+
     <div id="periodizationContent">
       ${macros.length ? macros.map(m => renderMacroCard(m, students)).join('') : `
         <div class="empty-state">
           <div class="empty-icon">—</div>
           <h3>Nenhum macrociclo criado</h3>
           <p>Crie um planejamento de periodização para seus alunos</p>
+          <button class="btn btn-primary mt-sm" id="addMacroBtnEmpty">+ Criar Primeiro Macrociclo</button>
         </div>`}
     </div>
   `;
 }
 
+const ICON_DEL = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
+const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+const ICON_EYE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+
 function renderMacroCard(m, students) {
   const st = students.find(s => s.id === m.studentId);
-  const currentWeek = Math.max(1, Math.ceil((Date.now() - new Date(m.startDate).getTime()) / (7 * 86400000)));
+  const now = Date.now();
+  const startMs = new Date(m.startDate).getTime();
+  const currentWeek = Math.max(1, Math.min(m.totalWeeks, Math.ceil((now - startMs) / (7 * 86400000))));
   const modelDef = PERIODIZATION_MODELS[m.type] || {};
+  const isActive = m.status === 'active';
+  const pct = Math.round((currentWeek / m.totalWeeks) * 100);
+  const currentWeekData = (m.weeks || [])[currentWeek - 1];
+  const currentPhase = currentWeekData?.phase || '—';
+  const currentIntensity = currentWeekData?.intensityPct || 0;
+  const intensityColor = currentIntensity >= 85 ? '#ef4444' : currentIntensity >= 75 ? '#f97316' : currentIntensity >= 65 ? '#eab308' : currentIntensity > 0 ? '#22c55e' : 'var(--text-muted)';
+
   return `
     <div class="card mb-lg macro-card" data-student="${m.studentId || ''}" data-macro="${m.id || ''}">
       <div class="card-header">
-        <div class="flex items-center gap-md">
-          <div class="avatar avatar-sm">${st ? st.name[0] : '?'}</div>
-          <div>
-            <div class="card-title" style="margin:0">${st ? st.name : '?'} — ${m.name}</div>
-            <div class="text-xs text-muted">${m.totalWeeks} semanas · ${modelDef.label || m.type} · Início: ${Calc.formatDate(m.startDate)}${m.workoutModelName ? ` · ${m.workoutModelName}` : ''}</div>
+        <div class="flex items-center gap-md" style="flex:1;min-width:0">
+          <div class="avatar">${st ? st.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${st ? st.name : '?'} — ${m.name}
+            </div>
+            <div class="text-xs text-muted">
+              ${m.totalWeeks} semanas · ${modelDef.label || m.type}
+              · Início: ${Calc.formatDate(m.startDate)}
+              ${m.workoutModelName ? ` · ${m.workoutModelName}` : ''}
+              ${m.trainingDays?.length ? ` · ${m.trainingDays.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d]).join(', ')}` : ''}
+            </div>
           </div>
         </div>
-        <div class="flex gap-sm items-center">
-          <span class="badge badge-${m.status === 'active' ? 'success' : 'warning'}">${m.status === 'active' ? 'Ativo' : 'Finalizado'}</span>
-          <button class="btn btn-ghost btn-sm delete-macro" data-id="${m.id}" style="color:var(--danger)">✕</button>
+        <div class="flex gap-xs items-center" style="flex-shrink:0">
+          <span class="badge badge-${isActive ? 'success' : 'warning'}">${isActive ? 'Ativo' : 'Finalizado'}</span>
+          <a href="#/treinos" class="btn btn-ghost btn-sm" title="Ver treinos" style="padding:4px 6px;color:var(--accent)">${ICON_EYE}</a>
+          ${isActive ? `<button class="btn btn-ghost btn-sm finish-macro" data-id="${m.id}" title="Finalizar macrociclo" style="padding:4px 6px;color:var(--success)">${ICON_CHECK}</button>` : ''}
+          <button class="btn btn-ghost btn-sm delete-macro" data-id="${m.id}" title="Excluir macrociclo" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
         </div>
       </div>
 
-      <div style="overflow-x:auto;margin-top:12px">
-        <div style="display:flex;gap:4px;min-width:max-content;padding-bottom:4px">
+      ${isActive ? `
+      <!-- Progresso e semana atual -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin:12px 0">
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Semana atual</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${currentWeek}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">de ${m.totalWeeks}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Fase</div>
+          <div style="font-size:0.88rem;font-weight:700;color:${intensityColor};margin-top:4px">${currentPhase}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Intensidade</div>
+          <div style="font-size:1.4rem;font-weight:800;color:${intensityColor}">${currentIntensity || '—'}${currentIntensity ? '%' : ''}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Progresso</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--accent)">${pct}%</div>
+        </div>
+      </div>
+      <div style="height:5px;background:var(--border-color);border-radius:3px;margin-bottom:12px">
+        <div style="height:100%;width:${pct}%;background:var(--primary);border-radius:3px;transition:width 0.5s"></div>
+      </div>` : ''}
+
+      <!-- Gráfico de barras semanal -->
+      <div style="overflow-x:auto">
+        <div style="display:flex;gap:3px;min-width:max-content;padding-bottom:4px;align-items:flex-end">
           ${(m.weeks || []).map((w, i) => {
-            const isCurrent = i + 1 === currentWeek;
-            const isDeload = w.phase === 'deload';
+            const isCurrent = i + 1 === currentWeek && isActive;
+            const isPast    = i + 1 < currentWeek;
+            const isDeload  = w.phase === 'deload';
             const color = isDeload ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
-            return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px" title="Sem ${w.week}: ${w.label || w.phase} | Vol ${w.volumePct}% | Int ${w.intensityPct}%">
-              <div style="width:26px;height:${Math.max(16, w.volumePct * 0.42)}px;background:${color}22;border:1px solid ${color};border-radius:3px;${isCurrent ? `box-shadow:0 0 0 2px ${color};` : ''}"></div>
-              <div style="font-size:0.5rem;color:${color};font-weight:${isCurrent ? 700 : 400}">S${w.week}</div>
+            const opacity   = isPast ? '0.4' : '1';
+            return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;opacity:${opacity}"
+              title="Sem ${w.week}: ${w.label || w.phase} | Vol ${w.volumePct}% | Int ${w.intensityPct}% | Reps ${w.repsRange || '-'}">
+              <div style="width:24px;height:${Math.max(12, (w.volumePct || 0) * 0.38)}px;
+                background:${color}${isCurrent ? '' : '22'};
+                border:1px solid ${color};border-radius:3px;
+                ${isCurrent ? `box-shadow:0 0 0 2px ${color},0 0 8px ${color}44;` : ''}"></div>
+              <div style="font-size:0.48rem;color:${color};font-weight:${isCurrent ? 700 : 400}">${isCurrent ? '▼' : ''}S${w.week}</div>
             </div>`;
           }).join('')}
         </div>
       </div>
 
-      <div class="flex gap-lg mt-sm" style="flex-wrap:wrap">
+      <div class="flex gap-md mt-xs" style="flex-wrap:wrap">
         <span class="text-xs" style="color:#22c55e">— Leve</span>
         <span class="text-xs" style="color:#eab308">— Moderada</span>
         <span class="text-xs" style="color:#f97316">— Alta</span>
         <span class="text-xs" style="color:#ef4444">— Muito Alta</span>
         <span class="text-xs" style="color:#3b82f6">— Deload</span>
-        ${m.trainingDays?.length ? `<span class="text-xs text-muted">· ${m.trainingDays.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d]).join(', ')}</span>` : ''}
-        ${m.generatedWorkouts ? `<span class="text-xs" style="color:var(--success)">· ${m.generatedWorkouts} treinos gerados</span>` : ''}
+        ${m.generatedWorkouts ? `<span class="text-xs" style="color:var(--success);margin-left:auto">${m.generatedWorkouts} treinos gerados</span>` : ''}
       </div>
 
-      ${m.weekDetails ? `
-      <div class="mt-md" style="border-top:1px solid var(--border-color);padding-top:12px;overflow-x:auto">
-        <table class="data-table" style="font-size:0.78rem">
-          <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Treino A</th><th>Treino B</th></tr></thead>
-          <tbody>${m.weekDetails.map(wd => {
-            const c = wd.phase === 'Deload' ? '#3b82f6' : wd.intensity >= 85 ? '#ef4444' : wd.intensity >= 75 ? '#f97316' : wd.intensity >= 65 ? '#eab308' : '#22c55e';
-            return `<tr>
-              <td><strong style="color:${c}">S${wd.week}</strong></td>
-              <td style="color:${c}">${wd.phase}</td>
-              <td>${wd.sets}</td><td>${wd.reps}</td>
-              <td style="color:${c};font-weight:600">${wd.intensity}%</td>
-              <td>${wd.rpe}</td>
-              <td class="text-xs">${wd.trainA || '-'}</td>
-              <td class="text-xs">${wd.trainB || '-'}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>
-      </div>` : ''}
+      <!-- Tabela semanal colapsável -->
+      <details style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:10px">
+        <summary style="cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-muted);list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          Plano semanal detalhado
+        </summary>
+        ${m.weekDetails ? `
+        <div style="overflow-x:auto;margin-top:10px">
+          <table class="data-table" style="font-size:0.76rem">
+            <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Exercícios A</th><th>Exercícios B</th></tr></thead>
+            <tbody>${m.weekDetails.map(wd => {
+              const isCur = wd.week === currentWeek && isActive;
+              const c = wd.phase === 'Deload' ? '#3b82f6' : (wd.intensity||0) >= 85 ? '#ef4444' : (wd.intensity||0) >= 75 ? '#f97316' : (wd.intensity||0) >= 65 ? '#eab308' : '#22c55e';
+              return `<tr style="${isCur ? `background:${c}11;font-weight:600;` : ''}">
+                <td><strong style="color:${c}">S${wd.week}${isCur ? ' ←' : ''}</strong></td>
+                <td style="color:${c}">${wd.phase}</td>
+                <td>${wd.sets}</td>
+                <td>${wd.reps}</td>
+                <td style="color:${c};font-weight:700">${wd.intensity}%</td>
+                <td>${wd.rpe}</td>
+                <td class="text-xs" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${wd.trainA || '-'}</td>
+                <td class="text-xs" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${wd.trainB || '-'}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>` : '<p class="text-xs text-muted mt-sm">Detalhamento não disponível</p>'}
+      </details>
 
-      <div class="mt-md" style="border-top:1px solid var(--border-color);padding-top:12px">
-        <canvas id="macroChart_${m.id}" height="110"></canvas>
+      <!-- Gráfico de linha Chart.js -->
+      <div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:12px">
+        <canvas id="macroChart_${m.id}" height="100"></canvas>
       </div>
     </div>`;
 }
@@ -371,6 +455,19 @@ export function initPeriodization(navigateFn) {
     const sid = e.target.value;
     document.querySelectorAll('.macro-card').forEach(card => {
       card.style.display = !sid || card.dataset.student === sid ? '' : 'none';
+    });
+  });
+
+  // Finalizar macrociclo
+  document.querySelectorAll('.finish-macro').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!window.confirm('Marcar este macrociclo como finalizado?')) return;
+      const macro = await db.get('macrocycles', btn.dataset.id);
+      if (macro) {
+        await db.put('macrocycles', { ...macro, status: 'finished' });
+        notify.success('Macrociclo finalizado!');
+        navigateFn('/periodizacao');
+      }
     });
   });
 
@@ -386,6 +483,10 @@ export function initPeriodization(navigateFn) {
       notify.success('Macrociclo removido');
       navigateFn('/periodizacao');
     });
+  });
+
+  document.getElementById('addMacroBtnEmpty')?.addEventListener('click', () => {
+    document.getElementById('addMacroBtn')?.click();
   });
 
   initMacroCharts();
