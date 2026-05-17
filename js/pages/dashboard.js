@@ -30,9 +30,13 @@ export async function renderDashboard() {
   const todayStr = now.toISOString().slice(0, 10);
   const todaySchedules = schedules.filter(s => s.date === todayStr && s.status === 'scheduled');
 
-  // Receita do mês
+  // Receita do mês — usa paidDate (data real do pagamento) ou dueDate como fallback
   const monthRevenue = financial
-    .filter(f => { const d = new Date(f.date || f.dueDate || 0); return d.getMonth() === thisMonth && d.getFullYear() === thisYear && f.status === 'paid'; })
+    .filter(f => {
+      if (f.status !== 'paid') return false;
+      const refDate = new Date(f.paidDate || f.dueDate || 0);
+      return refDate.getMonth() === thisMonth && refDate.getFullYear() === thisYear;
+    })
     .reduce((t, f) => t + (parseFloat(f.amount) || 0), 0);
 
   // Taxa de adesão (sessões realizadas / treinos agendados no mês)
