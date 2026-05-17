@@ -420,20 +420,41 @@ export function initTracker(navigateFn) {
   state._uiInterval = setInterval(updateUI, 500);
   updateUI();
 
-  // Rest timer
+  // Rest timer — só cria se não existir ainda
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
   const restDur = parseInt(curEx.rest) || 60;
-  if (state.restTimer) state.restTimer.stop();
-  state.restTimer = new Timer({
-    mode: 'countdown', duration: restDur,
-    soundEnabled: state.session.soundEnabled !== false,
-    onTick: (rem) => {
+  if (!state.restTimer) {
+    // Criar pela primeira vez
+    state.restTimer = new Timer({
+      mode: 'countdown', duration: restDur,
+      soundEnabled: state.session.soundEnabled !== false,
+      onTick: (rem) => {
+        const c = document.getElementById('restCount');
+        const l = document.getElementById('restLbl');
+        if (c) { c.textContent = formatTime(rem); c.style.color = rem<=5?'var(--danger)':rem<=15?'var(--warning)':'var(--accent)'; }
+        if (l) l.textContent = 'Descansando...';
+      },
+      onComplete: () => {
+        const c = document.getElementById('restCount');
+        const l = document.getElementById('restLbl');
+        const b = document.getElementById('goRest');
+        if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
+        if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
+        if (b) b.textContent = '▶ Iniciar Descanso';
+        state.isResting = false;
+        state.workTimer?.start();
+        notify.success('Descanso finalizado!');
+      }
+    });
+  } else {
+    // Já existe — apenas reconectar os callbacks ao novo DOM
+    state.restTimer.onTick = (rem) => {
       const c = document.getElementById('restCount');
       const l = document.getElementById('restLbl');
       if (c) { c.textContent = formatTime(rem); c.style.color = rem<=5?'var(--danger)':rem<=15?'var(--warning)':'var(--accent)'; }
       if (l) l.textContent = 'Descansando...';
-    },
-    onComplete: () => {
+    };
+    state.restTimer.onComplete = () => {
       const c = document.getElementById('restCount');
       const l = document.getElementById('restLbl');
       const b = document.getElementById('goRest');
@@ -443,8 +464,16 @@ export function initTracker(navigateFn) {
       state.isResting = false;
       state.workTimer?.start();
       notify.success('Descanso finalizado!');
+    };
+    // Atualizar display com o tempo atual
+    const c = document.getElementById('restCount');
+    const b = document.getElementById('goRest');
+    if (c) {
+      const rem = state.restTimer.running ? state.restTimer.getRemaining?.() : state.restTimer.duration;
+      if (rem != null) { c.textContent = formatTime(rem); }
     }
-  });
+    if (b) b.textContent = state.restTimer.running ? '⏸ Pausar Descanso' : '▶ Iniciar Descanso';
+  }
 
   document.getElementById('goRest')?.addEventListener('click', () => {
     state.restTimer.soundEnabled = document.getElementById('sndToggle')?.checked !== false;
