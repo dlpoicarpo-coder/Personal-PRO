@@ -293,152 +293,242 @@ export async function initReports(navigateFn) {
     const student = await db.get('students', sid);
     if (!student) return;
     const cycleFilter = cycleSel?.value || '';
-    const settings = await db.get('settings', 'trainer');
+    const settings    = await db.get('settings', 'trainer') || {};
     const trainerName = settings?.trainerName || 'Personal PRO';
 
     const pdfArea = document.getElementById('pdfArea');
     if (!pdfArea) { notify.error('Carregue o relatório primeiro'); return; }
 
-    // Gather data for PDF
+    // ── Dados ──
     const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === sid);
-    const workouts = cycleFilter ? allWorkouts.filter(w => w.cycle === cycleFilter) : allWorkouts;
-    const sessions = (await db.getAll('sessions')).filter(s => s.studentId === sid && s.status === 'completed');
-    const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
+    const workouts    = cycleFilter ? allWorkouts.filter(w => w.cycle === cycleFilter) : allWorkouts;
+    const sessions    = (await db.getAll('sessions')).filter(s => s.studentId === sid && s.status === 'completed');
+    const bf          = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
+    const assessments = (await db.getAll('assessments')).filter(a => a.studentId === sid);
 
-    const printWin = window.open('', '_blank');
-    const charts = pdfArea.querySelectorAll('canvas');
-    let chartsHTML = '';
-    charts.forEach((c, i) => {
-      const titles = ['Evolução do Bem-estar', 'Carga de Treino Semanal', 'PSE por Sessão', 'Radar de Wellness', 'Evolução de Medidas', 'Frequência Semanal'];
-      const descs = [
-        'Sono (roxo), Disposição (verde), Energia (azul), Estresse (amarelo). Valores acima de 7 indicam boa recuperação.',
-        'Volume de carga calculado como PSE × Duração. Aumentos graduais de ~10% por semana são ideais.',
-        'Percepção Subjetiva de Esforço. Zona ideal para hipertrofia: 6-8. Acima de 8 por 3+ sessões = fadiga.',
-        'Quanto mais expandido, melhor o estado geral. Áreas "encolhidas" indicam pontos de atenção.',
-        'Tendência de peso corporal e % de gordura ao longo das avaliações.',
-        'Sessões por semana. Mínimo recomendado: 3x/semana para resultados consistentes.'
-      ];
-      const img = c.toDataURL('image/png');
-      chartsHTML += `<div class="chart-block"><h3>${titles[i] || 'Gráfico'}</h3><p class="chart-desc">${descs[i] || ''}</p><img src="${img}" /></div>`;
+    // ── Stats ──
+    const recent10  = bf.slice(-10);
+    const avgPse    = recent10.length ? (recent10.reduce((t,b)=>t+(b.pse||0),0)/recent10.length).toFixed(1) : '-';
+    const avgSleep  = recent10.length ? (recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length).toFixed(1) : '-';
+    const avgDisp   = recent10.length ? (recent10.reduce((t,b)=>t+(b.mood||0),0)/recent10.length).toFixed(1) : '-';
+    const totalLoad = bf.reduce((t,b)=>t+(b.trainingLoad||0),0);
+    const totalVol  = sessions.reduce((t,s)=>t+Math.round(s.totalVolume||0),0);
+
+    // ── Resumo de treinos — deduplica por nome+ciclo, mostra só únicas ──
+    const uniqueWorkouts = [];
+    const seen = new Set();
+    workouts.forEach(w => {
+      const key = `${w.cycle||'Geral'}__${w.name}`;
+      if (!seen.has(key)) { seen.add(key); uniqueWorkouts.push(w); }
     });
 
-    const parecer = pdfArea.querySelector('.card[style*="border-left:3px solid var(--primary)"] .text-sm')?.textContent || '';
-    const tecnico = pdfArea.querySelector('.card[style*="border-left:3px solid var(--accent)"] .text-sm')?.textContent || '';
+    // Agrupar por ciclo
+    const byCycle = {};
+    uniqueWorkouts.forEach(w => {
+      const c = w.cycle || 'Geral';
+      if (!byCycle[c]) byCycle[c] = [];
+      byCycle[c].push(w);
+    });
 
-    // Session details for PDF
-    let sessionTableHTML = '';
-    if (sessions.length) {
-      sessionTableHTML = `<h2>Sessões Realizadas</h2>
-        <p class="section-desc">Registro detalhado de cada treino concluído com métricas de volume e intensidade.</p>
-        <table><thead><tr><th>Data</th><th>Treino</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th></tr></thead><tbody>
-        ${sessions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20).map(se => `<tr>
-          <td>${new Date(se.date).toLocaleDateString('pt-BR')}</td>
-          <td><strong>${se.workoutName || '-'}</strong></td>
-          <td>${se.totalDuration ? Math.round(se.totalDuration / 60) + 'min' : '-'}</td>
-          <td>${se.totalVolume || '-'} kg</td>
-          <td>${se.totalSets || '-'}</td>
-          <td>${se.postBiofeedback?.pse || '-'}</td>
-        </tr>`).join('')}</tbody></table>`;
-    }
+    // ── Parecer ──
+    const pseNum   = parseFloat(avgPse)||0;
+    const sleepNum = parseFloat(avgSleep)||0;
+    let parecerAluno = '';
+    if (pseNum > 8)      parecerAluno += 'Atenção: seus treinos estão muito intensos. Vamos ajustar o ritmo para garantir boa recuperação. ';
+    else if (pseNum > 6) parecerAluno += 'Você está treinando na intensidade ideal! Continue assim. ';
+    else                 parecerAluno += 'Boa consistência! Temos margem para evoluir a intensidade gradualmente. ';
+    if (sleepNum > 0 && sleepNum < 6)    parecerAluno += 'O sono está abaixo do ideal — priorize 7 a 9 horas para maximizar os resultados. ';
+    else if (sleepNum >= 7)              parecerAluno += 'Ótima qualidade de sono! Isso acelera muito a recuperação e os ganhos. ';
+    if (sessions.length > 0)            parecerAluno += `Parabéns pelas ${sessions.length} sessão(ões) concluídas! A consistência é o maior segredo dos resultados. `;
+    parecerAluno += totalLoad > 2000 ? 'A carga acumulada está elevada — estamos monitorando de perto.' : 'Sua carga de treino está dentro do esperado.';
 
-    // Resumo compacto das fichas (SEM tabela detalhada — muito extenso para o aluno)
-    let workoutTableHTML = '';
-    if (workouts.length) {
-      // Agrupar por ciclo
-      const byCycle = {};
-      workouts.forEach(w => {
-        const c = w.cycle || 'Geral';
-        if (!byCycle[c]) byCycle[c] = [];
-        byCycle[c].push(w);
-      });
+    let parecerTecnico = '';
+    if (pseNum > 8)      parecerTecnico += 'PSE média elevada (>8): possível fadiga acumulada. Recomendar redução de volume 20–30% ou semana de deload. ';
+    else if (pseNum > 6) parecerTecnico += 'PSE em nível adequado. Progressão viável nas próximas semanas. ';
+    else                 parecerTecnico += 'PSE baixa — espaço para aumento de carga ou densidade. ';
+    if (sleepNum > 0 && sleepNum < 6) parecerTecnico += 'Sono comprometido: orientar higiene do sono. ';
+    if (totalLoad > 2000)             parecerTecnico += 'Carga acumulada significativa — monitorar sinais de overreaching (queda de performance, irritabilidade, FC elevada em repouso).';
 
-      workoutTableHTML = `<h2>Treinos Prescritos</h2>
-        <p class="section-desc">Resumo das fichas de treino criadas pelo seu personal trainer.</p>
-        <div class="workout-summary">`;
+    // ── Capturar gráficos por ID (não por posição) ──
+    const chartIds = [
+      { id: 'wellnessChart',  title: 'Evolução do Bem-estar',      desc: 'Sono (roxo), Disposição (verde), Energia (azul), Estresse (amarelo tracejado). Valores acima de 7 indicam boa recuperação.' },
+      { id: 'loadChart',      title: 'Carga de Treino Semanal',     desc: 'Carga semanal = PSE × Duração. Aumentos graduais de ~10%/semana são ideais para progressão sem risco.' },
+      { id: 'pseChart',       title: 'PSE por Sessão',              desc: 'Percepção Subjetiva de Esforço (1–10). Zona ideal para hipertrofia: 6–8. Acima de 8 por 3+ sessões seguidas = atenção à fadiga.' },
+      { id: 'radarChart',     title: 'Radar de Wellness',           desc: 'Média dos últimos 5 check-ins. Quanto maior a área, melhor o estado geral. Pontas "encolhidas" indicam itens a melhorar.' },
+      { id: 'freqChart',      title: 'Frequência Semanal',          desc: 'Sessões realizadas por semana. Consistência ≥3x/semana é fundamental para resultados duradouros.' },
+      { id: 'measuresChart',  title: 'Evolução de Medidas Corporais', desc: 'Tendência de peso e % de gordura ao longo das avaliações físicas.' },
+      { id: 'cycleDiffChart', title: 'Comparação de Períodos',      desc: 'Comparação entre a primeira e segunda metade dos dados coletados. Melhoras aparecem como barras verdes maiores.' },
+    ];
 
-      Object.entries(byCycle).forEach(([cycle, wks]) => {
-        workoutTableHTML += `<div class="cycle-block">
-          <h3 style="font-size:13px;color:#00A499;margin:14px 0 8px;border-bottom:1px solid #e0e0e0;padding-bottom:4px">
-            ${cycle} <span style="font-weight:normal;color:#999;font-size:11px">(${wks.length} treino${wks.length>1?'s':''})</span>
-          </h3>
-          <table style="font-size:12px;margin-bottom:8px">
-            <thead><tr><th>Treino</th><th>Data</th><th>Exercícios</th><th>Músculos</th></tr></thead>
+    let chartsHTML = '';
+    chartIds.forEach(({ id, title, desc }) => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+      try {
+        const img = canvas.toDataURL('image/png');
+        // Verificar se o canvas tem conteúdo real (não está em branco)
+        if (img === 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==') return;
+        chartsHTML += `
+          <div class="chart-block">
+            <h3>${title}</h3>
+            <p class="chart-desc">${desc}</p>
+            <img src="${img}" />
+          </div>`;
+      } catch(e) { /* canvas vazio ou sem dados */ }
+    });
+
+    // ── HTML do PDF ──
+    const printWin = window.open('', '_blank');
+    if (!printWin) { notify.error('Popup bloqueado. Permita pop-ups para gerar o PDF.'); return; }
+
+    printWin.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
+      <meta charset="UTF-8">
+      <title>Dossiê — ${student.name}</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; padding: 28px 36px; max-width: 820px; margin: 0 auto; font-size: 13px; line-height: 1.55; }
+
+        /* Header */
+        .doc-header { border-bottom: 3px solid #10b981; padding-bottom: 10px; margin-bottom: 6px; }
+        .doc-header h1 { font-size: 22px; color: #10b981; font-weight: 800; letter-spacing: -0.5px; }
+        .doc-subtitle { font-size: 11px; color: #888; margin-top: 3px; }
+
+        /* Info do aluno */
+        .student-block { display: flex; align-items: center; gap: 14px; background: #f0fdf8; border-radius: 8px; padding: 14px 16px; margin: 14px 0; }
+        .avatar { width: 52px; height: 52px; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex-shrink: 0; }
+        .student-info h2 { font-size: 17px; color: #111; margin-bottom: 2px; }
+        .student-info p { font-size: 11px; color: #666; }
+        .cycle-tag { display: inline-block; background: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-top: 4px; }
+
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 14px 0; }
+        .stat { text-align: center; padding: 10px 6px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; }
+        .stat-val { font-size: 22px; font-weight: 800; color: #10b981; }
+        .stat-lbl { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+        /* Secções */
+        h2 { font-size: 15px; color: #10b981; margin: 20px 0 6px; border-bottom: 1px solid #d1fae5; padding-bottom: 5px; font-weight: 700; }
+        .section-desc { font-size: 11px; color: #888; margin: 3px 0 10px; }
+
+        /* Pareceres */
+        .parecer { background: #f0fdf8; border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 13px; line-height: 1.7; }
+        .tecnico { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 12px; line-height: 1.6; color: #1e3a5f; }
+
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 12px; }
+        th { background: #f3f4f6; padding: 7px 10px; text-align: left; font-weight: 700; border-bottom: 2px solid #e5e7eb; font-size: 10px; text-transform: uppercase; color: #555; }
+        td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .tag-badge { display: inline-block; background: #d1fae5; color: #065f46; border-radius: 10px; padding: 1px 8px; font-size: 10px; font-weight: 600; }
+
+        /* Treinos por ciclo */
+        .cycle-section { margin-bottom: 12px; }
+        .cycle-title { font-size: 13px; font-weight: 700; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 6px; }
+        .cycle-count { font-weight: 400; color: #9ca3af; font-size: 11px; }
+
+        /* Gráficos */
+        .chart-block { margin: 16px 0; page-break-inside: avoid; }
+        .chart-block h3 { font-size: 13px; color: #10b981; margin-bottom: 2px; font-weight: 700; }
+        .chart-block .chart-desc { font-size: 10px; color: #888; margin: 0 0 7px; line-height: 1.4; }
+        .chart-block img { max-width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 6px; }
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .chart-full { grid-column: 1 / -1; }
+
+        /* Footer */
+        .footer { text-align: center; font-size: 10px; color: #aaa; margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+
+        /* Nota de rodapé */
+        .footnote { font-size: 10px; color: #9ca3af; font-style: italic; margin-top: 6px; }
+
+        @media print {
+          body { padding: 14px 18px; }
+          .stats { gap: 5px; }
+          .stat-val { font-size: 18px; }
+        }
+      </style>
+    </head><body>
+
+      <div class="doc-header">
+        <h1>Personal PRO — Dossiê de Performance</h1>
+        <p class="doc-subtitle">Gerado em ${new Date().toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })} por ${trainerName}</p>
+      </div>
+
+      <div class="student-block">
+        <div class="avatar">${student.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
+        <div class="student-info">
+          <h2>${student.name}</h2>
+          <p>${student.code || ''} · Objetivo: ${student.goal || '-'} · ${student.age || (student.birthDate ? new Date().getFullYear() - new Date(student.birthDate).getFullYear() : '-')} anos</p>
+          <span class="cycle-tag">${cycleFilter || 'Todos os Ciclos'}</span>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val">${uniqueWorkouts.length}</div><div class="stat-lbl">Treinos Prescritos</div></div>
+        <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">Sessões Realizadas</div></div>
+        <div class="stat"><div class="stat-val" style="color:${pseNum>8?'#ef4444':pseNum>6?'#f59e0b':'#10b981'}">${avgPse}</div><div class="stat-lbl">PSE Média</div></div>
+        <div class="stat"><div class="stat-val" style="color:${sleepNum>0&&sleepNum<6?'#ef4444':sleepNum>=7?'#10b981':'#f59e0b'}">${avgSleep}</div><div class="stat-lbl">Sono Médio</div></div>
+        <div class="stat"><div class="stat-val">${Math.round(totalLoad)}</div><div class="stat-lbl">Carga Total</div></div>
+      </div>
+
+      <h2>Resumo para o Aluno</h2>
+      <p class="section-desc">Análise em linguagem acessível sobre seu progresso.</p>
+      <div class="parecer">${parecerAluno}</div>
+
+      <h2>Análise Técnica</h2>
+      <p class="section-desc">Avaliação baseada nos indicadores de carga e bem-estar coletados.</p>
+      <div class="tecnico">${parecerTecnico}</div>
+
+      ${sessions.length ? `
+      <h2>Sessões Realizadas</h2>
+      <p class="section-desc">Registro das ${sessions.length} sessão(ões) concluída(s).</p>
+      <table>
+        <thead><tr><th>Data</th><th>Treino</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th></tr></thead>
+        <tbody>
+          ${sessions.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,15).map(se=>`
+            <tr>
+              <td>${new Date(se.date).toLocaleDateString('pt-BR')}</td>
+              <td><strong>${se.workoutName||'-'}</strong></td>
+              <td>${se.totalDuration?Math.round(se.totalDuration/60)+'min':'-'}</td>
+              <td>${se.totalVolume?Math.round(se.totalVolume)+' kg':'-'}</td>
+              <td>${se.totalSets||'-'}</td>
+              <td><strong>${se.postBiofeedback?.pse||'-'}</strong></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : ''}
+
+      ${uniqueWorkouts.length ? `
+      <h2>Treinos Prescritos</h2>
+      <p class="section-desc">Fichas de treino criadas pelo seu personal trainer (${uniqueWorkouts.length} treino${uniqueWorkouts.length>1?'s únicos':' único'}).</p>
+      ${Object.entries(byCycle).map(([cycle, wks])=>`
+        <div class="cycle-section">
+          <div class="cycle-title">${cycle} <span class="cycle-count">(${wks.length} treino${wks.length>1?'s':''})</span></div>
+          <table>
+            <thead><tr><th>Treino</th><th>Data</th><th>Exercícios</th></tr></thead>
             <tbody>
-              ${wks.map(w => {
-                const muscles = [...new Set((w.exercises||[]).map(e => e.muscleGroup || '').filter(Boolean))].slice(0,3).join(', ');
-                return `<tr>
+              ${wks.sort((a,b)=>new Date(a.date)-new Date(b.date)).map(w=>`
+                <tr>
                   <td><strong>${w.name}</strong></td>
                   <td>${new Date(w.date).toLocaleDateString('pt-BR')}</td>
-                  <td style="text-align:center">${(w.exercises||[]).length}</td>
-                  <td style="color:#666;font-size:11px">${muscles || '-'}</td>
-                </tr>`;
-              }).join('')}
+                  <td style="text-align:center"><span class="tag-badge">${(w.exercises||[]).length}</span></td>
+                </tr>`).join('')}
             </tbody>
           </table>
-        </div>`;
-      });
+        </div>`).join('')}
+      <p class="footnote">* Fichas completas com exercícios, séries e cargas disponíveis no app Personal PRO.</p>` : ''}
 
-      workoutTableHTML += `</div>
-        <p style="font-size:11px;color:#888;margin-top:6px;font-style:italic">
-          * As fichas completas com exercícios, séries e cargas estão disponíveis no aplicativo Personal PRO.
-        </p>`;
-    }
-
-    printWin.document.write(`<!DOCTYPE html><html><head><title>Dossiê - ${student.name}</title>
-      <style>
-        *{box-sizing:border-box}
-        body{font-family:'Segoe UI',Arial,sans-serif;color:#222;padding:30px 40px;max-width:850px;margin:0 auto;font-size:13px;line-height:1.5}
-        h1{font-size:26px;border-bottom:3px solid #00A499;padding-bottom:10px;margin-bottom:8px}
-        h1 span{color:#00A499}
-        h2{font-size:17px;color:#00A499;margin-top:28px;border-bottom:1px solid #e0e0e0;padding-bottom:6px}
-        h3{font-size:14px;color:#333;margin-top:16px}
-        .subtitle{font-size:12px;color:#888;margin-bottom:20px}
-        .header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:#f8faf9;border-radius:8px}
-        .avatar{width:56px;height:56px;border-radius:50%;background:#00A499;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0}
-        .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:20px 0}
-        .stat{text-align:center;padding:14px 8px;border:1px solid #e8e8e8;border-radius:8px;background:#fafafa}
-        .stat-val{font-size:26px;font-weight:700;color:#00A499}
-        .stat-lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
-        .parecer{background:#f0f9f6;border-left:4px solid #00A499;padding:16px 20px;border-radius:0 8px 8px 0;margin:14px 0;line-height:1.8;font-size:13px}
-        .tecnico{background:#f0f6f9;border-left:4px solid #0695b4;padding:16px 20px;border-radius:0 8px 8px 0;margin:14px 0;line-height:1.7;font-size:12px}
-        .section-desc{font-size:11px;color:#888;margin:4px 0 12px;line-height:1.5}
-        table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px}
-        th{background:#f3f3f3;padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#555}
-        td{padding:7px 10px;border-bottom:1px solid #eee}
-        tr:nth-child(even) td{background:#fafafa}
-        .chart-block{margin:20px 0;page-break-inside:avoid}
-        .chart-block h3{font-size:15px;color:#00A499;margin-bottom:2px}
-        .chart-block .chart-desc{font-size:11px;color:#888;margin:0 0 8px;line-height:1.4}
-        .chart-block img{max-width:100%;height:auto;border:1px solid #eee;border-radius:6px}
-        .footer{text-align:center;font-size:10px;color:#aaa;margin-top:40px;border-top:1px solid #ddd;padding-top:12px}
-        .cycle-badge{display:inline-block;background:#e0f7f0;color:#00A499;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
-        @media print{body{padding:15px 20px}h1{font-size:22px}.stats{gap:6px}.stat{padding:10px 6px}.stat-val{font-size:22px}}
-      </style></head><body>
-      <h1>Personal<span>PRO</span> — Dossiê de Performance</h1>
-      <p class="subtitle">Relatório gerado em ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} por ${trainerName}</p>
-      <div class="header">
-        <div class="avatar">${student.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}</div>
-        <div><strong style="font-size:18px">${student.name}</strong><br>
-        <span style="color:#666">${student.code} · Objetivo: ${student.goal || '-'} · ${student.age || '-'} anos</span><br>
-        <span class="cycle-badge">${cycleFilter || 'Todos os Ciclos'}</span></div>
-      </div>
-      ${pdfArea.querySelector('.stats-grid') ? '<div class="stats">' + Array.from(pdfArea.querySelectorAll('.stat-card')).map(c => `<div class="stat"><div class="stat-val">${c.querySelector('.stat-value')?.textContent || '-'}</div><div class="stat-lbl">${c.querySelector('.stat-label')?.textContent || ''}</div></div>`).join('') + '</div>' : ''}
-      <h2>Resumo para o Aluno</h2>
-      <p class="section-desc">Análise em linguagem acessível para compreensão do aluno sobre seu progresso.</p>
-      <div class="parecer">${parecer}</div>
-      <h2>Análise Técnica do Treinador</h2>
-      <p class="section-desc">Análise baseada nos indicadores de carga de treino, recuperação e bem-estar coletados.</p>
-      <div class="tecnico">${tecnico}</div>
-      ${sessionTableHTML}
-      ${workoutTableHTML}
+      ${chartsHTML ? `
       <h2>Gráficos de Evolução</h2>
-      <p class="section-desc">Visualização gráfica dos indicadores coletados ao longo do período. Leia as descrições abaixo de cada gráfico para interpretar os dados.</p>
-      ${chartsHTML}
-      <div class="footer">Dossiê gerado por ${trainerName} — ${new Date().toLocaleDateString('pt-BR')} — Personal PRO · Sistema Profissional de Treinamento</div>
+      <p class="section-desc">Visualização dos indicadores coletados. Leia as descrições para interpretar cada gráfico.</p>
+      <div class="charts-grid">${chartsHTML}</div>` : ''}
+
+      <div class="footer">
+        Dossiê gerado por ${trainerName} — ${new Date().toLocaleDateString('pt-BR')} — Personal PRO · Sistema Profissional de Treinamento
+      </div>
     </body></html>`);
+
     printWin.document.close();
-    setTimeout(() => { printWin.print(); }, 600);
-    notify.success('Dossiê aberto para impressão/PDF!');
+    setTimeout(() => { printWin.print(); }, 700);
+    notify.success('Dossiê gerado!');
   });
 }
 
