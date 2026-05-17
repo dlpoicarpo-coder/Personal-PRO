@@ -772,10 +772,9 @@ async function initReportCharts(studentId) {
     if (ds.length) new Chart(mCtx, { type: 'line', data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y1: { position: 'right', ticks: { color: '#f59e0b' }, grid: { display: false } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } } });
   }
 
-  // ── GRÁFICO DE PROGRESSÃO DE CARGA ──
+// ── GRÁFICO DE PROGRESSÃO DE CARGA ──
   const lpCtx = document.getElementById('loadProgressChart');
   if (lpCtx && sessions.length >= 2) {
-    // Pegar os top 3 exercícios mais treinados para o gráfico de linha
     const logMap = {};
     [...sessions].filter(s=>s.status==='completed').sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
       (s.setLog||[]).forEach(set => {
@@ -792,35 +791,34 @@ async function initReportCharts(studentId) {
 
     if (top3.length) {
       const colors = ['#10b981','#06b6d4','#f59e0b'];
-     new Chart(lpCtx, {
-          type: 'line',
-          data: {
-            datasets: top3.map(([name, points], i) => ({
-              label: name,
-              data: points.map(p => {
-                // Formatamos a data manualmente para "DD/MM" para não precisar do Date Adapter
-                const [ano, mes, dia] = p.date.split('-');
-                return { x: `${dia}/${mes}`, y: p.load };
-              }),
-              borderColor: colors[i],
-              backgroundColor: colors[i]+'15',
-              tension: 0.3,
-              pointRadius: 4,
-              borderWidth: 2,
-              fill: false,
-            }))
+      new Chart(lpCtx, {
+        type: 'line',
+        data: {
+          datasets: top3.map(([name, points], i) => ({
+            label: name,
+            data: points.map(p => {
+              const [ano, mes, dia] = p.date.split('-');
+              return { x: `${dia}/${mes}`, y: p.load };
+            }),
+            borderColor: colors[i],
+            backgroundColor: colors[i]+'15',
+            tension: 0.3,
+            pointRadius: 4,
+            borderWidth: 2,
+            fill: false,
+          }))
+        },
+        options: {
+          ...co,
+          scales: {
+            x: { ticks:{ color:'#94a3b8', font:{size:9} }, grid:{display:false} },
+            y: { ticks:{ color:'#64748b', font:{size:9}, callback: v => v+'kg' }, grid:{ color:'rgba(148,163,184,0.07)' } }
           },
-          options: {
-            ...co,
-            // Removemos o "parsing: false"
-            scales: {
-              // Removemos o "type: 'time'" e a configuração de tempo daqui:
-              x: { ticks:{ color:'#94a3b8', font:{size:9} }, grid:{display:false} },
-              y: { ticks:{ color:'#64748b', font:{size:9}, callback: v => v+'kg' }, grid:{ color:'rgba(148,163,184,0.07)' } }
-            },
-            plugins: { legend: { labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12 } } }
-          }
-        });
+          plugins: { legend: { labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12 } } }
+        }
+      });
+    }
+  } // <--- ESSA CHAVE FECHA O "if (lpCtx && sessions.length >= 2)"
   const cdCtx = document.getElementById('cycleDiffChart');
   if (cdCtx && bf.length >= 4) {
     const mid = Math.floor(bf.length / 2);
