@@ -126,7 +126,7 @@ export async function renderTracker() {
               <td>${s.workoutName || '-'}</td>
               <td>${Calc.formatDate(s.date)}</td>
               <td>${formatTimeHMS(s.totalDuration || 0)}</td>
-              <td>${s.totalVolume || '-'} kg</td>
+              <td>${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
               <td>${s.totalSets || '-'}</td>
               <td style="color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}"><strong>${pse||'-'}</strong></td>
               <td style="display:flex;gap:4px">
@@ -160,7 +160,7 @@ function renderLiveView(students) {
     <div class="tracker-live">
       <div class="tracker-header">
         <div class="flex items-center gap-md">
-          <div class="avatar">${st ? st.name[0] : '?'}</div>
+          <div class="avatar">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
           <div>
             <div style="font-weight:700;font-size:1.05rem">${st?.name || 'Aluno'}</div>
             <div class="text-muted text-sm">${s.workoutName || 'Treino'}</div>
@@ -676,7 +676,7 @@ function buildSessionSummary(session, student) {
     return `${ex.name}: ${sets.length}x (${sets.reduce((t,s)=>t+(s.reps||0),0)} reps, ${Math.max(...sets.map(s=>s.load||0))}kg)`;
   }).filter(Boolean);
 
-  return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${new Date(session.date).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${session.totalVolume||0} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
+  return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${new Date(session.date).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
 }
 
 // ── SHOW SUMMARY ─────────────────────────────────────────────
