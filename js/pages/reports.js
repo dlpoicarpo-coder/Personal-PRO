@@ -79,40 +79,39 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   if (sleepNum < 6) parecerTecnico += 'Sono comprometido — orientar higiene do sono. ';
   if (totalLoad > 2000) parecerTecnico += 'Carga acumulada significativa. Monitorar sinais de overreaching.';
 
-  // ── Evolução de carga por exercício (baseado nas sessões) ──
-  const loadProgression = {};
-  completed
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .forEach(s => {
-      (s.setLog || []).forEach(set => {
-        const exName = (s.exercises || [])[set.exIdx]?.name;
-        if (!exName || !set.load || set.load <= 0) return;
-        if (!loadProgression[exName]) loadProgression[exName] = [];
-        loadProgression[exName].push({
-          date: s.date,
-          load: set.load,
-          reps: set.reps || 0,
-          vol:  set.load * (set.reps || 1),
+// ── Evolução de carga por exercício para o PDF ──
+    const loadProgression = {};
+    sessions
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .forEach(s => {
+        (s.setLog || []).forEach(set => {
+          const exName = (s.exercises || [])[set.exIdx]?.name;
+          if (!exName || !set.load || set.load <= 0) return;
+          if (!loadProgression[exName]) loadProgression[exName] = [];
+          loadProgression[exName].push({
+            date: s.date,
+            load: set.load,
+            reps: set.reps || 0,
+            vol:  set.load * (set.reps || 1),
+          });
         });
       });
-    });
 
-  // Top exercícios com maior progressão de carga
-  const progressionItems = Object.entries(loadProgression)
-    .filter(([, sets]) => sets.length >= 2)
-    .map(([name, sets]) => {
-      const first     = sets[0];
-      const last      = sets[sets.length - 1];
-      const maxLoad   = Math.max(...sets.map(s => s.load));
-      const minLoad   = Math.min(...sets.map(s => s.load));
-      const delta     = last.load - first.load;
-      const pct       = first.load > 0 ? Math.round((delta / first.load) * 100) : 0;
-      const totalVol  = sets.reduce((t, s) => t + s.vol, 0);
-      const avgReps   = Math.round(sets.reduce((t, s) => t + s.reps, 0) / sets.length);
-      return { name, first, last, maxLoad, minLoad, delta, pct, totalVol, avgReps, sessions: sets.length };
-    })
-    .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
-    .slice(0, 8);
+    const progressionItems = Object.entries(loadProgression)
+      .filter(([, sets]) => sets.length >= 2)
+      .map(([name, sets]) => {
+        const first     = sets[0];
+        const last      = sets[sets.length - 1];
+        const maxLoad   = Math.max(...sets.map(s => s.load));
+        const minLoad   = Math.min(...sets.map(s => s.load));
+        const delta     = last.load - first.load;
+        const pct       = first.load > 0 ? Math.round((delta / first.load) * 100) : 0;
+        const totalVol  = sets.reduce((t, s) => t + s.vol, 0);
+        const avgReps   = Math.round(sets.reduce((t, s) => t + s.reps, 0) / sets.length);
+        return { name, first, last, maxLoad, minLoad, delta, pct, totalVol, avgReps, sessions: sets.length };
+      })
+      .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
+      .slice(0, 8);
 
   // Stats gerais de carga
   const totalVolAllSessions = completed.reduce((t, s) => t + Math.round(s.totalVolume || 0), 0);
