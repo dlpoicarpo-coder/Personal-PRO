@@ -188,57 +188,67 @@ function workoutFormHTML(students, workout = {}, allExercises = []) {
   `;
 }
 
-function exerciseRowHTML(index, ex = {}, allExercises = []) {
+function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const loadType = ex.loadType || 'weight';
-  const isTime = loadType === 'time';
-  const isBW   = loadType === 'bodyweight';
+  const isTime   = loadType === 'time';
+  const isBW     = loadType === 'bodyweight';
   return `
     <div class="exercise-row" style="
-      display:grid;grid-template-columns:2fr 60px 70px 80px 70px 90px 80px 28px;
-      gap:6px;align-items:end;padding:8px 10px;border-radius:8px;
+      display:grid;grid-template-columns:2fr 56px 68px 72px 60px 100px 90px 28px;
+      gap:5px;align-items:end;padding:8px 10px;border-radius:8px;
       background:var(--bg-page);margin-bottom:6px" data-index="${index}">
       <div>
-        <label class="form-label" style="font-size:0.68rem;margin-bottom:2px;opacity:0.65">Exercício</label>
-        <input class="form-input" name="ex_name_${index}" list="exerciseList" value="${ex.name||''}" placeholder="Nome" style="font-size:0.82rem" />
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Exercício</label>
+        <input class="form-input ex-name-input" name="ex_name_${index}" list="exerciseList" value="${ex.name||''}"
+          placeholder="Nome" style="font-size:0.82rem" data-index="${index}" />
       </div>
       <div>
-        <label class="form-label" style="font-size:0.68rem;margin-bottom:2px;opacity:0.65">Séries</label>
-        <input class="form-input" name="ex_sets_${index}" type="number" value="${ex.sets||3}" min="1" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
-      </div>
-      <div>
-        <label class="form-label" style="font-size:0.68rem;margin-bottom:2px;opacity:0.65">Reps</label>
-        <input class="form-input" name="ex_reps_${index}" value="${ex.reps||'12'}" placeholder="12" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
-      </div>
-      <div>
-        <label class="form-label" style="font-size:0.68rem;margin-bottom:2px;opacity:0.65">
-          ${isTime ? 'Tempo (s)' : isBW ? 'Extra (kg)' : 'Carga (kg)'}
-        </label>
-        <input class="form-input" name="ex_load_${index}" value="${ex.load||''}"
-          placeholder="${isTime ? '30s' : isBW ? '+kg' : 'kg'}"
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Séries</label>
+        <input class="form-input" name="ex_sets_${index}" type="number" value="${ex.sets||3}" min="1"
           style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
-        <label class="form-label" style="font-size:0.68rem;margin-bottom:2px;opacity:0.65">Desc. (s)</label>
-        <input class="form-input" name="ex_rest_${index}" value="${ex.rest||'60'}" placeholder="60" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Reps/Tempo</label>
+        <input class="form-input" name="ex_reps_${index}" value="${ex.reps || ex.defaultReps || '12'}"
+          placeholder="12" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
-        <label class="form-label" style="font-size:0.68rem;margin-bottom:2px;opacity:0.65">Tipo carga</label>
-        <select class="form-select" name="ex_loadtype_${index}" style="font-size:0.78rem;padding:4px 6px">
-          <option value="weight" ${loadType==='weight'?'selected':''}>Peso (kg)</option>
-          <option value="bodyweight" ${loadType==='bodyweight'?'selected':''}>Peso corporal</option>
-          <option value="time" ${loadType==='time'?'selected':''}>Tempo (s)</option>
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65" id="loadLbl_${index}">
+          ${isTime ? 'Intensidade' : isBW ? 'Extra (kg)' : 'Carga (kg)'}
+        </label>
+        <input class="form-input" name="ex_load_${index}" value="${ex.load||''}"
+          placeholder="${isTime ? 'km/h/W' : isBW ? '+kg' : 'kg'}"
+          style="text-align:center;font-size:0.82rem;padding:4px 6px" />
+      </div>
+      <div>
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Desc.(s)</label>
+        <input class="form-input" name="ex_rest_${index}" value="${ex.rest||'60'}"
+          style="text-align:center;font-size:0.82rem;padding:4px 6px" />
+      </div>
+      <div>
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Tipo carga</label>
+        <select class="form-select ex-loadtype" name="ex_loadtype_${index}" data-index="${index}"
+          style="font-size:0.78rem;padding:4px 6px">
+          <option value="weight"     ${loadType==='weight'?'selected':''}>Peso (kg)</option>
+          <option value="bodyweight" ${loadType==='bodyweight'?'selected':''}>P.Corporal</option>
+          <option value="time"       ${loadType==='time'?'selected':''}>Tempo/Int.</option>
         </select>
       </div>
       <div>
-        <label class="form-label" style="font-size:0.68rem;margin-bottom:2px;opacity:0.65">Método</label>
-        <input class="form-input" name="ex_method_${index}" value="${ex.method||''}" placeholder="Drop-set..." style="font-size:0.78rem;padding:4px 6px" />
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Método</label>
+        <select class="form-select ex-method" name="ex_method_${index}" data-index="${index}"
+          style="font-size:0.78rem;padding:4px 6px">
+          <option value="">— Nenhum —</option>
+          ${allMethods.map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
+            data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
+            data-desc="${m.description||''}">${m.name}</option>`).join('')}
+        </select>
       </div>
       <button type="button" class="btn btn-ghost btn-icon remove-exercise" data-index="${index}"
         style="color:var(--danger);padding:4px;align-self:flex-end;margin-bottom:2px" title="Remover">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
       </button>
-    </div>
-  `;
+    </div>`;
 }
 
 function collectExercises() {
@@ -264,13 +274,15 @@ function collectExercises() {
 
 export function initWorkouts(navigateFn) {
   const openAddModal = async () => {
-    const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
-    const allEx    = await db.getAll('exercises');
-    let exIndex    = 1;
+    const students  = (await db.getAll('students')).filter(s => s.status === 'Ativo');
+    const allEx     = await db.getAll('exercises');
+    const allMethods= await db.getAll('methods');
+    let exIndex     = 1;
 
     openModal({
       title: '+ Novo Treino', size: 'xl',
-      content: workoutFormHTML(students, {}, allEx) + `<datalist id="exerciseList">${allEx.map(e => `<option value="${e.name}">`).join('')}</datalist>`,
+      content: workoutFormHTML(students, {}, allEx) +
+        `<datalist id="exerciseList">${allEx.map(e => `<option value="${e.name}">`).join('')}</datalist>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
         { label: 'Salvar Treino', class: 'btn-primary', onClick: async () => {
@@ -286,13 +298,18 @@ export function initWorkouts(navigateFn) {
       ]
     });
 
+    // Substituir primeira linha com métodos
     setTimeout(() => {
+      const firstRow = document.querySelector('.exercise-row');
+      if (firstRow) {
+        firstRow.outerHTML = exerciseRowHTML(0, {}, allEx, allMethods);
+      }
       document.getElementById('addExerciseRow')?.addEventListener('click', () => {
         const container = document.getElementById('exerciseRows');
-        container.insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, []));
-        bindRemoveExercise();
+        container.insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, allEx, allMethods));
+        bindExerciseRowHandlers(allEx, allMethods);
       });
-      bindRemoveExercise();
+      bindExerciseRowHandlers(allEx, allMethods);
     }, 100);
   };
 
@@ -480,5 +497,68 @@ export function initWorkouts(navigateFn) {
 function bindRemoveExercise() {
   document.querySelectorAll('.remove-exercise').forEach(btn => {
     btn.onclick = () => btn.closest('.exercise-row')?.remove();
+  });
+}
+
+function bindExerciseRowHandlers(allExercises, allMethods) {
+  bindRemoveExercise();
+
+  // Auto-preenchimento ao selecionar método
+  document.querySelectorAll('.ex-method').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const opt = sel.selectedOptions[0];
+      if (!opt || !opt.value) return;
+      const i = sel.dataset.index;
+      const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
+      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
+      const restEl = document.querySelector(`[name="ex_rest_${i}"]`);
+      const sets = opt.dataset.sets;
+      const reps = opt.dataset.reps;
+      const rest = opt.dataset.rest;
+      if (sets && setsEl && !setsEl.value) setsEl.value = sets.replace(/[^0-9]/g,'') || 3;
+      if (reps && repsEl) repsEl.value = reps;
+      if (rest && restEl) {
+        // Extrair primeiro número de "90s" ou "90-120s"
+        const match = rest.match(/(\d+)/);
+        if (match) restEl.value = match[1];
+      }
+      // Tooltip com descrição do método
+      const desc = opt.dataset.desc;
+      if (desc) {
+        const row = sel.closest('.exercise-row');
+        let tip = row?.querySelector('.method-tip');
+        if (!tip) {
+          tip = document.createElement('div');
+          tip.className = 'method-tip';
+          tip.style.cssText = 'font-size:0.7rem;color:var(--accent);margin-top:3px;grid-column:1/-1;padding:4px 6px;background:rgba(6,182,212,0.07);border-radius:4px';
+          row?.appendChild(tip);
+        }
+        tip.textContent = '💡 ' + desc;
+      }
+    });
+  });
+
+  // Auto-preencher tipo de carga ao selecionar exercício
+  document.querySelectorAll('.ex-name-input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const ex = allExercises.find(e => e.name.toLowerCase() === inp.value.toLowerCase());
+      if (!ex) return;
+      const i = inp.dataset.index;
+      const ltSel = document.querySelector(`[name="ex_loadtype_${i}"]`);
+      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
+      const lbl    = document.getElementById(`loadLbl_${i}`);
+      if (ex.loadType && ltSel) ltSel.value = ex.loadType;
+      if (ex.defaultReps && repsEl && (!repsEl.value || repsEl.value === '12')) repsEl.value = ex.defaultReps;
+      if (lbl) lbl.textContent = ex.loadType === 'time' ? 'Intensidade' : ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+    });
+  });
+
+  // Atualizar label ao mudar tipo de carga
+  document.querySelectorAll('.ex-loadtype').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = sel.dataset.index;
+      const lbl = document.getElementById(`loadLbl_${i}`);
+      if (lbl) lbl.textContent = sel.value === 'time' ? 'Intensidade' : sel.value === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+    });
   });
 }
