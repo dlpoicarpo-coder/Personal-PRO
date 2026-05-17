@@ -270,28 +270,44 @@ export async function renderAssessments() {
     </div>
 
     <!-- FICHA COMPLETA POR ALUNO -->
-    <div id="panel-ficha" class="assessment-panel" style="display:none">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Ficha Completa de Avaliação</span>
-          <div class="flex gap-sm">
-            <select class="form-select" id="fichaStudentSel" style="width:auto">
-              <option value="">Selecione um aluno</option>
-              ${activeStudents.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
-            </select>
-            <button class="btn btn-secondary btn-sm" id="fichaExportBtn" style="display:none">Gerar PDF</button>
-          </div>
-        </div>
-        <div id="fichaContent">
-          <div class="empty-state" style="padding:40px">
-            <div class="empty-icon">—</div>
-            <h3>Selecione um aluno</h3>
-            <p>A ficha completa de avaliação será gerada com todos os dados registrados</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+   <div id="panel-ficha" class="assessment-panel" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Ficha Completa de Avaliação</span>
+          <div class="flex gap-sm">
+            <select class="form-select" id="fichaStudentSel" style="width:auto">
+              <option value="">Selecione um aluno</option>
+              ${activeStudents.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+            </select>
+            <button class="btn btn-secondary btn-sm" id="fichaExportBtn" style="display:none">Gerar PDF</button>
+          </div>
+        </div>
+        <div id="fichaContent">
+          <div class="empty-state" style="padding:40px">
+            <div class="empty-icon">—</div>
+            <h3>Selecione um aluno</h3>
+            <p>A ficha completa de avaliação será gerada com todos os dados registrados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <div id="panel-evolucao" class="assessment-panel" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Evolução do Aluno</span>
+          <select class="form-select" id="evolStudentSel" style="width:auto">
+            <option value="">Selecione um aluno</option>
+            ${activeStudents.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+          </select>
+        </div>
+        <div id="evolucaoContent">
+          <p class="text-muted text-sm" style="padding:20px;text-align:center">Selecione um aluno para ver a evolução</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
       <div class="card">
         <div class="card-header">
           <span class="card-title">Evolução do Aluno</span>
