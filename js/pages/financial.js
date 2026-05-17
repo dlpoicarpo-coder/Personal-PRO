@@ -36,30 +36,37 @@ export async function renderFinancial() {
   const thisMonth = now.getMonth();
   const thisYear  = now.getFullYear();
 
-  // Helper: checar se uma data cai no mês/ano atual
   const inThisMonth = (dateStr) => {
     if (!dateStr) return false;
     const d = new Date(dateStr);
     return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
   };
 
-  // ESPERADO: registros com vencimento neste mês (qualquer status)
+  // ESPERADO: todos com vencimento neste mês
   const monthRecs   = records.filter(r => inThisMonth(r.dueDate));
   const totalExpect = monthRecs.reduce((t, r) => t + (r.amount||0), 0);
 
-  // RECEBIDO: registros marcados como pagos com paidDate neste mês
-  // Se não tem paidDate usa dueDate como fallback
+  // RECEBIDO: pagos cuja paidDate OU dueDate cai neste mês
+  // Se não tiver paidDate mas foi pago, conta pelo dueDate (data de referência)
   const paidThisMonth = records.filter(r => {
     if (r.status !== 'paid') return false;
+    // Prioridade: paidDate → dueDate
     const refDate = r.paidDate || r.dueDate;
     return inThisMonth(refDate);
   });
   const totalPaid = paidThisMonth.reduce((t, r) => t + (r.amount||0), 0);
 
-  const totalPend   = monthRecs.filter(r => r.status !== 'paid').reduce((t, r) => t + (r.amount||0), 0);
-  const overdue     = records.filter(r => r.status === 'pending' && new Date(r.dueDate) < now);
-  const overdueAmt  = overdue.reduce((t, r) => t + (r.amount||0), 0);
-  const collRate    = totalExpect > 0 ? Math.round((totalPaid/totalExpect)*100) : 0;
+  // PENDENTE: registros deste mês ainda não pagos
+  const totalPend  = monthRecs.filter(r => r.status !== 'paid').reduce((t, r) => t + (r.amount||0), 0);
+
+  // VENCIDOS: pendentes com vencimento passado (qualquer mês)
+  const overdue    = records.filter(r => r.status === 'pending' && new Date(r.dueDate) < now);
+  const overdueAmt = overdue.reduce((t, r) => t + (r.amount||0), 0);
+
+  // Taxa de coleta: sobre todos os registros pagos existentes vs esperados do mês
+  const collRate = monthRecs.length > 0
+    ? Math.round((monthRecs.filter(r=>r.status==='paid').length / monthRecs.length) * 100)
+    : (paidThisMonth.length > 0 ? 100 : 0);
 
   // Receita dos últimos 6 meses
   const monthlyData = [];
@@ -286,12 +293,20 @@ export function initFinancial(navigateFn) {
         for (let i = 5; i >= 0; i--) {
           const d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const mo = d.getMonth(), yr = d.getFullYear();
-          const inMonth = (ds) => { if (!ds) return false; const dd = new Date(ds); return dd.getMonth()===mo && dd.getFullYear()===yr; };
+          const inMonth = (ds) => {
+            if (!ds) return false;
+            const dd = new Date(ds);
+            return dd.getMonth() === mo && dd.getFullYear() === yr;
+          };
           labels.push(d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
-          // Recebido = pagos cuja paidDate (ou dueDate se não tiver) está neste mês
-          paid.push(records.filter(r => r.status==='paid' && inMonth(r.paidDate || r.dueDate)).reduce((t,r) => t+(r.amount||0), 0));
-          // Esperado = todos com vencimento neste mês
-          expected.push(records.filter(r => inMonth(r.dueDate)).reduce((t,r) => t+(r.amount||0), 0));
+          // Recebido: usa paidDate se existir, senão dueDate
+          paid.push(records
+            .filter(r => r.status === 'paid' && inMonth(r.paidDate || r.dueDate))
+            .reduce((t, r) => t + (r.amount||0), 0));
+          // Esperado: todos com vencimento neste mês
+          expected.push(records
+            .filter(r => inMonth(r.dueDate))
+            .reduce((t, r) => t + (r.amount||0), 0));
         }
         new Chart(canvas, {
           type: 'bar',
