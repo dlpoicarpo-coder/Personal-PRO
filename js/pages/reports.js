@@ -333,7 +333,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     const rec = trainingRecommendation(e);
     return `<div class="event-card" style="border-left:3px solid var(--${status.color})">
             <div class="flex items-center justify-between"><span>${status.icon} ${Calc.formatDate(e.date)}</span><span class="badge badge-${status.color}">${status.label}</span></div>
-            ${alerts.length ? `<div class="text-sm mt-xs">${alerts.map(a => `${a.icon} ${a.metric}: ${a.value}`).join(' · ')}</div>` : ''}
+           ${alerts.length ? `<div class="text-sm mt-xs">${alerts.map(a => `${a.icon} ${a.metric}: ${a.value}`).join(' · ')}</div>` : ''}
             <div class="text-xs text-muted mt-xs">${rec.label}</div>
           </div>`;
   }).join('') : '<p class="text-muted text-center" style="padding:20px">Sem dados</p>'}
@@ -341,8 +341,11 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     </div>
     </div>
   `;
-}
+} // <--- É ESTA CHAVE AQUI QUE DEVE ESTAR FALTANDO!
 
+export async function initReports(navigateFn) {
+  const pdfBtn = document.getElementById('exportPdfBtn');
+  // ... resto do código
 export async function initReports(navigateFn) {
   const pdfBtn = document.getElementById('exportPdfBtn');
   const cycleSel = document.getElementById('reportCycle');
