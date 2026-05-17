@@ -40,28 +40,33 @@ const routes = {
   '/config': { render: renderSettings, init: initSettings }
 };
 
-export async function navigateTo(path) {
+export async function navigateTo(rawPath) {
   const appContainer = document.getElementById('app');
+
+  // Separar path de query string
+  const [path, qs] = rawPath.split('?');
+  const params = new URLSearchParams(qs || '');
 
   // ── PUBLIC FORM ROUTES (no auth required) ──
   if (path.startsWith('/form/pre/')) {
-    const studentId = path.split('/form/pre/')[1];
-    appContainer.className = '';
+    const studentId = path.replace('/form/pre/', '').split('?')[0];
+    appContainer.className = 'form-public';
     appContainer.innerHTML = await renderPreForm(studentId);
     initPreForm();
     return;
   }
   if (path.startsWith('/form/post/')) {
-    const sessionId = path.split('/form/post/')[1];
-    appContainer.className = '';
+    const sessionId = path.replace('/form/post/', '').split('?')[0];
+    appContainer.className = 'form-public';
     appContainer.innerHTML = await renderPostForm(sessionId);
     initPostForm();
     return;
   }
-  if (path === '/form/anamnese') {
-    appContainer.className = '';
-    appContainer.innerHTML = await renderAnamneseForm();
-    initAnamneseForm();
+  if (path === '/form/anamnese' || path.startsWith('/form/anamnese')) {
+    const trainerId = params.get('trainer') || '';
+    appContainer.className = 'form-public';
+    appContainer.innerHTML = await renderAnamneseForm(trainerId);
+    initAnamneseForm(trainerId);
     return;
   }
 
@@ -148,8 +153,9 @@ export async function navigateTo(path) {
 
 // Hash navigation
 window.addEventListener('hashchange', () => {
-  const path = window.location.hash.slice(1) || '/';
-  navigateTo(path);
+  // Preservar query string do hash: #/form/anamnese?trainer=xxx
+  const full = window.location.hash.slice(1) || '/';
+  navigateTo(full);
 });
 
 // Initialize app
