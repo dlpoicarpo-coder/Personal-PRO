@@ -336,16 +336,15 @@ async function renderStudentReport(studentId, cycleFilter = '') {
           ${alerts.length ? `<div class="text-sm mt-xs">${alerts.map(a => `${a.icon} ${a.metric}: ${a.value}`).join(' · ')}</div>` : ''}
             <div class="text-xs text-muted mt-xs">${rec.label}</div>
           </div>`;
-  }).join('') : '<p class="text-muted text-center" style="padding:20px">Sem dados</p>'}
+        }).join('') : '<p class="text-muted text-center" style="padding:20px">Sem dados</p>'}
       </div>
     </div>
     </div>
   `;
-} // <--- É ESTA CHAVE AQUI QUE DEVE ESTAR FALTANDO!
+}
 
 export async function initReports(navigateFn) {
   const pdfBtn = document.getElementById('exportPdfBtn');
-  // ... resto do código
   const cycleSel = document.getElementById('reportCycle');
 
   document.getElementById('reportStudent')?.addEventListener('change', async (e) => {
