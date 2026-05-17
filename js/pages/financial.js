@@ -282,6 +282,13 @@ export async function renderFinancial() {
 }
 
 export function initFinancial(navigateFn) {
+  // Função helper para pegar a chave Pix das configurações
+  async function getPixKey() {
+    try {
+      const s = await db.get('settings','trainer');
+      return s?.pixKey || '[configure sua chave Pix em Configurações]';
+    } catch { return '[configure sua chave Pix em Configurações]'; }
+  }
   // Gráfico de receita
   setTimeout(() => {
     const canvas = document.getElementById('revenueChart');
@@ -366,7 +373,7 @@ export function initFinancial(navigateFn) {
       if (!st?.phone) return;
       const amount = parseFloat(btn.dataset.amount)||0;
       const due    = Calc.formatDate(btn.dataset.due);
-      const msg = `Olá ${st.name.split(' ')[0]}! 👋\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* está pendente.\n\nChave Pix: [sua chave aqui]\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg = `Olá ${st.name.split(' ')[0]}! 👋\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* está pendente.\n\nChave Pix: ${await getPixKey()}\n\nQualquer dúvida estou à disposição! 💪`;
       sendWhatsApp(st.phone, msg);
     });
   });
@@ -385,7 +392,7 @@ export function initFinancial(navigateFn) {
       if (!st?.phone) continue;
       const total = recs.reduce((t,r)=>t+(r.amount||0),0);
       const days  = Math.floor((now-new Date(recs[0].dueDate))/86400000);
-      const msg   = `Olá ${st.name.split(' ')[0]}! 👋\n\nIdentificamos *${recs.length} parcela(s)* em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: [sua chave aqui]\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg   = `Olá ${st.name.split(' ')[0]}! 👋\n\nIdentificamos *${recs.length} parcela(s)* em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: ${await getPixKey()}\n\nQualquer dúvida estou à disposição! 💪`;
       sendWhatsApp(st.phone, msg);
       count++;
       await new Promise(r=>setTimeout(r,500));
@@ -400,7 +407,7 @@ export function initFinancial(navigateFn) {
       if (!st?.phone) return;
       const total = parseFloat(btn.dataset.amount)||0;
       const days  = parseInt(btn.dataset.days)||0;
-      const msg   = `Olá ${st.name.split(' ')[0]}! 👋\n\nIdentificamos parcelas em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: [sua chave aqui]\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg   = `Olá ${st.name.split(' ')[0]}! 👋\n\nIdentificamos parcelas em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: ${await getPixKey()}\n\nQualquer dúvida estou à disposição! 💪`;
       sendWhatsApp(st.phone, msg);
     });
   });
