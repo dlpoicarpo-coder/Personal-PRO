@@ -35,26 +35,41 @@ export async function renderReports() {
 }
 
 async function getStudentCycles(studentId) {
-  // Convertemos ambos os IDs para String para evitar o erro de Tipo (ex: "7" == 7)
-  const workouts = (await db.getAll('workouts')).filter(w => String(w.studentId) === String(studentId));
+  const workouts = await db.getAll('workouts');
+  const sessions = await db.getAll('sessions');
   
-  // Aceita tanto .cycle quanto .ciclo caso tenha sido salvo em português no banco
-  const cycles = [...new Set(workouts.map(w => w.cycle || w.ciclo).filter(Boolean))];
+  // Garantimos a comparação correta transformando os IDs em String
+  const studentWorkouts = workouts.filter(w => String(w.studentId) === String(studentId));
+  const studentSessions = sessions.filter(s => String(s.studentId) === String(studentId));
+  
+  // Puxa ciclos tanto dos treinos montados quanto das sessões realizadas (aceitando 'cycle' ou 'ciclo')
+  const cycles = [...new Set([
+    ...studentWorkouts.map(w => w.cycle || w.ciclo),
+    ...studentSessions.map(s => s.cycle || s.ciclo)
+  ].filter(Boolean))];
+  
   return cycles.sort();
 }
-
 async function renderStudentReport(studentId, cycleFilter = '') {
   const student = await db.get('students', studentId);
   if (!student) return '';
   
-  // Ajustado aqui também para garantir a busca correta dos treinos por ID em formato String
+  // Busca e filtra os treinos aplicando a regra de String
   const allWorkouts = (await db.getAll('workouts')).filter(w => String(w.studentId) === String(studentId));
   const workouts = cycleFilter ? allWorkouts.filter(w => (w.cycle || w.ciclo) === cycleFilter) : allWorkouts;
   
-  // ... o restante da função segue igual
-  const sessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
-  const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const assessments = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
+  // Busca e filtra as sessões concluídas com base no ciclo selecionado
+  let sessions = (await db.getAll('sessions')).filter(s => String(s.studentId) === String(studentId));
+  if (cycleFilter) {
+    const nomesTreinosDoCiclo = workouts.map(w => w.name);
+    sessions = sessions.filter(s => 
+      (s.cycle || s.ciclo) === cycleFilter || 
+      nomesTreinosDoCiclo.includes(s.workoutName)
+    );
+  }
+  
+  const bf = (await db.getAll('biofeedback')).filter(b => String(b.studentId) === String(studentId)).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const assessments = (await db.getAll('assessments')).filter(a => String(a.studentId) === String(studentId));
   const completed = sessions.filter(s => s.status === 'completed');
   const recent10 = bf.slice(-10);
   const avgPse = recent10.length ? (recent10.reduce((s, b) => s + (b.pse || 0), 0) / recent10.length).toFixed(1) : '-';
