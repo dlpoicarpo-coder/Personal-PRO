@@ -22,7 +22,15 @@ export async function renderFinancial() {
   const records  = await db.getAll('financial');
   const sessions = await db.getAll('sessions');
   const active   = students.filter(s => s.status === 'Ativo');
-  records.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
+  records.sort((a, b) => {
+    // Primeiro vencidos, depois pendentes, depois pagos
+    const order = { overdue: 0, pending: 1, paid: 2 };
+    const aStatus = (a.status === 'pending' && new Date(a.dueDate) < now) ? 'overdue' : a.status;
+    const bStatus = (b.status === 'pending' && new Date(b.dueDate) < now) ? 'overdue' : b.status;
+    if (order[aStatus] !== order[bStatus]) return order[aStatus] - order[bStatus];
+    // Dentro do mesmo status: mais recente primeiro
+    return new Date(b.dueDate) - new Date(a.dueDate);
+  });
 
   const now = new Date();
   const thisMonth = now.getMonth();
@@ -307,25 +315,34 @@ export function initFinancial(navigateFn) {
     }
   }, 200);
 
+  // ── Estado ativo dos filtros ──
+  let activeTabFilter = 'all';
+  let activeSearch    = '';
+
+  function applyFinFilters() {
+    document.querySelectorAll('#finTable tbody tr').forEach(row => {
+      const st  = row.dataset.status || '';
+      const nm  = row.dataset.name   || '';
+      const matchTab    = activeTabFilter === 'all' || st === activeTabFilter;
+      const matchSearch = !activeSearch || nm.includes(activeSearch);
+      row.style.display = matchTab && matchSearch ? '' : 'none';
+    });
+  }
+
   // Filtro por tab
   document.querySelectorAll('#finTabs .tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('#finTabs .tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      const filter = tab.dataset.filter;
-      document.querySelectorAll('#finTable tbody tr').forEach(row => {
-        const st = row.dataset.status;
-        row.style.display = filter==='all' || st===filter ? '' : 'none';
-      });
+      activeTabFilter = tab.dataset.filter;
+      applyFinFilters();
     });
   });
 
-  // Busca
+  // Busca — preserva filtro de tab
   document.getElementById('finSearch')?.addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('#finTable tbody tr').forEach(row => {
-      row.style.display = (row.dataset.name||'').includes(q) ? '' : 'none';
-    });
+    activeSearch = e.target.value.toLowerCase().trim();
+    applyFinFilters();
   });
 
   // WhatsApp cobrança individual
