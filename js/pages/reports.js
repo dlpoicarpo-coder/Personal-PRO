@@ -341,7 +341,8 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     </div>
     </div>
   `;
-  
+}
+                                            
 export async function initReports(navigateFn) {
   const pdfBtn = document.getElementById('exportPdfBtn');
   const cycleSel = document.getElementById('reportCycle');
