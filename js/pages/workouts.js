@@ -188,6 +188,95 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
   `;
 }
 
+// ── DEFINIÇÃO DE PROGRESSÃO POR MÉTODO ───────────────────────
+// Métodos que geram múltiplas sub-séries com reps/carga diferente por série
+const METHOD_PROGRESSIONS = {
+  'Pirâmide Crescente': {
+    desc: 'Carga aumenta a cada série, reps diminuem',
+    series: [
+      { reps: '12-15', loadPct: 0.60, label: 'S1 — Leve' },
+      { reps: '10-12', loadPct: 0.70, label: 'S2 — Moderada' },
+      { reps: '8-10',  loadPct: 0.80, label: 'S3 — Pesada' },
+      { reps: '6-8',   loadPct: 0.90, label: 'S4 — Muito Pesada' },
+    ]
+  },
+  'Pirâmide Decrescente': {
+    desc: 'Inicia pesado e reduz carga a cada série',
+    series: [
+      { reps: '6-8',   loadPct: 0.90, label: 'S1 — Máximo' },
+      { reps: '8-10',  loadPct: 0.80, label: 'S2 — Pesada' },
+      { reps: '10-12', loadPct: 0.70, label: 'S3 — Moderada' },
+      { reps: '12-15', loadPct: 0.60, label: 'S4 — Leve' },
+    ]
+  },
+  'Pirâmide Dupla': {
+    desc: 'Crescente depois decrescente — máximo volume',
+    series: [
+      { reps: '15',    loadPct: 0.55, label: 'S1 — Base' },
+      { reps: '12',    loadPct: 0.65, label: 'S2 — Leve' },
+      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada' },
+      { reps: '8',     loadPct: 0.85, label: 'S4 — Pico ↑' },
+      { reps: '10',    loadPct: 0.75, label: 'S5 — Moderada' },
+      { reps: '12',    loadPct: 0.65, label: 'S6 — Leve' },
+      { reps: '15',    loadPct: 0.55, label: 'S7 — Base ↓' },
+    ]
+  },
+  'Pirâmide Completa': {
+    desc: 'Pirâmide dupla com pico duplo — volume e intensidade máximos',
+    series: [
+      { reps: '20',    loadPct: 0.50, label: 'S1 — Aquecimento' },
+      { reps: '15',    loadPct: 0.60, label: 'S2 — Base' },
+      { reps: '12',    loadPct: 0.68, label: 'S3 — Leve' },
+      { reps: '10',    loadPct: 0.75, label: 'S4 — Moderada' },
+      { reps: '8',     loadPct: 0.82, label: 'S5 — Pesada' },
+      { reps: '6',     loadPct: 0.88, label: 'S6 — Pico ↑' },
+      { reps: '8',     loadPct: 0.82, label: 'S7 — Pesada' },
+      { reps: '10',    loadPct: 0.75, label: 'S8 — Moderada' },
+      { reps: '12',    loadPct: 0.68, label: 'S9 — Leve' },
+      { reps: '15',    loadPct: 0.60, label: 'S10 — Base ↓' },
+    ]
+  },
+  'Drop-set': {
+    desc: 'Executa até a falha, reduz carga ~20% e continua sem descanso',
+    series: [
+      { reps: '8-10',  loadPct: 1.00, label: 'Set Principal', rest: 0 },
+      { reps: '8-10',  loadPct: 0.80, label: 'Drop 1 (-20%)', rest: 0 },
+      { reps: '8-10',  loadPct: 0.64, label: 'Drop 2 (-20%)', rest: 0 },
+    ]
+  },
+  'Stripping': {
+    desc: 'Drop-set com barra — remover anilhas sem parar',
+    series: [
+      { reps: 'até falha', loadPct: 1.00, label: 'Carga máxima',  rest: 0 },
+      { reps: 'até falha', loadPct: 0.75, label: '-25% carga',    rest: 0 },
+      { reps: 'até falha', loadPct: 0.55, label: '-25% carga',    rest: 0 },
+      { reps: 'até falha', loadPct: 0.40, label: '-25% carga',    rest: 0 },
+    ]
+  },
+  'Rest-Pause': {
+    desc: 'Até a falha, pausa 15-20s, continua até nova falha',
+    series: [
+      { reps: 'até falha', loadPct: 1.00, label: 'Série principal', rest: 0  },
+      { reps: 'até falha', loadPct: 1.00, label: 'Pausa 15-20s →', rest: 15 },
+      { reps: 'até falha', loadPct: 1.00, label: 'Pausa 15-20s →', rest: 15 },
+    ]
+  },
+  'Cluster': {
+    desc: '2-3 reps, pausa 10-15s, repetir 5x. Força máxima com 85-95% 1RM.',
+    series: [
+      { reps: '2-3', loadPct: 0.88, label: 'Cluster 1', rest: 12 },
+      { reps: '2-3', loadPct: 0.88, label: 'Cluster 2', rest: 12 },
+      { reps: '2-3', loadPct: 0.88, label: 'Cluster 3', rest: 12 },
+      { reps: '2-3', loadPct: 0.88, label: 'Cluster 4', rest: 12 },
+      { reps: '2-3', loadPct: 0.88, label: 'Cluster 5', rest: 12 },
+    ]
+  },
+  'FST-7': {
+    desc: '7 séries do isolador com 30-45s descanso. Alta congestão.',
+    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))
+  },
+};
+
 function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const loadType = ex.loadType || 'weight';
   const isTime   = loadType === 'time';
@@ -255,17 +344,46 @@ function collectExercises() {
   const rows = document.querySelectorAll('.exercise-row');
   const exercises = [];
   rows.forEach(row => {
-    const i = row.dataset.index;
+    const i    = row.dataset.index;
     const name = document.querySelector(`[name="ex_name_${i}"]`)?.value;
-    if (name) {
+    if (!name) return;
+
+    const method   = document.querySelector(`[name="ex_method_${i}"]`)?.value || '';
+    const loadType = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+    const seriesPanel = row.querySelector('.method-series-panel');
+
+    // Se tem painel de sub-séries progressivas, salvar cada série individualmente
+    if (seriesPanel && METHOD_PROGRESSIONS[method]) {
+      const serieRows  = seriesPanel.querySelectorAll('[data-serie]');
+      const progression = METHOD_PROGRESSIONS[method];
+      const serieLogs  = [];
+      serieRows.forEach((sr, si) => {
+        const loadEl = sr.querySelector('.serie-load');
+        const restEl = sr.querySelector('.serie-rest');
+        const s      = progression.series[si];
+        serieLogs.push({
+          set:   si + 1,
+          reps:  s?.reps || '—',
+          load:  parseFloat(loadEl?.value) || 0,
+          rest:  parseInt(restEl?.value)  || 60,
+          label: s?.label || `Série ${si+1}`,
+        });
+      });
       exercises.push({
-        name,
+        name, method, loadType,
+        sets:              serieLogs.length,
+        reps:              serieLogs.map(s=>s.reps).join('→'),
+        load:              serieLogs[0]?.load || '',
+        rest:              serieLogs[0]?.rest || 60,
+        seriesProgression: serieLogs,
+      });
+    } else {
+      exercises.push({
+        name, method, loadType,
         sets:     parseInt(document.querySelector(`[name="ex_sets_${i}"]`)?.value) || 3,
         reps:     document.querySelector(`[name="ex_reps_${i}"]`)?.value || '12',
         load:     document.querySelector(`[name="ex_load_${i}"]`)?.value || '',
         rest:     document.querySelector(`[name="ex_rest_${i}"]`)?.value || '60',
-        method:   document.querySelector(`[name="ex_method_${i}"]`)?.value || '',
-        loadType: document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight',
       });
     }
   });
@@ -506,58 +624,186 @@ function bindRemoveExercise() {
 function bindExerciseRowHandlers(allExercises, allMethods) {
   bindRemoveExercise();
 
-  // Auto-preenchimento ao selecionar método
+  // ── Auto-preenchimento ao selecionar MÉTODO ─────────────────
   document.querySelectorAll('.ex-method').forEach(sel => {
     sel.addEventListener('change', () => {
-      const opt = sel.selectedOptions[0];
-      if (!opt || !opt.value) return;
-      const i = sel.dataset.index;
+      const opt      = sel.selectedOptions[0];
+      const i        = sel.dataset.index;
+      const row      = sel.closest('.exercise-row');
+      const methodName = opt?.value || '';
+
+      // Remover painel de sub-séries anterior
+      row?.querySelectorAll('.method-series-panel').forEach(p => p.remove());
+      row?.querySelectorAll('.method-tip').forEach(p => p.remove());
+
+      if (!methodName) {
+        // Limpar indicação de método
+        const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
+        const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
+        const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
+        if (setsEl) setsEl.closest('div').style.opacity = '';
+        if (repsEl) repsEl.closest('div').style.opacity = '';
+        if (loadEl) loadEl.closest('div').style.opacity = '';
+        return;
+      }
+
+      // Preencher séries/reps/descanso padrão
       const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
       const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
       const restEl = document.querySelector(`[name="ex_rest_${i}"]`);
-      const sets = opt.dataset.sets;
-      const reps = opt.dataset.reps;
-      const rest = opt.dataset.rest;
-      if (sets && setsEl && !setsEl.value) setsEl.value = sets.replace(/[^0-9]/g,'') || 3;
+      const sets   = opt?.dataset.sets;
+      const reps   = opt?.dataset.reps;
+      const rest   = opt?.dataset.rest;
+
+      if (sets && setsEl) setsEl.value = sets.replace(/[^0-9]/g, '') || '3';
       if (reps && repsEl) repsEl.value = reps;
       if (rest && restEl) {
-        // Extrair primeiro número de "90s" ou "90-120s"
         const match = rest.match(/(\d+)/);
         if (match) restEl.value = match[1];
       }
-      // Tooltip com descrição do método
-      const desc = opt.dataset.desc;
-      if (desc) {
-        const row = sel.closest('.exercise-row');
-        let tip = row?.querySelector('.method-tip');
-        if (!tip) {
-          tip = document.createElement('div');
+
+      // ── Verificar se o método tem progressão definida ────────
+      const progression = METHOD_PROGRESSIONS[methodName];
+      if (!progression) {
+        // Método simples — apenas dica de descrição
+        const desc = opt?.dataset.desc;
+        if (desc) {
+          const tip = document.createElement('div');
           tip.className = 'method-tip';
-          tip.style.cssText = 'font-size:0.7rem;color:var(--accent);margin-top:3px;grid-column:1/-1;padding:4px 6px;background:rgba(6,182,212,0.07);border-radius:4px';
+          tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
+          tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
           row?.appendChild(tip);
         }
-        tip.textContent = '💡 ' + desc;
+        return;
+      }
+
+      // ── MÉTODO COM PROGRESSÃO — gerar painel de sub-séries ───
+      const baseLoad = parseFloat(document.querySelector(`[name="ex_load_${i}"]`)?.value) || 0;
+      const loadType = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+      const isTime   = loadType === 'time';
+
+      // Atualizar contador de séries
+      if (setsEl) setsEl.value = progression.series.length;
+
+      // Criar painel
+      const panel = document.createElement('div');
+      panel.className = 'method-series-panel';
+      panel.style.cssText = 'grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px';
+
+      const seriesHeader = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${methodName}</span>
+            <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:0.65rem;color:var(--text-muted)">Carga base (kg):</span>
+            <input type="number" step="0.5" value="${baseLoad||''}" placeholder="kg"
+              class="form-input method-base-load" data-index="${i}"
+              style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
+          </div>
+        </div>`;
+
+      const seriesHTML = progression.series.map((s, si) => {
+        const calcLoad = baseLoad > 0 && !isTime
+          ? Math.round(baseLoad * s.loadPct * 2) / 2
+          : '';
+        const restVal  = s.rest != null ? s.rest : (restEl?.value || '60');
+        return `
+          <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.1)" data-serie="${si}">
+            <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
+            <div>
+              <input type="number" step="0.5" value="${calcLoad}" placeholder="${isTime?'km/h':'kg'}"
+                class="form-input serie-load" data-serie="${si}" data-index="${i}"
+                style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${calcLoad?`color:var(--primary)`:''}"/>
+            </div>
+            <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
+              ${isTime ? s.reps : `${s.reps} reps`}
+            </div>
+            <div>
+              <input type="number" value="${restVal}"
+                class="form-input serie-rest" data-serie="${si}"
+                style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:var(--text-muted)"
+                placeholder="s" title="Descanso (s)"/>
+            </div>
+          </div>`;
+      }).join('');
+
+      const seriesLegend = `
+        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
+        </div>`;
+
+      panel.innerHTML = seriesHeader + seriesLegend + seriesHTML;
+      row?.appendChild(panel);
+
+      // ── Recalcular cargas quando carga base muda ─────────────
+      panel.querySelector('.method-base-load')?.addEventListener('input', e => {
+        const newBase = parseFloat(e.target.value) || 0;
+        // Atualizar campo principal de carga
+        const mainLoad = document.querySelector(`[name="ex_load_${i}"]`);
+        if (mainLoad && newBase) mainLoad.value = newBase;
+        panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+          const s = progression.series[si];
+          if (s && newBase > 0 && !isTime) {
+            const calc = Math.round(newBase * s.loadPct * 2) / 2;
+            inp.value = calc;
+            inp.style.color = 'var(--primary)';
+          }
+        });
+      });
+
+      // Sincronizar carga base se já preenchida
+      const mainLoadEl = document.querySelector(`[name="ex_load_${i}"]`);
+      if (mainLoadEl) {
+        mainLoadEl.addEventListener('input', e => {
+          const newBase = parseFloat(e.target.value) || 0;
+          const baseInp = panel.querySelector('.method-base-load');
+          if (baseInp) baseInp.value = newBase || '';
+          panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+            const s = progression.series[si];
+            if (s && newBase > 0 && !isTime) {
+              inp.value = Math.round(newBase * s.loadPct * 2) / 2;
+              inp.style.color = 'var(--primary)';
+            }
+          });
+        });
       }
     });
   });
 
-  // Auto-preencher tipo de carga ao selecionar exercício
+  // ── Auto-preencher tipo de carga ao selecionar exercício ────
   document.querySelectorAll('.ex-name-input').forEach(inp => {
     inp.addEventListener('change', () => {
       const ex = allExercises.find(e => e.name.toLowerCase() === inp.value.toLowerCase());
       if (!ex) return;
-      const i = inp.dataset.index;
+      const i     = inp.dataset.index;
       const ltSel = document.querySelector(`[name="ex_loadtype_${i}"]`);
-      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
-      const lbl    = document.getElementById(`loadLbl_${i}`);
+      const repsEl= document.querySelector(`[name="ex_reps_${i}"]`);
+      const lbl   = document.getElementById(`loadLbl_${i}`);
       if (ex.loadType && ltSel) ltSel.value = ex.loadType;
       if (ex.defaultReps && repsEl && (!repsEl.value || repsEl.value === '12')) repsEl.value = ex.defaultReps;
       if (lbl) lbl.textContent = ex.loadType === 'time' ? 'Intensidade' : ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
     });
   });
 
-  // Atualizar label ao mudar tipo de carga
+  // ── Atualizar label ao mudar tipo de carga ──────────────────
   document.querySelectorAll('.ex-loadtype').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i   = sel.dataset.index;
+      const lbl = document.getElementById(`loadLbl_${i}`);
+      const lt  = sel.value;
+      if (lbl) lbl.textContent = lt === 'time' ? 'Intensidade' : lt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+      const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
+      if (loadEl) loadEl.placeholder = lt === 'time' ? 'km/h/W' : lt === 'bodyweight' ? '+kg' : 'kg';
+    });
+  });
+}
     sel.addEventListener('change', () => {
       const i = sel.dataset.index;
       const lbl = document.getElementById(`loadLbl_${i}`);
