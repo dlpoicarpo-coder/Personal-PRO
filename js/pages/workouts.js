@@ -144,7 +144,7 @@ export async function renderWorkouts() {
   `;
 }
 
-function workoutFormHTML(students, workout = {}, allExercises = []) {
+function workoutFormHTML(students, workout = {}, allExercises = [], allMethods = []) {
   const exList = workout.exercises || [{ name: '', sets: 3, reps: '12', load: '', rest: '60', method: '' }];
   return `
     <form id="workoutForm">
@@ -181,7 +181,7 @@ function workoutFormHTML(students, workout = {}, allExercises = []) {
           <button type="button" class="btn btn-secondary btn-sm" id="addExerciseRow">+ Exercício</button>
         </div>
         <div id="exerciseRows">
-          ${exList.map((ex, i) => exerciseRowHTML(i, ex, allExercises)).join('')}
+          ${exList.map((ex, i) => exerciseRowHTML(i, ex, allExercises, allMethods)).join('')}
         </div>
       </div>
     </form>
@@ -463,13 +463,14 @@ export function initWorkouts(navigateFn) {
     btn.addEventListener('click', async () => {
       const w      = await db.get('workouts', btn.dataset.id);
       if (!w) return;
-      const students = await db.getAll('students');
-      const allEx    = await db.getAll('exercises');
-      let exIndex    = (w.exercises || []).length;
+      const students   = await db.getAll('students');
+      const allEx      = await db.getAll('exercises');
+      const allMethods = await db.getAll('methods');   // ← carrega métodos
+      let exIndex      = (w.exercises || []).length;
 
       openModal({
         title: 'Editar Treino', size: 'xl',
-        content: workoutFormHTML(students, w, allEx) + `<datalist id="exerciseList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>`,
+        content: workoutFormHTML(students, w, allEx, allMethods) + `<datalist id="exerciseList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: 'Salvar', class: 'btn-primary', onClick: async () => {
@@ -485,9 +486,11 @@ export function initWorkouts(navigateFn) {
 
       setTimeout(() => {
         document.getElementById('addExerciseRow')?.addEventListener('click', () => {
-          document.getElementById('exerciseRows').insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, []));
+          document.getElementById('exerciseRows').insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, allEx, allMethods));
+          bindExerciseRowHandlers(allEx, allMethods);
           bindRemoveExercise();
         });
+        bindExerciseRowHandlers(allEx, allMethods);
         bindRemoveExercise();
       }, 100);
     });
