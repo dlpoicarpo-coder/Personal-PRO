@@ -734,8 +734,6 @@ export function initTracker(navigateFn) {
         }}
       ]
     });
-
-    }, 200);
   });
 }
 
