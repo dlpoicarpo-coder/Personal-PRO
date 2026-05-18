@@ -99,8 +99,7 @@ export async function renderAssessments() {
 
     <div class="tabs" id="assessmentTypeTabs">
       <button class="tab active" data-type="composicao">Composição Corporal</button>
-      <button class="tab" data-type="forca">Força &amp; 1RM</button>
-      <button class="tab" data-type="protocolo1rm">Protocolo 1RM Submax</button>
+      <button class="tab" data-type="forca">Força &amp; 1RM Submax</button>
       <button class="tab" data-type="conconi">Protocolo Conconi</button>
       <button class="tab" data-type="zonas">Zonas de Treino</button>
       <button class="tab" data-type="evolucao">Evolução</button>
