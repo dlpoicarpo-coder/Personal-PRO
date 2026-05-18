@@ -7,7 +7,6 @@ import { Calc } from '../utils/calculations.js';
 import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
-import { buildMsgPostTreino } from './calendar.js';
 
 // ── STATE ────────────────────────────────────────────────────
 const state = {
@@ -766,11 +765,22 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   // ── Enviar formulário pós-treino automaticamente via WhatsApp ─
   if (student?.phone) {
     try {
-      const settings = await db.get('settings','trainer').catch(()=>({}));
-      const base     = window.location.href.split('#')[0];
-      const { msg }  = buildMsgPostTreino(student.name, sessionData.id || s.id, base, settings?.trainerName);
-      const num      = student.phone.replace(/\D/g,'');
-      const waNum    = num.startsWith('55') ? num : '55'+num;
+      const settings  = await db.get('settings','trainer').catch(()=>({}));
+      const base      = window.location.href.split('#')[0];
+      const sessionId = sessionData.id || s.id;
+      const postLink  = `${base}#/form/post/${sessionId}`;
+      const nome      = student.name.split(' ')[0];
+      const trainerName = settings?.trainerName || '';
+      const msg = [
+        `🏋️ *Personal PRO*`,``,
+        `Parabéns pelo treino, ${nome}! 🎉`,``,
+        `📊 *Avalie como foi a sessão* (leva ~30 segundos):`,
+        postLink,``,
+        `Seu feedback ajuda a ajustar o próximo treino. 💪`,``,
+        trainerName ? `_Personal: ${trainerName}_` : `_Personal PRO_`,
+      ].join('\n');
+      const num = student.phone.replace(/\D/g,'');
+      const waNum = num.startsWith('55') ? num : '55'+num;
       window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
     } catch(_) {}
   }
