@@ -9,7 +9,7 @@ import { renderStudents, initStudents } from './pages/students.js';
 import { renderWorkouts, initWorkouts } from './pages/workouts.js';
 import { renderTracker, initTracker } from './pages/live-tracker.js';
 import { renderReports, initReports } from './pages/reports.js';
-import { renderCalendar, initCalendar, initAutoReminders } from './pages/calendar.js';
+import { renderCalendar, initCalendar, initAutoReminders, requestNotificationPermission } from './pages/calendar.js';
 import { renderBiofeedback, initBiofeedback } from './pages/biofeedback.js';
 import { renderFinancial, initFinancial } from './pages/financial.js';
 import { renderAssessments, initAssessments } from './pages/assessments.js';
@@ -20,6 +20,8 @@ import { renderSettings, initSettings } from './pages/settings.js';
 import { renderPreForm, initPreForm, renderPostForm, initPostForm } from './pages/student-forms.js';
 import { renderAnamnesis, initAnamnesis, renderAnamneseForm, initAnamneseForm } from './pages/anamnesis.js';
 import { renderTutorial, initTutorial } from './pages/tutorial.js';
+import { renderAdmin, initAdmin } from './pages/admin.js';
+import { isAdmin, applyRoleUI, clearRoleCache } from './utils/roles.js';
 
 // Central Router
 const routes = {
@@ -37,7 +39,8 @@ const routes = {
   '/relatorios': { render: renderReports, init: initReports },
   '/anamnese': { render: renderAnamnesis, init: initAnamnesis },
   '/tutorial': { render: renderTutorial, init: initTutorial },
-  '/config': { render: renderSettings, init: initSettings }
+  '/config':   { render: renderSettings,  init: initSettings },
+  '/admin':    { render: renderAdmin,     init: initAdmin },
 };
 
 export async function navigateTo(rawPath) {
@@ -96,9 +99,19 @@ export async function navigateTo(rawPath) {
     initSidebar(navigateTo);
     // Iniciar sistema de lembretes automáticos WhatsApp
     initAutoReminders();
+    requestNotificationPermission();
+    // Aplicar papel (admin/personal) na UI
+    applyRoleUI().then(adminMode => {
+      if (adminMode) {
+        // Mostrar link admin na sidebar
+        const adminLink = document.getElementById('nav-admin');
+        if (adminLink) adminLink.style.display = '';
+      }
+    });
     // Bind logout
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
       await signOut();
+      clearRoleCache();
       db.setUser(null);
       document.querySelector('.sidebar')?.remove();
       appContainer.className = '';
