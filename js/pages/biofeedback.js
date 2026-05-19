@@ -40,6 +40,7 @@ export async function renderBiofeedback() {
   const todayBf   = allBf.filter(e => new Date(e.date).toDateString() === today);
   const recent30  = allBf.slice(0, 30);
   const avgSleep  = recent30.length ? (recent30.reduce((t,e)=>t+(e.sleep||0),0)/recent30.length).toFixed(1) : '-';
+  const avgTqr    = recent30.length ? (recent30.reduce((t,e)=>t+((e.tqr||e.energy)||0),0)/recent30.length).toFixed(1) : '-';
   const avgStress = recent30.length ? (recent30.reduce((t,e)=>t+(e.stress||0),0)/recent30.length).toFixed(1) : '-';
   const alerts    = [];
   todayBf.forEach(e => {
@@ -163,7 +164,7 @@ function renderBfContent(entries, students, filterStudentId) {
           <thead><tr>
             <th>Data</th>
             ${!student ? '<th>Aluno</th>' : ''}
-            <th>Sono</th><th>Disp.</th><th>Energ.</th><th>Estresse</th><th>Dor</th>
+            <th>Sono</th><th>TQR</th><th>Estresse</th><th>Dor</th>
             <th>PSE</th><th>Carga</th><th>Status</th><th>Recomendação</th><th></th>
           </tr></thead>
           <tbody>${recent.map(e => {
@@ -177,7 +178,7 @@ function renderBfContent(entries, students, filterStudentId) {
               <td style="font-size:0.8rem;white-space:nowrap">${Calc.formatDate(e.date)}</td>
               ${!student ? `<td>
                 <div class="flex items-center gap-sm">
-                  <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem">${st?st.name[0]:'?'}</div>
+                  <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
                   <span style="font-size:0.82rem">${st?.name||'?'}</span>
                 </div>
               </td>` : ''}
@@ -247,11 +248,10 @@ export function initBiofeedback(navigateFn) {
           </div>
         </div>
         ${[
-          { id:'sleep',  label:'Como dormiu?',              hint:'1 = muito mal · 10 = muito bem',        inv:false },
-          { id:'mood',   label:'Como está sua disposição?', hint:'1 = péssima · 10 = excelente',         inv:false },
-          { id:'energy', label:'Nível de energia agora?',   hint:'1 = exausto · 10 = energizado',        inv:false },
-          { id:'stress', label:'Nível de estresse?',        hint:'1 = relaxado · 10 = muito estressado', inv:true,  },
-          { id:'pain',   label:'Sente alguma dor?',         hint:'1 = nenhuma · 10 = dor intensa',       inv:true,
+          { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    inv:false },
+          { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', inv:false },
+          { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              inv:true  },
+          { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    inv:true,
             extra:`document.getElementById('painGrp').style.display=this.value>=3?'block':'none'` },
         ].map(f=>`
           <div class="form-group" style="margin-bottom:14px">
@@ -309,7 +309,9 @@ export function initBiofeedback(navigateFn) {
           const fd = new FormData(document.getElementById('bfForm'));
           const d  = Object.fromEntries(fd);
           if (!d.studentId) { notify.error('Selecione o aluno'); return; }
-          ['sleep','mood','energy','stress','pain','pse','duration'].forEach(k=>d[k]=parseInt(d[k])||0);
+          ['sleep','tqr','stress','pain','pse','duration'].forEach(k=>d[k]=parseInt(d[k])||0);
+          d.energy = d.tqr; // compatibilidade com alertas e gráficos antigos
+          d.mood   = d.tqr; // idem
           d.painRegions  = fd.getAll('painRegions');
           d.trainingLoad = Calc.cargaTreino(d.pse, d.duration);
           d.date         = d.date || new Date().toISOString().slice(0,10);
@@ -380,9 +382,9 @@ async function initBfCharts(allBfParam, studentsParam, filterSid) {
       data:{
         labels: sorted.map(e=>Calc.formatDate(e.date).slice(0,5)),
         datasets:[
-          { label:'Sono',       data:sorted.map(e=>e.sleep||null),  borderColor:'#6366f1', tension:0.3, pointRadius:3, borderWidth:1.5, fill:false },
-          { label:'Disposição', data:sorted.map(e=>e.mood||null),   borderColor:'#10b981', tension:0.3, pointRadius:3, borderWidth:1.5, fill:false },
-          { label:'Energia',    data:sorted.map(e=>e.energy||null), borderColor:'#f59e0b', tension:0.3, pointRadius:3, borderWidth:1.5, fill:false },
+          { label:'Sono',    data:sorted.map(e=>e.sleep||null),           borderColor:'#6366f1', tension:0.3, pointRadius:3, borderWidth:1.5, fill:false },
+          { label:'TQR',     data:sorted.map(e=>e.tqr??e.energy??null),  borderColor:'#10b981', tension:0.3, pointRadius:3, borderWidth:1.5, fill:false },
+          { label:'Estresse',data:sorted.map(e=>e.stress||null),          borderColor:'#ef4444', tension:0.3, pointRadius:3, borderWidth:1.5, fill:false, borderDash:[4,2] },
           { label:'Estresse',   data:sorted.map(e=>e.stress||null), borderColor:'#ef4444', tension:0.3, pointRadius:3, borderWidth:1.5, fill:false, borderDash:[4,2] },
         ]
       },
