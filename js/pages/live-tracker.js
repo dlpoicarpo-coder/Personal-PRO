@@ -203,25 +203,6 @@ export function initTracker(navigateFn) {
       wSel.innerHTML = '<option value="">Selecione</option>' + wks.map(w => `<option value="${w.id}">${w.name} (${Calc.formatDate(w.date)})</option>`).join('');
     });
     wSel?.addEventListener('change', () => { sBtn.disabled = !wSel.value; });
-
-    // Auto-fill from agenda (item 7)
-    const autoData = sessionStorage.getItem('pp_autostart');
-    if (autoData) {
-      sessionStorage.removeItem('pp_autostart');
-      try {
-        const { studentId, workoutId } = JSON.parse(autoData);
-        if (studentId) {
-          sSel.value = studentId;
-          sSel.dispatchEvent(new Event('change'));
-          setTimeout(() => {
-            if (workoutId && wSel) {
-              wSel.value = workoutId;
-              wSel.dispatchEvent(new Event('change'));
-            }
-          }, 300);
-        }
-      } catch(e) { /* ignore */ }
-    }
   }
 
   // Generate pre-workout link for student
@@ -439,21 +420,13 @@ export function initTracker(navigateFn) {
       ]
     });
 
-    // Post link — copy and close modal to proceed
+    // Post link
     setTimeout(() => {
-      document.getElementById('genPostLink')?.addEventListener('click', async () => {
+      document.getElementById('genPostLink')?.addEventListener('click', () => {
         if (!state.session) return;
         const url = `${window.location.origin}${window.location.pathname}#/form/post/${state.session.id}`;
         navigator.clipboard?.writeText(url);
-        notify.success('Link copiado! Finalizando sessão...');
-        // Auto-save with empty post data and close
-        setTimeout(async () => {
-          try {
-            const fd = new FormData(document.getElementById('postF'));
-            const post = Object.fromEntries(fd);
-            await finishSession(dur, vol, dens, post, navigateFn);
-          } catch(e) { console.error(e); }
-        }, 800);
+        notify.success('Link copiado para o aluno!');
       });
     }, 200);
   });
@@ -462,6 +435,12 @@ export function initTracker(navigateFn) {
 async function finishSession(dur, vol, dens, post, navigateFn) {
   const s = state.session;
   if (!s) { notify.error('Sessão não encontrada'); return; }
+
+  // Buscar peso do aluno na última avaliação para cálculo de kcal
+  const assessments = (await db.getAll('assessments')).filter(a => a.studentId === s.studentId).sort((a, b) => new Date(b.date) - new Date(a.date));
+  const weightKg = assessments[0]?.weight || 0;
+  const pse = parseInt(post.pse) || 7;
+  const kcalInfo = Calc.calcGastoCalorico(pse, dur, weightKg);
 
   // 1. Build complete session data BEFORE any state reset
   const sessionData = {
@@ -476,6 +455,10 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
     setLog: [...state.setLog],
     postBiofeedback: post,
     totalSets: state.setLog.length,
+    estimatedKcal: kcalInfo.kcal,
+    kcalMet: kcalInfo.met,
+    kcalWeightUsed: kcalInfo.weightUsed,
+    kcalIsEstimate: kcalInfo.isEstimate,
   };
 
   // 2. Save session
@@ -493,9 +476,10 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
       studentId: s.studentId,
       date: s.date,
       ...s.preBiofeedback,
-      pse: parseInt(post.pse) || 7,
+      pse,
       duration: Math.round(dur / 60),
-      trainingLoad: Calc.cargaTreino(parseInt(post.pse) || 7, Math.round(dur / 60)),
+      trainingLoad: Calc.cargaTreino(pse, Math.round(dur / 60)),
+      estimatedKcal: kcalInfo.kcal,
       notes: post.notes,
     });
   } catch(e) {
@@ -560,12 +544,16 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
 
   const exRows = exs.map((ex, i) => {
     const sets = setLog.filter(l => l.exIdx === i);
-    if (sets.length === 0) return `<tr style="opacity:0.4"><td>${ex.name}</td><td colspan="3">Não realizado</td></tr>`;
+    if (sets.length === 0) return `<tr style="opacity:0.4"><td>${ex.name}</td><td colspan="4">Não realizado</td></tr>`;
     const maxLoad = Math.max(...sets.map(s => s.load || 0));
     const totalReps = sets.reduce((t, s) => t + (s.reps || 0), 0);
-    const vol = sets.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
-    return `<tr><td><strong>${ex.name}</strong></td><td>${sets.length}</td><td>${totalReps}</td><td>${maxLoad}kg</td></tr>`;
+    const rir = ex.rir != null ? ex.rir : '-';
+    return `<tr><td><strong>${ex.name}</strong></td><td>${sets.length}</td><td>${totalReps}</td><td>${maxLoad}kg</td><td>${rir}</td></tr>`;
   }).join('');
+
+  const kcal = session.estimatedKcal || 0;
+  const kcalIsEst = session.kcalIsEstimate;
+  const kcalMet = session.kcalMet || '-';
 
   openModal({
     title: 'Resumo da Sessão', size: 'lg',
@@ -578,23 +566,30 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
             <div class="text-muted text-sm">${session.workoutName || 'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR')}</div>
           </div>
         </div>
-        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);gap:8px">
-          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">Duração</div><div class="stat-value text-gradient" style="font-size:1.3rem">${durMin}min</div></div>
-          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">Volume</div><div class="stat-value text-gradient" style="font-size:1.3rem">${session.totalVolume || 0}kg</div></div>
-          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">Séries</div><div class="stat-value text-gradient" style="font-size:1.3rem">${session.totalSets || 0}</div></div>
-          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">PSE</div><div class="stat-value" style="font-size:1.3rem;color:${(session.postBiofeedback?.pse || 7) > 8 ? 'var(--danger)' : 'var(--success)'}">${session.postBiofeedback?.pse || '-'}</div></div>
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);gap:8px">
+          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">Duração</div><div class="stat-value text-gradient" style="font-size:1.2rem">${durMin}min</div></div>
+          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">Volume</div><div class="stat-value text-gradient" style="font-size:1.2rem">${session.totalVolume || 0}kg</div></div>
+          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">Séries</div><div class="stat-value text-gradient" style="font-size:1.2rem">${session.totalSets || 0}</div></div>
+          <div class="stat-card" style="padding:12px;text-align:center"><div class="stat-label">PSE</div><div class="stat-value" style="font-size:1.2rem;color:${(session.postBiofeedback?.pse || 7) > 8 ? 'var(--danger)' : 'var(--success)'}">${session.postBiofeedback?.pse || '-'}</div></div>
+          <div class="stat-card" style="padding:12px;text-align:center;border:1px solid rgba(245,158,11,0.3)">
+            <div class="stat-label">🔥 KCAL EST.</div>
+            <div class="stat-value" style="font-size:1.2rem;color:var(--warning)">${kcal}</div>
+            <div class="text-xs text-muted" style="margin-top:2px">MET ${kcalMet}${kcalIsEst ? ' · ~70kg' : ''}</div>
+          </div>
         </div>
+        ${kcalIsEst ? '<p class="text-xs text-muted mt-sm" style="text-align:center">⚠️ Peso não cadastrado — estimativa usando 70kg</p>' : ''}
       </div>
-      <div class="table-container"><table class="data-table"><thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Carga</th></tr></thead>
+      <div class="table-container"><table class="data-table"><thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Carga</th><th>RIR</th></tr></thead>
       <tbody>${exRows}</tbody></table></div>
     `,
     actions: [
-      { label: 'Enviar via WhatsApp', class: 'btn-secondary', id: 'waSummary', onClick: () => {
+      { label: '📄 Gerar PDF', class: 'btn-secondary', id: 'pdfSession', onClick: () => gerarPdfSessao(session, student, summaryText) },
+      { label: '📲 WhatsApp', class: 'btn-secondary', id: 'waSummary', onClick: () => {
         const phone = student?.phone?.replace(/\D/g, '') || '';
         const wa = `https://wa.me/${phone.startsWith('55') ? phone : '55' + phone}?text=${encodeURIComponent(summaryText)}`;
         window.open(wa, '_blank');
       }},
-      { label: 'Copiar Resumo', class: 'btn-secondary', id: 'copySummary', onClick: () => {
+      { label: 'Copiar', class: 'btn-secondary', id: 'copySummary', onClick: () => {
         navigator.clipboard?.writeText(summaryText);
         notify.success('Resumo copiado!');
       }},
@@ -605,3 +600,80 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
     ]
   });
 }
+
+function gerarPdfSessao(session, student) {
+  const durMin = Math.round((session.totalDuration || 0) / 60);
+  const exs = session.exercises || [];
+  const setLog = session.setLog || [];
+  const kcal = session.estimatedKcal || 0;
+  const kcalIsEst = session.kcalIsEstimate;
+  const pre = session.preBiofeedback || {};
+  const post = session.postBiofeedback || {};
+
+  let exHTML = '';
+  exs.forEach((ex, i) => {
+    const sets = setLog.filter(l => l.exIdx === i);
+    if (!sets.length) return;
+    exHTML += `<h3 style="font-size:13px;margin:14px 0 6px;color:#00A499">${ex.name}
+      <span style="color:#999;font-weight:normal;font-size:11px">${ex.muscleGroup||''} &middot; ${ex.sets||''}x${ex.reps||''} &middot; Desc: ${ex.rest||60}s${ex.rir != null ? ' &middot; RIR: '+ex.rir : ''}</span>
+    </h3>
+    <table><thead><tr><th>#</th><th>Reps</th><th>Carga (kg)</th><th>PSE</th><th>Volume</th></tr></thead><tbody>
+    ${sets.map((s,si) => `<tr><td>${si+1}</td><td>${s.reps||'-'}</td><td>${s.load||'-'}</td><td>${s.pse||'-'}</td><td>${((s.reps||0)*(s.load||0)).toFixed(1)}kg</td></tr>`).join('')}
+    </tbody></table>`;
+  });
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`<!DOCTYPE html><html><head><title>Sessão - ${student?.name||'Aluno'}</title>
+  <style>
+    *{box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;color:#222;padding:28px 36px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.5}
+    h1{font-size:22px;border-bottom:3px solid #00A499;padding-bottom:8px;margin-bottom:6px}h1 span{color:#00A499}
+    h2{font-size:15px;color:#00A499;margin-top:22px;border-bottom:1px solid #e0e0e0;padding-bottom:5px}
+    h3{font-size:13px;color:#333;margin-top:14px}
+    .subtitle{font-size:11px;color:#888;margin-bottom:18px}
+    .header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;background:#f8faf9;border-radius:8px}
+    .avatar{width:48px;height:48px;border-radius:50%;background:#00A499;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0}
+    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}
+    .stat{text-align:center;padding:12px 6px;border:1px solid #e8e8e8;border-radius:8px;background:#fafafa}
+    .stat-val{font-size:22px;font-weight:700;color:#00A499}.stat-kcal{color:#f59e0b}
+    .stat-lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+    .bf-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+    .bf-item{text-align:center;padding:10px 6px;background:#f3f3f3;border-radius:6px}
+    .bf-val{font-size:18px;font-weight:700;color:#333}.bf-lbl{font-size:10px;color:#666;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12px}
+    th{background:#f3f3f3;padding:7px 10px;text-align:left;font-weight:600;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#555}
+    td{padding:6px 10px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#fafafa}
+    .footer{text-align:center;font-size:10px;color:#aaa;margin-top:36px;border-top:1px solid #ddd;padding-top:10px}
+    @media print{body{padding:12px 18px}}
+  </style></head><body>
+  <h1>Personal<span>PRO</span> &mdash; Relatório de Sessão</h1>
+  <p class="subtitle">Gerado em ${new Date().toLocaleDateString('pt-BR', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+  <div class="header">
+    <div class="avatar">${student?.name?.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()||'?'}</div>
+    <div><strong style="font-size:17px">${student?.name||'Aluno'}</strong><br>
+    <span style="color:#666">${student?.code||''} &middot; ${session.workoutName||'Treino'} &middot; ${new Date(session.date).toLocaleDateString('pt-BR')}</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-val">${durMin}</div><div class="stat-lbl">Duração (min)</div></div>
+    <div class="stat"><div class="stat-val">${session.totalVolume||0}</div><div class="stat-lbl">Volume (kg)</div></div>
+    <div class="stat"><div class="stat-val">${session.totalSets||0}</div><div class="stat-lbl">Séries</div></div>
+    <div class="stat"><div class="stat-val">${post.pse||'-'}</div><div class="stat-lbl">PSE</div></div>
+    <div class="stat" style="border-color:#f59e0b"><div class="stat-val stat-kcal">${kcal}</div><div class="stat-lbl">🔥 Kcal Est.${kcalIsEst?' (~70kg)':''}</div></div>
+  </div>
+  <h2>Biofeedback Pré-Treino</h2>
+  <div class="bf-grid">
+    ${['sleep|Sono','mood|Humor','energy|Energia','stress|Estresse','pain|Dor'].map(f=>{ const[k,l]=f.split('|'); return `<div class="bf-item"><div class="bf-val">${pre[k]||'-'}</div><div class="bf-lbl">${l}</div></div>`; }).join('')}
+  </div>
+  <h2>Biofeedback Pós-Treino</h2>
+  <div class="bf-grid">
+    <div class="bf-item"><div class="bf-val">${post.pse||'-'}</div><div class="bf-lbl">PSE</div></div>
+    <div class="bf-item"><div class="bf-val">${post.satisfaction||'-'}</div><div class="bf-lbl">Satisfação</div></div>
+    <div class="bf-item" style="grid-column:span 3"><div class="bf-lbl" style="text-align:left;font-size:12px;padding:4px">Obs: ${post.notes||'&mdash;'}</div></div>
+  </div>
+  <h2>Exercícios Realizados</h2>
+  ${exHTML}
+  <div class="footer">Personal PRO &mdash; ${new Date().toLocaleDateString('pt-BR')} &mdash; Sistema Profissional de Treinamento</div>
+  </body></html>`);
+  printWin.document.close();
+  setTimeout(() => { printWin.print(); }, 500);
+}
+

@@ -12,7 +12,7 @@ export async function renderReports() {
   const active = students.filter(s => s.status === 'Ativo');
   return `
     <div class="page-header">
-      <div><h1>Relatórios de Performance</h1><p class="subtitle">Dossiê compacto com gráficos de evolução e comparação entre ciclos</p></div>
+      <div><h1>📊 Relatórios de Performance</h1><p class="subtitle">Dossiê completo com gráficos de evolução e comparação entre ciclos</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <select class="form-select" id="reportStudent" style="min-width:220px">
           <option value="">Selecione um aluno</option>
@@ -51,6 +51,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   const avgMood = recent10.length ? (recent10.reduce((s, b) => s + (b.mood || 0), 0) / recent10.length).toFixed(1) : '-';
   const avgEnergy = recent10.length ? (recent10.reduce((s, b) => s + (b.energy || 0), 0) / recent10.length).toFixed(1) : '-';
   const totalLoad = bf.reduce((s, b) => s + (b.trainingLoad || 0), 0);
+  const totalKcal = completed.reduce((s, se) => s + (se.estimatedKcal || 0), 0);
 
   const pseNum = parseFloat(avgPse) || 0;
   const sleepNum = parseFloat(avgSleep) || 0;
@@ -100,7 +101,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
     </div>
 
-    <div class="stats-grid mb-lg" style="grid-template-columns:repeat(5,1fr)">
+    <div class="stats-grid mb-lg" style="grid-template-columns:repeat(6,1fr)">
       <div class="stat-card">
         <div class="stat-label">Treinos Prescritos</div>
         <div class="stat-value text-gradient">${workouts.length}</div>
@@ -126,6 +127,11 @@ async function renderStudentReport(studentId, cycleFilter = '') {
         <div class="stat-value text-gradient">${totalLoad}</div>
         <div class="text-xs text-muted" style="margin-top:4px">PSE × Duração acumulada</div>
       </div>
+      <div class="stat-card" style="border:1px solid rgba(245,158,11,0.3)">
+        <div class="stat-label">🔥 Kcal Estimadas</div>
+        <div class="stat-value" style="color:var(--warning)">${totalKcal.toLocaleString('pt-BR')}</div>
+        <div class="text-xs text-muted" style="margin-top:4px">Total acumulado nas sessões</div>
+      </div>
     </div>
 
     <div class="card mb-lg" style="border-left:3px solid var(--primary);background:rgba(16,185,129,0.03)">
@@ -140,12 +146,33 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <p class="text-sm" style="line-height:1.7">${parecerTecnico}</p>
     </div>
 
+    ${completed.length ? `
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">Sessões Realizadas — Detalhamento</span></div>
+      <p class="text-xs text-muted mb-md">Registro de cada sessão de treino concluída pelo aluno, com métricas de volume e intensidade.</p>
+      <div class="table-container"><table class="data-table">
+        <thead><tr><th>Data</th><th>Treino</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th>Densidade</th><th style="color:var(--warning)">🔥 Kcal</th></tr></thead>
+        <tbody>${completed.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15).map(se => `
+          <tr>
+            <td>${Calc.formatDate(se.date)}</td>
+            <td><strong>${se.workoutName || '-'}</strong></td>
+            <td>${se.totalDuration ? Math.round(se.totalDuration / 60) + 'min' : '-'}</td>
+            <td>${se.totalVolume || '-'} kg</td>
+            <td>${se.totalSets || '-'}</td>
+            <td><span class="badge badge-${(se.postBiofeedback?.pse || 0) > 8 ? 'danger' : (se.postBiofeedback?.pse || 0) > 6 ? 'warning' : 'success'}">${se.postBiofeedback?.pse || '-'}</span></td>
+            <td>${se.density ? se.density.toFixed(2) : '-'}</td>
+            <td style="font-weight:700;color:var(--warning)">${se.estimatedKcal ? se.estimatedKcal + ' kcal' : '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>` : ''}
 
-    <div class="card mb-lg" style="border-left:3px solid var(--accent)">
-      <div class="card-header"><span class="card-title">Periodização Atual</span></div>
-      <p class="text-xs text-muted mb-sm">Macrociclo ativo com distribuição de volume e intensidade.</p>
-      <div id="reportPeriodization"></div>
-    </div>
+    ${workouts.length ? `
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">Treinos Prescritos no Ciclo</span></div>
+      <p class="text-xs text-muted mb-md">Fichas de treino criadas pelo treinador para este período.</p>
+      ${workoutSummary}
+    </div>` : ''}
 
     <div class="grid-2 mb-lg">
       <div class="card">
@@ -174,7 +201,13 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     </div>
 
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">Comparação entre Ciclos</span></div>
+      <div class="card-header"><span class="card-title">🔥 Gasto Calórico por Sessão</span></div>
+      <p class="text-xs text-muted mb-sm">Estimativa de kcal queimadas por sessão, calculada com base na <strong>PSE × Peso × Duração (MET)</strong>. Sessões com PSE mais alta tendem a ter maior gasto. Útil para correlacionar esforço percebido com gasto energético real.</p>
+      <div style="height:260px;position:relative"><canvas id="kcalChart"></canvas></div>
+    </div>
+
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">🔄 Comparação entre Ciclos</span></div>
       <p class="text-xs text-muted mb-sm">Mostra a <strong>média de cada indicador</strong> dividida por período (primeira metade vs segunda metade dos dados). Barras maiores na segunda metade indicam <strong>melhora</strong> (exceto estresse, onde menos é melhor). Ideal para demonstrar ao aluno a evolução ao longo do tempo.</p>
       <div style="height:280px;position:relative"><canvas id="cycleDiffChart"></canvas></div>
     </div>
@@ -232,7 +265,6 @@ export async function initReports(navigateFn) {
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
     content.innerHTML = await renderStudentReport(sid);
     initReportCharts(sid);
-    loadPeriodizationForReport(sid);
   });
 
   // Cycle filter change
@@ -289,7 +321,7 @@ export async function initReports(navigateFn) {
     if (sessions.length) {
       sessionTableHTML = `<h2>Sessões Realizadas</h2>
         <p class="section-desc">Registro detalhado de cada treino concluído com métricas de volume e intensidade.</p>
-        <table><thead><tr><th>Data</th><th>Treino</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th></tr></thead><tbody>
+        <table><thead><tr><th>Data</th><th>Treino</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th>🔥 Kcal</th></tr></thead><tbody>
         ${sessions.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20).map(se => `<tr>
           <td>${new Date(se.date).toLocaleDateString('pt-BR')}</td>
           <td><strong>${se.workoutName || '-'}</strong></td>
@@ -297,6 +329,7 @@ export async function initReports(navigateFn) {
           <td>${se.totalVolume || '-'} kg</td>
           <td>${se.totalSets || '-'}</td>
           <td>${se.postBiofeedback?.pse || '-'}</td>
+          <td><strong>${se.estimatedKcal ? se.estimatedKcal + ' kcal' : '—'}</strong></td>
         </tr>`).join('')}</tbody></table>`;
     }
 
@@ -421,6 +454,48 @@ async function initReportCharts(studentId) {
     new Chart(fCtx, { type: 'bar', data: { labels: wKeys.map(k => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })), datasets: [{ label: 'Sessões', data: wKeys.map(k => wc[k]), backgroundColor: 'rgba(6,182,212,0.5)', borderColor: '#06b6d4', borderWidth: 1, borderRadius: 4 }] }, options: { ...co, plugins: { legend: { display: false } }, scales: { ...co.scales, y: { ...co.scales.y, beginAtZero: true, ticks: { ...co.scales.y.ticks, stepSize: 1 } } } } });
   }
 
+  // ── KCAL PER SESSION CHART ──
+  const kCtx = document.getElementById('kcalChart');
+  const completedSess = sessions.filter(s => s.status === 'completed' && s.estimatedKcal).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-20);
+  if (kCtx && completedSess.length > 1) {
+    const grad = kCtx.getContext('2d').createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, 'rgba(245,158,11,0.4)');
+    grad.addColorStop(1, 'rgba(245,158,11,0.02)');
+    new Chart(kCtx, {
+      type: 'line',
+      data: {
+        labels: completedSess.map(s => Calc.formatDate(s.date)),
+        datasets: [{
+          label: 'Kcal Estimadas',
+          data: completedSess.map(s => s.estimatedKcal),
+          borderColor: '#f59e0b',
+          backgroundColor: grad,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#f59e0b',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        ...co,
+        scales: { ...co.scales, y: { ...co.scales.y, beginAtZero: true } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (item) => ` ${item.raw} kcal`,
+              afterLabel: (item) => {
+                const s = completedSess[item.dataIndex];
+                return `PSE: ${s.postBiofeedback?.pse || '-'} · ${Math.round((s.totalDuration||0)/60)}min`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   const mCtx = document.getElementById('measuresChart');
   if (mCtx && assessments.length > 1) {
     const sorted = [...assessments].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -472,35 +547,4 @@ async function initReportCharts(studentId) {
       }
     });
   }
-}
-
-async function loadPeriodizationForReport(studentId) {
-  const container = document.getElementById('reportPeriodization');
-  if (!container) return;
-  const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === studentId);
-  const active = macros.find(m => m.status === 'active') || macros[0];
-  if (!active || !active.weeks) {
-    container.innerHTML = '<p class="text-muted text-sm">Nenhuma periodização encontrada para este aluno.</p>';
-    return;
-  }
-  const currentWeek = Math.ceil((Date.now() - new Date(active.startDate).getTime()) / (7 * 86400000));
-  container.innerHTML = `
-    <div class="text-sm text-muted mb-sm"><strong>${active.name}</strong> · ${active.totalWeeks} semanas · Início: ${new Date(active.startDate).toLocaleDateString('pt-BR')}</div>
-    <div class="week-timeline" style="min-height:60px">
-      ${active.weeks.map((w, i) => {
-        const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
-        return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label} — Vol: ${w.volumePct}% | Int: ${w.intensityPct}%">
-          <div class="week-num" style="color:${intColor}">S${w.week}</div>
-          <div class="week-bar-int" style="height:${w.intensityPct * 0.4}px;background:${intColor}"></div>
-        </div>`;
-      }).join('')}
-    </div>
-    <div class="flex gap-md mt-sm text-xs text-muted" style="flex-wrap:wrap">
-      <span style="color:#22c55e">● Leve</span>
-      <span style="color:#eab308">● Moderada</span>
-      <span style="color:#f97316">● Alta</span>
-      <span style="color:#ef4444">● Muito Alta</span>
-      <span style="color:#3b82f6">● Deload</span>
-    </div>
-  `;
 }

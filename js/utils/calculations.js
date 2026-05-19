@@ -158,5 +158,26 @@ export const Calc = {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-  }
+  },
+
+  // --- Gasto Calórico Estimado (MET × Peso × Duração) ---
+  // Referência: ACSM Guidelines, McArdle et al.
+  // MET varia conforme PSE reportada pelo aluno pós-treino
+  metPorPse(pse) {
+    const p = parseFloat(pse) || 5;
+    if (p <= 3) return 3.5;  // Leve (recuperação ativa)
+    if (p <= 5) return 5.0;  // Moderada
+    if (p <= 7) return 7.0;  // Vigorosa
+    if (p <= 9) return 9.0;  // Alta
+    return 11.0;             // Máxima (VO2max)
+  },
+
+  calcGastoCalorico(pse, durationSec, weightKg) {
+    const peso = parseFloat(weightKg) || 70;
+    const isEstimate = !weightKg || weightKg <= 0;
+    const durationH = (durationSec || 0) / 3600;
+    const met = this.metPorPse(pse);
+    const kcal = Math.round(met * peso * durationH);
+    return { kcal, met, weightUsed: peso, isEstimate };
+  },
 };
