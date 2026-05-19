@@ -587,17 +587,39 @@ export async function initReports(navigateFn) {
       <h2>Sessões Realizadas</h2>
       <p class="section-desc">${sessions.length} sessão(ões) · Volume total: ${totalVol.toLocaleString('pt-BR')} kg · Média/sessão: ${avgVolPerSession.toLocaleString('pt-BR')} kg · Duração média: ${avgDuration}min</p>
       <table>
-        <thead><tr><th>Data</th><th>Treino</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th></tr></thead>
+        <thead><tr>
+          <th>Data</th><th>Treino</th><th>Dur.</th><th>Volume</th><th>Séries</th>
+          <th>PSE</th><th>TQR pós</th><th>RIR méd.</th><th>Kcal est.</th><th>Densidade</th>
+        </tr></thead>
         <tbody>
-          ${sessions.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,15).map(se=>`
-            <tr>
+          ${sessions.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,20).map(se=>{
+            const durMin  = se.totalDuration ? Math.round(se.totalDuration/60) : 0;
+            const vol     = se.totalVolume ? Math.round(se.totalVolume) : 0;
+            const pse     = se.postBiofeedback?.pse || '-';
+            const tqrPost = se.postBiofeedback?.tqrPost || '-';
+            // RIR médio das séries
+            const setLog  = se.setLog || [];
+            const rirSets = setLog.filter(s => s.rir != null);
+            const avgRir  = rirSets.length ? Math.round(rirSets.reduce((t,s)=>t+(s.rir||0),0)/rirSets.length*10)/10 : '-';
+            // Calorias estimadas (MET musculação × peso)
+            const peso    = se.studentWeight || (se.preBiofeedback?.peso) || null;
+            const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : '-';
+            // Densidade de treino (volume / minutos)
+            const dens    = vol && durMin ? Math.round(vol / durMin) : '-';
+            const pseColor = typeof pse==='number' ? (pse>=9?'#ef4444':pse>=7?'#f59e0b':'#10b981') : '#888';
+            return `<tr>
               <td>${new Date(se.date).toLocaleDateString('pt-BR')}</td>
               <td><strong>${se.workoutName||'-'}</strong></td>
-              <td>${se.totalDuration?Math.round(se.totalDuration/60)+'min':'-'}</td>
-              <td>${se.totalVolume?Math.round(se.totalVolume)+' kg':'-'}</td>
+              <td>${durMin?durMin+'min':'-'}</td>
+              <td>${vol?vol+' kg':'-'}</td>
               <td>${se.totalSets||'-'}</td>
-              <td><strong>${se.postBiofeedback?.pse||'-'}</strong></td>
-            </tr>`).join('')}
+              <td style="color:${pseColor};font-weight:600">${pse}</td>
+              <td>${tqrPost}/10</td>
+              <td>${avgRir}</td>
+              <td>${kcalEst!=='-'?kcalEst+'kcal':'-'}</td>
+              <td style="font-size:10px;color:#888">${dens!=='-'?dens+' kg/min':'-'}</td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>` : ''}
 
