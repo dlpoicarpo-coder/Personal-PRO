@@ -60,6 +60,21 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   const sleepNum = parseFloat(avgSleep) || 0;
   const cycleLabel = cycleFilter || 'Todos os Ciclos';
 
+  // ── Cálculo de calorias com base na avaliação mais recente ──
+  const lastComp   = assessments.filter(a=>a.type==='composicao').sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  const age        = student?.birthDate ? Calc.calcularIdade(student.birthDate) : (student?.age || 0);
+  const sexo       = student?.gender || 'M';
+  const objMap     = {'Emagrecimento':'emagrecimento','Perda de peso':'emagrecimento','Hipertrofia':'hipertrofia','Ganho de massa':'hipertrofia','Manutenção':'manutencao','Saúde':'manutencao','Condicionamento':'manutencao'};
+  const obj        = objMap[student?.goal] || 'manutencao';
+  const tmbResult  = lastComp?.peso && age ? Calc.tmb(lastComp.peso, lastComp.altura, age, sexo, lastComp.massaMagra) : null;
+  const sessPerWeek= completed.length > 1
+    ? completed.length / Math.max(1, Math.ceil((new Date(completed[0].date) - new Date(completed[completed.length-1].date)) / (7*86400000)))
+    : 3;
+  const nivelAtiv  = sessPerWeek >= 5 ? 'ativo' : sessPerWeek >= 3 ? 'moderado' : sessPerWeek >= 1 ? 'leve' : 'sedentario';
+  const tdeeResult = tmbResult ? Calc.tdee(tmbResult.valor, nivelAtiv) : null;
+  const metaResult = tdeeResult ? Calc.metaCalorica(tdeeResult.valor, obj) : null;
+  const macrosRes  = metaResult && lastComp?.peso ? Calc.macros(metaResult.kcal, lastComp.peso, obj) : null;
+
   // Student-friendly dossier text
   let parecerAluno = '';
   if (pseNum > 8) parecerAluno += 'Atenção: Seus treinos estão muito intensos! Vamos reduzir um pouco o ritmo para seu corpo se recuperar melhor. ';
@@ -180,6 +195,44 @@ async function renderStudentReport(studentId, cycleFilter = '') {
         <div class="text-xs text-muted" style="margin-top:2px">por sessão</div>
       </div>
     </div>
+
+    ${tmbResult && tdeeResult && metaResult ? `
+    <!-- Gasto Energético e Macros -->
+    <div class="card mb-lg" style="border-left:3px solid var(--primary)">
+      <div class="card-header">
+        <span class="card-title">Gasto Energético Estimado</span>
+        <span class="text-xs text-muted">${tmbResult.formula} · Base: ${lastComp ? Calc.formatDate(lastComp.date) : '—'}</span>
+      </div>
+      <div class="stats-grid mb-sm" style="grid-template-columns:repeat(3,1fr);gap:8px">
+        <div class="stat-card" style="text-align:center;padding:10px">
+          <div class="stat-label">TMB</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--text-secondary)">${tmbResult.valor} <span style="font-size:0.72rem">kcal</span></div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">Basal · ${tmbResult.formula}</div>
+        </div>
+        <div class="stat-card" style="text-align:center;padding:10px">
+          <div class="stat-label">TDEE</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">${tdeeResult.valor} <span style="font-size:0.72rem">kcal</span></div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">×${tdeeResult.fator} · ~${Math.round(sessPerWeek*10)/10}×/sem</div>
+        </div>
+        <div class="stat-card" style="text-align:center;padding:10px">
+          <div class="stat-label">Meta (${student?.goal||'Manutenção'})</div>
+          <div style="font-size:1.3rem;font-weight:800;color:${obj.includes('emagr')?'var(--warning)':obj.includes('hipert')?'var(--success)':'var(--accent)'}">${metaResult.kcal} <span style="font-size:0.72rem">kcal</span></div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">${metaResult.label}</div>
+        </div>
+      </div>
+      ${macrosRes ? `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${[['Proteína',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>`
+          <div style="padding:10px 12px;background:var(--bg-page);border-radius:8px;border-left:3px solid ${c}">
+            <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">${n}</div>
+            <div style="font-size:1.3rem;font-weight:700;color:${c}">${m.g}g</div>
+            <div style="font-size:0.7rem;color:var(--text-muted)">${m.kcal}kcal · ${m.pct}%</div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:8px;font-size:0.72rem;color:var(--text-muted)">
+        Proteína: <strong>${macrosRes.protPorKg}g/kg</strong> · ISSN Position Stand (Stokes et al. 2018) · Peso: ${lastComp.peso}kg${lastComp.massaMagra?` · Massa magra: ${Calc.formatNum(lastComp.massaMagra)}kg`:''}
+      </div>` : ''}
+    </div>` : ''}
 
     <div class="card mb-lg" style="border-left:3px solid var(--primary);background:rgba(16,185,129,0.03)">
       <div class="card-header"><span class="card-title">Resumo para o Aluno</span></div>
