@@ -1009,6 +1009,32 @@ async function renderFichaCompleta(sid) {
   forca.forEach(a=>{ if(!prs[a.exercise]||a.rm1>prs[a.exercise].rm1) prs[a.exercise]=a; });
   const avgBf = (key)=>sBf.length?Math.round(sBf.reduce((t,b)=>t+(b[key]||0),0)/sBf.length*10)/10:null;
 
+  // Calcular TMB/TDEE/Macros com base na avaliação mais recente
+  const lastComp   = comp[0];
+  const sexo       = student?.gender || lastComp?.genero || 'M';
+  const peso       = lastComp?.peso;
+  const altura     = lastComp?.altura;
+  const massaMagra = lastComp?.massaMagra;
+  const goalMap    = {
+    'Emagrecimento':'emagrecimento', 'Perda de peso':'emagrecimento',
+    'Hipertrofia':'hipertrofia', 'Ganho de massa':'hipertrofia',
+    'Manutenção':'manutencao', 'Saúde':'manutencao', 'Condicionamento':'manutencao',
+  };
+  const objetivo  = goalMap[student?.goal] || 'manutencao';
+  const tmbResult = age && peso ? Calc.tmb(peso, altura, age, sexo, massaMagra) : null;
+
+  // Estimar nível de atividade pelo número de sessões por semana
+  const sessPerWeek = sSess.length > 0
+    ? sSess.length / Math.max(1, Math.ceil((Date.now() - new Date(sSess[sSess.length-1]?.date||Date.now()).getTime()) / (7*86400000)))
+    : 3;
+  const nivelAtividade = sessPerWeek >= 5 ? 'ativo'
+    : sessPerWeek >= 3 ? 'moderado'
+    : sessPerWeek >= 1 ? 'leve'
+    : 'sedentario';
+  const tdeeResult = tmbResult ? Calc.tdee(tmbResult.valor, nivelAtividade) : null;
+  const metaResult = tdeeResult ? Calc.metaCalorica(tdeeResult.valor, objetivo) : null;
+  const macrosResult= metaResult && peso ? Calc.macros(metaResult.kcal, peso, objetivo) : null;
+
   el.innerHTML = `
     <!-- Header do aluno -->
     <div class="flex items-center gap-lg mb-lg" style="padding-bottom:16px;border-bottom:2px solid var(--border-active)">
@@ -1035,6 +1061,49 @@ async function renderFichaCompleta(sid) {
         <h3>Nenhuma avaliação registrada para ${student?.name}</h3>
       </div>`:''
     }
+
+    ${tmbResult && tdeeResult && metaResult ? `
+    <!-- Calorias e Macros -->
+    <div style="margin-bottom:20px">
+      <div class="text-xs text-muted mb-sm" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Gasto Energético Estimado</div>
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+        ${[
+          ['TMB',  tmbResult.valor+'kcal',  'text-muted', tmbResult.formula],
+          ['TDEE', tdeeResult.valor+'kcal', 'primary',    Calc.FATOR_ATIVIDADE[nivelAtividade]?.label||''],
+          ['Meta', metaResult.kcal+'kcal',  objetivo.includes('emagr')?'warning':objetivo.includes('hipert')?'success':'accent', metaResult.label],
+        ].map(([l,v,c,s])=>`
+          <div class="stat-card" style="text-align:center;padding:10px">
+            <div class="stat-label">${l}</div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--${c.startsWith('text')?'text-muted':c})">${v}</div>
+            <div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;line-height:1.3">${s}</div>
+          </div>`).join('')}
+          ${macrosResult ? `
+          <div class="stat-card" style="text-align:center;padding:10px">
+            <div class="stat-label">Proteína</div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--primary)">${macrosResult.proteina.g}g</div>
+            <div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px">${macrosResult.protPorKg}g/kg · ${macrosResult.proteina.pct}%</div>
+          </div>` : ''}
+      </div>
+      ${macrosResult ? `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${[
+          ['Proteína',    macrosResult.proteina,   '#10b981'],
+          ['Carboidrato', macrosResult.carboidrato, '#f59e0b'],
+          ['Gordura',     macrosResult.gordura,     '#8b5cf6'],
+        ].map(([n,m,c])=>`
+          <div style="background:var(--bg-page);border-radius:8px;padding:10px;border-left:3px solid ${c}">
+            <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">${n}</div>
+            <div style="font-size:1.2rem;font-weight:700;color:${c}">${m.g}g</div>
+            <div style="font-size:0.7rem;color:var(--text-muted)">${m.kcal}kcal · ${m.pct}%</div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:8px;padding:8px 10px;background:rgba(16,185,129,0.05);border-radius:6px;font-size:0.72rem;color:var(--text-muted)">
+        Fórmula: <strong>${tmbResult.formula}</strong>${lastComp?.massaMagra?' (usando massa magra)':''} · Objetivo: <strong>${student?.goal||'Geral'}</strong> · Atividade estimada: ~${Math.round(sessPerWeek*10)/10}×/sem
+      </div>` : ''}
+    </div>` : peso ? `
+    <div style="padding:10px 12px;background:rgba(245,158,11,0.06);border-radius:8px;border-left:3px solid var(--warning);margin-bottom:16px;font-size:0.8rem;color:var(--text-muted)">
+      Para calcular calorias, registre peso, altura e idade na avaliação de composição.
+    </div>` : ''}
 
     ${comp.length?`
     <!-- Composição -->
