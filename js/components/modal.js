@@ -57,13 +57,18 @@ export function openModal(options = {}) {
 
 export function closeModal(callback) {
   if (activeModal) {
-    activeModal.classList.remove('visible');
+    const modalToClose = activeModal;
+    modalToClose.classList.remove('visible');
+    activeModal = null;
     setTimeout(() => {
-      activeModal.remove();
-      activeModal = null;
+      if (modalToClose && modalToClose.parentNode) {
+        modalToClose.remove();
+      }
       document.body.style.overflow = '';
       if (callback) callback();
     }, 200);
+  } else if (callback) {
+    callback();
   }
 }
 
