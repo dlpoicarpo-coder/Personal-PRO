@@ -26,7 +26,8 @@ export function analyzeBiofeedback(entry) {
   const sleep  = entry.sleep  || 0;
   const stress = entry.stress || 0;
   const pain   = entry.pain   || 0;
-  const energy = entry.energy || 0;
+  const energy = entry.energy || entry.tqr || 0;  // compatibilidade TQR→energy
+  const tqr    = entry.tqr    || entry.energy || 0;
   const mood   = entry.mood   || 0;
   const pse    = entry.pse    || 0;
 
@@ -68,7 +69,23 @@ export function analyzeBiofeedback(entry) {
       icon: '⚠️',
     });
   }
-  if (energy <= 3 && energy > 0) {
+  // Alerta de TQR (recuperação)
+  if (tqr > 0 && tqr <= 3) {
+    alerts.push({
+      type: 'danger', metric: 'TQR', value: tqr,
+      message: `Recuperação muito baixa — TQR ${tqr}/10`,
+      action: 'Aluno mal recuperado. Considerar treino de baixíssima intensidade ou dia de descanso ativo.',
+      icon: '🔋',
+    });
+  } else if (tqr > 0 && tqr <= 5) {
+    alerts.push({
+      type: 'warning', metric: 'TQR', value: tqr,
+      message: `Recuperação insuficiente — TQR ${tqr}/10`,
+      action: 'Reduzir volume e/ou intensidade do treino hoje.',
+      icon: '🔋',
+    });
+  }
+  if (energy <= 3 && energy > 0 && !tqr) {
     alerts.push({
       type: 'info', metric: 'Energia', value: energy,
       message: `Energia muito baixa (${energy}/10)`,
@@ -94,37 +111,36 @@ export function overallStatus(entry) {
   const sleep  = entry.sleep  || 5;
   const stress = entry.stress || 5;
   const pain   = entry.pain   || 0;
-  const energy = entry.energy || 5;
+  const tqr    = entry.tqr    || entry.energy || 5;
 
-  const score = (sleep / 10) + ((10 - stress) / 10) + ((10 - pain) / 10) + (energy / 10);
+  const score = (sleep / 10) + ((10 - stress) / 10) + ((10 - pain) / 10) + (tqr / 10);
   const avg   = score / 4;
 
-  if (avg >= 0.75) return { label: 'Ótimo',    color: 'success' };
-  if (avg >= 0.60) return { label: 'Bom',       color: 'primary' };
-  if (avg >= 0.45) return { label: 'Regular',   color: 'warning' };
-  return               { label: 'Atenção',   color: 'danger' };
+  if (avg >= 0.75) return { label: 'Ótimo',   color: 'success' };
+  if (avg >= 0.60) return { label: 'Bom',      color: 'primary' };
+  if (avg >= 0.45) return { label: 'Regular',  color: 'warning' };
+  return               { label: 'Atenção',  color: 'danger' };
 }
 
-// Recomendação de treino baseada no biofeedback
 export function trainingRecommendation(entry) {
   if (!entry) return { label: 'Sem dados', intensity: null };
   const sleep  = entry.sleep  || 5;
   const stress = entry.stress || 5;
   const pain   = entry.pain   || 0;
-  const energy = entry.energy || 5;
-  const mood   = entry.mood   || 5;
+  const tqr    = entry.tqr    || entry.energy || 5;
+  const mood   = entry.mood   || tqr;
 
-  // Situações críticas
-  if (pain >= 7)   return { label: 'Suspender treino — avaliar dor',           intensity: 0, color: 'danger' };
-  if (sleep < 4)   return { label: 'Treino muito leve ou descanso',            intensity: 30, color: 'warning' };
-  if (stress >= 9) return { label: 'Treino leve — alto estresse sistêmico',    intensity: 40, color: 'warning' };
+  if (pain >= 7)  return { label: 'Suspender treino — avaliar dor',          intensity: 0,  color: 'danger'  };
+  if (sleep < 4)  return { label: 'Treino muito leve ou descanso',           intensity: 30, color: 'warning' };
+  if (tqr <= 2)   return { label: 'TQR crítico — descanso ou treino mínimo', intensity: 20, color: 'danger'  };
+  if (stress >= 9)return { label: 'Treino leve — alto estresse sistêmico',   intensity: 40, color: 'warning' };
 
-  // Score composto
-  const readiness = (sleep + energy + mood + (10 - stress) + (10 - pain)) / 5;
+  // TQR tem peso 2x — melhor preditor de prontidão
+  const readiness = (sleep + tqr * 2 + mood + (10 - stress) + (10 - pain)) / 6;
 
-  if (readiness >= 8)  return { label: 'Prontidão excelente — treino normal ou mais intenso', intensity: 100, color: 'success' };
-  if (readiness >= 7)  return { label: 'Boa prontidão — treino normal',                       intensity: 90,  color: 'success' };
-  if (readiness >= 6)  return { label: 'Prontidão razoável — treino moderado',                intensity: 75,  color: 'primary' };
-  if (readiness >= 5)  return { label: 'Prontidão baixa — reduzir volume 20-30%',             intensity: 60,  color: 'warning' };
-  return                      { label: 'Prontidão muito baixa — treino leve ou descanso',     intensity: 40,  color: 'danger' };
+  if (readiness >= 8) return { label: 'Prontidão excelente — treino normal ou mais intenso', intensity: 100, color: 'success' };
+  if (readiness >= 7) return { label: 'Boa prontidão — treino normal',                       intensity: 90,  color: 'success' };
+  if (readiness >= 6) return { label: 'Prontidão razoável — treino moderado',                intensity: 75,  color: 'primary' };
+  if (readiness >= 5) return { label: 'TQR baixo — reduzir volume 20-30%',                   intensity: 60,  color: 'warning' };
+  return                     { label: 'Recuperação insuficiente — treino leve',              intensity: 40,  color: 'danger'  };
 }
