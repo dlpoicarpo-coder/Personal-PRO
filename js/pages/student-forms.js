@@ -169,7 +169,7 @@ export async function renderPreForm(studentId) {
         <div class="form-card">
           <div class="form-card-header"><h2>Personal<strong class="logo-pro">PRO</strong></h2></div>
           <div class="form-card-body" style="text-align:center;padding:48px 24px">
-            <div style="font-size:2.5rem;margin-bottom:12px">😕</div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" style="margin-bottom:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <h3>Aluno não encontrado</h3>
             <p style="color:var(--text-muted);margin-top:8px;font-size:0.9rem">
               O link pode estar desatualizado. Peça um novo link ao seu personal.
@@ -206,20 +206,20 @@ export async function renderPreForm(studentId) {
             <input type="hidden" name="trainerId" value="${student.trainerId||''}" />
 
             <!-- SONO -->
-            ${sliderHTML('sleep','😴 Como você dormiu?',1,10,5,'Muito mal','Muito bem')}
+            ${sliderHTML('sleep','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Como você dormiu?',1,10,5,'Muito mal','Muito bem')}
 
             <!-- ENERGIA / TQR -->
-            ${sliderHTML('tqr','⚡ Quanto você se sente recuperado?',1,10,5,
+            ${sliderHTML('tqr','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>TQR — Quanto você se sente recuperado?',1,10,5,
               '1 — Nada recuperado','10 — Totalmente recuperado',
               `document.getElementById('tqrHint').textContent=['','Exausto','Muito cansado','Cansado','Um pouco cansado','Razoável','Razoável+','Bem recuperado','Bem recuperado+','Quase 100%','100% recuperado'][this.value]`
             )}
             <div id="tqrHint" style="font-size:0.75rem;color:var(--accent);text-align:center;margin-top:-12px;margin-bottom:20px;font-weight:600">Razoável</div>
 
             <!-- ESTRESSE -->
-            ${sliderHTML('stress','🧠 Nível de estresse hoje?',1,10,3,'Tranquilo','Muito estressado')}
+            ${sliderHTML('stress','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Como está sua cabeça hoje?',1,10,3,'Leve, tranquilo','Sobrecarregado')}
 
             <!-- DOR -->
-            ${sliderHTML('pain','🤕 Sente alguma dor ou desconforto?',1,10,1,
+            ${sliderHTML('pain','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Sente alguma dor ou desconforto?',1,10,1,
               '1 — Nenhuma','10 — Dor intensa',
               `document.getElementById('painGroup').style.display=parseInt(this.value)>=3?'block':'none'`
             )}
@@ -236,7 +236,7 @@ export async function renderPreForm(studentId) {
             <!-- OBSERVAÇÕES -->
             <div style="margin-bottom:20px">
               <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:6px">
-                💬 Quer falar algo mais? <span style="font-weight:400;color:var(--text-muted)">(opcional)</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Quer falar algo mais? <span style="font-weight:400;color:var(--text-muted)">(opcional)</span>
               </label>
               <textarea name="notes" placeholder="Ex: comi pouco hoje, dormi tarde, dor de cabeça leve..."
                 style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-page);color:var(--text-primary);font-size:0.85rem;resize:vertical;min-height:64px"
@@ -245,15 +245,15 @@ export async function renderPreForm(studentId) {
 
             <button type="submit" id="preSubmitBtn"
               style="width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.2s">
-              Enviar Check-in ✓
+              Enviar Check-in
             </button>
           </form>
 
           <div id="preSuccess" class="hidden">
             <div class="form-success">
-              <div style="font-size:3rem;color:var(--primary)">✓</div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" style="margin-bottom:8px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               <h2 style="margin:12px 0 8px">Enviado, ${firstName}!</h2>
-              <p style="color:var(--text-muted)">Seu personal já recebeu. Bom treino! 💪</p>
+              <p style="color:var(--text-muted)">Seu personal já recebeu. Bom treino!</p>
             </div>
           </div>
 
@@ -298,7 +298,7 @@ export function initPreForm() {
       document.getElementById('preSuccess')?.classList.remove('hidden');
     } catch(err) {
       console.error(err);
-      if (btn) { btn.disabled = false; btn.textContent = 'Enviar Check-in ✓'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Enviar Check-in'; }
       alert('Erro ao enviar. Por favor, tente novamente.');
     }
   });
@@ -318,7 +318,7 @@ export async function renderPostForm(sessionId) {
         <div class="form-card">
           <div class="form-card-header"><h2>Personal<strong class="logo-pro">PRO</strong></h2></div>
           <div class="form-card-body" style="text-align:center;padding:48px 24px">
-            <div style="font-size:2.5rem;margin-bottom:12px">😕</div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" style="margin-bottom:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <h3>Sessão não encontrada</h3>
             <p style="color:var(--text-muted);margin-top:8px;font-size:0.9rem">
               O link pode estar expirado. Peça um novo link ao seu personal.
@@ -375,20 +375,19 @@ export async function renderPostForm(sessionId) {
             <input type="hidden" name="trainerId" value="${student?.trainerId||''}" />
 
             <!-- PSE -->
-            ${sliderHTML('pse','🏋️ O quanto o treino foi intenso?',1,10,7,'1 — Muito leve','10 — Máximo esforço')}
+            ${sliderHTML('pse','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="18" y="9" width="4" height="6" rx="1"/><line x1="6" y1="12" x2="18" y2="12"/></svg>O quanto o treino foi intenso?',1,10,7,'1 — Muito leve','10 — Máximo esforço')}
 
             <!-- TQR PÓS -->
-            ${sliderHTML('tqrPost','⚡ Como você está se sentindo agora?',1,10,7,
+            ${sliderHTML('tqrPost','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Como você está se sentindo agora?',1,10,7,
               '1 — Exausto','10 — Energizado',
               `document.getElementById('tqrPostHint').textContent=['','Exausto','Muito cansado','Cansado','Cansado+','Razoável','Ok','Bem','Bem+','Ótimo','Excelente'][this.value]`
             )}
             <div id="tqrPostHint" style="font-size:0.75rem;color:var(--accent);text-align:center;margin-top:-12px;margin-bottom:20px;font-weight:600">Bem</div>
 
             <!-- SATISFAÇÃO -->
-            ${sliderHTML('satisfaction','😊 Como foi o treino pra você?',1,10,8,'1 — Péssimo','10 — Incrível')}
 
             <!-- DOR PÓS -->
-            ${sliderHTML('postPain','🤕 Sentiu alguma dor durante o treino?',1,10,1,
+            ${sliderHTML('postPain','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Sentiu alguma dor durante o treino?',1,10,1,
               '1 — Nenhuma','10 — Dor intensa',
               `document.getElementById('postPainGroup').style.display=parseInt(this.value)>=3?'block':'none'`
             )}
@@ -400,7 +399,7 @@ export async function renderPostForm(sessionId) {
             <!-- OBSERVAÇÕES -->
             <div style="margin-bottom:20px">
               <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:6px">
-                💬 Comentário sobre o treino? <span style="font-weight:400;color:var(--text-muted)">(opcional)</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Comentário sobre o treino? <span style="font-weight:400;color:var(--text-muted)">(opcional)</span>
               </label>
               <textarea name="notes" placeholder="Ex: senti dificuldade no agachamento, ombro incomodou um pouco..."
                 style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-page);color:var(--text-primary);font-size:0.85rem;resize:vertical;min-height:64px"
@@ -409,15 +408,15 @@ export async function renderPostForm(sessionId) {
 
             <button type="submit" id="postSubmitBtn"
               style="width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
-              Enviar Pós-Treino ✓
+              Enviar Pós-Treino
             </button>
           </form>
 
           <div id="postSuccess" class="hidden">
             <div class="form-success">
-              <div style="font-size:3rem;color:var(--primary)">🎉</div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" style="margin-bottom:8px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               <h2 style="margin:12px 0 8px">Parabéns, ${firstName}!</h2>
-              <p style="color:var(--text-muted)">Treino registrado. Continue evoluindo! 💪</p>
+              <p style="color:var(--text-muted)">Treino registrado. Continue evoluindo.</p>
             </div>
           </div>
 
@@ -453,7 +452,7 @@ export function initPostForm() {
         const tqrPost = parseInt(data.tqrPost) || 7;
 
         session.postBiofeedback = {
-          pse, tqrPost, satisfaction: parseInt(data.satisfaction)||8,
+          pse, tqrPost, motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
           postPain: parseInt(data.postPain)||1, painRegions: postPainRegions,
           notes: data.notes||'', submittedByStudent: true,
           submittedAt: new Date().toISOString(),
@@ -479,7 +478,7 @@ export function initPostForm() {
             date: session.date||new Date().toISOString(),
             pse, tqrPost, duration: dur, trainingLoad: pse*dur,
             postPain: parseInt(data.postPain)||1, postPainRegions,
-            satisfaction: parseInt(data.satisfaction)||8,
+            motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
             notes: data.notes||'', formType:'post', sessionId: data.sessionId,
           });
         }
@@ -489,7 +488,7 @@ export function initPostForm() {
       document.getElementById('postSuccess')?.classList.remove('hidden');
     } catch(err) {
       console.error(err);
-      if (btn) { btn.disabled = false; btn.textContent = 'Enviar Pós-Treino ✓'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Enviar Pós-Treino'; }
       alert('Erro ao enviar. Por favor, tente novamente.');
     }
   });
