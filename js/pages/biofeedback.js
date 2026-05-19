@@ -177,7 +177,7 @@ function renderBfContent(entries, students, filterStudentId) {
               <td style="font-size:0.8rem;white-space:nowrap">${Calc.formatDate(e.date)}</td>
               ${!student ? `<td>
                 <div class="flex items-center gap-sm">
-                  <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+                  <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem">${st?st.name[0]:'?'}</div>
                   <span style="font-size:0.82rem">${st?.name||'?'}</span>
                 </div>
               </td>` : ''}
