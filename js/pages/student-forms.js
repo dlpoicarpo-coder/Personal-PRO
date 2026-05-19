@@ -1,7 +1,7 @@
 // ============================================================
 // PERSONAL PRO — Student Forms v2
 // Formulários públicos (sem login) para alunos
-// Acessa Supabase direto via anon key com policy pública por ID
+// Acessa Supabase direto via anon key com policy pública por IDt
 // Pré-treino: simplificado + TQR
 // Pós-treino: PSE, satisfação, dor, TQR pós
 // ============================================================
