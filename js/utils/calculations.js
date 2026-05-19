@@ -57,6 +57,91 @@ export const Calc = {
     return Math.round(((4.95 / densidade) - 4.50) * 100 * 10) / 10;
   },
 
+  // ── CALORIAS — Gasto Energético ───────────────────────────
+  // Mifflin-St Jeor (1990) — mais precisa para pop. geral
+  // Ref: Mifflin MD et al. Am J Clin Nutr. 1990;51(2):241-7.
+  tmbMifflin(peso, altura, idade, sexo) {
+    const base = (10 * peso) + (6.25 * altura) - (5 * idade);
+    return Math.round(sexo === 'F' ? base - 161 : base + 5);
+  },
+
+  // Katch-McArdle — usa massa magra, mais precisa quando há composição
+  // Ref: McArdle WD, Katch FI, Katch VL. Exercise Physiology. 2010.
+  tmbKatch(massaMagra) {
+    return Math.round(370 + (21.6 * massaMagra));
+  },
+
+  // Melhor TMB disponível: Katch se tiver massa magra, senão Mifflin
+  tmb(peso, altura, idade, sexo, massaMagra) {
+    if (massaMagra > 0) {
+      return { valor: this.tmbKatch(massaMagra), formula: 'Katch-McArdle' };
+    }
+    if (peso && altura && idade && sexo) {
+      return { valor: this.tmbMifflin(peso, altura, idade, sexo), formula: 'Mifflin-St Jeor' };
+    }
+    return null;
+  },
+
+  // Fator de atividade (Harris-Benedict)
+  FATOR_ATIVIDADE: {
+    sedentario:  { label: 'Sedentário (sem exercício)',          fator: 1.2   },
+    leve:        { label: 'Levemente ativo (1-2×/sem)',          fator: 1.375 },
+    moderado:    { label: 'Moderadamente ativo (3-4×/sem)',      fator: 1.55  },
+    ativo:       { label: 'Muito ativo (5-6×/sem)',              fator: 1.725 },
+    muito_ativo: { label: 'Extremamente ativo (2×/dia)',         fator: 1.9   },
+  },
+
+  // TDEE = TMB × Fator de Atividade
+  tdee(tmbValor, nivelAtividade) {
+    const fa = this.FATOR_ATIVIDADE[nivelAtividade] || this.FATOR_ATIVIDADE.moderado;
+    return { valor: Math.round(tmbValor * fa.fator), fatorLabel: fa.label, fator: fa.fator };
+  },
+
+  // Meta calórica por objetivo
+  // Ref: Helms ER et al. JISSN 2014; Barakat et al. JSCR 2020.
+  metaCalorica(tdeeValor, objetivo) {
+    const metas = {
+      emagrecimento:      { deficit: -500, label: 'Déficit moderado (-500 kcal/dia)' },
+      emagrecimento_leve: { deficit: -250, label: 'Déficit leve (-250 kcal/dia)'     },
+      manutencao:         { deficit:    0, label: 'Manutenção'                        },
+      hipertrofia_leve:   { deficit: +200, label: 'Superávit leve (+200 kcal/dia)'   },
+      hipertrofia:        { deficit: +350, label: 'Superávit moderado (+350 kcal/dia)'},
+    };
+    const m = metas[objetivo] || metas.manutencao;
+    return { kcal: tdeeValor + m.deficit, ...m };
+  },
+
+  // Distribuição de macros
+  // Proteína: 1.6-2.2g/kg — ISSN Position Stand (Stokes et al. 2018)
+  // Gordura: 25-30% TDEE — DRI
+  // Carboidrato: restante
+  macros(kcalMeta, peso, objetivo) {
+    const protPorKg = (objetivo === 'emagrecimento' || objetivo === 'emagrecimento_leve') ? 2.2 : 1.8;
+    const protG    = Math.round(peso * protPorKg);
+    const protKcal = protG * 4;
+    const gordPct  = objetivo === 'emagrecimento' ? 0.25 : 0.28;
+    const gordKcal = Math.round(kcalMeta * gordPct);
+    const gordG    = Math.round(gordKcal / 9);
+    const carbKcal = Math.max(0, kcalMeta - protKcal - gordKcal);
+    const carbG    = Math.round(carbKcal / 4);
+    return {
+      proteina:    { g: protG, kcal: protKcal, pct: Math.round(protKcal / kcalMeta * 100) },
+      gordura:     { g: gordG, kcal: gordKcal, pct: Math.round(gordKcal / kcalMeta * 100) },
+      carboidrato: { g: carbG, kcal: carbKcal, pct: Math.round(carbKcal / kcalMeta * 100) },
+      protPorKg,
+    };
+  },
+
+  // Calorias estimadas da atividade (MET × peso × tempo)
+  // Ref: Ainsworth BE et al. Compendium of Physical Activities. Med Sci Sports Exerc. 2011.
+  caloriasAtividade(peso, minutos, tipo) {
+    const MET = {
+      musculacao: 5.0, hiit: 8.0, sit: 10.0, caminhada: 3.5,
+      corrida: 9.8, ciclismo: 7.5, natacao: 7.0, funcional: 6.0,
+    };
+    return Math.round(((MET[tipo] || 5.0) * 3.5 * peso * minutos) / 200);
+  },
+
   composicaoCorporal(peso, pctGordura) {
     if (!peso || !pctGordura) return { percentualGordura: pctGordura, massaMagra: null, massaGorda: null };
     const massaGorda = Math.round(peso * (pctGordura / 100) * 10) / 10;
