@@ -109,7 +109,7 @@ export async function renderAssessments() {
           <h3>Nenhuma avaliação de composição</h3>
           <p>Clique em "+ Nova Avaliação" para registrar</p>
         </div>` : `
-        <div class="card">
+        <div class="card mb-lg">
           <div class="table-container">
             <table class="data-table">
               <thead><tr>
@@ -148,7 +148,65 @@ export async function renderAssessments() {
               </tbody>
             </table>
           </div>
-        </div>`}
+        </div>
+
+        <!-- Cálculo de Calorias por aluno (usa avaliação mais recente) -->
+        ${(()=>{
+          const filterSid = document.getElementById('assStudentFilter')?.value || '';
+          const aluno = filterSid ? students.find(s=>s.id===filterSid) : null;
+          const lastC = filterSid ? compAss.find(a=>a.studentId===filterSid) : compAss[0];
+          if(!lastC || !lastC.peso) return `
+            <div class="card" style="border-left:3px solid var(--border-color)">
+              <div class="card-header"><span class="card-title">Gasto Energético Estimado</span></div>
+              <p class="text-sm text-muted">Selecione um aluno com avaliação de composição (peso + altura) para ver o cálculo.</p>
+            </div>`;
+          const st    = aluno || students.find(s=>s.id===lastC.studentId);
+          const age2  = st?.birthDate ? Calc.calcularIdade(st.birthDate) : (st?.age || 0);
+          const sexo  = st?.gender || 'M';
+          const objMap= {'Emagrecimento':'emagrecimento','Perda de peso':'emagrecimento','Hipertrofia':'hipertrofia','Ganho de massa':'hipertrofia','Manutenção':'manutencao','Saúde':'manutencao','Condicionamento':'manutencao'};
+          const obj   = objMap[st?.goal] || 'manutencao';
+          const tmb2  = age2 && lastC.peso ? Calc.tmb(lastC.peso, lastC.altura, age2, sexo, lastC.massaMagra) : null;
+          if(!tmb2) return '';
+          const tdee2 = Calc.tdee(tmb2.valor, 'moderado');
+          const meta2 = Calc.metaCalorica(tdee2.valor, obj);
+          const mac2  = Calc.macros(meta2.kcal, lastC.peso, obj);
+          return `
+            <div class="card" style="border-left:3px solid var(--primary)">
+              <div class="card-header">
+                <span class="card-title">Gasto Energético — ${st?.name||'Aluno'}</span>
+                <span class="text-xs text-muted">${tmb2.formula}${lastC.massaMagra?' · Katch-McArdle':''}</span>
+              </div>
+              <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+                <div class="stat-card" style="text-align:center;padding:10px">
+                  <div class="stat-label">TMB</div>
+                  <div style="font-size:1.3rem;font-weight:800;color:var(--text-secondary)">${tmb2.valor} <span style="font-size:0.75rem">kcal</span></div>
+                  <div style="font-size:0.65rem;color:var(--text-muted)">${tmb2.formula}</div>
+                </div>
+                <div class="stat-card" style="text-align:center;padding:10px">
+                  <div class="stat-label">TDEE</div>
+                  <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">${tdee2.valor} <span style="font-size:0.75rem">kcal</span></div>
+                  <div style="font-size:0.65rem;color:var(--text-muted)">×${tdee2.fator} (moderado)</div>
+                </div>
+                <div class="stat-card" style="text-align:center;padding:10px">
+                  <div class="stat-label">Meta (${st?.goal||'Manutenção'})</div>
+                  <div style="font-size:1.3rem;font-weight:800;color:${obj.includes('emagr')?'var(--warning)':obj.includes('hipert')?'var(--success)':'var(--accent)'}">${meta2.kcal} <span style="font-size:0.75rem">kcal</span></div>
+                  <div style="font-size:0.65rem;color:var(--text-muted)">${meta2.label}</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+                ${[['Proteína',mac2.proteina,'#10b981'],['Carboidrato',mac2.carboidrato,'#f59e0b'],['Gordura',mac2.gordura,'#8b5cf6']].map(([n,m,c])=>`
+                  <div style="padding:10px 12px;background:var(--bg-page);border-radius:8px;border-left:3px solid ${c}">
+                    <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">${n}</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:${c}">${m.g}g</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted)">${m.kcal} kcal · ${m.pct}%</div>
+                  </div>`).join('')}
+              </div>
+              <div style="margin-top:10px;font-size:0.72rem;color:var(--text-muted)">
+                Proteína: <strong>${mac2.protPorKg}g/kg</strong> (ISSN 2018) · Base: avaliação de ${Calc.formatDate(lastC.date)}
+              </div>
+            </div>`;
+        })()||''}
+      `}
     </div>
 
     <!-- ── FORÇA & 1RM SUBMAX (unificado) ── -->
