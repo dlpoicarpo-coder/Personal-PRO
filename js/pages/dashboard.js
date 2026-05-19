@@ -60,6 +60,19 @@ export async function renderDashboard() {
     return (now - new Date(lastAss.date)) > 30 * 86400000;
   });
 
+  // Macrociclos próximos do fim (dentro de 7 dias)
+  const macrocycles  = await db.getAll('macrocycles');
+  const macroAlerts  = macrocycles
+    .filter(m => m.status === 'active' && m.startDate && m.totalWeeks)
+    .map(m => {
+      const startMs  = new Date(m.startDate).getTime();
+      const endMs    = startMs + (m.totalWeeks * 7 * 86400000);
+      const daysLeft = Math.ceil((endMs - now.getTime()) / 86400000);
+      return { ...m, daysLeft, endDate: new Date(endMs).toLocaleDateString('pt-BR') };
+    })
+    .filter(m => m.daysLeft >= 0 && m.daysLeft <= 7)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
   return `
     <div class="page-header">
       <div>
@@ -120,6 +133,37 @@ export async function renderDashboard() {
             <span class="text-xs text-muted">${Calc.formatDate(b.date)}</span>
           </div>`;
         }).join('')}
+      </div>
+    </div>` : ''}
+
+    ${macroAlerts.length > 0 ? `
+    <div class="card mt-lg" style="border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.04)">
+      <div class="card-header">
+        <span class="card-title" style="color:#818cf8">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Macrociclos encerrando (${macroAlerts.length})
+        </span>
+        <a href="#/periodizacao" class="btn btn-ghost btn-sm">Ver todos →</a>
+      </div>
+      <div>
+        ${macroAlerts.map(m => {
+          const st = students.find(s => s.id === m.studentId);
+          const urgency = m.daysLeft === 0 ? 'Encerra hoje'
+                        : m.daysLeft === 1 ? 'Encerra amanhã'
+                        : `${m.daysLeft} dias restantes`;
+          const color   = m.daysLeft <= 1 ? 'var(--danger)' : m.daysLeft <= 3 ? 'var(--warning)' : '#818cf8';
+          return `<div class="flex items-center gap-md" style="padding:8px 0;border-bottom:1px solid var(--border-color)">
+            <div class="avatar avatar-sm" style="background:rgba(99,102,241,0.15);color:#818cf8">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:0.88rem">${st?.name || 'Aluno'}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">${m.name || 'Macrociclo'} · ${m.totalWeeks} semanas · Fim: ${m.endDate}</div>
+            </div>
+            <span style="font-size:0.78rem;font-weight:700;color:${color}">${urgency}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="padding:10px 0 0;font-size:0.75rem;color:var(--text-muted)">
+        Planeje a reavaliação e o próximo macrociclo com antecedência.
       </div>
     </div>` : ''}
 
