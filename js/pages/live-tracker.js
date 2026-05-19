@@ -305,7 +305,7 @@ function renderLiveView(students) {
             <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Pré-treino do aluno</div>
             <div class="flex gap-md text-xs" style="flex-wrap:wrap">
               <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep||'-'}</strong></span>
-              <span>TQR <strong>${s.preBiofeedback.tqr??s.preBiofeedback.energy||'-'}</strong></span>
+              <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
               <span>Estresse <strong style="color:${(s.preBiofeedback.stress||0)>=7?'var(--warning)':'inherit'}">${s.preBiofeedback.stress||'-'}</strong></span>
               ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain}</strong></span>`:''}
             </div>
@@ -391,7 +391,7 @@ export function initTracker(navigateFn) {
         if (valuesEl) {
           const vals = [
             ['Sono',     todayPre.sleep,                 false],
-            ['TQR',      todayPre.tqr??todayPre.energy, false],
+            ['TQR',      (todayPre.tqr??todayPre.energy), false],
             ['Estresse', todayPre.stress,               true],
             ['Dor',      todayPre.pain,                 true],
           ];
@@ -864,7 +864,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
             ['Duração',      durMin+'min',                           'var(--primary)'],
             ['Volume',       Math.round(session.totalVolume||0)+'kg','var(--primary)'],
             ['Séries',       String(session.totalSets||0),           'var(--primary)'],
-            ['TQR Entrada',  String(session.preBiofeedback?.tqr??session.preBiofeedback?.energy||'—'),'var(--accent)'],
+            ['TQR Entrada',  String((session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || '—'),'var(--accent)'],
             ['PSE Final',    String(session.postBiofeedback?.pse||'—'),
               (session.postBiofeedback?.pse||0)>8?'var(--danger)':(session.postBiofeedback?.pse||0)>6?'var(--warning)':'var(--success)'],
             ['Satisfação',   String(session.postBiofeedback?.satisfaction||'—')+'★','var(--accent)'],
