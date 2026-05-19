@@ -1,7 +1,7 @@
 // ============================================================
 // PERSONAL PRO — Student Forms v2
 // Formulários públicos (sem login) para alunos
-// Acessa Supabase direto via anon key com policy pública por IDt
+// Acessa Supabase direto via anon key com policy pública por ID
 // Pré-treino: simplificado + TQR
 // Pós-treino: PSE, satisfação, dor, TQR pós
 // ============================================================
@@ -20,23 +20,25 @@ async function publicGet(table, id) {
     if (item) return item;
   } catch(_) {}
 
-  // 2. Tentar via Supabase anon (formulário aberto no celular do aluno)
+  // 2. Supabase anon — tabelas reais (students, sessions, etc.)
+  // Cada tabela tem: id TEXT, trainer_id UUID, data JSONB
   try {
-    const url = `${SUPABASE_URL}/rest/v1/pp_data?store_name=eq.${table}&id=eq.${encodeURIComponent(id)}&select=data&limit=1`;
+    const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=data&limit=1`;
     const res = await fetch(url, {
       headers: {
         'apikey':        SUPABASE_ANON,
         'Authorization': `Bearer ${SUPABASE_ANON}`,
         'Content-Type':  'application/json',
+        'Accept':        'application/json',
       }
     });
     if (res.ok) {
       const rows = await res.json();
-      if (rows?.length) return rows[0].data;
+      if (rows?.length && rows[0].data) return rows[0].data;
     }
   } catch(_) {}
 
-  // 3. Fallback: buscar de localStorage direto (apps sem Supabase)
+  // 3. Fallback localStorage
   try {
     const raw = localStorage.getItem(`pp_${table}`);
     if (raw) {
@@ -52,15 +54,29 @@ async function publicAdd(table, data) {
   // Tentar via db normal primeiro
   try { return await db.add(table, data); } catch(_) {}
 
-  // Fallback: Supabase anon insert
+  // Supabase anon insert — tabela real
   try {
-    const id = data.id || crypto.randomUUID();
-    const body = [{ id, store_name: table, trainer_id: data.trainerId || '00000000-0000-0000-0000-000000000000', data: { ...data, id }, is_default: false }];
-    await fetch(`${SUPABASE_URL}/rest/v1/pp_data`, {
+    const id  = data.id || crypto.randomUUID();
+    const row = {
+      id,
+      trainer_id: data.trainerId || null,
+      data: { ...data, id },
+      is_default: false,
+    };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify(body),
+      headers: {
+        'apikey':        SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify(row),
     });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('publicAdd error:', err);
+    }
     return { ...data, id };
   } catch(_) {}
 }
@@ -68,11 +84,20 @@ async function publicAdd(table, data) {
 async function publicPut(table, data) {
   try { return await db.put(table, data); } catch(_) {}
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/pp_data?store_name=eq.${table}&id=eq.${encodeURIComponent(data.id)}`, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ data }),
-    });
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(data.id)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey':        SUPABASE_ANON,
+          'Authorization': `Bearer ${SUPABASE_ANON}`,
+          'Content-Type':  'application/json',
+          'Prefer':        'return=minimal',
+        },
+        body: JSON.stringify({ data }),
+      }
+    );
+    if (!res.ok) console.error('publicPut error:', await res.text());
   } catch(_) {}
 }
 
