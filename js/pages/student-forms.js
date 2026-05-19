@@ -124,34 +124,54 @@ function painTagsHTML(prefix) {
 
 // ── CSS injetado uma vez ───────────────────────────────────
 const FORM_CSS = `
-  .student-form-page { min-height:100vh;display:flex;align-items:flex-start;justify-content:center;background:var(--bg-app);padding:20px 16px 40px; }
-  .form-card { background:var(--bg-card);border:1px solid var(--border-color);border-radius:16px;width:100%;max-width:480px;overflow:hidden; }
-  .form-card-header { background:var(--bg-page);border-bottom:1px solid var(--border-color);padding:20px 24px;text-align:center; }
-  .form-card-body { padding:24px; }
-  .logo-pro { color:var(--primary); }
-  .slider-row { margin-bottom:24px; }
-  .slider-label { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px; }
-  .slider-label span { font-weight:600;font-size:0.95rem; }
-  .slider-val { font-size:1.6rem;font-weight:800;color:var(--primary);min-width:32px;text-align:right; }
-  .slider-hints { display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:4px; }
-  input[type=range] { width:100%;height:26px;accent-color:var(--primary);cursor:pointer; }
-  .pain-tag { transition:all 0.15s; }
-  .pain-tag.active { border-color:var(--primary)!important;background:rgba(16,185,129,0.1);color:var(--primary); }
-  .form-success { text-align:center;padding:48px 24px; }
-  .hidden { display:none!important; }
+  *{box-sizing:border-box}
+  .student-form-page{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;background:#0f1117;padding:24px 16px 48px}
+  .form-card{background:#1a1d27;border:1px solid rgba(255,255,255,0.08);border-radius:16px;width:100%;max-width:440px}
+  .form-card-header{padding:24px 24px 20px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06)}
+  .form-card-header h2{margin:0 0 2px;font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:-0.01em}
+  .form-card-header h2 strong{color:#10b981}
+  .form-card-header p{margin:0;font-size:0.8rem;color:#64748b}
+  .form-card-body{padding:24px}
+  .student-info{display:flex;align-items:center;gap:12px;margin-bottom:28px;padding:12px 14px;background:rgba(255,255,255,0.04);border-radius:10px}
+  .student-info .av{width:40px;height:40px;border-radius:50%;background:#10b981;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;flex-shrink:0}
+  .student-info .name{font-weight:600;font-size:0.95rem;color:#e2e8f0}
+  .student-info .date{font-size:0.75rem;color:#64748b;margin-top:1px;text-transform:capitalize}
+  .q{margin-bottom:28px}
+  .q-label{font-size:0.82rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
+  .q-val{font-size:2.4rem;font-weight:800;color:#10b981;text-align:center;line-height:1;margin-bottom:8px}
+  input[type=range]{width:100%;height:4px;accent-color:#10b981;cursor:pointer;border-radius:2px}
+  .q-anchors{display:flex;justify-content:space-between;font-size:0.7rem;color:#475569;margin-top:6px}
+  .q-hint{font-size:0.75rem;color:#10b981;text-align:center;margin-top:6px;min-height:16px;font-weight:500}
+  .pain-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .pain-tag{padding:5px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;cursor:pointer;font-size:0.78rem;color:#94a3b8;background:transparent;transition:all 0.15s;user-select:none}
+  .pain-tag.active{border-color:#10b981;background:rgba(16,185,129,0.1);color:#10b981}
+  .obs-label{font-size:0.82rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+  textarea{width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#e2e8f0;font-size:0.85rem;resize:vertical;min-height:64px;font-family:inherit}
+  textarea::placeholder{color:#475569}
+  textarea:focus{outline:none;border-color:#10b981}
+  .submit-btn{width:100%;padding:15px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:8px;letter-spacing:0.01em;transition:opacity 0.2s}
+  .submit-btn:hover{opacity:0.9}
+  .submit-btn:disabled{opacity:0.5;cursor:not-allowed}
+  .form-success{text-align:center;padding:52px 20px}
+  .form-success .check{width:56px;height:56px;border-radius:50%;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .form-success h2{color:#e2e8f0;margin:0 0 8px;font-size:1.3rem}
+  .form-success p{color:#64748b;margin:0;font-size:0.9rem}
+  .pre-card{background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.15);border-radius:10px;padding:12px 14px;margin-bottom:20px}
+  .pre-card-title{font-size:0.68rem;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+  .pre-card-vals{display:flex;gap:14px;flex-wrap:wrap;font-size:0.82rem;color:#94a3b8}
+  .pre-card-vals strong{color:#e2e8f0}
+  .hidden{display:none!important}
 `;
 
 // ── Helpers ────────────────────────────────────────────────
 function sliderHTML(id, label, min, max, val, leftHint, rightHint, onInput='') {
   return `
-    <div class="slider-row">
-      <div class="slider-label">
-        <span>${label}</span>
-        <span class="slider-val" id="v_${id}">${val}</span>
-      </div>
+    <div class="q">
+      <div class="q-label">${label}</div>
+      <div class="q-val" id="v_${id}">${val}</div>
       <input type="range" name="${id}" id="r_${id}" min="${min}" max="${max}" value="${val}"
         oninput="document.getElementById('v_${id}').textContent=this.value;${onInput}" />
-      <div class="slider-hints"><span>${leftHint}</span><span>${rightHint}</span></div>
+      <div class="q-anchors"><span>${leftHint}</span><span>${rightHint}</span></div>
     </div>`;
 }
 
@@ -188,16 +208,16 @@ export async function renderPreForm(studentId) {
     <div class="student-form-page">
       <div class="form-card">
         <div class="form-card-header">
-          <h2 style="margin:0 0 4px">Personal<strong class="logo-pro">PRO</strong></h2>
-          <p style="margin:0;font-size:0.85rem;color:var(--text-muted)">Check-in Pré-Treino</p>
+          <h2>Personal<strong>PRO</strong></h2>
+          <p>Check-in Pré-Treino</p>
         </div>
         <div class="form-card-body">
 
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;padding:14px;background:var(--bg-page);border-radius:10px">
-            <div class="avatar" style="width:48px;height:48px;font-size:1.2rem;flex-shrink:0">${ini}</div>
+          <div class="student-info">
+            <div class="av">${ini}</div>
             <div>
-              <div style="font-weight:700;font-size:1.05rem">${student.name}</div>
-              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;text-transform:capitalize">${dateStr}</div>
+              <div class="name">${student.name}</div>
+              <div class="date">${dateStr}</div>
             </div>
           </div>
 
@@ -205,55 +225,43 @@ export async function renderPreForm(studentId) {
             <input type="hidden" name="studentId" value="${studentId}" />
             <input type="hidden" name="trainerId" value="${student.trainerId||''}" />
 
-            <!-- SONO -->
-            ${sliderHTML('sleep','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Como você dormiu?',1,10,5,'Muito mal','Muito bem')}
+            ${sliderHTML('sleep','Como você dormiu?',1,10,5,'Mal','Muito bem')}
 
-            <!-- ENERGIA / TQR -->
-            ${sliderHTML('tqr','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>TQR — Quanto você se sente recuperado?',1,10,5,
-              '1 — Nada recuperado','10 — Totalmente recuperado',
-              `document.getElementById('tqrHint').textContent=['','Exausto','Muito cansado','Cansado','Um pouco cansado','Razoável','Razoável+','Bem recuperado','Bem recuperado+','Quase 100%','100% recuperado'][this.value]`
+            ${sliderHTML('tqr','Como está sua recuperação?',1,10,5,'Exausto','100% recuperado',
+              `var h=document.getElementById('tqrHint');if(h)h.textContent=['','Exausto','Muito cansado','Cansado','Pouco cansado','50%','Razoável','Bem','Muito bem','Quase lá','100%'][this.value]`
             )}
-            <div id="tqrHint" style="font-size:0.75rem;color:var(--accent);text-align:center;margin-top:-12px;margin-bottom:20px;font-weight:600">Razoável</div>
+            <div class="q-hint" id="tqrHint">50%</div>
 
-            <!-- ESTRESSE -->
-            ${sliderHTML('stress','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Como está sua cabeça hoje?',1,10,3,'Leve, tranquilo','Sobrecarregado')}
+            ${sliderHTML('stress','Como está sua cabeça hoje?',1,10,3,'Tranquilo','Sobrecarregado')}
 
-            <!-- DOR -->
-            ${sliderHTML('pain','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Sente alguma dor ou desconforto?',1,10,1,
-              '1 — Nenhuma','10 — Dor intensa',
+            ${sliderHTML('pain','Sente alguma dor?',1,10,1,'Nenhuma','Intensa',
               `document.getElementById('painGroup').style.display=parseInt(this.value)>=3?'block':'none'`
             )}
             <div id="painGroup" style="display:none;margin-bottom:20px">
-              <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px">
-                Onde? <span style="font-weight:400;color:var(--text-muted)">(pode marcar vários)</span>
-              </label>
-              ${painTagsHTML('pre_pain')}
-              <textarea name="painDescription" placeholder="Descreva brevemente (opcional)..."
-                style="width:100%;margin-top:8px;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-page);color:var(--text-primary);font-size:0.85rem;resize:vertical;min-height:56px"
-                rows="2"></textarea>
+              <div class="q-label" style="margin-bottom:8px">Onde?</div>
+              <div class="pain-tags" id="pre_pain_regions_wrap">
+                ${(()=>require?require:null,['Cabeça','Pescoço','Ombro Dir.','Ombro Esq.','Costas Sup.','Lombar','Quadril','Joelho Dir.','Joelho Esq.','Tornozelo Dir.','Panturrilha','Abdômen'].map(r=>`
+                  <label class="pain-tag">
+                    <input type="checkbox" name="pre_pain_regions" value="${r.toLowerCase().replace(/[^a-z]/g,'_')}" style="display:none" />${r}
+                  </label>`).join(''))()||''}
+              </div>
             </div>
 
-            <!-- OBSERVAÇÕES -->
-            <div style="margin-bottom:20px">
-              <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:6px">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Quer falar algo mais? <span style="font-weight:400;color:var(--text-muted)">(opcional)</span>
-              </label>
-              <textarea name="notes" placeholder="Ex: comi pouco hoje, dormi tarde, dor de cabeça leve..."
-                style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-page);color:var(--text-primary);font-size:0.85rem;resize:vertical;min-height:64px"
-                rows="2"></textarea>
+            <div class="q">
+              <div class="q-label">Observações <span style="font-weight:400;text-transform:none;font-size:0.72rem;color:#475569">(opcional)</span></div>
+              <textarea name="notes" placeholder="Comi pouco, dormi tarde, dor de cabeça..."></textarea>
             </div>
 
-            <button type="submit" id="preSubmitBtn"
-              style="width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.2s">
-              Enviar Check-in
-            </button>
+            <button type="submit" id="preSubmitBtn" class="submit-btn">Enviar</button>
           </form>
 
           <div id="preSuccess" class="hidden">
             <div class="form-success">
-              <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" style="margin-bottom:8px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              <h2 style="margin:12px 0 8px">Enviado, ${firstName}!</h2>
-              <p style="color:var(--text-muted)">Seu personal já recebeu. Bom treino!</p>
+              <div class="check">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h2>Enviado, ${firstName}!</h2>
+              <p>Seu personal já recebeu. Bom treino!</p>
             </div>
           </div>
 
@@ -345,27 +353,27 @@ export async function renderPostForm(sessionId) {
     <div class="student-form-page">
       <div class="form-card">
         <div class="form-card-header">
-          <h2 style="margin:0 0 4px">Personal<strong class="logo-pro">PRO</strong></h2>
-          <p style="margin:0;font-size:0.85rem;color:var(--text-muted)">Check-in Pós-Treino</p>
+          <h2>Personal<strong>PRO</strong></h2>
+          <p>Check-in Pós-Treino</p>
         </div>
         <div class="form-card-body">
 
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;padding:14px;background:var(--bg-page);border-radius:10px">
-            <div class="avatar" style="width:48px;height:48px;font-size:1.2rem;flex-shrink:0">${ini}</div>
+          <div class="student-info">
+            <div class="av">${ini}</div>
             <div>
-              <div style="font-weight:700;font-size:1.05rem">${student?.name||'Aluno'}</div>
-              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">${session.workoutName||'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
+              <div class="name">${student?.name||'Aluno'}</div>
+              <div class="date">${session.workoutName||'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
             </div>
           </div>
 
           ${preBf ? `
-          <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px;margin-bottom:20px">
-            <div style="font-size:0.7rem;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Seu check-in de entrada</div>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.82rem">
+          <div class="pre-card">
+            <div class="pre-card-title">Check-in de entrada</div>
+            <div class="pre-card-vals">
               <span>Sono <strong>${preBf.sleep}/10</strong></span>
               <span>TQR <strong>${preBf.tqr||preBf.energy||'—'}/10</strong></span>
-              <span>Estresse <strong>${preBf.stress}/10</strong></span>
-              ${preBf.pain>2?`<span style="color:var(--warning)">Dor <strong>${preBf.pain}/10</strong></span>`:''}
+              <span>Cabeça <strong>${preBf.stress}/10</strong></span>
+              ${preBf.pain>2?`<span>Dor <strong>${preBf.pain}/10</strong></span>`:''}
             </div>
           </div>` : ''}
 
@@ -374,49 +382,41 @@ export async function renderPostForm(sessionId) {
             ${preBf ? `<input type="hidden" name="preBiofeedbackId" value="${preBf.id}" />` : ''}
             <input type="hidden" name="trainerId" value="${student?.trainerId||''}" />
 
-            <!-- PSE -->
-            ${sliderHTML('pse','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="18" y="9" width="4" height="6" rx="1"/><line x1="6" y1="12" x2="18" y2="12"/></svg>O quanto o treino foi intenso?',1,10,7,'1 — Muito leve','10 — Máximo esforço')}
+            ${sliderHTML('pse','Intensidade do treino',1,10,7,'Leve','Máximo esforço')}
 
-            <!-- TQR PÓS -->
-            ${sliderHTML('tqrPost','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Como você está se sentindo agora?',1,10,7,
-              '1 — Exausto','10 — Energizado',
-              `document.getElementById('tqrPostHint').textContent=['','Exausto','Muito cansado','Cansado','Cansado+','Razoável','Ok','Bem','Bem+','Ótimo','Excelente'][this.value]`
+            ${sliderHTML('tqrPost','Como você está agora?',1,10,7,'Exausto','Energizado',
+              `var h=document.getElementById('tqrPostHint');if(h)h.textContent=['','Exausto','Muito cansado','Cansado','Pouco cansado','50%','Razoável','Bem','Muito bem','Ótimo','100%'][this.value]`
             )}
-            <div id="tqrPostHint" style="font-size:0.75rem;color:var(--accent);text-align:center;margin-top:-12px;margin-bottom:20px;font-weight:600">Bem</div>
+            <div class="q-hint" id="tqrPostHint">Bem</div>
 
-            <!-- SATISFAÇÃO -->
-
-            <!-- DOR PÓS -->
-            ${sliderHTML('postPain','<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Sentiu alguma dor durante o treino?',1,10,1,
-              '1 — Nenhuma','10 — Dor intensa',
+            ${sliderHTML('postPain','Sentiu alguma dor?',1,10,1,'Nenhuma','Intensa',
               `document.getElementById('postPainGroup').style.display=parseInt(this.value)>=3?'block':'none'`
             )}
             <div id="postPainGroup" style="display:none;margin-bottom:20px">
-              <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px">Onde sentiu dor?</label>
-              ${painTagsHTML('post_pain')}
+              <div class="q-label" style="margin-bottom:8px">Onde?</div>
+              <div class="pain-tags">
+                ${['Cabeça','Pescoço','Ombro Dir.','Ombro Esq.','Costas Sup.','Lombar','Quadril','Joelho Dir.','Joelho Esq.','Tornozelo Dir.','Panturrilha','Abdômen'].map(r=>`
+                  <label class="pain-tag">
+                    <input type="checkbox" name="post_pain_regions" value="${r.toLowerCase().replace(/[^a-z]/g,'_')}" style="display:none" />${r}
+                  </label>`).join('')}
+              </div>
             </div>
 
-            <!-- OBSERVAÇÕES -->
-            <div style="margin-bottom:20px">
-              <label style="font-size:0.85rem;font-weight:600;display:block;margin-bottom:6px">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Comentário sobre o treino? <span style="font-weight:400;color:var(--text-muted)">(opcional)</span>
-              </label>
-              <textarea name="notes" placeholder="Ex: senti dificuldade no agachamento, ombro incomodou um pouco..."
-                style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-page);color:var(--text-primary);font-size:0.85rem;resize:vertical;min-height:64px"
-                rows="2"></textarea>
+            <div class="q">
+              <div class="q-label">Comentário <span style="font-weight:400;text-transform:none;font-size:0.72rem;color:#475569">(opcional)</span></div>
+              <textarea name="notes" placeholder="Dificuldade em algum exercício, dor, algo diferente..."></textarea>
             </div>
 
-            <button type="submit" id="postSubmitBtn"
-              style="width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer">
-              Enviar Pós-Treino
-            </button>
+            <button type="submit" id="postSubmitBtn" class="submit-btn">Enviar</button>
           </form>
 
           <div id="postSuccess" class="hidden">
             <div class="form-success">
-              <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" style="margin-bottom:8px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              <h2 style="margin:12px 0 8px">Parabéns, ${firstName}!</h2>
-              <p style="color:var(--text-muted)">Treino registrado. Continue evoluindo.</p>
+              <div class="check">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h2>Parabéns, ${firstName}!</h2>
+              <p>Treino registrado. Continue evoluindo.</p>
             </div>
           </div>
 
