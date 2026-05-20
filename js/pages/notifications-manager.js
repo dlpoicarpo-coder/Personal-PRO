@@ -79,6 +79,26 @@ export async function checkAndNotifyNewResponses() {
 
     let count = newPre.length + newPost.length + newPostSessions.length;
 
+    // Verificar macrociclos encerrando em até 7 dias
+    const allMacros = await db.getAll('macrocycles');
+    const macroEndingSoon = allMacros
+      .filter(m => m.status === 'active' && m.startDate && m.totalWeeks)
+      .filter(m => {
+        const endMs = new Date(m.startDate + 'T12:00:00').getTime() + m.totalWeeks * 7 * 86400000;
+        const days  = Math.ceil((endMs - Date.now()) / 86400000);
+        return days >= 0 && days <= 7;
+      });
+    count += macroEndingSoon.length;
+
+    if (macroEndingSoon.length > 0) {
+      macroEndingSoon.forEach(m => {
+        const st    = students.find(s => s.id === m.studentId);
+        const endMs = new Date(m.startDate + 'T12:00:00').getTime() + m.totalWeeks * 7 * 86400000;
+        const days  = Math.ceil((endMs - Date.now()) / 86400000);
+        notify.warning(`⏰ Macrociclo de ${st?.name||'Aluno'} encerra em ${days === 0 ? 'hoje' : days + ' dia(s)'}`);
+      });
+    }
+
     if (count > 0) {
       // Badge no sino
       updateNotificationBadge(count);
@@ -127,16 +147,28 @@ export async function renderNotificationsPanel() {
   const sessions    = await db.getAll('sessions');
   const students    = await db.getAll('students');
   const schedules   = await db.getAll('schedules');
+  const macrocycles = await db.getAll('macrocycles');
 
   // Usar data local (YYYY-MM-DD) para evitar problema de UTC
   const d = new Date();
   const todayLocal = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const todaySchedules = schedules.filter(s => {
     if (s.status !== 'scheduled') return false;
-    // Pegar só YYYY-MM-DD da data salva (pode ter T ou não)
     const schedDate = (s.date || '').slice(0, 10);
     return schedDate === todayLocal;
   });
+
+  // Macrociclos encerrando em até 7 dias
+  const nowMs = Date.now();
+  const macroAlerts = macrocycles
+    .filter(m => m.status === 'active' && m.startDate && m.totalWeeks)
+    .map(m => {
+      const endMs    = new Date(m.startDate + 'T12:00:00').getTime() + m.totalWeeks * 7 * 86400000;
+      const daysLeft = Math.ceil((endMs - nowMs) / 86400000);
+      return { ...m, daysLeft };
+    })
+    .filter(m => m.daysLeft >= 0 && m.daysLeft <= 7)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
 
   // Últimas respostas (últimas 48h)
   const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -189,6 +221,26 @@ export async function renderNotificationsPanel() {
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#10b981;margin-bottom:6px">Treinos hoje</div>
         <p style="font-size:0.82rem;color:#64748b;margin:0">Nenhum treino agendado para hoje</p>
       </div>`}
+
+      ${macroAlerts.length > 0 ? `
+      <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8b5cf6;margin-bottom:10px">
+          ⏰ Macrociclos encerrando (${macroAlerts.length})
+        </div>
+        ${macroAlerts.map(m => {
+          const st = students.find(x => x.id === m.studentId);
+          const urgColor = m.daysLeft === 0 ? '#ef4444' : m.daysLeft <= 2 ? '#f97316' : '#f59e0b';
+          const urgLabel = m.daysLeft === 0 ? 'Encerra hoje!' : m.daysLeft === 1 ? 'Encerra amanhã' : `${m.daysLeft} dias restantes`;
+          return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div>
+              <div style="font-size:0.88rem;font-weight:600;color:#f1f5f9">${st?.name || 'Aluno'}</div>
+              <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">${m.name || 'Macrociclo'} · ${m.totalWeeks}sem</div>
+            </div>
+            <span style="font-size:0.75rem;font-weight:700;color:${urgColor};background:${urgColor}22;padding:3px 8px;border-radius:10px;white-space:nowrap">${urgLabel}</span>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
 
       <div style="padding:14px 18px">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6366f1;margin-bottom:10px">
