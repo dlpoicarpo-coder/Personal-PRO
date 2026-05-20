@@ -797,7 +797,8 @@ export async function initReports(navigateFn) {
     console.error('PDF error:', err);
     notify.error('Erro ao gerar PDF: ' + (err?.message || 'erro desconhecido'));
   }
-}
+}); // <-- Add this line to close the pdfBtn event listener!
+} // <-- This closes the initReports function
 
 async function initReportCharts(studentId, cycleFilter = '') {
   if (typeof Chart === 'undefined') return;
