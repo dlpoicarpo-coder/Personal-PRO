@@ -854,82 +854,177 @@ h4 {
 }
 
 /* --- Responsive --- */
-/* ============================================================
-   PERSONAL PRO — MOBILE FIRST (v2)
-   Viewport ≤ 768px — sidebar oculta, bottom nav, touch-friendly
-   ============================================================ */
+@media (max-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
 @media (max-width: 768px) {
-
-  /* ── Layout base ─────────────────────────────────────────── */
-  .app-layout { flex-direction: column; }
-
-  .sidebar {
-    transform: translateX(-100%);
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    z-index: 200;
-    transition: transform 0.25s ease;
-    width: 280px !important;
-    box-shadow: 4px 0 32px rgba(0,0,0,0.4);
-  }
-
-  .sidebar.open { transform: translateX(0); }
-
-  /* Overlay escuro ao abrir sidebar */
-  .sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    z-index: 199;
-    backdrop-filter: blur(2px);
-  }
-  .sidebar-overlay.visible { display: block; }
-
   .main-content {
-    margin-left: 0 !important;
-    padding: 12px 12px 88px !important;
-    padding-top: 60px !important;
+    margin-left: 0;
+    padding: var(--space-sm);
+    padding-top: 64px;
+    padding-bottom: 80px; /* espaço para bottom nav */
   }
 
-  /* ── Top bar mobile ───────────────────────────────────────── */
-  .mobile-topbar {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.6rem;
+  }
+
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .page-header > div:last-child {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tabelas scroll horizontal em mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards mais compactos */
+  .card {
+    padding: 12px;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Modal ocupa tela toda em mobile */
+  .modal-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Tabs scroll horizontal */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Tracker mobile */
+  .tracker-live .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .tracker-live .stat-value {
+    font-size: 1rem;
+  }
+
+  .tracker-live .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Set rows mais compactos */
+  .set-row {
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .set-row input {
+    padding: 4px 4px;
+    font-size: 0.8rem;
+  }
+
+  /* Botões touch-friendly */
+  .btn {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+
+  .btn-sm {
+    min-height: 34px;
+    padding: 5px 10px;
+  }
+
+  /* Formulário de exercício no modal */
+  .exercise-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  /* Page header título */
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  /* Sidebar overlay em mobile */
+  #sidebarOverlay {
+    display: block;
+  }
+
+  /* Students grid em mobile */
+  .students-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── BOTTOM NAV MOBILE ──────────────────────────────────────── */
+#mobileBottomNav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  #mobileBottomNav {
     display: flex;
     position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 52px;
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border-color);
-    align-items: center;
-    padding: 0 14px;
-    z-index: 100;
-    gap: 12px;
-  }
-
-  .mobile-topbar-title {
-    flex: 1;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .mobile-topbar-logo strong { color: var(--primary); }
-
-  /* ── Bottom Navigation ────────────────────────────────────── */
-  #mobileBottomNav {
-    display: flex !important;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 64px;
-    background: var(--bg-card);
+    background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
-    z-index: 100;
-    padding: 0 4px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 200;
+    align-items: stretch;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
   }
 
   .mobile-nav-item {
@@ -939,111 +1034,163 @@ h4 {
     align-items: center;
     justify-content: center;
     gap: 3px;
-    padding: 6px 4px;
-    border: none;
-    background: transparent;
+    text-decoration: none;
     color: var(--text-muted);
-    font-size: 0.58rem;
+    font-size: 0.6rem;
     font-weight: 500;
     cursor: pointer;
-    border-radius: 10px;
-    transition: all 0.15s;
-    text-decoration: none;
-    min-width: 0;
+    border: none;
+    background: none;
+    transition: color 0.15s;
+    padding: 6px 4px;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .mobile-nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
-
-  .mobile-nav-item.active {
-    color: var(--primary) !important;
-    background: rgba(16,185,129,0.08);
+  .mobile-nav-item.active,
+  .mobile-nav-item:active {
+    color: var(--primary);
   }
 
-  .mobile-nav-item span { line-height: 1; }
-
-  /* ── Cards e grids ────────────────────────────────────────── */
-  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 8px; }
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
-  .form-row { grid-template-columns: 1fr !important; }
-  .card { padding: 12px; }
-  .card-header { flex-wrap: wrap; gap: 8px; }
-
-  /* ── Tabelas ─────────────────────────────────────────────── */
-  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  /* ── Tabs ────────────────────────────────────────────────── */
-  .tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab { white-space: nowrap; flex-shrink: 0; font-size: 0.8rem; padding: 6px 12px; }
-
-  /* ── Modal bottom sheet ──────────────────────────────────── */
-  .modal-overlay { align-items: flex-end !important; }
-  .modal-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    border-radius: 20px 20px 0 0 !important;
-    position: relative !important;
-    bottom: auto !important;
-    max-height: 92vh !important;
-    overflow-y: auto !important;
+  .mobile-nav-item svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
   }
 
-  /* ── Page headers ────────────────────────────────────────── */
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .page-header h1 { font-size: 1.3rem; }
-  .page-header > div:last-child { width: 100%; }
-  .page-header .flex { flex-wrap: wrap; }
-
-  /* ── Tracker ao vivo ─────────────────────────────────────── */
-  .tracker-live .stats-grid { grid-template-columns: repeat(3,1fr); gap: 6px; }
-  .tracker-live .stat-value { font-size: 1rem; }
-
-  /* ── Exercise rows ───────────────────────────────────────── */
-  .exercise-row {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 6px !important;
-  }
-  .exercise-row > div:first-child { grid-column: 1 / -1; }
-
-  /* ── Formulários ─────────────────────────────────────────── */
-  .form-group { margin-bottom: 12px; }
-  .form-input, .form-select, .form-textarea {
-    font-size: 16px !important; /* evita zoom em iOS */
+  /* Topbar mobile */
+  .mobile-topbar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 150;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
 
-  /* ── Buttons ─────────────────────────────────────────────── */
-  .btn { min-height: 40px; }
-  .btn-sm { min-height: 32px; }
+  /* Esconder sidebar em mobile */
+  #sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 300;
+  }
 
-  /* ── Charts ─────────────────────────────────────────────── */
-  canvas { max-width: 100%; }
-
-  /* ── Hide sidebar elements no mobile ─────────────────────── */
-  .sidebar-label-only { display: none; }
-
+  #sidebar.mobile-open {
+    transform: translateX(0);
+  }
 }
 
-/* ── Safe area iPhone X+ ──────────────────────────────────── */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  @media (max-width: 768px) {
-    #mobileBottomNav {
-      padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
-      height: calc(64px + env(safe-area-inset-bottom));
-    }
-    .main-content {
-      padding-bottom: calc(env(safe-area-inset-bottom) + 88px) !important;
-    }
-  }
+
+/* ========================================
+   LIGHT MODE
+   ======================================== */
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --bg-card: rgba(0, 0, 0, 0.02);
+  --bg-card-hover: rgba(0, 0, 0, 0.04);
+  --bg-glass: rgba(255, 255, 255, 0.9);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(16, 185, 129, 0.4);
+
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --gradient-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  --gradient-card: linear-gradient(135deg, rgba(16, 185, 129, 0.03), rgba(6, 182, 212, 0.03));
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.08);
+}
+
+[data-theme="light"] body {
+  background: var(--gradient-bg);
+}
+
+[data-theme="light"] .sidebar {
+  background: #ffffff;
+  border-right-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .sidebar-link.active {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+[data-theme="light"] .card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .card:hover {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .stat-card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .form-input,
+[data-theme="light"] .form-select,
+[data-theme="light"] .form-textarea {
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+}
+
+[data-theme="light"] .data-table th {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+[data-theme="light"] .modal {
+  background: #ffffff;
+}
+
+[data-theme="light"] .toast {
+  background: #ffffff;
+}
+
+[data-theme="light"] .login-page,
+[data-theme="light"] .student-form-page {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .login-card,
+[data-theme="light"] .form-card {
+  background: #ffffff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .login-header,
+[data-theme="light"] .form-card-header {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05));
+}
+
+[data-theme="light"] .btn-secondary {
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+}
+
+[data-theme="light"] .set-row {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
 }
