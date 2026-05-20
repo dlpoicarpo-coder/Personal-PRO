@@ -19,7 +19,6 @@ const MENU_ITEMS = [
   { id: 'anamnesis', icon: 'assessments', label: 'Anamnese', path: '/anamnese' },
   { id: 'tutorial', icon: 'weekly', label: 'Tutorial', path: '/tutorial' },
   { id: 'settings', icon: 'settings', label: 'Configurações', path: '/config' },
-  { id: 'admin', icon: 'admin', label: 'Admin', path: '/admin', adminOnly: true },
 ];
 
 export function renderSidebar(currentPath) {
@@ -38,18 +37,25 @@ export function renderSidebar(currentPath) {
       </div>
       <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">☰</button>
       
-      <nav class="sidebar-nav">
+      
+  <!-- Top bar mobile (visível apenas em ≤768px via CSS display:none/flex) -->
+  <div class="mobile-topbar" id="mobileTopbar" style="display:none">
+    <button id="mobileMenuBtn" class="btn btn-ghost btn-icon" style="padding:6px;min-width:36px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span style="flex:1;font-weight:700;font-size:0.95rem">Personal<strong style="color:var(--primary)">PRO</strong></span>
+    <a href="#/tracker" style="padding:5px 10px;background:var(--primary);color:white;border-radius:8px;font-size:0.75rem;font-weight:600;text-decoration:none">Live</a>
+  </div>
+  <nav class="sidebar-nav">
         ${MENU_ITEMS.map(item => `
           <a href="#${item.path}" 
              class="sidebar-link ${currentPath === item.path ? 'active' : ''} ${item.highlight ? 'sidebar-link-highlight' : ''}" 
              data-page="${item.id}"
              id="nav-${item.id}"
-             title="${item.label}"
-             ${item.adminOnly ? 'style="display:none"' : ''}>
+             title="${item.label}">
             <span class="sidebar-icon-svg">${ICONS[item.icon] || '•'}</span>
             <span class="sidebar-label">${item.label}</span>
             ${item.highlight ? '<span class="live-dot"></span>' : ''}
-            ${item.adminOnly ? '<span style="font-size:0.6rem;background:rgba(239,68,68,0.15);color:var(--danger);padding:1px 5px;border-radius:8px;margin-left:4px">Admin</span>' : ''}
           </a>
         `).join('')}
       </nav>
@@ -60,7 +66,7 @@ export function renderSidebar(currentPath) {
             <div class="avatar avatar-sm" id="trainerAvatar">PRO</div>
             <div class="sidebar-user-info">
               <span class="sidebar-user-name" id="trainerName">Treinador</span>
-              <span id="roleBadge" style="font-size:0.65rem;padding:1px 7px;border-radius:8px;font-weight:600;background:rgba(16,185,129,0.15);color:var(--primary)">Personal</span>
+              <span class="sidebar-user-role">Personal Trainer</span>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:4px">
@@ -138,6 +144,19 @@ export function renderSidebar(currentPath) {
 
 export function initSidebar() {
   const toggle = document.getElementById('sidebarToggle');
+  const mobileBtn = document.getElementById('mobileMenuBtn');
+  // Mostrar topbar mobile
+  const topbar = document.getElementById('mobileTopbar');
+  if (topbar && window.innerWidth <= 768) topbar.style.display = 'flex';
+  window.addEventListener('resize', () => {
+    if (topbar) topbar.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+  });
+  if (mobileBtn) {
+    mobileBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('visible');
+    });
+  }
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -146,13 +165,13 @@ export function initSidebar() {
   // Mobile toggle
   if (toggle) {
     toggle.addEventListener('click', () => {
-      sidebar.classList.toggle('mobile-open');
+      sidebar.classList.toggle('open');
     });
   }
   
   if (overlay) {
     overlay.addEventListener('click', () => {
-      sidebar.classList.remove('mobile-open');
+      sidebar.classList.remove('open');
     });
   }
 
