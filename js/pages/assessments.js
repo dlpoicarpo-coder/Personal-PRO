@@ -554,7 +554,7 @@ export function initAssessments(navigateFn) {
     await db.add('assessments',{
       studentId:sid, type:'forca', exercise:ex, carga:best.carga, reps:best.reps,
       rm1:best.rm1, formula:form, series, protocolo:'submax', isPR,
-      date:new Date().toISOString().slice(0,10),
+      date:Calc.todayLocal(),
     });
     notify.success(`1RM ${isPR?'🏆 PR! ':''}Estimado: ${best.rm1}kg salvo!`);
     navigateFn('/avaliacoes');
@@ -866,7 +866,7 @@ function openAssessmentForm(tipo, students, navigateFn) {
 }
 
 async function saveAssessment(tipo, d, navigateFn) {
-  const base = { type:tipo, studentId:d.studentId, date:d.date||new Date().toISOString().slice(0,10) };
+  const base = { type:tipo, studentId:d.studentId, date:d.date||Calc.todayLocal() };
 
   if(tipo==='composicao'){
     const peso   = parseFloat(d.peso)||null;
@@ -932,7 +932,7 @@ function studentSelectOpts(students) {
 }
 
 function composicaoFormHTML(students) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = Calc.todayLocal();
   return `<form id="assessForm">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Aluno *</label>
@@ -983,7 +983,7 @@ function composicaoFormHTML(students) {
 }
 
 function forcaFormHTML(students) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = Calc.todayLocal();
   return `<form id="assessForm">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Aluno *</label>
@@ -1013,7 +1013,7 @@ function forcaFormHTML(students) {
 }
 
 function conconiFormHTML(students) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = Calc.todayLocal();
   return `<form id="assessForm">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Aluno *</label>
