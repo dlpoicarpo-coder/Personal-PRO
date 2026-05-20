@@ -169,6 +169,35 @@ const TUTORIALS = [
       },
     ]
   },
+{
+    icon: '📊',
+    title: 'Relatórios e Gráficos',
+    items: [
+      { q: 'Como ver o relatório de um aluno?', a: 'Vá em Relatórios, selecione o aluno e o ciclo. O sistema gera automaticamente gráficos de progressão de carga, bem-estar, PSE, wellness radar e gasto calórico por sessão.' },
+      { q: 'O que é o gráfico de Kcal?', a: 'Estima o gasto calórico de cada sessão usando MET 5.0 (musculação) × peso corporal × duração (Compêndio ACSM, Ainsworth 2011). Útil para ajuste nutricional ao longo do ciclo.' },
+      { q: 'Como filtrar por ciclo no relatório?', a: 'Após selecionar o aluno, o seletor de ciclos aparece automaticamente. Escolha o ciclo para ver dados filtrados daquele período.' },
+      { q: 'Como exportar o relatório em PDF?', a: 'Clique no botão PDF no canto superior do relatório. O sistema usa jsPDF para gerar um documento completo com todos os gráficos e dados do ciclo.' },
+    ]
+  },
+  {
+    icon: '📱',
+    title: 'Formulários dos Alunos',
+    items: [
+      { q: 'Como enviar o link de check-in para o aluno?', a: 'Na Agenda, clique no botão de WhatsApp ao lado do agendamento. O sistema abre o WhatsApp com a mensagem já preenchida e o link do check-in. O aluno clica e preenche em ~30 segundos.' },
+      { q: 'O que é TQR?', a: 'Total Quality Recovery (Kenttä & Hassmén, 1998). Escala de 1-10 que mede a percepção de recuperação do aluno. TQR ≤ 3 = alerta vermelho (não treinar pesado). TQR ≥ 7 = boa prontidão.' },
+      { q: 'Quando enviar o formulário pós-treino?', a: 'O sistema envia automaticamente ao finalizar a sessão no Treino ao Vivo. O aluno recebe via WhatsApp com o link para avaliar PSE, TQR pós e possíveis dores.' },
+      { q: 'Como ver as respostas do aluno?', a: 'No Treino ao Vivo, antes de iniciar a sessão, o sistema mostra automaticamente os dados do check-in pré do aluno (sono, TQR, cabeça, dor). Os dados ficam salvos no relatório da sessão.' },
+    ]
+  },
+  {
+    icon: '⚡',
+    title: 'Treino ao Vivo — PSE e RIR',
+    items: [
+      { q: 'O que é PSE por série?', a: 'Percepção Subjetiva de Esforço (Borg 1982, adaptado Foster 1996). Registre o esforço percebido de cada série individualmente (1=muito leve, 10=máximo). Os dados aparecem no resumo e relatório.' },
+      { q: 'O que é RIR?', a: 'Reps in Reserve — quantas repetições sobraram antes da falha. RIR 0 = chegou à falha. RIR 3 = parou com 3 repetições sobrando. Evidências (Helms 2016) mostram que RIR 1-3 é ótimo para hipertrofia.' },
+      { q: 'Como o 1RM é estimado?', a: 'Automaticamente por série usando a fórmula de Epley: 1RM = carga × (1 + reps/30). Disponível quando reps ≤ 12. Aparece no resumo e permite rastrear progressão de força.' },
+    ]
+  },
 ];
 
 export function renderTutorial() {
