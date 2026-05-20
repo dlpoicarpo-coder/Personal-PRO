@@ -259,7 +259,8 @@ export async function renderExercisesLibrary() {
                 </div>
                 <div style="display:flex;gap:4px">
                   <button class="btn btn-primary btn-sm apply-custom-tpl" data-id="${t.id}">Aplicar</button>
-                  <button class="btn btn-ghost btn-sm delete-custom-tpl" data-id="${t.id}" style="color:var(--danger);padding:4px 6px">${t.is_default ? "" : ICON_DEL}</button>
+                  <button class="btn btn-ghost btn-sm edit-custom-tpl" data-id="${t.id}" style="padding:4px 6px;color:var(--text-muted)" title="Editar modelo">${ICON_EDIT}</button>
+                  ${!t.is_default?`<button class="btn btn-ghost btn-sm delete-custom-tpl" data-id="${t.id}" style="color:var(--danger);padding:4px 6px">${ICON_DEL}</button>`:''}
                 </div>
               </div>
               ${t.description?`<p class="text-xs text-muted mb-sm">${t.description}</p>`:''}
@@ -461,6 +462,42 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
+
+  // Editar modelo personalizado
+  document.querySelectorAll('.edit-custom-tpl').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tpl = await db.get('cycles', btn.dataset.id);
+      if (!tpl) return;
+      openModal({
+        title: 'Editar Modelo', size: 'md',
+        content: `
+          <div class="form-group">
+            <label class="form-label">Nome</label>
+            <input class="form-input" id="editTplName" value="${tpl.name||''}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Objetivo</label>
+            <input class="form-input" id="editTplGoal" value="${tpl.goal||''}" placeholder="Ex: Hipertrofia, Emagrecimento..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-textarea" id="editTplDesc" rows="3">${tpl.description||''}</textarea>
+          </div>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar', class: 'btn-primary', onClick: async () => {
+            const name = document.getElementById('editTplName')?.value?.trim();
+            if (!name) { notify.error('Nome obrigatório'); return; }
+            await db.put('cycles', { ...tpl, name,
+              goal: document.getElementById('editTplGoal')?.value?.trim() || tpl.goal,
+              description: document.getElementById('editTplDesc')?.value?.trim() || tpl.description,
+            });
+            notify.success('Modelo atualizado!'); closeModal(); navigateFn('/exercicios');
+          }}
+        ]
+      });
+    });
+  });
 
   // Excluir método — com verificação admin
   document.querySelectorAll('.delete-method').forEach(btn => {
