@@ -82,8 +82,29 @@ class Database {
     } catch { return local; }
   }
 
-  // ── GET BY INDEX ──
-  async getByIndex(storeName, indexName, value) {
+  // ── GET ALL FOR STUDENT (sem filtro de trainer_id — para biofeedback público) ──
+  async getAllForStudent(storeName, studentId) {
+    const trainerId = await this._getTrainerId();
+    if (!this.supabase) {
+      const local = this._getLocal(storeName, trainerId);
+      return local.filter(r => r.studentId === studentId);
+    }
+    try {
+      // Buscar tanto pelo trainer_id (registros do personal) quanto por studentId (formulários públicos)
+      const [{ data: d1 }, { data: d2 }] = await Promise.all([
+        this.supabase.from(storeName).select('*').eq('trainer_id', trainerId),
+        this.supabase.from(storeName).select('*').eq('studentId', studentId),
+      ]);
+      const all = [...(d1||[]), ...(d2||[])];
+      // Deduplicar por id
+      const seen = new Set();
+      const unique = all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+      return unique.map(r => r.data || r).filter(r => r.studentId === studentId);
+    } catch {
+      const local = this._getLocal(storeName, trainerId);
+      return local.filter(r => r.studentId === studentId);
+    }
+  }
     const all = await this.getAll(storeName);
     return all.filter(item => item && item[indexName] === value);
   }
