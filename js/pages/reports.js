@@ -416,7 +416,8 @@ export async function initReports(navigateFn) {
     const content = document.getElementById('reportContent');
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
     content.innerHTML = await renderStudentReport(sid, cycleSel.value);
-    initReportCharts(sid);
+    initReportCharts(sid, cycleSel.value);
+    loadPeriodizationForReport(sid);
   });
 
   // WhatsApp — enviar resumo ao aluno
@@ -430,6 +431,7 @@ export async function initReports(navigateFn) {
     const recent10 = bf.slice(-10);
     const avgPse   = recent10.length ? (recent10.reduce((t,b)=>t+(b.pse||0),0)/recent10.length).toFixed(1) : '-';
     const avgSleep = recent10.length ? (recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length).toFixed(1) : '-';
+    const avgTqrWA = recent10.length ? (recent10.reduce((t,b)=>t+(b.tqr||b.energy||0),0)/recent10.length).toFixed(1) : '-';
     const totalVol = sessions.reduce((t,s)=>t+(s.totalVolume||0),0);
     const cycleLabel = cycleSel?.value || 'Geral';
     const msg = [
@@ -444,7 +446,7 @@ export async function initReports(navigateFn) {
       ``,
       `📈 *Indicadores (últimos ${recent10.length} check-ins)*`,
       `• Sono médio: ${avgSleep}/10`,
-      `• TQR médio: ${avgTqr||avgTqrR||'-'}/10`,
+      `• TQR médio: ${avgTqrWA}/10`,
       `• PSE médio: ${avgPse}/10`,
       ``,
       `✅ Continue assim! Resultados consistentes vêm da consistência nos treinos e no descanso.`,
@@ -729,10 +731,18 @@ export async function initReports(navigateFn) {
   });
 }
 
-async function initReportCharts(studentId) {
+async function initReportCharts(studentId, cycleFilter = '') {
   if (typeof Chart === 'undefined') return;
   const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const sessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
+  // Filtrar sessões pelo ciclo se selecionado
+  const sessions = cycleFilter
+    ? allSessions.filter(s => {
+        const wk = allWorkouts.find(w => w.id === s.workoutId);
+        return wk?.cycle === cycleFilter;
+      })
+    : allSessions;
   const assessments = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
   const co = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: { y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } };
 
