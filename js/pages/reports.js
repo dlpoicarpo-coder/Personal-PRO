@@ -941,7 +941,9 @@ async function initReportCharts(studentId) {
       }
     });
   }
-}(studentId) {
+}
+
+async function loadPeriodizationForReport(studentId) {
   const container = document.getElementById('reportPeriodization');
   if (!container) return;
   const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === studentId);
