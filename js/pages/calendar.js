@@ -31,7 +31,7 @@ async function buildCalendarHTML() {
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const today = new Date().toISOString().slice(0, 10);
+  const today = Calc.todayLocal();
   
   // Apply student filter
   const filteredEvents = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
@@ -309,8 +309,11 @@ function bindDayActions(navigateFn) {
       const st = await db.get('students', ev.studentId);
       if (!st?.phone) { notify.warning('Sem telefone'); return; }
       const sessions = await db.getAll('sessions');
-      const last = sessions.filter(s => s.studentId === ev.studentId && s.status === 'completed').sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      sendWhatsApp(st.phone, postFormMsg(st.name.split(' ')[0], `${location.origin}${location.pathname}#/form/post/${last?.id || 'none'}`));
+      const last = sessions
+        .filter(s => s.studentId === ev.studentId && s.status === 'completed')
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      if (!last) { notify.warning('Nenhuma sessão encontrada para este aluno'); return; }
+      sendWhatsApp(st.phone, postFormMsg(st.name.split(' ')[0], `${location.origin}${location.pathname}#/form/post/${last.id}`));
     });
   });
 
@@ -342,7 +345,7 @@ function bindDayActions(navigateFn) {
             </div>
             <div class="form-group">
               <label class="form-label">Horário</label>
-              <input class="form-input" name="time" type="time" value="${ev.time || '07:00'}" />
+              <select class="form-select" name="time"><option value="05:00">05:00</option><option value="05:15">05:15</option><option value="05:30">05:30</option><option value="05:45">05:45</option><option value="06:00">06:00</option><option value="06:15">06:15</option><option value="06:30">06:30</option><option value="06:45">06:45</option><option value="07:00">07:00</option><option value="07:15">07:15</option><option value="07:30">07:30</option><option value="07:45">07:45</option><option value="08:00">08:00</option><option value="08:15">08:15</option><option value="08:30">08:30</option><option value="08:45">08:45</option><option value="09:00">09:00</option><option value="09:15">09:15</option><option value="09:30">09:30</option><option value="09:45">09:45</option><option value="10:00">10:00</option><option value="10:15">10:15</option><option value="10:30">10:30</option><option value="10:45">10:45</option><option value="11:00">11:00</option><option value="11:15">11:15</option><option value="11:30">11:30</option><option value="11:45">11:45</option><option value="12:00">12:00</option><option value="12:15">12:15</option><option value="12:30">12:30</option><option value="12:45">12:45</option><option value="13:00">13:00</option><option value="13:15">13:15</option><option value="13:30">13:30</option><option value="13:45">13:45</option><option value="14:00">14:00</option><option value="14:15">14:15</option><option value="14:30">14:30</option><option value="14:45">14:45</option><option value="15:00">15:00</option><option value="15:15">15:15</option><option value="15:30">15:30</option><option value="15:45">15:45</option><option value="16:00">16:00</option><option value="16:15">16:15</option><option value="16:30">16:30</option><option value="16:45">16:45</option><option value="17:00">17:00</option><option value="17:15">17:15</option><option value="17:30">17:30</option><option value="17:45">17:45</option><option value="18:00">18:00</option><option value="18:15">18:15</option><option value="18:30">18:30</option><option value="18:45">18:45</option><option value="19:00">19:00</option><option value="19:15">19:15</option><option value="19:30">19:30</option><option value="19:45">19:45</option><option value="20:00">20:00</option><option value="20:15">20:15</option><option value="20:30">20:30</option><option value="20:45">20:45</option><option value="21:00">21:00</option><option value="21:15">21:15</option><option value="21:30">21:30</option><option value="21:45">21:45</option><option value="22:00">22:00</option><option value="22:15">22:15</option><option value="22:30">22:30</option><option value="22:45">22:45</option></select>
             </div>
           </div>
           <div class="form-row">
@@ -441,8 +444,8 @@ function bindAddEvent(navigateFn) {
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Data Início *</label><input class="form-input" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required /></div>
-          <div class="form-group"><label class="form-label">Horário</label><input class="form-input" name="time" type="time" value="07:00" /></div>
+          <div class="form-group"><label class="form-label">Data Início *</label><input class="form-input" name="date" type="date" value="${Calc.todayLocal()}" required /></div>
+          <div class="form-group"><label class="form-label">Horário</label><select class="form-select" name="time"><option value="05:00">05:00</option><option value="05:15">05:15</option><option value="05:30">05:30</option><option value="05:45">05:45</option><option value="06:00">06:00</option><option value="06:15">06:15</option><option value="06:30">06:30</option><option value="06:45">06:45</option><option value="07:00">07:00</option><option value="07:15">07:15</option><option value="07:30">07:30</option><option value="07:45">07:45</option><option value="08:00">08:00</option><option value="08:15">08:15</option><option value="08:30">08:30</option><option value="08:45">08:45</option><option value="09:00">09:00</option><option value="09:15">09:15</option><option value="09:30">09:30</option><option value="09:45">09:45</option><option value="10:00">10:00</option><option value="10:15">10:15</option><option value="10:30">10:30</option><option value="10:45">10:45</option><option value="11:00">11:00</option><option value="11:15">11:15</option><option value="11:30">11:30</option><option value="11:45">11:45</option><option value="12:00">12:00</option><option value="12:15">12:15</option><option value="12:30">12:30</option><option value="12:45">12:45</option><option value="13:00">13:00</option><option value="13:15">13:15</option><option value="13:30">13:30</option><option value="13:45">13:45</option><option value="14:00">14:00</option><option value="14:15">14:15</option><option value="14:30">14:30</option><option value="14:45">14:45</option><option value="15:00">15:00</option><option value="15:15">15:15</option><option value="15:30">15:30</option><option value="15:45">15:45</option><option value="16:00">16:00</option><option value="16:15">16:15</option><option value="16:30">16:30</option><option value="16:45">16:45</option><option value="17:00">17:00</option><option value="17:15">17:15</option><option value="17:30">17:30</option><option value="17:45">17:45</option><option value="18:00">18:00</option><option value="18:15">18:15</option><option value="18:30">18:30</option><option value="18:45">18:45</option><option value="19:00">19:00</option><option value="19:15">19:15</option><option value="19:30">19:30</option><option value="19:45">19:45</option><option value="20:00">20:00</option><option value="20:15">20:15</option><option value="20:30">20:30</option><option value="20:45">20:45</option><option value="21:00">21:00</option><option value="21:15">21:15</option><option value="21:30">21:30</option><option value="21:45">21:45</option><option value="22:00">22:00</option><option value="22:15">22:15</option><option value="22:30">22:30</option><option value="22:45">22:45</option></select></div>
           <div class="form-group"><label class="form-label">Duração (min)</label><select class="form-select" name="duration">${DURATIONS.map(d => `<option ${d === 60 ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
         </div>
         <div class="form-group"><label class="form-label">Semanas de Repetição</label>
@@ -538,7 +541,7 @@ async function checkReminders() {
     const settings = await db.get('settings','trainer').catch(()=>({}));
     const now      = Date.now();
 
-    const today      = new Date().toISOString().slice(0,10);
+    const today      = Calc.todayLocal();
     const storageKey = `pp_reminders_${today}`;
     let sent = {};
     try { sent = JSON.parse(localStorage.getItem(storageKey)||'{}'); } catch(_) {}
@@ -559,7 +562,7 @@ async function checkReminders() {
       // ── 10h antes ──────────────────────────────────────────
       const id10h = `${ev.id}_10h`;
       if (!sent[id10h] && diffMin >= 590 && diffMin <= 600) {
-        sent[id10h] = new Date().toISOString();
+        sent[id10h] = Calc.nowISO();
         const msg = buildMsg10h(st.name, ev, preLink, settings?.trainerName);
         autoSendWA(st.phone, msg, `Lembrete 10h — ${st.name}`, id10h);
       }
@@ -567,7 +570,7 @@ async function checkReminders() {
       // ── 30min antes ────────────────────────────────────────
       const id30m = `${ev.id}_30m`;
       if (!sent[id30m] && diffMin >= 29 && diffMin <= 31) {
-        sent[id30m] = new Date().toISOString();
+        sent[id30m] = Calc.nowISO();
         const msg = buildMsg30m(st.name, ev, preLink, settings?.trainerName);
         autoSendWA(st.phone, msg, `Lembrete 30min — ${st.name}`, id30m);
       }
