@@ -133,6 +133,9 @@ export async function renderTracker() {
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver" style="padding:4px 6px;color:var(--accent)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
+                <button class="btn btn-ghost btn-sm edit-session" data-id="${s.id}" title="Editar" style="padding:4px 6px;color:var(--primary)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
                 <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir" style="padding:4px 6px;color:var(--danger)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 </button>
@@ -340,6 +343,154 @@ export function initTracker(navigateFn) {
       const students = await db.getAll('students');
       const student  = students.find(x => x.id === session.studentId);
       showSessionSummary(buildSessionSummary(session, student), session, student, navigateFn);
+    });
+  });
+
+  // Editar sessão
+  document.querySelectorAll('.edit-session').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const session  = await db.get('sessions', btn.dataset.id);
+      if (!session) return;
+      const students = await db.getAll('students');
+      const student  = students.find(x => x.id === session.studentId);
+      const workouts = await db.getAll('workouts');
+
+      // Montar linhas de exercícios editáveis
+      const exs    = session.exercises || [];
+      const setLog = session.setLog    || [];
+
+      const exRows = exs.map((ex, ei) => {
+        const sets = setLog.filter(s => s.exIdx === ei);
+        return `
+          <div style="background:var(--bg-page);border-radius:8px;padding:10px;margin-bottom:8px" id="ex_${ei}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">${ex.name}</div>
+              ${ex.method ? `<span style="font-size:0.68rem;color:var(--accent)">${ex.method}</span>` : ''}
+            </div>
+            ${sets.map((s, si) => `
+              <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:5px" id="set_${ei}_${si}">
+                <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;min-width:20px">S${si+1}</span>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Reps</label>
+                  <input type="number" class="form-input set-reps" data-ei="${ei}" data-si="${si}"
+                    value="${s.reps||0}" min="0" max="100"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Carga (kg)</label>
+                  <input type="number" class="form-input set-load" data-ei="${ei}" data-si="${si}"
+                    value="${s.load||0}" min="0" step="0.5"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">PSE</label>
+                  <input type="number" class="form-input set-pse" data-ei="${ei}" data-si="${si}"
+                    value="${s.pse||''}" min="1" max="10" placeholder="—"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">RIR</label>
+                  <input type="number" class="form-input set-rir" data-ei="${ei}" data-si="${si}"
+                    value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="—"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+              </div>`).join('')}
+          </div>`;
+      }).join('');
+
+      const pse      = session.postBiofeedback?.pse || '';
+      const sessDate = session.date ? session.date.slice(0,10) : Calc.todayLocal();
+      const wkOptions = workouts
+        .filter(w => w.studentId === session.studentId)
+        .map(w => `<option value="${w.id}" ${w.id===session.workoutId?'selected':''}>${w.name}</option>`)
+        .join('');
+
+      openModal({
+        title: `Editar Sessão — ${student?.name||'Aluno'}`,
+        size: 'xl',
+        content: `
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+            <div class="form-group">
+              <label class="form-label">Data</label>
+              <input class="form-input" type="date" id="editSessDate" value="${sessDate}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Treino</label>
+              <select class="form-select" id="editSessWorkout">
+                <option value="">— manter atual —</option>
+                ${wkOptions}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">PSE geral</label>
+              <input class="form-input" type="number" id="editSessPse" value="${pse}" min="1" max="10" placeholder="1-10" />
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px">
+              Séries por exercício <span style="color:var(--accent);font-weight:400">(edite reps, carga, PSE e RIR)</span>
+            </div>
+            <div style="max-height:55vh;overflow-y:auto;padding-right:4px">
+              ${exRows || '<p style="color:var(--text-muted);font-size:0.85rem">Nenhum exercício registrado</p>'}
+            </div>
+          </div>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar alterações', class: 'btn-primary', onClick: async () => {
+            // Coletar edições das séries
+            const newSetLog = [...setLog];
+            document.querySelectorAll('.set-reps').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0) {
+                newSetLog[idx] = { ...newSetLog[idx], reps: parseFloat(inp.value)||0 };
+              }
+            });
+            document.querySelectorAll('.set-load').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0) newSetLog[idx] = { ...newSetLog[idx], load: parseFloat(inp.value)||0 };
+            });
+            document.querySelectorAll('.set-pse').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0 && inp.value !== '') newSetLog[idx] = { ...newSetLog[idx], pse: parseInt(inp.value) };
+            });
+            document.querySelectorAll('.set-rir').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0 && inp.value !== '') newSetLog[idx] = { ...newSetLog[idx], rir: parseInt(inp.value) };
+            });
+
+            // Recalcular totais
+            const newVol  = newSetLog.reduce((t,s) => t+((s.reps||0)*(s.load||0)), 0);
+            const newSets = newSetLog.length;
+            const pseParse = parseInt(document.getElementById('editSessPse')?.value)||session.postBiofeedback?.pse||0;
+            const newDate  = document.getElementById('editSessDate')?.value || sessDate;
+            const newWkId  = document.getElementById('editSessWorkout')?.value || session.workoutId;
+            const newWk    = newWkId ? workouts.find(w=>w.id===newWkId) : null;
+
+            const updated = {
+              ...session,
+              date:         newDate,
+              workoutId:    newWkId || session.workoutId,
+              workoutName:  newWk?.name || session.workoutName,
+              setLog:       newSetLog,
+              totalVolume:  Math.round(newVol),
+              totalSets:    newSets,
+              postBiofeedback: {
+                ...(session.postBiofeedback||{}),
+                pse: pseParse,
+              },
+            };
+
+            await db.put('sessions', updated);
+            notify.success('Sessão atualizada!');
+            closeModal();
+            navigateFn('/tracker');
+          }},
+        ],
+      });
     });
   });
 
@@ -956,8 +1107,7 @@ function generateSessionPDF(session, student) {
       ['Kcal',     kcal?kcal+'kcal':'—',      WA],
       ['Densid.',  dens?dens+' kg/m':'—',     AC],
       ['TQR entr.',String((session.preBiofeedback?.tqr??session.preBiofeedback?.energy)||'—')+'/10', G],
-    ];
-    const sw = 26;
+    ];    const sw = 26;
     stats.forEach(([l,v,c],i)=>{
       const x=14+i*(sw+1);
       doc.setFillColor(...LI); doc.roundedRect(x,y,sw,16,1.5,1.5,'F');
