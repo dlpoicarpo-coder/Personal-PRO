@@ -37,16 +37,7 @@ export function renderSidebar(currentPath) {
       </div>
       <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">☰</button>
       
-      
-  <!-- Top bar mobile (visível apenas em ≤768px via CSS display:none/flex) -->
-  <div class="mobile-topbar" id="mobileTopbar" style="display:none">
-    <button id="mobileMenuBtn" class="btn btn-ghost btn-icon" style="padding:6px;min-width:36px">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-    <span style="flex:1;font-weight:700;font-size:0.95rem">Personal<strong style="color:var(--primary)">PRO</strong></span>
-    <a href="#/tracker" style="padding:5px 10px;background:var(--primary);color:white;border-radius:8px;font-size:0.75rem;font-weight:600;text-decoration:none">Live</a>
-  </div>
-  <nav class="sidebar-nav">
+      <nav class="sidebar-nav">
         ${MENU_ITEMS.map(item => `
           <a href="#${item.path}" 
              class="sidebar-link ${currentPath === item.path ? 'active' : ''} ${item.highlight ? 'sidebar-link-highlight' : ''}" 
@@ -144,19 +135,6 @@ export function renderSidebar(currentPath) {
 
 export function initSidebar() {
   const toggle = document.getElementById('sidebarToggle');
-  const mobileBtn = document.getElementById('mobileMenuBtn');
-  // Mostrar topbar mobile
-  const topbar = document.getElementById('mobileTopbar');
-  if (topbar && window.innerWidth <= 768) topbar.style.display = 'flex';
-  window.addEventListener('resize', () => {
-    if (topbar) topbar.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
-  });
-  if (mobileBtn) {
-    mobileBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('visible');
-    });
-  }
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -165,13 +143,13 @@ export function initSidebar() {
   // Mobile toggle
   if (toggle) {
     toggle.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
+      sidebar.classList.toggle('mobile-open');
     });
   }
   
   if (overlay) {
     overlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
+      sidebar.classList.remove('mobile-open');
     });
   }
 
