@@ -720,21 +720,15 @@ export async function initReports(navigateFn) {
 
     const blob    = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const blobUrl = URL.createObjectURL(blob);
-    // Abrir em nova aba — se bloqueado pelo browser, fazer download direto
-    const newWin = window.open(blobUrl, '_blank', 'noopener,noreferrer');
-    if (!newWin) {
-      // Popup bloqueado — fazer download do arquivo HTML que pode ser impresso
-      const a = document.createElement('a');
-      a.href     = blobUrl;
-      a.download = `relatorio_${(student.name||'aluno').replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      notify.info('Arquivo baixado! Abra o arquivo e use Ctrl+P para imprimir como PDF.');
-    } else {
-      notify.success('Relatório aberto! Use Ctrl+P (ou ⌘+P) para salvar como PDF.');
-    }
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+    const a = document.createElement('a');
+    a.href     = blobUrl;
+    a.download = `relatorio_${(student.name||'aluno').replace(/\s/g,'_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.html`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    notify.success('Arquivo baixado! Abra-o no navegador e use Ctrl+P → Salvar como PDF.');
   });
 }
 
