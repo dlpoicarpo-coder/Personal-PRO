@@ -963,9 +963,9 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
   const peso    = student?.weight || session.preBiofeedback?.peso || null;
   const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
 
-  // PSE / TQR pós
+  // PSE / Densidade
   const pse    = session.postBiofeedback?.pse || '—';
-  const tqrPos = session.postBiofeedback?.tqrPost || '—';
+  const densModal = (vol && durMin) ? Math.round(vol / durMin) + ' kg/m' : '—';
   const pseC   = typeof pse==='number'?(pse>=9?'var(--danger)':pse>=7?'var(--warning)':'var(--success)'):'inherit';
 
   // Linha por exercício
@@ -1009,7 +1009,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
           </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px">
-          ${[['Duração',durMin+'min','var(--primary)'],['Volume',vol.toLocaleString('pt-BR')+'kg','var(--primary)'],['Séries',String(session.totalSets||0),'var(--primary)'],['PSE',String(pse)+'/10',pseC],['TQR pós',String(tqrPos)+'/10','var(--accent)'],['Kcal est.',kcalEst?kcalEst+'kcal':'—','var(--warning)']].map(([l,v,c])=>`
+          ${[['Duração',durMin+'min','var(--primary)'],['Volume',vol.toLocaleString('pt-BR')+'kg','var(--primary)'],['Séries',String(session.totalSets||0),'var(--primary)'],['PSE',String(pse)+'/10',pseC],['Densid.',densModal,'var(--accent)'],['Kcal est.',kcalEst?kcalEst+'kcal':'—','var(--warning)']].map(([l,v,c])=>`
             <div style="text-align:center;padding:9px 5px;background:var(--bg-card);border-radius:8px">
               <div style="font-size:0.56rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:3px">${l}</div>
               <div style="font-size:1.05rem;font-weight:800;color:${c}">${v}</div>
@@ -1032,7 +1032,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
           <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pós</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
             <span>PSE <strong style="color:${pseC}">${pse}/10</strong></span>
-            <span>TQR <strong>${tqrPos}/10</strong></span>
+            <span>Densid. <strong>${densModal}</strong></span>
             ${session.postBiofeedback.notes?`<span style="color:var(--text-muted)">"${session.postBiofeedback.notes}"</span>`:''}
           </div>
         </div>`:''}
@@ -1085,7 +1085,7 @@ function generateSessionPDF(session, student) {
     const peso   = student?.weight || session.preBiofeedback?.peso || null;
     const kcal   = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
     const pse    = session.postBiofeedback?.pse || '—';
-    const tqrPos = session.postBiofeedback?.tqrPost || '—';
+    const densVal= (vol && durMin) ? Math.round(vol/durMin) : 0;
 
     // Cabeçalho compacto
     doc.setFillColor(...G); doc.rect(0,0,210,22,'F');
