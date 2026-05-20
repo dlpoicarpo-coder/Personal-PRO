@@ -330,10 +330,20 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title">Radar de Wellness</span></div>
-        <p class="text-xs text-muted mb-sm">Média dos últimos 5 check-ins. Quanto mais expandido o radar, melhor o estado geral do aluno. Áreas "encolhidas" indicam pontos de atenção (ex: sono baixo, estresse alto).</p>
+        <p class="text-xs text-muted mb-sm">Média dos últimos 5 check-ins. Quanto mais expandido o radar, melhor o estado geral do aluno.</p>
         <div style="height:250px;position:relative"><canvas id="radarChart"></canvas></div>
       </div>
     </div>
+
+    ${sessions.length >= 2 ? `
+    <div class="card mb-lg">
+      <div class="card-header">
+        <span class="card-title">Gasto Calórico Estimado por Sessão</span>
+        <span class="text-xs text-muted">MET 5.0 · Compêndio ACSM (Ainsworth et al. 2011)</span>
+      </div>
+      <p class="text-xs text-muted mb-sm">Estimativa de calorias gastas por sessão com base na duração e peso corporal. Útil para ajuste nutricional ao longo do ciclo.</p>
+      <div style="height:220px;position:relative"><canvas id="kcalChart"></canvas></div>
+    </div>` : ''}
 
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Comparação entre Ciclos</span></div>
@@ -896,9 +906,42 @@ async function initReportCharts(studentId) {
       }
     });
   }
-}
 
-async function loadPeriodizationForReport(studentId) {
+  // ── Gráfico de Kcal estimada por sessão ───────────────────
+  const kcalCtx = document.getElementById('kcalChart');
+  if (kcalCtx && sessions.length >= 2) {
+    const student = await db.get('students', studentId);
+    const peso    = student?.weight || null;
+    const kcalSess= sessions
+      .filter(s => s.totalDuration)
+      .sort((a,b) => new Date(a.date)-new Date(b.date))
+      .slice(-20)
+      .map(s => ({
+        label: Calc.formatDate(s.date).slice(0,5),
+        kcal:  peso ? Calc.caloriasAtividade(peso, Math.round(s.totalDuration/60), 'musculacao') : (s.totalDuration ? Math.round(s.totalDuration/60 * 5) : 0),
+        vol:   Math.round(s.totalVolume||0),
+      }));
+    new Chart(kcalCtx, {
+      type: 'bar',
+      data: {
+        labels: kcalSess.map(s=>s.label),
+        datasets: [
+          { label: 'Kcal estimada', data: kcalSess.map(s=>s.kcal), backgroundColor: 'rgba(245,158,11,0.7)', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4, yAxisID: 'y' },
+          { label: 'Volume (kg)',   data: kcalSess.map(s=>s.vol),  type: 'line', borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, pointRadius: 3, borderWidth: 2, fill: true, yAxisID: 'y2' },
+        ]
+      },
+      options: {
+        ...co,
+        scales: {
+          y:  { position: 'left',  ticks: { color: '#f59e0b', font:{size:9}, callback: v => v+'kcal' }, grid: { color: 'rgba(148,163,184,0.07)' } },
+          y2: { position: 'right', ticks: { color: '#10b981', font:{size:9}, callback: v => v+'kg'   }, grid: { display: false } },
+          x:  { ticks: { color: '#94a3b8', font:{size:9} }, grid: { display: false } },
+        },
+        plugins: { legend: { labels: { color: '#94a3b8', font:{size:10}, boxWidth:12 } } }
+      }
+    });
+  }
+}(studentId) {
   const container = document.getElementById('reportPeriodization');
   if (!container) return;
   const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === studentId);
