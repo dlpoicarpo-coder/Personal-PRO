@@ -56,11 +56,11 @@ class Database {
     if (!this.supabase) return local;
 
     try {
-      let q = this.supabase.from(storeName).select('data').eq('id', id);
+      let q = this.supabase.from(storeName).select('*').eq('id', id);
       if (trainerId) q = q.eq('trainer_id', trainerId);
       const { data, error } = await q.single();
       if (error && error.code !== 'PGRST116') return local;
-      return data ? data.data : local;
+      return data ? (data.data || data) : local;
     } catch { return local; }
   }
 
@@ -71,12 +71,12 @@ class Database {
     if (!this.supabase) return local;
 
     try {
-      let q = this.supabase.from(storeName).select('data');
+      let q = this.supabase.from(storeName).select('*');
       if (trainerId) q = q.eq('trainer_id', trainerId);
       const { data, error } = await q;
       if (error) return local;
-      const remote = data ? data.map(r => r.data) : local;
-      // Sync local cache
+      // Se o registro tem coluna `data` JSONB usa ela; senão usa o registro inteiro
+      const remote = data ? data.map(r => r.data || r) : local;
       this._saveLocal(storeName, remote, trainerId);
       return remote;
     } catch { return local; }
@@ -95,8 +95,8 @@ class Database {
     // Normalize id
     if (!item.id && item.key) item.id = item.key;
     if (!item.id) item.id = crypto.randomUUID();
-    item.updatedAt = new Date().toISOString();
-    if (!item.createdAt) item.createdAt = new Date().toISOString();
+    item.updatedAt = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000),s=o<=0?'+':'-',h=String(Math.floor(Math.abs(o)/60)).padStart(2,'0'),m=String(Math.abs(o)%60).padStart(2,'0'); return l.toISOString().slice(0,-1)+s+h+':'+m; })();
+    if (!item.createdAt) item.createdAt = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000),s=o<=0?'+':'-',h=String(Math.floor(Math.abs(o)/60)).padStart(2,'0'),m=String(Math.abs(o)%60).padStart(2,'0'); return l.toISOString().slice(0,-1)+s+h+':'+m; })();
     if (trainerId) item.trainer_id = trainerId;
 
     // Save locally first (offline-first)
