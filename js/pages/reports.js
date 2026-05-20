@@ -21,9 +21,6 @@ export async function renderReports() {
         <select class="form-select" id="reportMacro" style="min-width:180px;display:none">
           <option value="">Todos os macrociclos</option>
         </select>
-        <select class="form-select" id="reportCycle" style="min-width:160px;display:none">
-          <option value="">Todos os ciclos</option>
-        </select>
         <button class="btn btn-secondary btn-sm" id="exportWaBtn" style="display:none;color:#25d366;border-color:#25d366">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Enviar
@@ -396,7 +393,6 @@ async function renderStudentReport(studentId, cycleFilter = '', dateFrom = null,
 
 export async function initReports(navigateFn) {
   const pdfBtn = document.getElementById('exportPdfBtn');
-  const cycleSel = document.getElementById('reportCycle');
 
   const macroSel = document.getElementById('reportMacro');
 
@@ -404,7 +400,6 @@ export async function initReports(navigateFn) {
     const sid = e.target.value;
     const content = document.getElementById('reportContent');
     if (pdfBtn) pdfBtn.style.display = sid ? '' : 'none';
-    if (cycleSel) cycleSel.style.display = sid ? '' : 'none';
     if (macroSel) macroSel.style.display = sid ? '' : 'none';
     const waBtn = document.getElementById('exportWaBtn');
     if (waBtn) waBtn.style.display = sid ? '' : 'none';
@@ -423,13 +418,6 @@ export async function initReports(navigateFn) {
           const dates = m.startDate ? ` (${Calc.formatDate(m.startDate)})` : '';
           return `<option value="${m.id}">${label}${dates}</option>`;
         }).join('');
-    }
-
-    // Popular ciclos de treino
-    const cycles = await getStudentCycles(sid);
-    if (cycleSel) {
-      cycleSel.innerHTML = '<option value="">Todos os ciclos</option>' +
-        cycles.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
@@ -455,21 +443,12 @@ export async function initReports(navigateFn) {
     }
     const content = document.getElementById('reportContent');
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
-    content.innerHTML = await renderStudentReport(sid, cycleSel?.value || '', dateFrom, dateTo);
-    initReportCharts(sid, cycleSel?.value || '', dateFrom, dateTo);
+    content.innerHTML = await renderStudentReport(sid, '', dateFrom, dateTo);
+    initReportCharts(sid, '', dateFrom, dateTo);
     loadPeriodizationForReport(sid);
   });
 
-  // Filtro por ciclo de treino
-  cycleSel?.addEventListener('change', async () => {
-    const sid = document.getElementById('reportStudent')?.value;
-    if (!sid) return;
-    const content = document.getElementById('reportContent');
-    content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
-    content.innerHTML = await renderStudentReport(sid, cycleSel.value);
-    initReportCharts(sid, cycleSel.value);
-    loadPeriodizationForReport(sid);
-  });
+
 
   // WhatsApp — enviar resumo ao aluno
   document.getElementById('exportWaBtn')?.addEventListener('click', async () => {
@@ -484,7 +463,7 @@ export async function initReports(navigateFn) {
     const avgSleep = recent10.length ? (recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length).toFixed(1) : '-';
     const avgTqrWA = recent10.length ? (recent10.reduce((t,b)=>t+(b.tqr||b.energy||0),0)/recent10.length).toFixed(1) : '-';
     const totalVol = sessions.reduce((t,s)=>t+(s.totalVolume||0),0);
-    const cycleLabel = cycleSel?.value || 'Geral';
+    const cycleLabel = 'Geral';
     const msg = [
       `📊 *Seu Relatório de Performance — Personal PRO*`,
       ``,
@@ -511,21 +490,42 @@ export async function initReports(navigateFn) {
   // PDF Export
   pdfBtn?.addEventListener('click', async () => {
     const sid = document.getElementById('reportStudent')?.value;
-    if (!sid) return;
+    if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
     const student = await db.get('students', sid);
-    if (!student) return;
-    const cycleFilter = cycleSel?.value || '';
-    const settings    = await db.get('settings', 'trainer') || {};
+    if (!student) { notify.error('Aluno não encontrado'); return; }
+
+    notify.info('Gerando relatório...');
+
+    const macroSel2   = document.getElementById('reportMacro');
+    const macroId     = macroSel2?.value || '';
+    const settings    = await db.get('settings', 'trainer').catch(()=>({})) || {};
     const trainerName = settings?.trainerName || 'Personal PRO';
 
-    const pdfArea = document.getElementById('pdfArea');
-    if (!pdfArea) { notify.error('Carregue o relatório primeiro'); return; }
+    // Filtro por macrociclo
+    let dateFrom = null, dateTo = null;
+    if (macroId) {
+      const macros = await db.getAll('macrocycles');
+      const macro  = macros.find(m => m.id === macroId);
+      if (macro?.startDate) {
+        dateFrom = new Date(macro.startDate + 'T00:00:00');
+        dateTo   = new Date(dateFrom.getTime() + (macro.totalWeeks||12) * 7 * 86400000);
+      }
+    }
 
     // ── Dados ──
     const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === sid);
-    const workouts    = cycleFilter ? allWorkouts.filter(w => w.cycle === cycleFilter) : allWorkouts;
-    const sessions    = (await db.getAll('sessions')).filter(s => s.studentId === sid && s.status === 'completed');
-    const bf          = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
+    const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === sid && s.status === 'completed');
+    const sessions    = allSessions.filter(s => {
+      if (dateFrom && new Date(s.date) < dateFrom) return false;
+      if (dateTo   && new Date(s.date) > dateTo)   return false;
+      return true;
+    });
+    const allBf       = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
+    const bf          = allBf.filter(b => {
+      if (dateFrom && new Date(b.date) < dateFrom) return false;
+      if (dateTo   && new Date(b.date) > dateTo)   return false;
+      return true;
+    });
     const assessments = (await db.getAll('assessments')).filter(a => a.studentId === sid);
 
     // ── Stats ──
