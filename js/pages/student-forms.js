@@ -51,18 +51,31 @@ async function publicGet(table, id) {
 }
 
 async function publicAdd(table, data) {
-  // Tentar via db normal primeiro
-  try { return await db.add(table, data); } catch(_) {}
+  // Formulário público — nunca usar db (requer auth), ir direto ao Supabase anon
+  const id  = data.id || crypto.randomUUID();
+  const row = {
+    id,
+    trainer_id: data.trainerId || data.trainer_id || null,
+    data: { ...data, id },
+    is_default: false,
+  };
 
-  // Supabase anon insert — tabela real
+  // Incluir colunas diretas para biofeedback (mapeamento de tipos)
+  if (table === 'biofeedback') {
+    Object.assign(row, {
+      studentId:    data.studentId    || null,
+      sleep:        parseFloat(data.sleep)  || null,
+      mood:         parseFloat(data.mood)   || null,
+      energy:       parseFloat(data.energy) || null,
+      stress:       parseFloat(data.stress) || null,
+      pain:         parseFloat(data.pain)   || null,
+      pse:          parseFloat(data.pse)    || null,
+      duration:     parseFloat(data.duration) || null,
+      trainingLoad: parseFloat(data.trainingLoad) || null,
+    });
+  }
+
   try {
-    const id  = data.id || crypto.randomUUID();
-    const row = {
-      id,
-      trainer_id: data.trainerId || null,
-      data: { ...data, id },
-      is_default: false,
-    };
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: 'POST',
       headers: {
@@ -75,10 +88,11 @@ async function publicAdd(table, data) {
     });
     if (!res.ok) {
       const err = await res.text();
-      console.error('publicAdd error:', err);
+      console.error(`publicAdd(${table}) error:`, err);
     }
-    return { ...data, id };
-  } catch(_) {}
+  } catch(e) { console.error('publicAdd fetch error:', e); }
+
+  return { ...data, id };
 }
 
 async function publicPut(table, data) {
