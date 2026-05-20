@@ -197,6 +197,9 @@ function renderBfContent(entries, students, filterStudentId) {
               <td>
                 <div style="display:flex;gap:3px">
                   ${st?.phone ? `<button class="btn btn-ghost btn-sm wa-bf" data-student="${e.studentId}" title="WhatsApp" style="padding:4px 5px;color:#25d366">${ICON_WA}</button>` : ''}
+                  <button class="btn btn-ghost btn-sm edit-bf" data-id="${e.id}" title="Editar" style="padding:4px 5px;color:var(--primary)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
                   <button class="btn btn-ghost btn-sm delete-bf" data-id="${e.id}" title="Excluir" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
                 </div>
               </td>
@@ -353,6 +356,73 @@ function bindBfActions(navigateFn, studentsCache) {
       if (!st?.phone) { notify.warning('Aluno sem telefone cadastrado'); return; }
       const url = `${location.origin}${location.pathname}#/form/pre/${st.id}`;
       sendWhatsApp(st.phone, preFormMsg(st.name.split(' ')[0], url));
+    });
+  });
+
+  // Editar biofeedback
+  document.querySelectorAll('.edit-bf').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const entry = await db.get('biofeedback', btn.dataset.id);
+      if (!entry) return;
+
+      const sliderRow = (id, label, val, min=1, max=10) => `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <label style="font-size:0.78rem;font-weight:600;color:var(--text-muted)">${label}</label>
+            <span style="font-size:1.3rem;font-weight:800;color:var(--primary)" id="lbl_${id}">${val||''}</span>
+          </div>
+          <input type="range" name="${id}" id="rng_${id}"
+            min="${min}" max="${max}" value="${val||5}"
+            style="width:100%;accent-color:var(--primary)"
+            oninput="document.getElementById('lbl_${id}').textContent=this.value" />
+          <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-muted);margin-top:2px">
+            <span>${min}</span><span>${max}</span>
+          </div>
+        </div>`;
+
+      const d = entry.date ? entry.date.slice(0,10) : Calc.todayLocal();
+
+      openModal({
+        title: 'Editar Biofeedback', size: 'md',
+        content: `
+          <div class="form-group" style="margin-bottom:16px">
+            <label class="form-label">Data</label>
+            <input class="form-input" type="date" id="editBfDate" value="${d}" />
+          </div>
+          ${sliderRow('editBfSleep',    '😴 Sono',            entry.sleep,   1, 10)}
+          ${sliderRow('editBfTqr',      '⚡ TQR — Recuperação', entry.tqr??entry.energy, 1, 10)}
+          ${sliderRow('editBfStress',   '🧠 Estado Mental',   entry.stress,  1, 10)}
+          ${sliderRow('editBfPain',     '🤕 Dor',             entry.pain,    1, 10)}
+          ${sliderRow('editBfPse',      '💪 PSE',             entry.pse,     1, 10)}
+          <div class="form-group">
+            <label class="form-label">Observações</label>
+            <textarea class="form-textarea" id="editBfNotes" rows="2">${entry.notes||''}</textarea>
+          </div>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar', class: 'btn-primary', onClick: async () => {
+            const get = id => parseInt(document.getElementById(id)?.value)||0;
+            const tqr = get('editBfTqr');
+            const updated = {
+              ...entry,
+              date:   document.getElementById('editBfDate')?.value || entry.date,
+              sleep:  get('editBfSleep'),
+              tqr,
+              energy: tqr, // compatibilidade
+              mood:   tqr, // compatibilidade
+              stress: get('editBfStress'),
+              pain:   get('editBfPain'),
+              pse:    get('editBfPse'),
+              notes:  document.getElementById('editBfNotes')?.value || '',
+              trainingLoad: Calc.cargaTreino?.(get('editBfPse'), entry.duration||0) || entry.trainingLoad,
+            };
+            await db.put('biofeedback', updated);
+            notify.success('Biofeedback atualizado!');
+            closeModal();
+            navigateFn('/biofeedback');
+          }},
+        ],
+      });
     });
   });
 
