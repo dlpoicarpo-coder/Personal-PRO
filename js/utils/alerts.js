@@ -69,19 +69,19 @@ export function analyzeBiofeedback(entry) {
       icon: '⚠️',
     });
   }
-  // Alerta de TQR (recuperação)
+  // Alerta de TQR — atenção quando abaixo de 7
   if (tqr > 0 && tqr <= 3) {
     alerts.push({
       type: 'danger', metric: 'TQR', value: tqr,
-      message: `Recuperação muito baixa — TQR ${tqr}/10`,
-      action: 'Aluno mal recuperado. Considerar treino de baixíssima intensidade ou dia de descanso ativo.',
+      message: `Recuperação crítica — TQR ${tqr}/10`,
+      action: 'Suspender treino intenso. Risco real de overtraining.',
       icon: '🔋',
     });
-  } else if (tqr > 0 && tqr <= 5) {
+  } else if (tqr > 0 && tqr < 7) {
     alerts.push({
       type: 'warning', metric: 'TQR', value: tqr,
-      message: `Recuperação insuficiente — TQR ${tqr}/10`,
-      action: 'Reduzir volume e/ou intensidade do treino hoje.',
+      message: `Recuperação baixa — TQR ${tqr}/10`,
+      action: 'Reduzir volume 20-30%. Priorizar exercícios de menor impacto.',
       icon: '🔋',
     });
   }
