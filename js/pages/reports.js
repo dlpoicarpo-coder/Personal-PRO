@@ -347,13 +347,22 @@ async function renderStudentReport(studentId, cycleFilter = '', dateFrom = null,
     </div>
 
     ${sessions.length >= 2 ? `
-    <div class="card mb-lg">
-      <div class="card-header">
-        <span class="card-title">Gasto Calórico Estimado por Sessão</span>
-        <span class="text-xs text-muted">MET 5.0 · Compêndio ACSM (Ainsworth et al. 2011)</span>
+    <div class="grid-2 mb-lg">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Gasto Calórico Estimado</span>
+          <span class="text-xs text-muted">MET 5.0 · ACSM 2011</span>
+        </div>
+        <div style="height:200px;position:relative"><canvas id="kcalChart"></canvas></div>
       </div>
-      <p class="text-xs text-muted mb-sm">Estimativa de calorias gastas por sessão com base na duração e peso corporal. Útil para ajuste nutricional ao longo do ciclo.</p>
-      <div style="height:220px;position:relative"><canvas id="kcalChart"></canvas></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Densidade de Treino</span>
+          <span class="text-xs text-muted">Volume ÷ Duração (kg/min)</span>
+        </div>
+        <p class="text-xs text-muted mb-sm">Eficiência mecânica da sessão. Crescimento consistente indica progressão real de desempenho.</p>
+        <div style="height:200px;position:relative"><canvas id="densityChart"></canvas></div>
+      </div>
     </div>` : ''}
 
     <div class="card mb-lg">
@@ -495,6 +504,8 @@ export async function initReports(navigateFn) {
     if (!student) { notify.error('Aluno não encontrado'); return; }
 
     notify.info('Gerando relatório...');
+
+    try {
 
     const macroSel2   = document.getElementById('reportMacro');
     const macroId     = macroSel2?.value || '';
@@ -780,9 +791,12 @@ export async function initReports(navigateFn) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-    notify.success('Arquivo baixado! Abra-o no navegador e use Ctrl+P → Salvar como PDF.');
-  });
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+    notify.success('Relatório baixado! Abra o arquivo e use Ctrl+P → Salvar como PDF.');
+  } catch(err) {
+    console.error('PDF error:', err);
+    notify.error('Erro ao gerar PDF: ' + (err?.message || 'erro desconhecido'));
+  }
 }
 
 async function initReportCharts(studentId, cycleFilter = '') {
@@ -967,6 +981,35 @@ async function initReportCharts(studentId, cycleFilter = '') {
             }
           }
         }
+      }
+    });
+  }
+
+  // ── Gráfico de densidade ─────────────────────────────────
+  const densCtx = document.getElementById('densityChart');
+  if (densCtx && sessions.length >= 2) {
+    const densSess = sessions
+      .filter(s => s.totalDuration && s.totalVolume)
+      .sort((a,b) => new Date(a.date)-new Date(b.date))
+      .slice(-20)
+      .map(s => ({
+        label: Calc.formatDate(s.date).slice(0,5),
+        dens:  Math.round(s.totalVolume / (s.totalDuration/60)),
+      }));
+    new Chart(densCtx, {
+      type: 'bar',
+      data: {
+        labels: densSess.map(s=>s.label),
+        datasets: [{ label:'Densidade (kg/min)', data:densSess.map(s=>s.dens),
+          backgroundColor:'rgba(6,182,212,0.6)', borderColor:'#06b6d4',
+          borderWidth:1, borderRadius:4 }]
+      },
+      options: { ...co,
+        scales: {
+          y: { ticks:{ color:'#06b6d4', font:{size:9}, callback:v=>v+' kg/m' }, grid:{color:'rgba(148,163,184,0.07)'} },
+          x: { ticks:{ color:'#94a3b8', font:{size:9} }, grid:{display:false} }
+        },
+        plugins:{ legend:{ labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12 } } }
       }
     });
   }
