@@ -18,6 +18,9 @@ export async function renderReports() {
           <option value="">Selecione um aluno</option>
           ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
         </select>
+        <select class="form-select" id="reportMacro" style="min-width:180px;display:none">
+          <option value="">Todos os macrociclos</option>
+        </select>
         <select class="form-select" id="reportCycle" style="min-width:160px;display:none">
           <option value="">Todos os ciclos</option>
         </select>
@@ -40,13 +43,24 @@ async function getStudentCycles(studentId) {
   return cycles.sort();
 }
 
-async function renderStudentReport(studentId, cycleFilter = '') {
+async function renderStudentReport(studentId, cycleFilter = '', dateFrom = null, dateTo = null) {
   const student = await db.get('students', studentId);
   if (!student) return '';
   const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
   const workouts = cycleFilter ? allWorkouts.filter(w => w.cycle === cycleFilter) : allWorkouts;
-  const sessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
-  const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  // Filtro por macrociclo (datas)
+  const sessions = allSessions.filter(s => {
+    if (dateFrom && new Date(s.date) < dateFrom) return false;
+    if (dateTo   && new Date(s.date) > dateTo)   return false;
+    return true;
+  });
+  const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId);
+  const bf = allBf.filter(b => {
+    if (dateFrom && new Date(b.date) < dateFrom) return false;
+    if (dateTo   && new Date(b.date) > dateTo)   return false;
+    return true;
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));
   const assessments = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
   const completed = sessions.filter(s => s.status === 'completed');
   const recent10 = bf.slice(-10);
@@ -384,11 +398,14 @@ export async function initReports(navigateFn) {
   const pdfBtn = document.getElementById('exportPdfBtn');
   const cycleSel = document.getElementById('reportCycle');
 
+  const macroSel = document.getElementById('reportMacro');
+
   document.getElementById('reportStudent')?.addEventListener('change', async (e) => {
     const sid = e.target.value;
     const content = document.getElementById('reportContent');
     if (pdfBtn) pdfBtn.style.display = sid ? '' : 'none';
     if (cycleSel) cycleSel.style.display = sid ? '' : 'none';
+    if (macroSel) macroSel.style.display = sid ? '' : 'none';
     const waBtn = document.getElementById('exportWaBtn');
     if (waBtn) waBtn.style.display = sid ? '' : 'none';
 
@@ -397,10 +414,22 @@ export async function initReports(navigateFn) {
       return;
     }
 
-    // Populate cycles
+    // Popular macrociclos do aluno
+    const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === sid);
+    if (macroSel) {
+      macroSel.innerHTML = '<option value="">Todos os macrociclos</option>' +
+        macros.map(m => {
+          const label = m.name || `Macrociclo ${m.totalWeeks||'?'} sem`;
+          const dates = m.startDate ? ` (${Calc.formatDate(m.startDate)})` : '';
+          return `<option value="${m.id}">${label}${dates}</option>`;
+        }).join('');
+    }
+
+    // Popular ciclos de treino
     const cycles = await getStudentCycles(sid);
     if (cycleSel) {
-      cycleSel.innerHTML = '<option value="">Todos os ciclos</option>' + cycles.map(c => `<option value="${c}">${c}</option>`).join('');
+      cycleSel.innerHTML = '<option value="">Todos os ciclos</option>' +
+        cycles.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
@@ -409,7 +438,29 @@ export async function initReports(navigateFn) {
     loadPeriodizationForReport(sid);
   });
 
-  // Cycle filter change
+  // Filtro por macrociclo — filtra sessões por data do macrociclo
+  macroSel?.addEventListener('change', async () => {
+    const sid = document.getElementById('reportStudent')?.value;
+    if (!sid) return;
+    const macroId = macroSel.value;
+    let dateFrom = null, dateTo = null;
+    if (macroId) {
+      const macros = await db.getAll('macrocycles');
+      const macro  = macros.find(m => m.id === macroId);
+      if (macro?.startDate) {
+        dateFrom = new Date(macro.startDate + 'T00:00:00');
+        const weeks = macro.totalWeeks || 12;
+        dateTo   = new Date(dateFrom.getTime() + weeks * 7 * 86400000);
+      }
+    }
+    const content = document.getElementById('reportContent');
+    content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
+    content.innerHTML = await renderStudentReport(sid, cycleSel?.value || '', dateFrom, dateTo);
+    initReportCharts(sid, cycleSel?.value || '', dateFrom, dateTo);
+    loadPeriodizationForReport(sid);
+  });
+
+  // Filtro por ciclo de treino
   cycleSel?.addEventListener('change', async () => {
     const sid = document.getElementById('reportStudent')?.value;
     if (!sid) return;
@@ -485,6 +536,8 @@ export async function initReports(navigateFn) {
     const avgDisp   = recent10.length ? (recent10.reduce((t,b)=>t+(b.mood||0),0)/recent10.length).toFixed(1) : '-';
     const totalLoad = bf.reduce((t,b)=>t+(b.trainingLoad||0),0);
     const totalVol  = sessions.reduce((t,s)=>t+Math.round(s.totalVolume||0),0);
+    const avgVolPerSession = sessions.length ? Math.round(totalVol/sessions.length) : 0;
+    const avgDuration      = sessions.length ? Math.round(sessions.reduce((t,s)=>t+(s.totalDuration||0),0)/sessions.length/60) : 0;
 
     // ── Resumo de treinos — deduplica por nome+ciclo, mostra só únicas ──
     const uniqueWorkouts = [];
