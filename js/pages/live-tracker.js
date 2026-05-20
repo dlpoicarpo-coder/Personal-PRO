@@ -802,102 +802,115 @@ function buildSessionSummary(session, student) {
 
 // ── SHOW SUMMARY ─────────────────────────────────────────────
 function showSessionSummary(summaryText, session, student, navigateFn) {
-  const durMin = Math.round((session.totalDuration||0)/60);
-  const exs    = session.exercises||[];
-  const setLog = session.setLog||[];
-  const ini    = (student?.name||'?').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase();
+  const durMin  = Math.round((session.totalDuration||0)/60);
+  const exs     = session.exercises||[];
+  const setLog  = session.setLog||[];
+  const vol     = Math.round(session.totalVolume||0);
+  const ini     = (student?.name||'?').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase();
 
+  // Gasto calórico estimado (MET musculação 5.0 · Compêndio ACSM 2011)
+  const peso    = student?.weight || session.preBiofeedback?.peso || null;
+  const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
+
+  // PSE / TQR pós
+  const pse    = session.postBiofeedback?.pse || '—';
+  const tqrPos = session.postBiofeedback?.tqrPost || '—';
+  const pseC   = typeof pse==='number'?(pse>=9?'var(--danger)':pse>=7?'var(--warning)':\'var(--success)\'):'inherit';
+
+  // Linha por exercício
   const exRows = exs.map((ex,i) => {
-    const sets = setLog.filter(l=>l.exIdx===i);
-    if (!sets.length) return `<tr style="opacity:0.4"><td colspan="7">${ex.name} — não realizado</td></tr>`;
+    const sets    = setLog.filter(l=>l.exIdx===i);
+    if (!sets.length) return `<tr style="opacity:0.35"><td colspan="8" style="font-size:0.78rem">${ex.name} — não realizado</td></tr>`;
     const maxLoad   = Math.max(...sets.map(s=>s.load||0));
     const totalReps = sets.reduce((t,s)=>t+(s.reps||0),0);
-    const vol       = sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
-    const avgPse    = sets.filter(s=>s.pse).length
-      ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : '—';
-    const avgRir    = sets.filter(s=>s.rir!=null).length
-      ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
+    const exVol     = sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
+    const avgPse    = sets.filter(s=>s.pse).length ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : '—';
+    const avgRir    = sets.filter(s=>s.rir!=null).length ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
     const rm1Est    = sets.find(s=>s.rm1Estimated)?.rm1Estimated;
-
-    // Linhas de sub-séries
-    const setDetail = sets.map(s=>
-      `<div style="font-size:0.7rem;color:var(--text-muted);padding-left:8px">
-        S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>
-        ${s.pse?`<span style="color:var(--warning)"> PSE ${s.pse}</span>`:''}
-        ${s.rir!=null?`<span style="color:var(--accent)"> RIR ${s.rir}</span>`:''}
-      </div>`).join('');
-
-    return `
-      <tr>
-        <td>
-          <strong style="font-size:0.85rem">${ex.name}</strong>
-          ${ex.method?`<div style="font-size:0.68rem;color:var(--accent)">${ex.method}</div>`:''}
-          <div id="setDetail_${i}" style="display:none">${setDetail}</div>
-          <button onclick="const d=document.getElementById('setDetail_${i}');d.style.display=d.style.display==='none'?'':'none'"
-            style="font-size:0.65rem;color:var(--primary);background:none;border:none;cursor:pointer;padding:1px 0">
-            ▸ séries
-          </button>
-        </td>
-        <td style="text-align:center">${sets.length}</td>
-        <td style="text-align:center">${totalReps}</td>
-        <td style="text-align:center;font-weight:600">${maxLoad}kg</td>
-        <td style="text-align:center;color:var(--primary)">${vol}kg</td>
-        <td style="text-align:center;color:var(--warning)">${avgPse}</td>
-        <td style="text-align:center;color:var(--accent)">${avgRir}</td>
-        ${rm1Est?`<td style="text-align:center;color:var(--success);font-weight:600">${rm1Est}kg</td>`:`<td style="text-align:center;color:var(--text-muted)">—</td>`}
-      </tr>`;
+    const pseColor  = parseFloat(avgPse)>8?'var(--danger)':parseFloat(avgPse)>6?'var(--warning)':\'var(--success)\';
+    const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:``}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:``}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:``}</div>`).join('');
+    return `<tr>
+      <td>
+        <div style="font-weight:600;font-size:0.85rem">${ex.name}</div>
+        ${ex.method?`<div style="font-size:0.68rem;color:var(--accent)">${ex.method}</div>`:''}
+        <button onclick="const d=this.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none'" style="font-size:0.62rem;color:var(--primary);background:none;border:none;cursor:pointer">▸ séries</button>
+        <div style="display:none">${detail}</div>
+      </td>
+      <td style="text-align:center">${sets.length}</td>
+      <td style="text-align:center">${totalReps}</td>
+      <td style="text-align:center;font-weight:600">${maxLoad}kg</td>
+      <td style="text-align:center;color:var(--primary);font-weight:600">${exVol}kg</td>
+      <td style="text-align:center;color:${pseColor};font-weight:600">${avgPse}</td>
+      <td style="text-align:center;color:var(--accent)">${avgRir}</td>
+      <td style="text-align:center;color:var(--success);font-weight:600">${rm1Est?rm1Est+'kg':'—'}</td>
+    </tr>`;
   }).join('');
 
   openModal({
     title: 'Resumo da Sessão', size: 'xl',
     content: `
-      <div style="background:var(--bg-page);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="background:var(--bg-page);border-radius:10px;padding:16px;margin-bottom:14px">
         <div class="flex items-center gap-md mb-md">
           <div class="avatar">${ini}</div>
           <div>
             <div style="font-weight:700;font-size:1.05rem">${student?.name||'Aluno'}</div>
-            <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR')}</div>
+            <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
-          ${[
-            ['Duração',      durMin+'min',                           'var(--primary)'],
-            ['Volume',       Math.round(session.totalVolume||0)+'kg','var(--primary)'],
-            ['Séries',       String(session.totalSets||0),           'var(--primary)'],
-            ['TQR Entrada',  String((session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || '—'),'var(--accent)'],
-            ['PSE Final',    String(session.postBiofeedback?.pse||'—'),
-              (session.postBiofeedback?.pse||0)>8?'var(--danger)':(session.postBiofeedback?.pse||0)>6?'var(--warning)':'var(--success)'],
-            ['Satisfação',   String(session.postBiofeedback?.satisfaction||'—')+'★','var(--accent)'],
-          ].map(([l,v,c])=>`
-            <div style="text-align:center;padding:10px;background:var(--bg-card);border-radius:8px">
-              <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">${l}</div>
-              <div style="font-size:1.2rem;font-weight:700;color:${c};margin-top:2px">${v}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px">
+          ${[['Duração',durMin+'min','var(--primary)'],['Volume',vol.toLocaleString('pt-BR')+'kg','var(--primary)'],['Séries',String(session.totalSets||0),'var(--primary)'],['PSE',String(pse)+'/10',pseC],['TQR pós',String(tqrPos)+'/10','var(--accent)'],['Kcal est.',kcalEst?kcalEst+'kcal':'—','var(--warning)']].map(([l,v,c])=>`
+            <div style="text-align:center;padding:9px 5px;background:var(--bg-card);border-radius:8px">
+              <div style="font-size:0.56rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:3px">${l}</div>
+              <div style="font-size:1.05rem;font-weight:800;color:${c}">${v}</div>
             </div>`).join('')}
         </div>
+        ${kcalEst?`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,0.06);border-radius:6px;font-size:0.68rem;color:var(--text-muted)">MET 5.0 (musculação) · ACSM Compendium (Ainsworth et al. 2011)${peso?' · Peso: '+peso+'kg':''}</div>`:''}
       </div>
-      <div style="margin-bottom:6px;display:flex;gap:16px;font-size:0.68rem;color:var(--text-muted)">
-        <span style="color:var(--warning)">■ PSE = Percepção de esforço (1-10)</span>
-        <span style="color:var(--accent)">■ RIR = Reps in Reserve (0=falha, 3=3 reps sobrando)</span>
-        <span style="color:var(--success)">■ 1RM = Estimativa Epley</span>
+      ${session.preBiofeedback||session.postBiofeedback?`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        ${session.preBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pré</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
+            <span>Sono <strong>${session.preBiofeedback.sleep||'—'}/10</strong></span>
+            <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
+            <span>Cabeça <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
+            ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain}/10</strong></span>`:''}
+          </div>
+        </div>`:''}
+        ${session.postBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pós</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
+            <span>PSE <strong style="color:${pseC}">${pse}/10</strong></span>
+            <span>TQR <strong>${tqrPos}/10</strong></span>
+            ${session.postBiofeedback.notes?`<span style="color:var(--text-muted)">"${session.postBiofeedback.notes}"</span>`:''}
+          </div>
+        </div>`:''}
+      </div>`:''
+      }
+      <div style="margin-bottom:6px;display:flex;gap:14px;font-size:0.67rem;color:var(--text-muted);flex-wrap:wrap">
+        <span style="color:var(--warning)">■ PSE — esforço percebido</span>
+        <span style="color:var(--accent)">■ RIR — reps no tanque</span>
+        <span style="color:var(--success)">■ 1RM — estimativa Epley</span>
       </div>
       <div class="table-container">
         <table class="data-table" style="font-size:0.82rem">
           <thead><tr>
-            <th>Exercício</th><th style="text-align:center">Séries</th><th style="text-align:center">Reps</th>
-            <th style="text-align:center">Carga máx</th><th style="text-align:center">Volume</th>
+            <th>Exercício</th>
+            <th style="text-align:center">Séries</th>
+            <th style="text-align:center">Reps</th>
+            <th style="text-align:center">Carga máx</th>
+            <th style="text-align:center">Volume</th>
             <th style="text-align:center;color:var(--warning)">PSE</th>
             <th style="text-align:center;color:var(--accent)">RIR</th>
-            <th style="text-align:center;color:var(--success)">1RM Est.</th>
+            <th style="text-align:center;color:var(--success)">1RM</th>
           </tr></thead>
           <tbody>${exRows}</tbody>
         </table>
       </div>
-      ${session.postBiofeedback?.notes?`<p class="text-sm text-muted mt-md">Obs: ${session.postBiofeedback.notes}</p>`:''}
     `,
     actions: [
       { label: 'WhatsApp', class: 'btn-secondary', onClick: () => {
-        const phone = student?.phone?.replace(/\D/g,'')||'';
-        if (!phone) { notify.warning('Aluno sem telefone'); return; }
+        const phone = student?.phone?.replace(/\D/g,'')||'';        if (!phone) { notify.warning('Aluno sem telefone'); return; }
         window.open(`https://wa.me/${phone.startsWith('55')?phone:'55'+phone}?text=${encodeURIComponent(summaryText)}`, '_blank');
       }},
       { label: 'Copiar', class: 'btn-secondary', onClick: () => { navigator.clipboard?.writeText(summaryText); notify.success('Copiado!'); }},
@@ -907,67 +920,122 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
   });
 }
 
-// ── PDF ──────────────────────────────────────────────────────
 function generateSessionPDF(session, student) {
   try {
     const { jsPDF } = window.jspdf;
     if (!jsPDF) { notify.error('jsPDF não disponível'); return; }
-    const doc = new jsPDF({ unit:'mm', format:'a4' });
-    const g=[16,185,129], dk=[15,23,42], mu=[100,116,139], li=[241,245,249];
-    const durMin=Math.round((session.totalDuration||0)/60);
-    const exs=session.exercises||[], setLog=session.setLog||[];
-    const date=new Date(session.date).toLocaleDateString('pt-BR');
+    const doc    = new jsPDF({ unit:'mm', format:'a4' });
+    const G      = [16,185,129], DK=[15,23,42], MU=[100,116,139], LI=[241,245,249], WA=[245,158,11], AC=[6,182,212];
+    const durMin = Math.round((session.totalDuration||0)/60);
+    const vol    = Math.round(session.totalVolume||0);
+    const exs    = session.exercises||[], setLog = session.setLog||[];
+    const date   = new Date(session.date).toLocaleDateString('pt-BR');
+    const dateL  = new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const peso   = student?.weight || session.preBiofeedback?.peso || null;
+    const kcal   = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
+    const pse    = session.postBiofeedback?.pse || '—';
+    const tqrPos = session.postBiofeedback?.tqrPost || '—';
 
-    doc.setFillColor(...g); doc.rect(0,0,210,26,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
-    doc.text('Personal PRO',14,11);
-    doc.setFontSize(9); doc.setFont('helvetica','normal');
-    doc.text('Relatório de Sessão',14,19);
-    doc.text(date,196,11,{align:'right'});
+    // Cabeçalho
+    doc.setFillColor(...G); doc.rect(0,0,210,28,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(17); doc.setFont('helvetica','bold'); doc.text('Personal PRO',14,12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('Relatório de Sessão',14,20);
+    doc.text(dateL,196,12,{align:'right'});
 
-    doc.setTextColor(...dk); doc.setFontSize(13); doc.setFont('helvetica','bold');
-    doc.text(student?.name||'Aluno',14,36);
-    doc.setFontSize(9); doc.setFont('helvetica','normal');
-    doc.setTextColor(...mu);
-    doc.text(session.workoutName||'Treino',14,42);
+    // Aluno
+    let y=38;
+    doc.setTextColor(...DK); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text(student?.name||'Aluno',14,y);
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...MU);
+    doc.text(`${session.workoutName||'Treino'} · ${student?.code||''} · ${date}`,14,y+6);
+    y+=18;
 
-    let bx=14;
-    [[`Duração`,durMin+' min'],[`Volume`,(session.totalVolume||0)+' kg'],[`Séries`,String(session.totalSets||0)],[`PSE`,String(session.postBiofeedback?.pse||'-')],[`Densidade`,(session.density||0).toFixed(2)]].forEach(([l,v])=>{
-      doc.setFillColor(...li); doc.roundedRect(bx,48,36,16,2,2,'F');
-      doc.setTextColor(...mu); doc.setFontSize(6.5); doc.text(l.toUpperCase(),bx+18,53,{align:'center'});
-      doc.setTextColor(...g); doc.setFontSize(11); doc.setFont('helvetica','bold');
-      doc.text(v,bx+18,60,{align:'center'}); doc.setFont('helvetica','normal'); bx+=39;
-    });
+    // Stats (6 cards)
+    const stats = [['Duração',durMin+' min',G],['Volume',vol.toLocaleString('pt-BR')+' kg',G],['Séries',String(session.totalSets||0),G],['PSE final',String(pse)+'/10',WA],['TQR pós',String(tqrPos)+'/10',AC],['Kcal est.',kcal?kcal+' kcal':'—',WA]];
+    stats.forEach(([l,v,c],i)=>{ const x=14+i*32; doc.setFillColor(...LI); doc.roundedRect(x,y,30,17,2,2,'F'); doc.setTextColor(...MU); doc.setFontSize(5.8); doc.text(l.toUpperCase(),x+15,y+5,{align:'center'}); doc.setTextColor(...c); doc.setFontSize(9.5); doc.setFont('helvetica','bold'); doc.text(v,x+15,y+13,{align:'center'}); doc.setFont('helvetica','normal'); });
+    y+=22;
 
-    let y=74;
-    doc.setTextColor(...dk); doc.setFontSize(10); doc.setFont('helvetica','bold');
-    doc.text('Exercícios Realizados',14,y); y+=5;
-    doc.setFillColor(...g); doc.rect(14,y,182,6.5,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7.5);
-    [['Exercício',14],['Séries',94],['Reps',114],['Carga máx',134],['Volume',162]].forEach(([h,x])=>doc.text(h,x+1,y+4.5));
-    y+=6.5;
+    // Nota calórica
+    if (kcal) {
+      doc.setFillColor(254,243,199); doc.roundedRect(14,y,182,7,1.5,1.5,'F');
+      doc.setTextColor(...WA); doc.setFontSize(6); doc.text(`Gasto estimado via MET 5.0 (musculação) · ACSM Compendium (Ainsworth 2011)${peso?' · Peso: '+peso+'kg':''}`,105,y+4.5,{align:'center'});
+      y+=11;
+    }
+
+    // Biofeedback pré
+    if (session.preBiofeedback) {
+      const pre=session.preBiofeedback;
+      doc.setFillColor(240,253,244); doc.roundedRect(14,y,87,13,1.5,1.5,'F');
+      doc.setFillColor(...G); doc.rect(14,y,2,13,'F');
+      doc.setTextColor(...G); doc.setFontSize(6); doc.setFont('helvetica','bold'); doc.text('CHECK-IN PRÉ',19,y+4.5);
+      doc.setFont('helvetica','normal'); doc.setTextColor(...MU); doc.setFontSize(7);
+      doc.text(`Sono ${pre.sleep||'—'}/10  TQR ${(pre.tqr??pre.energy)||'—'}/10  Cabeça ${pre.stress||'—'}/10${(pre.pain||0)>=3?' Dor '+pre.pain+'/10':''}`,19,y+10);
+      y+=17;
+    }
+
+    // Tabela exercícios
+    y+=2;
+    doc.setTextColor(...DK); doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text('Exercícios Realizados',14,y); y+=5;
+    doc.setFillColor(...G); doc.rect(14,y,182,7,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+    [['Exercício',14],['S',88],['Reps',98],['Máx',110],['Vol',126],['PSE',142],['RIR',154],['1RM',166]].forEach(([h,x])=>doc.text(h,x+1,y+4.8));
+    y+=7;
 
     exs.forEach((ex,i)=>{
       const sets=setLog.filter(l=>l.exIdx===i);
       if(!sets.length) return;
       const maxLoad=Math.max(...sets.map(s=>s.load||0));
-      const totalReps=sets.reduce((t,s)=>t+(s.reps||0),0);
-      const vol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
-      doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255);
-      doc.rect(14,y,182,6.5,'F');
-      doc.setTextColor(...dk); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-      doc.text(ex.name||'-',15,y+4.5);
-      doc.text(String(sets.length),95,y+4.5);
-      doc.text(String(totalReps),115,y+4.5);
-      doc.text(maxLoad+'kg',135,y+4.5);
-      doc.text(vol+'kg',163,y+4.5);
-      y+=6.5; if(y>272){doc.addPage();y=20;}
+      const tReps=sets.reduce((t,s)=>t+(s.reps||0),0);
+      const exVol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
+      const avgPse=sets.filter(s=>s.pse).length?(sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1):'—';
+      const avgRir=sets.filter(s=>s.rir!=null).length?(sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1):'—';
+      const rm1=sets.find(s=>s.rm1Estimated)?.rm1Estimated;
+      const rowH=ex.method?10:8;
+      if(y>265){doc.addPage();y=20;}
+      doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255); doc.rect(14,y,182,rowH,'F');
+      doc.setTextColor(...DK); doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.text(ex.name||'—',15,y+5);
+      if(ex.method){doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...AC);doc.text(ex.method,15,y+8.5);}
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...DK);
+      doc.text(String(sets.length),89,y+5);
+      doc.text(String(tReps),99,y+5);
+      doc.text(maxLoad+'kg',111,y+5);
+      doc.setTextColor(...G); doc.setFont('helvetica','bold'); doc.text(exVol+'kg',127,y+5);
+      const pc=parseFloat(avgPse);
+      doc.setTextColor(pc>8?220:pc>6?200:16,pc>8?50:pc>6?120:185,pc>8?50:pc>6?20:129);
+      doc.text(String(avgPse),143,y+5);
+      doc.setTextColor(...AC); doc.setFont('helvetica','normal'); doc.text(String(avgRir),155,y+5);
+      doc.setTextColor(...G); doc.text(rm1?rm1+'kg':'—',167,y+5);
+      y+=rowH;
+      sets.forEach(s=>{
+        if(y>270){doc.addPage();y=20;}
+        doc.setFillColor(250,252,255); doc.rect(18,y,178,5,'F');
+        doc.setTextColor(...MU); doc.setFontSize(5.8); doc.setFont('helvetica','normal');
+        doc.text(`S${s.setIdx+1}: ${s.reps}×${s.load}kg${s.pse?' PSE '+s.pse:''}${s.rir!=null?' RIR '+s.rir:''}${s.rm1Estimated?' ~'+s.rm1Estimated+'kg':''}`,22,y+3.5);
+        y+=5;
+      });
+      y+=2;
     });
 
-    doc.setFillColor(...dk); doc.rect(0,287,210,10,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7);
-    doc.text('Personal PRO — Sistema Profissional de Personal Trainer',105,293,{align:'center'});
+    // Notas
+    if (session.postBiofeedback?.notes && y<265) {
+      y+=3; doc.setFillColor(...LI); doc.roundedRect(14,y,182,11,1.5,1.5,'F');
+      doc.setTextColor(...G); doc.setFontSize(6.5); doc.setFont('helvetica','bold'); doc.text('Observações:',17,y+4.5);
+      doc.setFont('helvetica','normal'); doc.setTextColor(...MU); doc.text(session.postBiofeedback.notes,17,y+9); y+=14;
+    }
+
+    // Rodapé em todas as páginas
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){
+      doc.setPage(p);
+      doc.setFillColor(...DK); doc.rect(0,287,210,10,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(6.5); doc.setFont('helvetica','normal');
+      doc.text('Personal PRO — Sistema Profissional de Personal Trainer',105,293,{align:'center'});
+      doc.text(`Pág ${p}/${pages}`,196,293);
+    }
+
     doc.save(`sessao_${(student?.name||'aluno').replace(/\s/g,'_')}_${date.replace(/\//g,'-')}.pdf`);
     notify.success('PDF gerado!');
-  } catch(err) { notify.error('Erro ao gerar PDF.'); console.error(err); }
+  } catch(err){ console.error(err); notify.error('Erro ao gerar PDF.'); }
 }
