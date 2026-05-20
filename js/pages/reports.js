@@ -52,7 +52,9 @@ async function renderStudentReport(studentId, cycleFilter = '', dateFrom = null,
     if (dateTo   && new Date(s.date) > dateTo)   return false;
     return true;
   });
-  const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId);
+  // getAllForStudent busca tanto pelo trainer_id quanto pelo studentId direto
+  // Garante que biofeedbacks salvos via formulário público apareçam
+  const allBf = await db.getAllForStudent('biofeedback', studentId);
   const bf = allBf.filter(b => {
     if (dateFrom && new Date(b.date) < dateFrom) return false;
     if (dateTo   && new Date(b.date) > dateTo)   return false;
@@ -466,7 +468,7 @@ export async function initReports(navigateFn) {
     const student  = await db.get('students', sid);
     if (!student?.phone) { notify.warning('Aluno sem telefone cadastrado'); return; }
     const sessions = (await db.getAll('sessions')).filter(s => s.studentId === sid && s.status === 'completed');
-    const bf       = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
+    const bf        = await db.getAllForStudent('biofeedback', sid);
     const recent10 = bf.slice(-10);
     const avgPse   = recent10.length ? (recent10.reduce((t,b)=>t+(b.pse||0),0)/recent10.length).toFixed(1) : '-';
     const avgSleep = recent10.length ? (recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length).toFixed(1) : '-';
@@ -531,7 +533,7 @@ export async function initReports(navigateFn) {
       if (dateTo   && new Date(s.date) > dateTo)   return false;
       return true;
     });
-    const allBf       = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
+    const allBf        = await db.getAllForStudent('biofeedback', sid);
     const bf          = allBf.filter(b => {
       if (dateFrom && new Date(b.date) < dateFrom) return false;
       if (dateTo   && new Date(b.date) > dateTo)   return false;
@@ -797,12 +799,11 @@ export async function initReports(navigateFn) {
     console.error('PDF error:', err);
     notify.error('Erro ao gerar PDF: ' + (err?.message || 'erro desconhecido'));
   }
-}); // <-- Add this line to close the pdfBtn event listener!
-} // <-- This closes the initReports function
+}
 
 async function initReportCharts(studentId, cycleFilter = '') {
   if (typeof Chart === 'undefined') return;
-  const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const bf = (await db.getAllForStudent('biofeedback', studentId)).sort((a, b) => new Date(a.date) - new Date(b.date));
   const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
   const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
   // Filtrar sessões pelo ciclo se selecionado
