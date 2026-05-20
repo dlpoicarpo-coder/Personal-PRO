@@ -465,7 +465,7 @@ export function initTracker(navigateFn) {
       });
       notify.success('Dados pré-treino do aluno carregados!');
     }
-    const session = { studentId: wk.studentId, workoutId: wk.id, workoutName: wk.name, exercises: JSON.parse(JSON.stringify(wk.exercises || [])), date: new Date().toISOString(), startTime: Date.now(), status: 'running', soundEnabled: document.getElementById('trkSound')?.checked !== false, preBiofeedback: preBf, setLog: [] };
+    const session = { studentId: wk.studentId, workoutId: wk.id, workoutName: wk.name, exercises: JSON.parse(JSON.stringify(wk.exercises || [])), date: Calc.nowISO(), startTime: Date.now(), status: 'running', soundEnabled: document.getElementById('trkSound')?.checked !== false, preBiofeedback: preBf, setLog: [] };
     const saved = await db.add('sessions', session);
     resetState();
     state.session = { ...session, id: saved.id };
@@ -744,7 +744,7 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
     totalDuration: dur, totalVolume: vol, density: dens,
     workSeconds: state.workSec, restSeconds: Math.max(0, dur - state.workSec),
     setLog: [...state.setLog], totalSets: state.setLog.length,
-    postBiofeedback: { pse: parseInt(post.pse)||7, satisfaction: parseInt(post.satisfaction)||8, notes: post.notes||'', submittedAt: new Date().toISOString() },
+    postBiofeedback: { pse: parseInt(post.pse)||7, satisfaction: parseInt(post.satisfaction)||8, notes: post.notes||'', submittedAt: Calc.nowISO() },
   };
 
   await db.put('sessions', sessionData);
