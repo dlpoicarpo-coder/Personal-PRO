@@ -240,10 +240,10 @@ export async function renderPreForm(studentId) {
             <div id="painGroup" style="display:none;margin-bottom:20px">
               <div class="q-label" style="margin-bottom:8px">Onde?</div>
               <div class="pain-tags" id="pre_pain_regions_wrap">
-                ${(()=>require?require:null,['Cabeça','Pescoço','Ombro Dir.','Ombro Esq.','Costas Sup.','Lombar','Quadril','Joelho Dir.','Joelho Esq.','Tornozelo Dir.','Panturrilha','Abdômen'].map(r=>`
+                ${['Cabeça','Pescoço','Ombro Dir.','Ombro Esq.','Costas Sup.','Lombar','Quadril','Joelho Dir.','Joelho Esq.','Tornozelo Dir.','Panturrilha','Abdômen'].map(r=>`
                   <label class="pain-tag">
                     <input type="checkbox" name="pre_pain_regions" value="${r.toLowerCase().replace(/[^a-z]/g,'_')}" style="display:none" />${r}
-                  </label>`).join(''))()||''}
+                  </label>`).join('')}
               </div>
             </div>
 
@@ -291,7 +291,7 @@ export function initPreForm() {
       const data = Object.fromEntries(fd);
       data.painRegions = fd.getAll('pre_pain_regions');
       data.formType    = 'pre';
-      data.date        = new Date().toISOString();
+      data.date        = Calc.nowISO();
 
       // Normalizar numéricos
       ['sleep','tqr','stress','pain'].forEach(k => {
@@ -455,7 +455,7 @@ export function initPostForm() {
           pse, tqrPost, motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
           postPain: parseInt(data.postPain)||1, painRegions: postPainRegions,
           notes: data.notes||'', submittedByStudent: true,
-          submittedAt: new Date().toISOString(),
+          submittedAt: Calc.nowISO(),
         };
         await publicPut('sessions', session);
 
@@ -469,13 +469,13 @@ export function initPostForm() {
               postPain: parseInt(data.postPain)||1,
               postPainRegions, satisfaction: parseInt(data.satisfaction)||8,
               postNotes: data.notes||'', formType: 'complete',
-              sessionId: data.sessionId, completedAt: new Date().toISOString(),
+              sessionId: data.sessionId, completedAt: Calc.nowISO(),
             });
           }
         } else {
           await publicAdd('biofeedback', {
             studentId: session.studentId, trainerId: data.trainerId||session.trainerId||'',
-            date: session.date||new Date().toISOString(),
+            date: session.date||Calc.nowISO(),
             pse, tqrPost, duration: dur, trainingLoad: pse*dur,
             postPain: parseInt(data.postPain)||1, postPainRegions,
             motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
