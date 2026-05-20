@@ -815,7 +815,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
   // PSE / TQR pós
   const pse    = session.postBiofeedback?.pse || '—';
   const tqrPos = session.postBiofeedback?.tqrPost || '—';
-  const pseC   = typeof pse==='number'?(pse>=9?'var(--danger)':pse>=7?'var(--warning)':\'var(--success)\'):'inherit';
+  const pseC   = typeof pse==='number'?(pse>=9?'var(--danger)':pse>=7?'var(--warning)':'var(--success)'):'inherit';
 
   // Linha por exercício
   const exRows = exs.map((ex,i) => {
@@ -827,7 +827,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
     const avgPse    = sets.filter(s=>s.pse).length ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : '—';
     const avgRir    = sets.filter(s=>s.rir!=null).length ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
     const rm1Est    = sets.find(s=>s.rm1Estimated)?.rm1Estimated;
-    const pseColor  = parseFloat(avgPse)>8?'var(--danger)':parseFloat(avgPse)>6?'var(--warning)':\'var(--success)\';
+    const pseColor  = parseFloat(avgPse)>8?'var(--danger)':parseFloat(avgPse)>6?'var(--warning)':'var(--success)';
     const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:``}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:``}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:``}</div>`).join('');
     return `<tr>
       <td>
