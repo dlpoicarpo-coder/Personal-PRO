@@ -169,33 +169,109 @@ const TUTORIALS = [
       },
     ]
   },
-{
-    icon: '📊',
-    title: 'Relatórios e Gráficos',
+  {
+    section: 'Relatórios e Gráficos',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
     items: [
-      { q: 'Como ver o relatório de um aluno?', a: 'Vá em Relatórios, selecione o aluno e o ciclo. O sistema gera automaticamente gráficos de progressão de carga, bem-estar, PSE, wellness radar e gasto calórico por sessão.' },
-      { q: 'O que é o gráfico de Kcal?', a: 'Estima o gasto calórico de cada sessão usando MET 5.0 (musculação) × peso corporal × duração (Compêndio ACSM, Ainsworth 2011). Útil para ajuste nutricional ao longo do ciclo.' },
-      { q: 'Como filtrar por ciclo no relatório?', a: 'Após selecionar o aluno, o seletor de ciclos aparece automaticamente. Escolha o ciclo para ver dados filtrados daquele período.' },
-      { q: 'Como exportar o relatório em PDF?', a: 'Clique no botão PDF no canto superior do relatório. O sistema usa jsPDF para gerar um documento completo com todos os gráficos e dados do ciclo.' },
+      {
+        title: 'Ver e filtrar o relatório por ciclo',
+        steps: [
+          'Acesse <strong>Relatórios</strong> e selecione o aluno',
+          'O seletor de ciclos aparece automaticamente após selecionar o aluno',
+          'Escolha o ciclo para filtrar sessões, gráficos e biofeedback daquele período',
+          'Clique em <strong>Gerar PDF</strong> para exportar o dossiê completo do ciclo',
+        ],
+        tip: 'Se o ciclo não aparecer, verifique se os treinos foram criados com o campo "Ciclo" preenchido.'
+      },
+      {
+        title: 'Gráfico de Gasto Calórico por Sessão',
+        steps: [
+          'O gráfico aparece automaticamente no relatório quando há 2+ sessões registradas',
+          'Estima kcal usando MET 5.0 (musculação) × peso × duração — Compêndio ACSM (Ainsworth 2011)',
+          'A linha verde mostra o volume total (kg) sobreposto às barras de kcal',
+          'Cadastre o peso corporal do aluno nas <strong>Avaliações</strong> para maior precisão',
+        ],
+        tip: 'MET 5.0 é o valor validado para musculação de intensidade moderada. HIIT usa MET 8.0.'
+      },
+      {
+        title: 'Exportar relatório em PDF',
+        steps: [
+          'Selecione o aluno e o ciclo desejado no relatório',
+          'Clique no botão <strong>Gerar PDF</strong> no topo da página',
+          'O PDF é gerado com gráficos, tabela de sessões, PSE, TQR, kcal e análise textual',
+          'Compartilhe com o aluno via WhatsApp clicando em <strong>Enviar WA</strong>',
+        ],
+      },
     ]
   },
   {
-    icon: '📱',
-    title: 'Formulários dos Alunos',
+    section: 'Formulários dos Alunos',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
     items: [
-      { q: 'Como enviar o link de check-in para o aluno?', a: 'Na Agenda, clique no botão de WhatsApp ao lado do agendamento. O sistema abre o WhatsApp com a mensagem já preenchida e o link do check-in. O aluno clica e preenche em ~30 segundos.' },
-      { q: 'O que é TQR?', a: 'Total Quality Recovery (Kenttä & Hassmén, 1998). Escala de 1-10 que mede a percepção de recuperação do aluno. TQR ≤ 3 = alerta vermelho (não treinar pesado). TQR ≥ 7 = boa prontidão.' },
-      { q: 'Quando enviar o formulário pós-treino?', a: 'O sistema envia automaticamente ao finalizar a sessão no Treino ao Vivo. O aluno recebe via WhatsApp com o link para avaliar PSE, TQR pós e possíveis dores.' },
-      { q: 'Como ver as respostas do aluno?', a: 'No Treino ao Vivo, antes de iniciar a sessão, o sistema mostra automaticamente os dados do check-in pré do aluno (sono, TQR, cabeça, dor). Os dados ficam salvos no relatório da sessão.' },
+      {
+        title: 'Enviar link de check-in pré-treino',
+        steps: [
+          'Na <strong>Agenda</strong>, clique no ícone de WhatsApp ao lado do agendamento',
+          'Selecione <strong>Enviar Pré-Treino</strong> — o sistema abre o WA com mensagem e link prontos',
+          'O aluno clica no link e preenche 4 perguntas em ~30 segundos (sem login)',
+          'Os dados aparecem automaticamente no Treino ao Vivo ao iniciar a sessão',
+        ],
+        tip: 'O sistema também envia automaticamente 10h e 30min antes do horário agendado.'
+      },
+      {
+        title: 'TQR — Total Quality Recovery',
+        steps: [
+          'TQR (Kenttä & Hassmén, 1998) mede a recuperação percebida do aluno numa escala 1-10',
+          'TQR ≤ 3 = alerta vermelho — não treinar pesado, risco de overtraining',
+          'TQR 4-5 = amarelo — reduzir volume 20-30%',
+          'TQR ≥ 7 = verde — boa prontidão, treino normal ou mais intenso',
+        ],
+        tip: 'TQR tem peso 2× no cálculo de prontidão por ser o melhor preditor isolado de desempenho.'
+      },
+      {
+        title: 'Formulário pós-treino automático',
+        steps: [
+          'Ao finalizar a sessão no Treino ao Vivo, o sistema envia automaticamente o link pós-treino',
+          'O aluno avalia: PSE (intensidade), TQR pós (como está agora) e dores',
+          'Os dados ficam salvos na sessão e aparecem no resumo e relatório',
+          'Para enviar manualmente: Agenda → botão WA → Enviar Pós-Treino',
+        ],
+      },
     ]
   },
   {
-    icon: '⚡',
-    title: 'Treino ao Vivo — PSE e RIR',
+    section: 'PSE, RIR e 1RM',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`,
     items: [
-      { q: 'O que é PSE por série?', a: 'Percepção Subjetiva de Esforço (Borg 1982, adaptado Foster 1996). Registre o esforço percebido de cada série individualmente (1=muito leve, 10=máximo). Os dados aparecem no resumo e relatório.' },
-      { q: 'O que é RIR?', a: 'Reps in Reserve — quantas repetições sobraram antes da falha. RIR 0 = chegou à falha. RIR 3 = parou com 3 repetições sobrando. Evidências (Helms 2016) mostram que RIR 1-3 é ótimo para hipertrofia.' },
-      { q: 'Como o 1RM é estimado?', a: 'Automaticamente por série usando a fórmula de Epley: 1RM = carga × (1 + reps/30). Disponível quando reps ≤ 12. Aparece no resumo e permite rastrear progressão de força.' },
+      {
+        title: 'PSE por série no Treino ao Vivo',
+        steps: [
+          'Para cada série, registre o esforço percebido (1=muito leve, 10=máximo) — escala Borg/Foster',
+          'O PSE médio por exercício aparece no resumo da sessão e no relatório',
+          'PSE > 8 por 3+ sessões consecutivas = sinal de fadiga acumulada',
+          'PSE ideal para hipertrofia: entre 6 e 8',
+        ],
+        tip: 'Se o aluno não preencher o PSE durante o treino, o check-in pós-treino via WA captura o PSE geral da sessão.'
+      },
+      {
+        title: 'RIR — Reps in Reserve',
+        steps: [
+          'RIR = quantas repetições sobravam antes da falha muscular',
+          'RIR 0 = chegou à falha total | RIR 3 = parou com 3 reps sobrando',
+          'Zona ótima para hipertrofia: RIR 1-3 (Helms et al. 2016)',
+          'Aparece no resumo da sessão ao lado do PSE por série',
+        ],
+        tip: 'RIR 0 com PSE baixo é inconsistente — o sistema avisa automaticamente.'
+      },
+      {
+        title: '1RM estimado por série (Epley)',
+        steps: [
+          'Calculado automaticamente quando reps ≤ 12: 1RM = carga × (1 + reps/30)',
+          'Aparece em verde no resumo da sessão e no relatório de progressão',
+          'Compare com os dados de Força/1RM nas Avaliações para validar a estimativa',
+          'Para medir com precisão, use o Protocolo Submax em Avaliações → Força & 1RM',
+        ],
+      },
     ]
   },
 ];
