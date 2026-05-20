@@ -873,7 +873,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
             <span>Sono <strong>${session.preBiofeedback.sleep||'—'}/10</strong></span>
             <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
-            <span>Cabeça <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
+            <span>Est. Mental <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
             ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain}/10</strong></span>`:''}
           </div>
         </div>`:''}
@@ -936,43 +936,54 @@ function generateSessionPDF(session, student) {
     const pse    = session.postBiofeedback?.pse || '—';
     const tqrPos = session.postBiofeedback?.tqrPost || '—';
 
-    // Cabeçalho
-    doc.setFillColor(...G); doc.rect(0,0,210,28,'F');
+    // Cabeçalho compacto
+    doc.setFillColor(...G); doc.rect(0,0,210,22,'F');
     doc.setTextColor(255,255,255);
-    doc.setFontSize(17); doc.setFont('helvetica','bold'); doc.text('Personal PRO',14,12);
-    doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text('Relatório de Sessão',14,20);
-    doc.text(dateL,196,12,{align:'right'});
+    doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text('Personal PRO',14,10);
+    doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('Relatório de Sessão · '+dateL,14,17);
+    doc.text(student?.name||'Aluno',196,10,{align:'right'});
+    doc.text(session.workoutName||'Treino',196,17,{align:'right'});
 
-    // Aluno
-    let y=38;
-    doc.setTextColor(...DK); doc.setFontSize(14); doc.setFont('helvetica','bold');
-    doc.text(student?.name||'Aluno',14,y);
-    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...MU);
-    doc.text(`${session.workoutName||'Treino'} · ${student?.code||''} · ${date}`,14,y+6);
-    y+=18;
+    // Stats (7 cards compactos — inclui densidade)
+    let y=28;
+    const dens    = vol && durMin ? Math.round(vol/durMin) : 0;
+    const stats   = [
+      ['Duração',  durMin+'min',              G],
+      ['Volume',   vol.toLocaleString('pt-BR')+'kg', G],
+      ['Séries',   String(session.totalSets||0), G],
+      ['PSE',      String(pse)+'/10',         WA],
+      ['Kcal',     kcal?kcal+'kcal':'—',      WA],
+      ['Densid.',  dens?dens+' kg/m':'—',     AC],
+      ['TQR entr.',String((session.preBiofeedback?.tqr??session.preBiofeedback?.energy)||'—')+'/10', G],
+    ];
+    const sw = 26;
+    stats.forEach(([l,v,c],i)=>{
+      const x=14+i*(sw+1);
+      doc.setFillColor(...LI); doc.roundedRect(x,y,sw,16,1.5,1.5,'F');
+      doc.setTextColor(...MU); doc.setFontSize(5.2); doc.text(l.toUpperCase(),x+sw/2,y+4.5,{align:'center'});
+      doc.setTextColor(...c); doc.setFontSize(8.5); doc.setFont('helvetica','bold');
+      doc.text(v,x+sw/2,y+12,{align:'center'});
+      doc.setFont('helvetica','normal');
+    });
+    y+=20;
 
-    // Stats (6 cards)
-    const stats = [['Duração',durMin+' min',G],['Volume',vol.toLocaleString('pt-BR')+' kg',G],['Séries',String(session.totalSets||0),G],['PSE final',String(pse)+'/10',WA],['TQR pós',String(tqrPos)+'/10',AC],['Kcal est.',kcal?kcal+' kcal':'—',WA]];
-    stats.forEach(([l,v,c],i)=>{ const x=14+i*32; doc.setFillColor(...LI); doc.roundedRect(x,y,30,17,2,2,'F'); doc.setTextColor(...MU); doc.setFontSize(5.8); doc.text(l.toUpperCase(),x+15,y+5,{align:'center'}); doc.setTextColor(...c); doc.setFontSize(9.5); doc.setFont('helvetica','bold'); doc.text(v,x+15,y+13,{align:'center'}); doc.setFont('helvetica','normal'); });
-    y+=22;
-
-    // Nota calórica
-    if (kcal) {
-      doc.setFillColor(254,243,199); doc.roundedRect(14,y,182,7,1.5,1.5,'F');
-      doc.setTextColor(...WA); doc.setFontSize(6); doc.text(`Gasto estimado via MET 5.0 (musculação) · ACSM Compendium (Ainsworth 2011)${peso?' · Peso: '+peso+'kg':''}`,105,y+4.5,{align:'center'});
-      y+=11;
-    }
-
-    // Biofeedback pré
-    if (session.preBiofeedback) {
-      const pre=session.preBiofeedback;
-      doc.setFillColor(240,253,244); doc.roundedRect(14,y,87,13,1.5,1.5,'F');
-      doc.setFillColor(...G); doc.rect(14,y,2,13,'F');
-      doc.setTextColor(...G); doc.setFontSize(6); doc.setFont('helvetica','bold'); doc.text('CHECK-IN PRÉ',19,y+4.5);
-      doc.setFont('helvetica','normal'); doc.setTextColor(...MU); doc.setFontSize(7);
-      doc.text(`Sono ${pre.sleep||'—'}/10  TQR ${(pre.tqr??pre.energy)||'—'}/10  Cabeça ${pre.stress||'—'}/10${(pre.pain||0)>=3?' Dor '+pre.pain+'/10':''}`,19,y+10);
-      y+=17;
+    // Nota calórica + biofeedback pré — numa linha
+    if (session.preBiofeedback || kcal) {
+      const pre=session.preBiofeedback||{};
+      doc.setFillColor(240,253,244); doc.roundedRect(14,y,182,9,1.5,1.5,'F');
+      doc.setFillColor(...G); doc.rect(14,y,2,9,'F');
+      doc.setTextColor(...G); doc.setFontSize(5.5); doc.setFont('helvetica','bold'); doc.text('CHECK-IN PRÉ',17,y+3.5);
+      doc.setFont('helvetica','normal'); doc.setTextColor(...MU); doc.setFontSize(6.5);
+      const preInfo = [
+        pre.sleep?`Sono ${pre.sleep}/10`:'',
+        pre.tqr!=null?`TQR ${pre.tqr??pre.energy}/10`:'',
+        pre.stress?`Est.Mental ${pre.stress}/10`:'',
+        (pre.pain||0)>=3?`Dor ${pre.pain}/10`:'',
+        kcal?`Kcal est. ${kcal}`:'',
+      ].filter(Boolean).join('  ·  ');
+      doc.text(preInfo||'—',63,y+5.5);
+      y+=13;
     }
 
     // Tabela exercícios
