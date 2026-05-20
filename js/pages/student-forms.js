@@ -223,7 +223,7 @@ export async function renderPreForm(studentId) {
 
           <form id="preStudentForm">
             <input type="hidden" name="studentId" value="${studentId}" />
-            <input type="hidden" name="trainerId" value="${student.trainerId||''}" />
+            <input type="hidden" name="trainerId" value="${student.trainer_id||student.trainerId||''}" />
 
             ${sliderHTML('sleep','Como você dormiu?',1,10,5,'Mal','Muito bem')}
 
@@ -232,7 +232,7 @@ export async function renderPreForm(studentId) {
             )}
             <div class="q-hint" id="tqrHint">50%</div>
 
-            ${sliderHTML('stress','Como está sua cabeça hoje?',1,10,3,'Tranquilo','Sobrecarregado')}
+            ${sliderHTML('stress','Como está seu estado mental hoje?',1,10,3,'Tranquilo','Sobrecarregado')}
 
             ${sliderHTML('pain','Sente alguma dor?',1,10,1,'Nenhuma','Intensa',
               `document.getElementById('painGroup').style.display=parseInt(this.value)>=3?'block':'none'`
@@ -249,7 +249,7 @@ export async function renderPreForm(studentId) {
 
             <div class="q">
               <div class="q-label">Observações <span style="font-weight:400;text-transform:none;font-size:0.72rem;color:#475569">(opcional)</span></div>
-              <textarea name="notes" placeholder="Comi pouco, dormi tarde, dor de cabeça..."></textarea>
+              <textarea name="notes" placeholder="Ex: ansioso, concentrado, disperso..."></textarea>
             </div>
 
             <button type="submit" id="preSubmitBtn" class="submit-btn">Enviar</button>
@@ -372,7 +372,7 @@ export async function renderPostForm(sessionId) {
             <div class="pre-card-vals">
               <span>Sono <strong>${preBf.sleep}/10</strong></span>
               <span>TQR <strong>${preBf.tqr||preBf.energy||'—'}/10</strong></span>
-              <span>Cabeça <strong>${preBf.stress}/10</strong></span>
+              <span>Est. Mental <strong>${preBf.stress}/10</strong></span>
               ${preBf.pain>2?`<span>Dor <strong>${preBf.pain}/10</strong></span>`:''}
             </div>
           </div>` : ''}
@@ -380,14 +380,10 @@ export async function renderPostForm(sessionId) {
           <form id="postStudentForm">
             <input type="hidden" name="sessionId" value="${sessionId}" />
             ${preBf ? `<input type="hidden" name="preBiofeedbackId" value="${preBf.id}" />` : ''}
-            <input type="hidden" name="trainerId" value="${student?.trainerId||''}" />
+            <input type="hidden" name="trainerId" value="${student?.trainer_id||student?.trainerId||''}" />
 
             ${sliderHTML('pse','Intensidade do treino',1,10,7,'Leve','Máximo esforço')}
 
-            ${sliderHTML('tqrPost','Como você está agora?',1,10,7,'Exausto','Energizado',
-              `var h=document.getElementById('tqrPostHint');if(h)h.textContent=['','Exausto','Muito cansado','Cansado','Pouco cansado','50%','Razoável','Bem','Muito bem','Ótimo','100%'][this.value]`
-            )}
-            <div class="q-hint" id="tqrPostHint">Bem</div>
 
             ${sliderHTML('postPain','Sentiu alguma dor?',1,10,1,'Nenhuma','Intensa',
               `document.getElementById('postPainGroup').style.display=parseInt(this.value)>=3?'block':'none'`
@@ -449,7 +445,7 @@ export function initPostForm() {
       if (session) {
         const dur = session.totalDuration ? Math.round(session.totalDuration/60) : 60;
         const pse = parseInt(data.pse) || 7;
-        const tqrPost = parseInt(data.tqrPost) || 7;
+        const tqrPost = 7; // TQR pós removido do formulário — usar neutro
 
         session.postBiofeedback = {
           pse, tqrPost, motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
