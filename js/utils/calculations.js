@@ -8,9 +8,35 @@ export const Calc = {
   // ── DATAS ────────────────────────────────────────────────
   formatDate(dateStr) {
     if (!dateStr) return '—';
-    const d = new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));
+    // Adicionar T12:00:00 em datas sem hora para evitar deslocamento UTC
+    // Ex: "2026-05-20" → interpretado como UTC 00:00 → no Brasil vira 19/05
+    const d = new Date(dateStr.length === 10 ? dateStr + 'T12:00:00' : dateStr);
     if (isNaN(d.getTime())) return '—';
     return d.toLocaleDateString('pt-BR');
+  },
+
+  // Data de hoje no fuso local (YYYY-MM-DD)
+  // Use no lugar de new Date().toISOString().slice(0,10)
+  todayLocal() {
+    const d  = new Date();
+    const y  = d.getFullYear();
+    const m  = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  },
+
+  // ISO string com offset do fuso local, não UTC
+  // Use no lugar de new Date().toISOString()
+  // Brasil UTC-3: "2026-05-20T01:30:00-03:00" em vez de "2026-05-19T04:30:00Z"
+  nowISO() {
+    const d   = new Date();
+    const off = d.getTimezoneOffset(); // minutos, negativo p/ fusos à frente de UTC
+    const absOff = Math.abs(off);
+    const sign   = off <= 0 ? '+' : '-';
+    const hh     = String(Math.floor(absOff/60)).padStart(2,'0');
+    const mm     = String(absOff%60).padStart(2,'0');
+    const local  = new Date(d.getTime() - off*60000);
+    return local.toISOString().slice(0,-1) + `${sign}${hh}:${mm}`;
   },
 
   formatNum(n, decimals = 1) {
