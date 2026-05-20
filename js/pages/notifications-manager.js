@@ -128,11 +128,15 @@ export async function renderNotificationsPanel() {
   const students    = await db.getAll('students');
   const schedules   = await db.getAll('schedules');
 
-  const today = new Date().toDateString();
-  const todaySchedules = schedules.filter(s =>
-    s.status === 'scheduled' &&
-    new Date(s.date).toDateString() === today
-  );
+  // Usar data local (YYYY-MM-DD) para evitar problema de UTC
+  const d = new Date();
+  const todayLocal = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todaySchedules = schedules.filter(s => {
+    if (s.status !== 'scheduled') return false;
+    // Pegar só YYYY-MM-DD da data salva (pode ter T ou não)
+    const schedDate = (s.date || '').slice(0, 10);
+    return schedDate === todayLocal;
+  });
 
   // Últimas respostas (últimas 48h)
   const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
