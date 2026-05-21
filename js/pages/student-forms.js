@@ -314,6 +314,8 @@ export function initPreForm() {
       // Compatibilidade: mapear TQR para energy (usado nos alertas)
       data.energy = data.tqr;
       data.mood   = Math.round((data.sleep + data.tqr) / 2); // proxy de disposição
+      data.submittedByStudent = true;
+      data.submittedAt = Calc.nowISO();
 
       await publicAdd('biofeedback', data);
       e.target.classList.add('hidden');
