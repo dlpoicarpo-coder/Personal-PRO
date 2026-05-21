@@ -49,80 +49,96 @@ export function sendWorkoutReminder(student, schedule, trainerPhone = '') {
 // ── NOTIFICAÇÃO DE RESPOSTA DO ALUNO ────────────────────────
 export async function checkAndNotifyNewResponses() {
   try {
-    const lastCheck = localStorage.getItem('pp_last_notif_check');
-    const since = lastCheck ? new Date(lastCheck) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const lastCheck  = localStorage.getItem('pp_last_notif_check');
+    const since      = lastCheck
+      ? new Date(lastCheck)
+      : new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const biofeedback = await db.getAll('biofeedback');
-    const students    = await db.getAll('students');
+    const students   = await db.getAll('students');
+    const schedules  = await db.getAll('schedules');
+    const sessions   = await db.getAll('sessions');
+    const macros     = await db.getAll('macrocycles');
 
-    // Respostas de pré-treino novas (enviadas pelo aluno via link)
-    const newPre = biofeedback.filter(b =>
+    // ── Data local hoje ─────────────────────────────────────
+    const _d = new Date();
+    const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+
+    // ── Treinos agendados para hoje ──────────────────────────
+    const todaySchedules = schedules.filter(s =>
+      s.status === 'scheduled' && (s.date||'').slice(0,10) === todayStr
+    );
+
+    // ── Buscar biofeedback de todos os alunos ativos ─────────
+    // Busca por trainer_id (do personal) + fallback por data recente
+    const allBf = await db.getAll('biofeedback');
+
+    // Respostas de pré novas (de ontem + hoje, independente de submittedByStudent)
+    const newPre = allBf.filter(b =>
       b.formType === 'pre' &&
-      b.submittedByStudent &&
-      new Date(b.date) > since
+      new Date(b.submittedAt || b.date) > since
     );
 
-    // Respostas de pós-treino novas
-    const newPost = biofeedback.filter(b =>
+    // Respostas de pós novas
+    const newPost = allBf.filter(b =>
       (b.formType === 'post' || b.formType === 'complete') &&
-      b.submittedByStudent &&
-      new Date(b.completedAt || b.date) > since
+      new Date(b.submittedAt || b.completedAt || b.date) > since
     );
 
-    // Sessões com pós preenchido pelo aluno
-    const sessions = await db.getAll('sessions');
+    // Sessões com pós preenchido
     const newPostSessions = sessions.filter(s =>
-      s.postBiofeedback?.submittedByStudent &&
-      s.postBiofeedback?.submittedAt &&
+      s.postBiofeedback &&
+      s.postBiofeedback.submittedAt &&
       new Date(s.postBiofeedback.submittedAt) > since
     );
 
-    let count = newPre.length + newPost.length + newPostSessions.length;
-
-    // Verificar macrociclos encerrando em até 7 dias
-    const allMacros = await db.getAll('macrocycles');
-    const macroEndingSoon = allMacros
+    // ── Macrociclos encerrando ───────────────────────────────
+    const macroAlerts = macros
       .filter(m => m.status === 'active' && m.startDate && m.totalWeeks)
       .filter(m => {
         const endMs = new Date(m.startDate + 'T12:00:00').getTime() + m.totalWeeks * 7 * 86400000;
         const days  = Math.ceil((endMs - Date.now()) / 86400000);
         return days >= 0 && days <= 7;
       });
-    count += macroEndingSoon.length;
 
-    if (macroEndingSoon.length > 0) {
-      macroEndingSoon.forEach(m => {
-        const st    = students.find(s => s.id === m.studentId);
-        const endMs = new Date(m.startDate + 'T12:00:00').getTime() + m.totalWeeks * 7 * 86400000;
-        const days  = Math.ceil((endMs - Date.now()) / 86400000);
-        notify.warning(`⏰ Macrociclo de ${st?.name||'Aluno'} encerra em ${days === 0 ? 'hoje' : days + ' dia(s)'}`);
+    // ── Notificações de treinos hoje (só uma vez por dia) ────
+    const todayNotifKey = `pp_notif_today_${todayStr}`;
+    if (todaySchedules.length > 0 && !localStorage.getItem(todayNotifKey)) {
+      todaySchedules.forEach(s => {
+        const st = students.find(x => x.id === s.studentId);
+        notify.info(`📅 Treino hoje: ${st?.name || 'Aluno'} às ${s.time || '—'}`);
       });
+      localStorage.setItem(todayNotifKey, '1');
     }
 
-    if (count > 0) {
-      // Badge no sino
-      updateNotificationBadge(count);
+    // ── Badge total ──────────────────────────────────────────
+    const total = newPre.length + newPost.length + newPostSessions.length + macroAlerts.length;
 
-      // Browser notification
-      sendBrowserNotification(
-        `${count} nova${count > 1 ? 's' : ''} resposta${count > 1 ? 's' : ''}`,
-        `${newPre.length > 0 ? `${newPre.length} pré-treino` : ''}${newPost.length + newPostSessions.length > 0 ? ` · ${newPost.length + newPostSessions.length} pós-treino` : ''}`.trim()
-      );
+    if (total > 0) {
+      updateNotificationBadge(total);
 
-      // Toast
+      // Toast respostas novas
       if (newPre.length > 0) {
         const st = students.find(s => s.id === newPre[0].studentId);
         notify.info(`📋 ${st?.name || 'Aluno'} preencheu o pré-treino`);
       }
-      if (newPostSessions.length > 0) {
-        const session = newPostSessions[0];
-        const st = students.find(s => s.id === session.studentId);
-        notify.info(`✅ ${st?.name || 'Aluno'} preencheu o pós-treino — PSE ${session.postBiofeedback.pse}/10`);
+      if (newPost.length + newPostSessions.length > 0) {
+        const latest = [...newPost, ...newPostSessions.map(s => s.postBiofeedback)][0];
+        const st     = students.find(s => s.id === (latest?.studentId || newPostSessions[0]?.studentId));
+        notify.success(`✅ ${st?.name || 'Aluno'} preencheu o pós-treino`);
       }
+      if (macroAlerts.length > 0) {
+        macroAlerts.forEach(m => {
+          const st   = students.find(s => s.id === m.studentId);
+          const days = Math.ceil((new Date(m.startDate+'T12:00:00').getTime() + m.totalWeeks*7*86400000 - Date.now()) / 86400000);
+          notify.warning(`⏰ Macrociclo de ${st?.name||'Aluno'} encerra em ${days===0?'hoje':days+' dia(s)'}`);
+        });
+      }
+    } else {
+      updateNotificationBadge(0);
     }
 
     localStorage.setItem('pp_last_notif_check', new Date().toISOString());
-    return { newPre, newPost: newPost.length + newPostSessions.length, total: count };
+    return { newPre, newPost: newPost.length + newPostSessions.length, total };
   } catch (e) {
     console.warn('Notification check error:', e);
     return { newPre: [], newPost: 0, total: 0 };
@@ -170,24 +186,31 @@ export async function renderNotificationsPanel() {
     .filter(m => m.daysLeft >= 0 && m.daysLeft <= 7)
     .sort((a, b) => a.daysLeft - b.daysLeft);
 
-  // Últimas respostas (últimas 48h)
+  // Últimas respostas (últimas 48h) — sem depender de submittedByStudent
   const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
   const recentResponses = [
     ...biofeedback
-      .filter(b => b.submittedByStudent && new Date(b.date) > since48h)
+      .filter(b =>
+        (b.formType === 'pre' || b.formType === 'post' || b.formType === 'complete') &&
+        new Date(b.submittedAt || b.date) > since48h
+      )
       .map(b => ({
-        type: b.formType === 'pre' ? 'pre' : 'post',
+        type:      b.formType === 'pre' ? 'pre' : 'post',
         studentId: b.studentId,
-        date: b.date,
-        data: b,
+        date:      b.submittedAt || b.date,
+        data:      b,
       })),
     ...sessions
-      .filter(s => s.postBiofeedback?.submittedByStudent && new Date(s.postBiofeedback.submittedAt) > since48h)
+      .filter(s =>
+        s.postBiofeedback?.pse &&
+        s.postBiofeedback.submittedAt &&
+        new Date(s.postBiofeedback.submittedAt) > since48h
+      )
       .map(s => ({
-        type: 'post_session',
+        type:      'post_session',
         studentId: s.studentId,
-        date: s.postBiofeedback.submittedAt,
-        data: s,
+        date:      s.postBiofeedback.submittedAt,
+        data:      s,
       })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -277,8 +300,19 @@ let _pollingInterval = null;
 
 export function startNotificationPolling() {
   if (_pollingInterval) return;
-  checkAndNotifyNewResponses(); // checar imediatamente
-  _pollingInterval = setInterval(checkAndNotifyNewResponses, 2 * 60 * 1000);
+
+  // Resetar lastCheck se for de outro dia — garante notificações do dia atual
+  const lastCheck = localStorage.getItem('pp_last_notif_check');
+  if (lastCheck) {
+    const lastDate = new Date(lastCheck).toDateString();
+    const today    = new Date().toDateString();
+    if (lastDate !== today) {
+      localStorage.removeItem('pp_last_notif_check');
+    }
+  }
+
+  checkAndNotifyNewResponses(); // checar imediatamente ao carregar
+  _pollingInterval = setInterval(checkAndNotifyNewResponses, 2 * 60 * 1000); // a cada 2min
 }
 
 export function stopNotificationPolling() {
