@@ -117,26 +117,40 @@ export async function renderTracker() {
       <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
       <div class="table-container">
         <table class="data-table">
-          <thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th></th></tr></thead>
+          <thead><tr>
+            <th>Aluno</th>
+            <th>Treino</th>
+            <th>Data</th>
+            <th>Duração</th>
+            <th>Volume</th>
+            <th>Séries</th>
+            <th>PSE</th>
+            <th style="width:90px;text-align:center"></th>
+          </tr></thead>
           <tbody>${completed.map(s => {
-            const st = students.find(x => x.id === s.studentId);
+            const st  = students.find(x => x.id === s.studentId);
             const pse = s.postBiofeedback?.pse || 0;
             return `<tr>
-              <td>${st?.name || '?'}</td>
-              <td>${s.workoutName || '-'}</td>
-              <td>${Calc.formatDate(s.date)}</td>
-              <td>${formatTimeHMS(s.totalDuration || 0)}</td>
-              <td>${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
-              <td>${s.totalSets || '-'}</td>
-              <td style="color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}"><strong>${pse||'-'}</strong></td>
-              <td style="display:flex;gap:4px">
-                <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver" style="padding:4px 6px;color:var(--accent)">
+              <td style="white-space:nowrap">${st?.name || '?'}</td>
+              <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.workoutName || '-'}</td>
+              <td style="white-space:nowrap">${Calc.formatDate(s.date)}</td>
+              <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
+              <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
+              <td style="text-align:center">${s.totalSets || '-'}</td>
+              <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}">
+                <strong>${pse||'-'}</strong>
+              </td>
+              <td style="white-space:nowrap;text-align:right;padding-right:8px">
+                <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver"
+                  style="padding:4px 6px;color:var(--accent);display:inline-flex;align-items:center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
-                <button class="btn btn-ghost btn-sm edit-session" data-id="${s.id}" title="Editar" style="padding:4px 6px;color:var(--primary)">
+                <button class="btn btn-ghost btn-sm edit-session" data-id="${s.id}" title="Editar"
+                  style="padding:4px 6px;color:var(--primary);display:inline-flex;align-items:center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
-                <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir" style="padding:4px 6px;color:var(--danger)">
+                <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir"
+                  style="padding:4px 6px;color:var(--danger);display:inline-flex;align-items:center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 </button>
               </td>
