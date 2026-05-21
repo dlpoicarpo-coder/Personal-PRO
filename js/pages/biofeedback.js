@@ -401,7 +401,7 @@ function bindBfActions(navigateFn, studentsCache) {
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: 'Salvar', class: 'btn-primary', onClick: async () => {
-            const get = id => parseInt(document.getElementById(id)?.value)||0;
+            const get = id => parseInt(document.getElementById('rng_'+id)?.value)||0;
             const tqr = get('editBfTqr');
             const updated = {
               ...entry,
