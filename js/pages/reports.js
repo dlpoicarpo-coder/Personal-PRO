@@ -799,7 +799,8 @@ export async function initReports(navigateFn) {
     console.error('PDF error:', err);
     notify.error('Erro ao gerar PDF: ' + (err?.message || 'erro desconhecido'));
   }
-}
+  });  // fim pdfBtn addEventListener
+}  // fim initReports
 
 async function initReportCharts(studentId, cycleFilter = '') {
   if (typeof Chart === 'undefined') return;
