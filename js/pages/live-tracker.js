@@ -125,11 +125,17 @@ export async function renderTracker() {
             <th>Volume</th>
             <th>Séries</th>
             <th>PSE</th>
+            <th>Obs.</th>
             <th style="width:90px;text-align:center"></th>
           </tr></thead>
           <tbody>${completed.map(s => {
             const st  = students.find(x => x.id === s.studentId);
             const pse = s.postBiofeedback?.pse || 0;
+            // Coletar obs: notes do pós + notes das séries
+            const postNotes = s.postBiofeedback?.notes || '';
+            const setNotes  = (s.setLog||[]).filter(x=>x.notes).map(x=>`S${x.setIdx+1}: ${x.notes}`);
+            const allObs    = [postNotes, ...setNotes].filter(Boolean);
+            const obsTitle  = allObs.join(' | ');
             return `<tr>
               <td style="white-space:nowrap">${st?.name || '?'}</td>
               <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.workoutName || '-'}</td>
@@ -139,6 +145,9 @@ export async function renderTracker() {
               <td style="text-align:center">${s.totalSets || '-'}</td>
               <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}">
                 <strong>${pse||'-'}</strong>
+              </td>
+              <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
+                ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
               </td>
               <td style="white-space:nowrap;text-align:right;padding-right:8px">
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver"
@@ -993,7 +1002,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
     const avgRir    = sets.filter(s=>s.rir!=null).length ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
     const rm1Est    = sets.find(s=>s.rm1Estimated)?.rm1Estimated;
     const pseColor  = parseFloat(avgPse)>8?'var(--danger)':parseFloat(avgPse)>6?'var(--warning)':'var(--success)';
-    const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:``}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:``}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:``}</div>`).join('');
+    const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:''}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:''}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:''}${s.notes?` <span style="color:var(--text-muted);font-style:italic">"${s.notes}"</span>`:''}</div>`).join('');
     return `<tr>
       <td>
         <div style="font-weight:600;font-size:0.85rem">${ex.name}</div>
@@ -1047,11 +1056,32 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
             <span>PSE <strong style="color:${pseC}">${pse}/10</strong></span>
             <span>Densid. <strong>${densModal}</strong></span>
-            ${session.postBiofeedback.notes?`<span style="color:var(--text-muted)">"${session.postBiofeedback.notes}"</span>`:''}
+            ${session.postBiofeedback.notes?`<span style="color:var(--text-muted);font-style:italic">"${session.postBiofeedback.notes}"</span>`:''}
           </div>
         </div>`:''}
       </div>`:''
       }
+
+      ${(()=>{
+        const allNotes = (session.setLog||[]).filter(s=>s.notes);
+        if (!allNotes.length) return '';
+        const byEx = {};
+        allNotes.forEach(s=>{
+          const ex = (session.exercises||[])[s.exIdx];
+          const key = ex?.name||`Ex ${s.exIdx+1}`;
+          if (!byEx[key]) byEx[key] = [];
+          byEx[key].push(`S${s.setIdx+1}: ${s.notes}`);
+        });
+        return `<div style="margin-bottom:12px;padding:12px 14px;background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.15);border-radius:8px">
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:8px">📝 Observações do Treino</div>
+          ${Object.entries(byEx).map(([ex,notes])=>`
+            <div style="margin-bottom:5px">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary)">${ex}</div>
+              ${notes.map(n=>`<div style="font-size:0.75rem;color:var(--text-muted);padding-left:8px;font-style:italic">· ${n}</div>`).join('')}
+            </div>`).join('')}
+        </div>`;
+      })()}
+
       <div style="margin-bottom:6px;display:flex;gap:14px;font-size:0.67rem;color:var(--text-muted);flex-wrap:wrap">
         <span style="color:var(--warning)">■ PSE — esforço percebido</span>
         <span style="color:var(--accent)">■ RIR — reps no tanque</span>
@@ -1187,7 +1217,7 @@ function generateSessionPDF(session, student) {
         if(y>270){doc.addPage();y=20;}
         doc.setFillColor(250,252,255); doc.rect(18,y,178,5,'F');
         doc.setTextColor(...MU); doc.setFontSize(5.8); doc.setFont('helvetica','normal');
-        doc.text(`S${s.setIdx+1}: ${s.reps}×${s.load}kg${s.pse?' PSE '+s.pse:''}${s.rir!=null?' RIR '+s.rir:''}${s.rm1Estimated?' ~'+s.rm1Estimated+'kg':''}`,22,y+3.5);
+        doc.text(`S${s.setIdx+1}: ${s.reps}×${s.load}kg${s.pse?' PSE '+s.pse:''}${s.rir!=null?' RIR '+s.rir:''}${s.rm1Estimated?' ~'+s.rm1Estimated+'kg':''}${s.notes?' — '+s.notes:''}`,22,y+3.5);
         y+=5;
       });
       y+=2;
