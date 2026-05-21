@@ -105,6 +105,9 @@ class Database {
       return local.filter(r => r.studentId === studentId);
     }
   }
+
+  // ── GET BY INDEX ──
+  async getByIndex(storeName, indexName, value) {
     const all = await this.getAll(storeName);
     return all.filter(item => item && item[indexName] === value);
   }
