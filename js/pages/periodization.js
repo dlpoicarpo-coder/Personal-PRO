@@ -6,7 +6,7 @@ import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
-import { PERIODIZATION_MODELS, CARDIO_PERIODIZATION_MODELS, ALL_MODELS, TRAINING_GOALS, generateProgression, validateMacrocycle } from '../utils/periodization-engine.js';
+import { PERIODIZATION_MODELS, generateProgression } from '../utils/periodization-engine.js';
 import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
 
 // Adaptar BUILT_IN_TEMPLATES para o formato que o periodization espera
