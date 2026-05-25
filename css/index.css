@@ -688,6 +688,14 @@ h4 {
   }
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
 @keyframes pulse {
 
   0%,
@@ -867,12 +875,22 @@ h4 {
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
-    padding: var(--space-md);
-    padding-top: 70px;
+    padding: var(--space-sm);
+    padding-top: 64px;
+    padding-bottom: 80px; /* espaço para bottom nav */
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.6rem;
   }
 
   .grid-2,
@@ -884,12 +902,198 @@ h4 {
   .page-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
+  }
+
+  .page-header > div:last-child {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .form-row {
     grid-template-columns: 1fr;
   }
+
+  /* Tabelas scroll horizontal em mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards mais compactos */
+  .card {
+    padding: 12px;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Modal ocupa tela toda em mobile */
+  .modal-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Tabs scroll horizontal */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Tracker mobile */
+  .tracker-live .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .tracker-live .stat-value {
+    font-size: 1rem;
+  }
+
+  .tracker-live .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Set rows mais compactos */
+  .set-row {
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .set-row input {
+    padding: 4px 4px;
+    font-size: 0.8rem;
+  }
+
+  /* Botões touch-friendly */
+  .btn {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+
+  .btn-sm {
+    min-height: 34px;
+    padding: 5px 10px;
+  }
+
+  /* Formulário de exercício no modal */
+  .exercise-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  /* Page header título */
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  /* Sidebar overlay em mobile */
+  #sidebarOverlay {
+    display: block;
+  }
+
+  /* Students grid em mobile */
+  .students-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
+/* ── BOTTOM NAV MOBILE ──────────────────────────────────────── */
+#mobileBottomNav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  #mobileBottomNav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    z-index: 200;
+    align-items: stretch;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+  }
+
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: color 0.15s;
+    padding: 6px 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-nav-item.active,
+  .mobile-nav-item:active {
+    color: var(--primary);
+  }
+
+  .mobile-nav-item svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+
+  /* Topbar mobile */
+  .mobile-topbar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 150;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  /* Esconder sidebar em mobile */
+  #sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 300;
+  }
+
+  #sidebar.mobile-open {
+    transform: translateX(0);
+  }
+}
+
 
 /* ========================================
    LIGHT MODE

@@ -6,7 +6,7 @@ let activeModal = null;
 
 export function openModal(options = {}) {
   closeModal();
-  const { title = '', content = '', size = 'md', onClose = null, actions = [] } = options;
+  const { title = '', content = '', size = 'md', onClose = null, actions = [], preventBackdropClose = false } = options;
 
   const sizeClass = { sm: 'modal-sm', md: 'modal-md', lg: 'modal-lg', xl: 'modal-xl' }[size] || 'modal-md';
 
@@ -41,7 +41,18 @@ export function openModal(options = {}) {
   // Close handlers
   modal.querySelector('#modalCloseBtn').addEventListener('click', () => closeModal(onClose));
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal(onClose);
+    if (e.target === modal) {
+      if (preventBackdropClose) {
+        const modalEl = modal.querySelector('.modal');
+        if (modalEl) {
+          modalEl.style.animation = 'none';
+          void modalEl.offsetWidth; // Trigger reflow
+          modalEl.style.animation = 'shake 0.4s ease';
+        }
+      } else {
+        closeModal(onClose);
+      }
+    }
   });
 
   // Action handlers — bind ALL actions with onClick
@@ -57,13 +68,18 @@ export function openModal(options = {}) {
 
 export function closeModal(callback) {
   if (activeModal) {
-    activeModal.classList.remove('visible');
+    const modalToClose = activeModal;
+    modalToClose.classList.remove('visible');
+    activeModal = null;
     setTimeout(() => {
-      activeModal.remove();
-      activeModal = null;
+      if (modalToClose && modalToClose.parentNode) {
+        modalToClose.remove();
+      }
       document.body.style.overflow = '';
       if (callback) callback();
     }, 200);
+  } else if (callback) {
+    callback();
   }
 }
 

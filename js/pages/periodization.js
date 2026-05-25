@@ -1,21 +1,183 @@
 // ========================================
-// PERSONAL PRO — Periodization Page (v3)
-// Auto-generate macrocycle with exercises from library
-// Days/times + auto-create workouts for tracker
+// PERSONAL PRO — Periodization Page (v5)
+// Design limpo + templates com exercícios + fluxo correto
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
-import { PERIODIZATION_TYPES, MESOCYCLE_PHASES, generateWeeklyPlan } from '../utils/periodization-models.js';
-import { generateWorkouts } from '../utils/workout-generator.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
+import { PERIODIZATION_MODELS, CARDIO_PERIODIZATION_MODELS, ALL_MODELS, TRAINING_GOALS, generateProgression, validateMacrocycle } from '../utils/periodization-engine.js';
+import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
+
+// Adaptar BUILT_IN_TEMPLATES para o formato que o periodization espera
+function adaptTemplate(t) {
+  return {
+    id:        t.id,
+    name:      t.name,
+    days:      t.daysPerWeek || (t.workouts || []).length,
+    desc:      t.description || '',
+    category:  t.category || 'Musculação',
+    perioModel:t.perioModel || null,
+    // Todas as sessões disponíveis (para o seletor de protocolo)
+    allSessions: (t.workouts || []).map(w => ({
+      name:      w.name,
+      exercises: (w.exercises || []).map(e => ({
+        name:      e.name,
+        sets:      e.sets || 3,
+        reps:      e.reps || '12',
+        rest:      parseInt(e.rest) || 0,
+        loadType:  e.loadType || 'weight',
+        method:    e.method || '',
+        intensity: e.intensity || '',
+        sciNote:   e.sciNote || '',
+      })),
+    })),
+    // sessions = primeira sessão (default, pode ser alterado pelo usuário no modal)
+    sessions: [(t.workouts || [])[0]].filter(Boolean).map(w => ({
+      name:      w.name,
+      exercises: (w.exercises || []).map(e => ({
+        name: e.name, sets: e.sets || 3, reps: e.reps || '12',
+        rest: parseInt(e.rest) || 0, loadType: e.loadType || 'weight',
+        method: e.method || '', intensity: e.intensity || '',
+      })),
+    })),
+  };
+}
+
+const BUILT_IN_WORKOUT_TEMPLATES = BUILT_IN_TEMPLATES.map(adaptTemplate);
+
+// ── GERADOR DE SEMANAS INTERNO ─────────────────────────────
+function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
+  const weeks = [];
+
+  for (let w = 1; w <= totalWeeks; w++) {
+    const isDeload = deloadEvery > 0 && w % deloadEvery === 0;
+
+    if (isDeload) {
+      weeks.push({ week: w, phase: 'deload', label: 'Deload', intensityPct: 50, volumePct: 40, repsRange: '12-15' });
+      continue;
+    }
+
+    const progress = (w - 1) / Math.max(totalWeeks - 1, 1);
+
+    if (modelType === 'undulating') {
+      // DUP: alterna Força / Hipertrofia / Metabólico a cada semana com leve progressão
+      const cycle = (w - 1) % 3;
+      const progressBonus = Math.round(progress * 10);
+      if (cycle === 0) weeks.push({ week: w, phase: 'Força', label: `Semana ${w} — Força`, intensityPct: 82 + progressBonus, volumePct: 55, repsRange: '4-6' });
+      else if (cycle === 1) weeks.push({ week: w, phase: 'Hipertrofia', label: `Semana ${w} — Hipertrofia`, intensityPct: 70 + Math.round(progressBonus * 0.7), volumePct: 80, repsRange: '8-12' });
+      else weeks.push({ week: w, phase: 'Metabólico', label: `Semana ${w} — Metabólico`, intensityPct: 58 + Math.round(progressBonus * 0.5), volumePct: 95, repsRange: '15-20' });
+
+    } else if (modelType === 'block') {
+      // Blocos: Acumulação → Intensificação → Realização
+      const third = Math.ceil(totalWeeks / 3);
+      if (w <= third) weeks.push({ week: w, phase: 'Acumulação', label: `Semana ${w} — Acumulação`, intensityPct: 60 + Math.round((w / third) * 8), volumePct: 90, repsRange: '12-15' });
+      else if (w <= third * 2) weeks.push({ week: w, phase: 'Intensificação', label: `Semana ${w} — Intensificação`, intensityPct: 75 + Math.round(((w - third) / third) * 10), volumePct: 65, repsRange: '5-8' });
+      else weeks.push({ week: w, phase: 'Realização', label: `Semana ${w} — Realização`, intensityPct: 88 + Math.round(((w - third * 2) / third) * 7), volumePct: 40, repsRange: '2-4' });
+
+    } else if (modelType === 'conjugate') {
+      // Conjugada: alterna Esforço Máximo / Esforço Dinâmico
+      const isME = w % 2 !== 0;
+      weeks.push({ week: w, phase: isME ? 'Esforço Máximo' : 'Esforço Dinâmico', label: `Semana ${w} — ${isME ? 'ME' : 'DE'}`, intensityPct: isME ? 92 + Math.round(progress * 3) : 55, volumePct: isME ? 40 : 70, repsRange: isME ? '1-3' : '3-5' });
+
+    } else if (modelType === 'concurrent') {
+      // Concorrente: alterna Força / Metabólico
+      const isStrength = w % 2 !== 0;
+      weeks.push({ week: w, phase: isStrength ? 'Força' : 'Metabólico', label: `Semana ${w}`, intensityPct: isStrength ? 68 + Math.round(progress * 12) : 58, volumePct: isStrength ? 70 : 90, repsRange: isStrength ? '8-12' : '15-20' });
+
+    } else if (modelType === 'polarized') {
+      // Polarizado: 80% Z1/Z2 + 20% Z4/Z5
+      const isHighInt = w % 5 === 0;
+      weeks.push({ week: w, phase: isHighInt ? 'Alta Intensidade (Z4/Z5)' : 'Base Aeróbica (Z1/Z2)', label: `Semana ${w}`, intensityPct: isHighInt ? 88 : 55, volumePct: isHighInt ? 50 : 90, repsRange: isHighInt ? '4-6×4min' : '45-90min' });
+
+    } else if (modelType === 'hiit') {
+      // HIIT: progressão de intervalos semana a semana
+      const intervals = Math.round(4 + progress * 4); // 4 → 8
+      const workInt   = Math.round(20 + progress * 40); // 20s → 60s
+      const phase     = progress < 0.33 ? 'Base HIIT' : progress < 0.66 ? 'Desenvolvimento' : 'Pico HIIT';
+      weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: Math.round(75 + progress * 20), volumePct: Math.round(60 + progress * 20), repsRange: `${intervals}×${workInt}s` });
+
+    } else if (modelType === 'sit') {
+      // SIT: sprints all-out, recuperação diminui
+      const sprints = Math.round(4 + progress * 2); // 4 → 6
+      const rest    = Math.round(240 - progress * 60); // 4min → 3min
+      const phase   = progress < 0.4 ? 'Introdução SIT' : 'SIT Completo';
+      weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: 100, volumePct: Math.round(50 + progress * 20), repsRange: `${sprints}×30s / ${Math.round(rest/60)}min` });
+
+    } else if (modelType === 'lvhiit') {
+      // LV-HIIT: progressão de intervalos (Gillen 2016)
+      const intervals = Math.round(3 + progress * 7); // 3 → 10
+      weeks.push({ week: w, phase: progress < 0.4 ? 'Adaptação' : 'LV-HIIT', label: `Semana ${w}`, intensityPct: Math.round(80 + progress * 12), volumePct: Math.round(55 + progress * 20), repsRange: `${intervals}×60s/75s` });
+
+    } else if (modelType === 'zone2') {
+      // Base Aeróbica Zona 2 — progressão de duração
+      const dur = Math.round(30 + progress * 60); // 30 → 90min
+      const sessions = progress < 0.4 ? 3 : progress < 0.7 ? 4 : 5;
+      weeks.push({ week: w, phase: 'Base Aeróbica (Z2)', label: `Semana ${w} — Z2`, intensityPct: 65, volumePct: Math.round(60 + progress * 30), repsRange: `${sessions}×${dur}min` });
+
+    } else if (modelType === 'pyramidal') {
+      // Pyramidal: 75%Z2 + 20%Z3 + 5%Z4
+      const phase = progress < 0.4 ? 'Base Pyramidal' : 'Pyramidal Completo';
+      weeks.push({ week: w, phase, label: `Semana ${w}`, intensityPct: Math.round(65 + progress * 15), volumePct: Math.round(65 + progress * 20), repsRange: '75%Z2+20%Z3+5%Z4' });
+
+    } else if (modelType === 'threshold') {
+      // Threshold — progressão no tempo de tempo run
+      const thMin = Math.round(20 + progress * 40); // 20 → 60min
+      const phase = progress < 0.3 ? 'Tempo Runs' : progress < 0.7 ? 'Threshold Intervals' : 'Threshold Pico';
+      weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: Math.round(75 + progress * 10), volumePct: Math.round(70 + progress * 15), repsRange: `${thMin}min limiar` });
+
+    } else {
+      // Modelos lineares e outros
+      const models = {
+        linear:         { start: 55, end: 92, volStart: 85, volEnd: 55 },
+        reverse_linear: { start: 85, end: 50, volStart: 55, volEnd: 90 },
+        lsd:            { start: 50, end: 70, volStart: 90, volEnd: 80 },
+        fartlek:        { start: 58, end: 80, volStart: 82, volEnd: 68 },
+      };
+      const m = models[modelType] || models.linear;
+      const intensityPct = Math.round(m.start + (m.end - m.start) * progress);
+      const volumePct    = Math.round(m.volStart + (m.volEnd - m.volStart) * progress);
+      const repsRange    = intensityPct >= 88 ? '2-4' : intensityPct >= 78 ? '4-6' :
+                           intensityPct >= 68 ? '6-10' : intensityPct >= 58 ? '10-12' : '12-15';
+      // Fase por modelo — não pela intensidade genérica
+      const CARDIO_MODELS = ['lsd','fartlek'];
+      const phase = CARDIO_MODELS.includes(modelType)
+        ? (progress < 0.33 ? 'Base Aeróbica' : progress < 0.66 ? 'Desenvolvimento' : 'Pico')
+        : (intensityPct >= 85 ? 'Pico' : intensityPct >= 75 ? 'Força' :
+           intensityPct >= 65 ? 'Hipertrofia' : 'Adaptação');
+      weeks.push({ week: w, phase, label: `Semana ${w}`, intensityPct, volumePct, repsRange });
+    }
+  }
+  return weeks;
+}
 
 const TRAINING_DAYS = [
   { id: 0, label: 'Dom' }, { id: 1, label: 'Seg' }, { id: 2, label: 'Ter' },
   { id: 3, label: 'Qua' }, { id: 4, label: 'Qui' }, { id: 5, label: 'Sex' }, { id: 6, label: 'Sáb' },
 ];
 
-const HOURS = ['05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'];
+const HOURS = [
+  '05:00', '05:15', '05:30', '05:45',
+  '06:00', '06:15', '06:30', '06:45',
+  '07:00', '07:15', '07:30', '07:45',
+  '08:00', '08:15', '08:30', '08:45',
+  '09:00', '09:15', '09:30', '09:45',
+  '10:00', '10:15', '10:30', '10:45',
+  '11:00', '11:15', '11:30', '11:45',
+  '12:00', '12:15', '12:30', '12:45',
+  '13:00', '13:15', '13:30', '13:45',
+  '14:00', '14:15', '14:30', '14:45',
+  '15:00', '15:15', '15:30', '15:45',
+  '16:00', '16:15', '16:30', '16:45',
+  '17:00', '17:15', '17:30', '17:45',
+  '18:00', '18:15', '18:30', '18:45',
+  '19:00', '19:15', '19:30', '19:45',
+  '20:00', '20:15', '20:30', '20:45',
+  '21:00', '21:15', '21:30', '21:45',
+  '22:00',
+];
+
+// ── TEMPLATES PADRÃO COM EXERCÍCIOS ──────────────────────────
 
 export async function renderPeriodization() {
   const students = await db.getAll('students');
@@ -24,348 +186,537 @@ export async function renderPeriodization() {
   macros.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return `
-    <div class="page-header"><div><h1>Periodização</h1><p class="subtitle">Planejamento de macrociclos e variação de volume/intensidade</p></div>
+    <div class="page-header">
+      <div><h1>Periodização</h1><p class="subtitle">Planejamento científico de macrociclos</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <select class="form-select" id="perioStudentFilter" style="min-width:180px">
           <option value="">Todos os alunos</option>
           ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
         </select>
-        <select class="form-select" id="perioMacroFilter" style="min-width:200px" disabled>
-          <option value="">Todos os macrociclos</option>
-        </select>
         <button class="btn btn-primary" id="addMacroBtn">+ Novo Macrociclo</button>
       </div>
     </div>
+
+    ${macros.length ? `
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+      <div class="stat-card" style="text-align:center;padding:12px">
+        <div class="stat-label">ATIVOS</div>
+        <div class="stat-value text-gradient">${macros.filter(m=>m.status==='active').length}</div>
+        <div class="stat-change">macrociclos em curso</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:12px">
+        <div class="stat-label">FINALIZADOS</div>
+        <div class="stat-value" style="color:var(--accent)">${macros.filter(m=>m.status!=='active').length}</div>
+        <div class="stat-change">ciclos concluídos</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:12px">
+        <div class="stat-label">TREINOS GERADOS</div>
+        <div class="stat-value" style="color:var(--success)">${macros.reduce((t,m)=>t+(m.generatedWorkouts||0),0)}</div>
+        <div class="stat-change">no total</div>
+      </div>
+    </div>` : ''}
+
     <div id="periodizationContent">
-    ${macros.length ? macros.map(m => {
-    const st = students.find(s => s.id === m.studentId);
-    const typeInfo = PERIODIZATION_TYPES.find(t => t.id === m.type) || {};
-    const currentWeek = Math.ceil((Date.now() - new Date(m.startDate).getTime()) / (7 * 86400000));
-    return `
-      <div class="card mb-lg" data-student="${m.studentId || ''}" data-macro="${m.id || ''}">
-        <div class="card-header">
-          <span class="card-title"><span class="avatar avatar-sm">${st ? st.name[0] : '?'}</span> ${st ? st.name : '?'} — ${m.name}</span>
-          <div class="flex gap-sm">
-            <span class="badge badge-${m.status === 'active' ? 'success' : 'warning'}">${m.status === 'active' ? 'Ativo' : 'Finalizado'}</span>
-            <button class="btn btn-ghost btn-sm delete-macro" data-id="${m.id}" style="color:var(--danger)" title="Excluir">✕</button>
-          </div>
-        </div>
-        <div class="flex gap-lg text-sm text-muted mb-md" style="flex-wrap:wrap">
-          <span>${m.totalWeeks} semanas</span>
-          <span>${typeInfo.name || m.type}</span>
-          <span>Início: ${Calc.formatDate(m.startDate)}</span>
-          <span>Deload: cada ${m.deloadEvery || 4} sem.</span>
-          ${m.trainingDays ? `<span>Dias: ${m.trainingDays.map(d => TRAINING_DAYS.find(t => t.id === d)?.label || d).join(', ')}</span>` : ''}
-          ${m.trainingTime ? `<span>Horário: ${m.trainingTime}</span>` : ''}
-          ${m.generatedWorkouts ? `<span class="badge badge-success">Treinos gerados: ${m.generatedWorkouts}</span>` : ''}
-        </div>
-        <div style="overflow-x:auto">
-          <div class="week-timeline">${(m.weeks || []).map((w, i) => {
-      const phase = MESOCYCLE_PHASES.find(p => p.id === w.phase);
-      const bgColor = phase ? phase.color : '#64748b';
-      // Intensity-based color: green(low) → yellow → orange → red(high) → blue(deload)
-      const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
-      const intLabel = w.phase === 'deload' ? '🧊 Deload' : w.intensityPct >= 85 ? '🔴 Muito Alta' : w.intensityPct >= 75 ? '🟠 Alta' : w.intensityPct >= 65 ? '🟡 Moderada' : '🟢 Leve';
-      return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="--week-color:${intColor};border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label}\nVolume: ${w.volumePct}% | Intensidade: ${w.intensityPct}%\n${intLabel}\nReps: ${w.repsRange}">
-              <div class="week-num" style="color:${intColor}">S${w.week}</div>
-              <div class="week-bar-vol" style="height:${w.volumePct * 0.5}px;background:${intColor}40"></div>
-              <div class="week-bar-int" style="height:${w.intensityPct * 0.5}px;background:${intColor}"></div>
-              <div class="week-label" style="font-size:0.6rem">${w.label?.substring(0, 4) || ''}</div>
-            </div>`;
-    }).join('')}</div>
-        </div>
-        <div class="flex gap-lg mt-md text-xs text-muted" style="flex-wrap:wrap">
-          <span style="color:#22c55e">● Leve (&lt;65%)</span>
-          <span style="color:#eab308">● Moderada (65-74%)</span>
-          <span style="color:#f97316">● Alta (75-84%)</span>
-          <span style="color:#ef4444">● Muito Alta (≥85%)</span>
-          <span style="color:#3b82f6">● Deload</span>
-        </div>
-        <div class="mt-md"><canvas id="macroChart_${m.id}" height="150"></canvas></div>
-        ${m.weekDetails ? `
-        <div class="mt-lg" style="border-top:1px solid var(--border-color);padding-top:16px">
-          <h4 class="mb-md">Detalhamento Semanal</h4>
-          <div class="table-container"><table class="data-table"><thead><tr>
-            <th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Vol Δ</th><th>Treino A</th><th>Treino B</th>
-          </tr></thead><tbody>
-          ${m.weekDetails.map(wd => {
-            const intColor = wd.phase === 'Deload' ? '#3b82f6' : wd.intensity >= 85 ? '#ef4444' : wd.intensity >= 75 ? '#f97316' : wd.intensity >= 65 ? '#eab308' : '#22c55e';
-            const intEmoji = wd.phase === 'Deload' ? '🧊' : wd.intensity >= 85 ? '🔴' : wd.intensity >= 75 ? '🟠' : wd.intensity >= 65 ? '🟡' : '🟢';
-            return `<tr style="${wd.phase === 'Deload' ? 'opacity:0.7' : ''};border-left:3px solid ${intColor}">
-            <td><strong style="color:${intColor}">S${wd.week}</strong></td>
-            <td><span class="badge" style="background:${intColor}20;color:${intColor}">${intEmoji} ${wd.phase}</span></td>
-            <td>${wd.sets}</td><td>${wd.reps}</td><td style="color:${intColor};font-weight:600">${wd.intensity}%</td><td>${wd.rpe}</td>
-            <td style="color:${wd.volDelta > 0 ? 'var(--success)' : wd.volDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)'}">${wd.volDelta > 0 ? '+' : ''}${wd.volDelta}%</td>
-            <td class="text-sm">${wd.trainA || '-'}</td><td class="text-sm">${wd.trainB || '-'}</td>
-          </tr>`;
-          }).join('')}
-          </tbody></table></div>
-        </div>`: ''}
-      </div>`;
-  }).join('') : `<div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Nenhum macrociclo criado</h3><p>Crie um planejamento de periodização para seus alunos</p></div>`}
+      ${macros.length ? macros.map(m => renderMacroCard(m, students)).join('') : `
+        <div class="empty-state">
+          <div class="empty-icon">—</div>
+          <h3>Nenhum macrociclo criado</h3>
+          <p>Crie um planejamento de periodização para seus alunos</p>
+          <button class="btn btn-primary mt-sm" id="addMacroBtnEmpty">+ Criar Primeiro Macrociclo</button>
+        </div>`}
     </div>
   `;
 }
 
+const ICON_DEL = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
+const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+const ICON_EYE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+
+function renderMacroCard(m, students) {
+  const st = students.find(s => s.id === m.studentId);
+  const now = Date.now();
+  const startMs = new Date(m.startDate).getTime();
+  const currentWeek = Math.max(1, Math.min(m.totalWeeks, Math.ceil((now - startMs) / (7 * 86400000))));
+  const modelDef = PERIODIZATION_MODELS[m.type] || {};
+  const isActive = m.status === 'active';
+  const pct = Math.round((currentWeek / m.totalWeeks) * 100);
+  const currentWeekData = (m.weeks || [])[currentWeek - 1];
+  const currentPhase = currentWeekData?.phase || '—';
+  const currentIntensity = currentWeekData?.intensityPct || 0;
+  const intensityColor = currentIntensity >= 85 ? '#ef4444' : currentIntensity >= 75 ? '#f97316' : currentIntensity >= 65 ? '#eab308' : currentIntensity > 0 ? '#22c55e' : 'var(--text-muted)';
+
+  return `
+    <div class="card mb-lg macro-card" data-student="${m.studentId || ''}" data-macro="${m.id || ''}">
+      <div class="card-header">
+        <div class="flex items-center gap-md" style="flex:1;min-width:0">
+          <div class="avatar">${st ? st.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${st ? st.name : '?'} — ${m.name}
+            </div>
+            <div class="text-xs text-muted">
+              ${m.totalWeeks} semanas · ${modelDef.label || m.type}
+              · Início: ${Calc.formatDate(m.startDate)}
+              ${m.workoutModelName ? ` · ${m.workoutModelName}` : ''}
+              ${m.trainingDays?.length ? ` · ${m.trainingDays.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d]).join(', ')}` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-xs items-center" style="flex-shrink:0">
+          <span class="badge badge-${isActive ? 'success' : 'warning'}">${isActive ? 'Ativo' : 'Finalizado'}</span>
+          <a href="#/treinos" class="btn btn-ghost btn-sm" title="Ver treinos" style="padding:4px 6px;color:var(--accent)">${ICON_EYE}</a>
+          ${isActive ? `<button class="btn btn-ghost btn-sm finish-macro" data-id="${m.id}" title="Finalizar macrociclo" style="padding:4px 6px;color:var(--success)">${ICON_CHECK}</button>` : ''}
+          <button class="btn btn-ghost btn-sm delete-macro" data-id="${m.id}" title="Excluir macrociclo" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
+        </div>
+      </div>
+
+      ${isActive ? `
+      <!-- Progresso e semana atual -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin:12px 0">
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Semana atual</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${currentWeek}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">de ${m.totalWeeks}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Fase</div>
+          <div style="font-size:0.88rem;font-weight:700;color:${intensityColor};margin-top:4px">${currentPhase}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Intensidade</div>
+          <div style="font-size:1.4rem;font-weight:800;color:${intensityColor}">${currentIntensity || '—'}${currentIntensity ? '%' : ''}</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Progresso</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--accent)">${pct}%</div>
+        </div>
+      </div>
+      <div style="height:5px;background:var(--border-color);border-radius:3px;margin-bottom:12px">
+        <div style="height:100%;width:${pct}%;background:var(--primary);border-radius:3px;transition:width 0.5s"></div>
+      </div>` : ''}
+
+      <!-- Gráfico de barras semanal -->
+      <div style="overflow-x:auto">
+        <div style="display:flex;gap:3px;min-width:max-content;padding-bottom:4px;align-items:flex-end">
+          ${(m.weeks || []).map((w, i) => {
+            const isCurrent = i + 1 === currentWeek && isActive;
+            const isPast    = i + 1 < currentWeek;
+            const isDeload  = w.phase === 'deload';
+            const color = isDeload ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
+            const opacity   = isPast ? '0.4' : '1';
+            return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;opacity:${opacity}"
+              title="Sem ${w.week}: ${w.label || w.phase} | Vol ${w.volumePct}% | Int ${w.intensityPct}% | Reps ${w.repsRange || '-'}">
+              <div style="width:24px;height:${Math.max(12, (w.volumePct || 0) * 0.38)}px;
+                background:${color}${isCurrent ? '' : '22'};
+                border:1px solid ${color};border-radius:3px;
+                ${isCurrent ? `box-shadow:0 0 0 2px ${color},0 0 8px ${color}44;` : ''}"></div>
+              <div style="font-size:0.48rem;color:${color};font-weight:${isCurrent ? 700 : 400}">${isCurrent ? '▼' : ''}S${w.week}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="flex gap-md mt-xs" style="flex-wrap:wrap">
+        <span class="text-xs" style="color:#22c55e">— Leve</span>
+        <span class="text-xs" style="color:#eab308">— Moderada</span>
+        <span class="text-xs" style="color:#f97316">— Alta</span>
+        <span class="text-xs" style="color:#ef4444">— Muito Alta</span>
+        <span class="text-xs" style="color:#3b82f6">— Deload</span>
+        ${m.generatedWorkouts ? `<span class="text-xs" style="color:var(--success);margin-left:auto">${m.generatedWorkouts} treinos gerados</span>` : ''}
+      </div>
+
+      <!-- Tabela semanal colapsável -->
+      <details style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:10px">
+        <summary style="cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-muted);list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          Plano semanal detalhado
+        </summary>
+        ${m.weekDetails ? `
+        <div style="overflow-x:auto;margin-top:10px">
+          <table class="data-table" style="font-size:0.76rem">
+            <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Exercícios A</th><th>Exercícios B</th></tr></thead>
+            <tbody>${m.weekDetails.map(wd => {
+              const isCur = wd.week === currentWeek && isActive;
+              const c = wd.phase === 'Deload' ? '#3b82f6' : (wd.intensity||0) >= 85 ? '#ef4444' : (wd.intensity||0) >= 75 ? '#f97316' : (wd.intensity||0) >= 65 ? '#eab308' : '#22c55e';
+              return `<tr style="${isCur ? `background:${c}11;font-weight:600;` : ''}">
+                <td><strong style="color:${c}">S${wd.week}${isCur ? ' ←' : ''}</strong></td>
+                <td style="color:${c}">${wd.phase}</td>
+                <td>${wd.sets}</td>
+                <td>${wd.reps}</td>
+                <td style="color:${c};font-weight:700">${wd.intensity}%</td>
+                <td>${wd.rpe}</td>
+                <td class="text-xs" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${wd.trainA || '-'}</td>
+                <td class="text-xs" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${wd.trainB || '-'}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>` : '<p class="text-xs text-muted mt-sm">Detalhamento não disponível</p>'}
+      </details>
+
+      <!-- Gráfico de linha Chart.js -->
+      <div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:12px">
+        <canvas id="macroChart_${m.id}" height="100"></canvas>
+      </div>
+    </div>`;
+}
+
 export function initPeriodization(navigateFn) {
-  // Item 1: Student filter → populate macrocycle dropdown
-  const studentFilterSel = document.getElementById('perioStudentFilter');
-  const macroFilterSel = document.getElementById('perioMacroFilter');
-  const contentDiv = document.getElementById('periodizationContent');
-
-  studentFilterSel?.addEventListener('change', async () => {
-    const sid = studentFilterSel.value;
-    macroFilterSel.disabled = !sid;
-    macroFilterSel.innerHTML = '<option value="">Todos os macrociclos</option>';
-    if (sid) {
-      const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === sid);
-      macros.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m.id; opt.textContent = `${m.name} (${m.totalWeeks}sem)`;
-        macroFilterSel.appendChild(opt);
-      });
-      macroFilterSel.disabled = false;
-    }
-    applyPeriodizationFilter(sid, '');
-  });
-
-  macroFilterSel?.addEventListener('change', () => {
-    applyPeriodizationFilter(studentFilterSel?.value || '', macroFilterSel.value);
-  });
-
-  function applyPeriodizationFilter(sid, macroId) {
-    document.querySelectorAll('#periodizationContent .card').forEach(card => {
-      const cardSid = card.dataset.student || '';
-      const cardMid = card.dataset.macro || '';
-      const matchStu = !sid || cardSid === sid;
-      const matchMac = !macroId || cardMid === macroId;
-      card.style.display = matchStu && matchMac ? '' : 'none';
+  document.getElementById('perioStudentFilter')?.addEventListener('change', (e) => {
+    const sid = e.target.value;
+    document.querySelectorAll('.macro-card').forEach(card => {
+      card.style.display = !sid || card.dataset.student === sid ? '' : 'none';
     });
-  }
+  });
+
+  // Finalizar macrociclo
+  document.querySelectorAll('.finish-macro').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!window.confirm('Marcar este macrociclo como finalizado?')) return;
+      const macro = await db.get('macrocycles', btn.dataset.id);
+      if (macro) {
+        await db.put('macrocycles', { ...macro, status: 'finished' });
+        notify.success('Macrociclo finalizado!');
+        navigateFn('/periodizacao');
+      }
+    });
+  });
+
+  document.querySelectorAll('.delete-macro').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!window.confirm('Excluir macrociclo e todos os treinos gerados?')) return;
+      const macroId = btn.dataset.id;
+      const workouts = await db.getAll('workouts');
+      for (const w of workouts.filter(w => w.macrocycleId === macroId)) await db.delete('workouts', w.id);
+      const schedules = await db.getAll('schedules');
+      for (const s of schedules.filter(s => s.macrocycleId === macroId)) await db.delete('schedules', s.id);
+      await db.delete('macrocycles', macroId);
+      notify.success('Macrociclo removido');
+      navigateFn('/periodizacao');
+    });
+  });
+
+  document.getElementById('addMacroBtnEmpty')?.addEventListener('click', () => {
+    document.getElementById('addMacroBtn')?.click();
+  });
+
+  initMacroCharts();
 
   document.getElementById('addMacroBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
-    const exercises = await db.getAll('exercises');
-    const muscleGroups = [...new Set(exercises.map(e => e.muscleGroup).filter(Boolean))];
+    // Busca modelos personalizados da aba Exercícios → Meus Modelos (store cycles com isTemplate)
+    const customCycles = (await db.getAll('cycles')).filter(c => c.isTemplate);
+
+    let selectedTemplate = null;
+
+    // Agrupar templates por categoria
+    const tplByCategory = {};
+    BUILT_IN_WORKOUT_TEMPLATES.forEach(t => {
+      const cat = t.category || 'Musculação';
+      if (!tplByCategory[cat]) tplByCategory[cat] = [];
+      tplByCategory[cat].push(t);
+    });
+
+    function tplCardHTML(t) {
+      const isCardio = t.category === 'Cardio / Endurance';
+      const exCount  = t.sessions.reduce((a,s) => a + s.exercises.length, 0);
+      const catColor = isCardio ? 'var(--accent)' : 'var(--primary)';
+      return `
+        <div class="periodo-tpl-card" data-tpl-id="${t.id}" style="
+          padding:10px 14px;border:1px solid var(--border-color);
+          border-radius:var(--radius-md);cursor:pointer;
+          transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <div style="font-weight:600;font-size:0.83rem;color:var(--text-primary);flex:1">${t.name}</div>
+            ${isCardio ? `<span style="font-size:0.6rem;background:rgba(6,182,212,0.12);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:600">Cardio</span>` : ''}
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${t.desc}</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">
+            <span style="color:${catColor}">${t.sessions.length} sessão(ões)</span>
+            <span>·</span>
+            <span>${exCount} exercícios</span>
+            ${t.days ? `<span>·</span><span>${t.days}×/sem</span>` : ''}
+          </div>
+        </div>`;
+    }
+
+    const CAT_ORDER = ['Hipertrofia','Força','Emagrecimento','Funcional','Reabilitação','Cardio / Endurance'];
+    const builtInHTML = CAT_ORDER
+      .filter(cat => tplByCategory[cat]?.length)
+      .map(cat => `
+        <div style="margin-bottom:8px">
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border-color)">${cat}</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${tplByCategory[cat].map(tplCardHTML).join('')}
+          </div>
+        </div>`).join('');
+
+    const personalHTML = customCycles.length
+      ? customCycles.map(c => {
+          const totalEx = (c.workouts || []).reduce((a, w) => a + (w.exercises || []).length, 0);
+          return `
+          <div class="periodo-tpl-card" data-tpl-id="cycle_${c.id}" style="
+            padding:10px 14px;border:1px solid var(--border-color);
+            border-radius:var(--radius-md);cursor:pointer;
+            transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
+            <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary)">${c.name}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;display:flex;gap:8px">
+              <span style="color:var(--primary)">${c.goal || 'Geral'}</span>
+              <span>·</span><span>${(c.workouts||[]).length} treinos</span>
+              <span>·</span><span>${totalEx} exercícios</span>
+            </div>
+            ${c.description ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${c.description}</div>` : ''}
+          </div>`;}).join('')
+      : `<div style="padding:12px;border:1px dashed var(--border-color);border-radius:var(--radius-md);text-align:center">
+          <p class="text-xs text-muted" style="margin:0">Nenhum modelo criado ainda.</p>
+          <a href="#/exercicios" style="font-size:0.75rem;color:var(--primary);text-decoration:none">Ir para Exercícios → Meus Modelos</a>
+        </div>`;
 
     openModal({
-      title: '+ Novo Macrociclo Completo', size: 'xl',
+      title: 'Novo Macrociclo', size: 'xl',
       content: `
-        <div style="margin-bottom:16px;border-bottom:1px solid var(--border-color);padding-bottom:16px">
-          <label class="form-label mb-sm">Templates Padrão do Sistema (clique para preencher)</label>
-          <div class="periodi-template-grid">
-            <div class="periodi-template-card" data-tpl='{"name":"Hipertrofia 12 Semanas","type":"linear","goal":"Hipertrofia","totalWeeks":12,"deloadEvery":4}'>
-              <div class="ptc-name">Hipertrofia 12 Sem.</div>
-              <div class="ptc-desc">Linear · Deload a cada 4 sem · Foco em ganho de massa</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start">
+
+          <!-- COLUNA ESQUERDA: Modelo de Treino -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px"></span>
+              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Modelo de Treino</span>
             </div>
-            <div class="periodi-template-card" data-tpl='{"name":"Emagrecimento 12 Semanas","type":"undulating","goal":"Emagrecimento","totalWeeks":12,"deloadEvery":4}'>
-              <div class="ptc-name">Emagrecimento 12 Sem.</div>
-              <div class="ptc-desc">Ondulatório · Força + Condicionamento</div>
-            </div>
-            <div class="periodi-template-card" data-tpl='{"name":"Força Máxima 16 Semanas","type":"block","goal":"Força","totalWeeks":16,"deloadEvery":4}'>
-              <div class="ptc-name">Força Máxima 16 Sem.</div>
-              <div class="ptc-desc">Bloco · Fases: Adaptação → Hipertrofia → Força</div>
-            </div>
-            <div class="periodi-template-card" data-tpl='{"name":"Condicionamento 8 Semanas","type":"undulating","goal":"Condicionamento","totalWeeks":8,"deloadEvery":4}'>
-              <div class="ptc-name">Condicionamento 8 Sem.</div>
-              <div class="ptc-desc">Ondulatório diário · Cardio + Força</div>
-            </div>
-            <div class="periodi-template-card" data-tpl='{"name":"Iniciante 4 Semanas","type":"linear","goal":"Saúde","totalWeeks":4,"deloadEvery":0}'>
-              <div class="ptc-name">Iniciante 4 Sem.</div>
-              <div class="ptc-desc">Linear simples · Sem deload · Adaptação anatômica</div>
-            </div>
-            <div class="periodi-template-card" data-tpl='{"name":"Manutenção 8 Semanas","type":"linear","goal":"Saúde","totalWeeks":8,"deloadEvery":4}'>
-              <div class="ptc-name">Manutenção 8 Sem.</div>
-              <div class="ptc-desc">Linear · Volume moderado · Saúde e qualidade de vida</div>
+
+            <p class="text-xs text-muted mb-sm">Templates padrão do sistema <span style="color:var(--text-muted);font-size:0.65rem">(Musculação + Cardio)</span></p>
+            <div style="display:flex;flex-direction:column;gap:0;margin-bottom:16px;max-height:340px;overflow-y:auto;padding-right:2px" id="builtInTpls">${builtInHTML}</div>
+
+            <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:4px">
+              <p class="text-xs text-muted mb-sm">Seus modelos <span style="color:var(--text-muted);font-size:0.65rem">(Exercícios → Meus Modelos)</span></p>
+              <div style="display:flex;flex-direction:column;gap:5px" id="personalTpls">${personalHTML}</div>
             </div>
           </div>
-        </div>
-        <form id="macroForm">
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Aluno *</label><select class="form-select" name="studentId" required><option value="">Selecione</option>${students.map(s => `<option value="${s.id}">${s.name} — ${s.goal || 'Geral'}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label">Nome do Macrociclo</label><input class="form-input" name="name" value="Macrociclo 1" /></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Modelo de Periodização *</label><select class="form-select" name="type">${PERIODIZATION_TYPES.map(t => `<option value="${t.id}">${t.name} — ${t.desc}</option>`).join('')}</select></div>
-          <div class="form-group"><label class="form-label">Objetivo</label><select class="form-select" name="goal"><option>Hipertrofia</option><option>Força</option><option>Resistência</option><option>Condicionamento</option><option>Saúde</option></select></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Duração (semanas)</label><input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" /></div>
-          <div class="form-group"><label class="form-label">Data de Início</label><input class="form-input" name="startDate" type="date" value="${new Date().toISOString().slice(0, 10)}" /></div>
-          <div class="form-group"><label class="form-label">Deload a cada (sem)</label><input class="form-input" name="deloadEvery" type="number" min="0" max="8" value="4" /><div class="form-hint">0 = sem deload</div></div>
-        </div>
 
-        <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:12px">
-          <h4 class="mb-sm">Dias e Horários de Treino</h4>
-          <p class="text-muted text-sm mb-md">Selecione os dias da semana e horário de treino do aluno</p>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Dias da Semana</label>
-              <div class="flex gap-sm" style="flex-wrap:wrap">
-                ${TRAINING_DAYS.map(d => `<label class="flex items-center gap-xs" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer">
-                  <input type="checkbox" name="trainingDays" value="${d.id}" ${[1, 3, 5].includes(d.id) ? 'checked' : ''}/>
-                  ${d.label}
-                </label>`).join('')}
+          <!-- COLUNA DIREITA: Configuração -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px"></span>
+              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Configuração</span>
+            </div>
+
+            <form id="macroForm">
+              <div class="form-group">
+                <label class="form-label">Aluno *</label>
+                <select class="form-select" name="studentId" required>
+                  <option value="">Selecione o aluno</option>
+                  ${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+                </select>
               </div>
-            </div>
-            <div class="form-group"><label class="form-label">Horário</label>
-              <select class="form-select" name="trainingTime">${HOURS.map(h => `<option value="${h}" ${h === '07:00' ? 'selected' : ''}>${h}</option>`).join('')}</select>
-            </div>
-            <div class="form-group"><label class="form-label">Duração da Sessão</label>
-              <select class="form-select" name="sessionDuration"><option value="45">45 min</option><option value="60" selected>60 min</option><option value="75">75 min</option><option value="90">90 min</option></select>
-            </div>
-          </div>
-        </div>
 
-        <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:12px">
-          <h4 class="mb-sm">Modelo de Treino</h4>
-          <p class="text-muted text-sm mb-md">Selecione treinos existentes do aluno ou use exercícios da biblioteca</p>
-          <div class="form-group mb-md">
-            <label class="form-label">Usar treinos criados pelo personal</label>
-            <select class="form-select" id="workoutModelSelect"><option value="">Gerar automaticamente da biblioteca</option></select>
-          </div>
-          <h4 class="mb-sm">Grupos Musculares (se geração automática)</h4>
-          <div class="flex gap-sm" style="flex-wrap:wrap">
-            ${muscleGroups.map(g => `<label class="flex items-center gap-xs" style="padding:5px 10px;border:1px solid var(--border-color);border-radius:6px;cursor:pointer">
-              <input type="checkbox" name="muscleGroups" value="${g}" checked/> ${g}
-            </label>`).join('')}
-          </div>
-          <p class="text-muted text-xs mt-sm">${exercises.length} exercícios na biblioteca</p>
-        </div>
+              <div class="form-group">
+                <label class="form-label">Nome do macrociclo</label>
+                <input class="form-input" name="name" value="Macrociclo 1" placeholder="Ex: Macrociclo 1 — Hipertrofia" />
+              </div>
 
-        <div id="blockPhasesGroup" style="display:none;border-top:1px solid var(--border-color);padding-top:16px;margin-top:12px">
-          <label class="form-label">Fases do Bloco</label>
-          <div class="flex gap-sm" style="flex-wrap:wrap">${MESOCYCLE_PHASES.filter(p => p.id !== 'deload').map(p => `<label class="flex items-center gap-sm" style="padding:4px 8px;border:1px solid var(--border-color);border-radius:6px;cursor:pointer"><input type="checkbox" name="phases" value="${p.id}" ${['adaptacao', 'hipertrofia', 'forca'].includes(p.id) ? 'checked' : ''}/><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color}"></span>${p.name}</label>`).join('')}</div>
+              <div class="form-group">
+                <label class="form-label">Modelo de periodização *</label>
+                <select class="form-select" name="type">
+                  <optgroup label="── Musculação ──">
+                    <option value="linear">Linear — Volume↓ Intensidade↑</option>
+                    <option value="reverse_linear">Linear Reversa — RML / Resistência</option>
+                    <option value="undulating">Ondulatória (DUP) — Oscilações diárias</option>
+                    <option value="block">Em Blocos — Acumulação → Intensificação → Realização</option>
+                    <option value="conjugate">Conjugada — Esforço Máximo + Dinâmico</option>
+                    <option value="concurrent">Concorrente — Força + Metabólico</option>
+                  </optgroup>
+                  <optgroup label="── Cardio / Endurance ──">
+                    <option value="polarized">Polarizado — 80% Z1/Z2 + 20% Z4/Z5</option>
+                    <option value="hiit">HIIT — Intervalado de Alta Intensidade</option>
+                    <option value="lsd">LSD — Longa Duração e Baixa Intensidade</option>
+                    <option value="threshold">Limiar Anaeróbio</option>
+                    <option value="fartlek">Fartlek — Variações de ritmo livres</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Duração (semanas)</label>
+                  <input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Deload a cada (sem)</label>
+                  <input class="form-input" name="deloadEvery" type="number" min="0" max="8" value="4" />
+                  <div class="form-hint">0 = sem deload</div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Data de início</label>
+                <input class="form-input" name="startDate" type="date" value="${new Date().toISOString().slice(0,10)}" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Dias de treino</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                  ${TRAINING_DAYS.map(d => `
+                    <label style="display:flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border-color);border-radius:var(--radius-sm);cursor:pointer;font-size:0.8rem;transition:border-color var(--transition-fast),background var(--transition-fast)">
+                      <input type="checkbox" name="trainingDays" value="${d.id}" ${[1,3,5].includes(d.id)?'checked':''}/>${d.label}
+                    </label>`).join('')}
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Horário</label>
+                  <select class="form-select" name="trainingTime">
+                    ${HOURS.map(h=>`<option value="${h}" ${h==='07:00'?'selected':''}>${h}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Duração da sessão</label>
+                  <select class="form-select" name="sessionDuration">
+                    <option value="45">45 min</option>
+                    <option value="60" selected>60 min</option>
+                    <option value="75">75 min</option>
+                    <option value="90">90 min</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+
+            <!-- Preview cargas -->
+            <div id="tplPreview" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-color)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="display:inline-block;width:3px;height:16px;background:var(--accent);border-radius:2px"></span>
+                <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">1RM Estimado por exercício</span>
+              </div>
+              <p style="font-size:0.7rem;color:var(--text-muted);margin-bottom:8px">Informe o 1RM (ou estimativa). O sistema calculará as cargas de treino semana a semana com base na % do modelo de periodização.</p>
+              <div id="tplExerciseLoads"></div>
+            </div>
+          </div>
         </div>
-      </form>`,
+      `,
       actions: [
-        { label: 'Cancelar', class: 'btn-secondary', id: 'cancelMacro', onClick: () => closeModal() },
+        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
         {
-          label: 'Gerar Macrociclo Completo', class: 'btn-primary', id: 'saveMacro', onClick: async () => {
+          label: 'Gerar Macrociclo', class: 'btn-primary', onClick: async () => {
             const fd = new FormData(document.getElementById('macroForm'));
             const d = Object.fromEntries(fd);
             if (!d.studentId) { notify.error('Selecione um aluno'); return; }
-            const phases = fd.getAll('phases');
-            const selectedGroups = fd.getAll('muscleGroups');
-            const selectedDays = fd.getAll('trainingDays').map(Number);
-            d.totalWeeks = parseInt(d.totalWeeks) || 12;
-            d.deloadEvery = parseInt(d.deloadEvery) || 4;
-            d.trainingDays = selectedDays;
-            d.trainingTime = d.trainingTime || '07:00';
+            if (!selectedTemplate) { notify.error('Selecione um modelo de treino à esquerda'); return; }
+
+            d.totalWeeks  = parseInt(d.totalWeeks) || 12;
+            d.deloadEvery = d.deloadEvery === '' ? 4 : parseInt(d.deloadEvery);
+            d.trainingDays    = fd.getAll('trainingDays').map(Number);
             d.sessionDuration = parseInt(d.sessionDuration) || 60;
-            d.status = 'active';
+            d.status    = 'active';
             d.createdAt = new Date().toISOString();
+            d.workoutModelName = selectedTemplate.name;
+            // Capturar local de treino (cardio)
+            const localSel = document.getElementById('cardioLocalSel');
+            if (localSel) d.cardioLocal = localSel.value;
 
-            // Generate weekly plan
-            d.weeks = generateWeeklyPlan(d.type, d.totalWeeks, phases.length ? phases : null, d.deloadEvery);
+            // Gerar plano semanal interno (não depende de generateWeeklyPlan)
+            d.weeks = generateInternalWeeklyPlan(d.type, d.totalWeeks, d.deloadEvery);
 
-            // Check if personal selected existing workout model (item 14)
-            const selectedModelId = document.getElementById('workoutModelSelect')?.value;
-            let filteredExercises;
-            if (selectedModelId) {
-              const modelWk = await db.get('workouts', selectedModelId);
-              filteredExercises = modelWk?.exercises || [];
-              d.workoutModelName = modelWk?.name || '';
-            } else {
-              // Get exercises from library for selected muscle groups
-              const allExercises = await db.getAll('exercises');
-              filteredExercises = selectedGroups.length > 0
-                ? allExercises.filter(ex => selectedGroups.includes(ex.muscleGroup))
-                : allExercises;
-            }
+            const loadInputs = document.querySelectorAll('.load-input');
+            const exerciseLoads = {};
+            loadInputs.forEach(inp => { exerciseLoads[inp.dataset.exKey] = parseFloat(inp.value) || 20; });
 
-            // Generate week details for display
-            const weekDetails = d.weeks.map((w, i) => {
+            const sessions = selectedTemplate.sessions || [{ name: selectedTemplate.name, exercises: selectedTemplate.exercises || [] }];
+            const allExercises = sessions.flatMap(s => s.exercises);
+
+            d.weekDetails = (d.weeks || []).map((w, i) => {
+              if (!w) return null;
               const isDeload = w.phase === 'deload';
-              const prevWeek = i > 0 ? d.weeks[i - 1] : null;
-              const volDelta = prevWeek ? Math.round(w.volumePct - prevWeek.volumePct) : 0;
+              const prevWeek = i > 0 ? d.weeks[i-1] : null;
               return {
-                week: w.week,
-                phase: w.label || w.phase,
+                week: w.week, phase: w.label || w.phase,
                 sets: isDeload ? '2-3' : w.volumePct > 80 ? '4-5' : w.volumePct > 60 ? '3-4' : '3',
                 reps: w.repsRange || '10-12',
                 intensity: w.intensityPct,
                 rpe: isDeload ? '4-5' : w.intensityPct >= 85 ? '8-9' : w.intensityPct >= 70 ? '7-8' : '6-7',
-                volDelta,
-                trainA: filteredExercises.length > 0 ? filteredExercises.slice(0, 3).map(e => e.name).join(', ') : '-',
-                trainB: filteredExercises.length > 3 ? filteredExercises.slice(3, 6).map(e => e.name).join(', ') : '-',
+                volDelta: prevWeek ? Math.round(w.volumePct - prevWeek.volumePct) : 0,
+                trainA: allExercises.slice(0,3).map(e=>e.name).join(', ') || '-',
+                trainB: allExercises.slice(3,6).map(e=>e.name).join(', ') || '-',
               };
-            });
-            d.weekDetails = weekDetails;
+            }).filter(Boolean);
 
-            // Generate actual workouts for each week
-            const daysPerWeek = selectedDays.length || 3;
-            const workoutConfig = {
-              studentId: d.studentId,
-              type: d.type,
-              totalWeeks: d.totalWeeks,
-              daysPerWeek,
-              deloadEvery: d.deloadEvery,
-              exercises: filteredExercises,
-              weeklyPlan: d.weeks,
-              startDate: d.startDate,
-            };
+            const savedMacro = await db.add('macrocycles', d);
+            d.id = savedMacro.id;
+            d.generatedWorkouts = 0;
 
-            const generatedWorkouts = generateWorkouts(workoutConfig);
-
-            // Assign correct dates based on selected days
-            let workoutCount = 0;
             for (let w = 0; w < d.totalWeeks; w++) {
+              const weekPlan = d.weeks[w] || {
+                week: w + 1, phase: 'training', label: 'Treino',
+                intensityPct: 65 + Math.round((w / d.totalWeeks) * 25),
+                volumePct: 70, repsRange: '10-12'
+              };
               const weekStart = new Date(d.startDate);
               weekStart.setDate(weekStart.getDate() + (w * 7));
 
-              for (let di = 0; di < selectedDays.length; di++) {
-                const dayOfWeek = selectedDays[di];
+              const baseIntensity = d.weeks[0]?.intensityPct || 60;
+              const isDeload = weekPlan.phase === 'deload';
+              const loadMultiplier = isDeload
+                ? 0.6
+                : 1 + ((weekPlan.intensityPct - baseIntensity) / 100);
+
+              for (let di = 0; di < d.trainingDays.length; di++) {
+                const session = sessions[di % sessions.length];
+                const dayOfWeek = d.trainingDays[di];
                 const date = new Date(weekStart);
                 const currentDay = date.getDay();
-                const diff = dayOfWeek - currentDay;
-                date.setDate(date.getDate() + (diff >= 0 ? diff : diff + 7));
 
-                const gw = generatedWorkouts[workoutCount];
-                if (gw) {
-                  gw.date = date.toISOString().slice(0, 10);
-                  gw.macrocycleId = 'pending'; // will be set after save
-                  gw.trainingTime = d.trainingTime;
-                  gw.sessionDuration = d.sessionDuration;
-                  workoutCount++;
-                }
-              }
-            }
+                // Corrigir cálculo de data: nunca voltar para semana anterior
+                let diff = dayOfWeek - currentDay;
+                if (w === 0 && diff < 0) diff += 7; // primeira semana: avança para próxima ocorrência
+                else if (diff < 0) diff += 7;
+                date.setDate(date.getDate() + diff);
 
-            // Save macrocycle
-            const savedMacro = await db.add('macrocycles', d);
-            d.generatedWorkouts = 0;
+                const wkExercises = session.exercises.map(ex => {
+                  const oneRM = exerciseLoads[ex.name] || 60;
+                  const exType = document.querySelector(`.load-input[data-ex-key="${ex.name}"]`)?.dataset.type || 'weight';
 
-            // Save generated workouts to DB
-            for (const wk of generatedWorkouts) {
-              if (wk.exercises && wk.exercises.length > 0) {
-                wk.macrocycleId = savedMacro.id;
-                await db.add('workouts', wk);
+                  let load;
+                  if (exType === 'time') {
+                    // Tempo: aumenta proporcionalmente com a intensidade
+                    load = Math.round(oneRM * loadMultiplier);
+                  } else if (exType === 'bodyweight') {
+                    // Peso corporal: carga adicional aumenta
+                    load = Math.round(oneRM * loadMultiplier * 2) / 2;
+                  } else {
+                    // Carga = 1RM × % intensidade da semana
+                    load = Math.round(oneRM * (weekPlan.intensityPct / 100) * 2) / 2;
+                    if (isDeload) load = Math.round(oneRM * 0.5 * 2) / 2;
+                  }
+
+                  return { ...ex, load, oneRM, week: w + 1 };
+                });
+
+                const savedWorkout = await db.add('workouts', {
+                  studentId: d.studentId,
+                  macrocycleId: savedMacro.id,
+                  name: `${session.name} — Sem ${w+1}`,
+                  date: date.toISOString().slice(0,10),
+                  exercises: wkExercises,
+                  phase: weekPlan.label || weekPlan.phase,
+                  intensityPct: weekPlan.intensityPct,
+                  isDeload: weekPlan.phase === 'deload',
+                });
+
+                await db.add('schedules', {
+                  studentId: d.studentId,
+                  workoutId: savedWorkout.id,
+                  macrocycleId: savedMacro.id,
+                  date: date.toISOString().slice(0,10),
+                  time: d.trainingTime,
+                  duration: d.sessionDuration,
+                  workoutName: savedWorkout.name,
+                  status: 'scheduled',
+                  repeat: 'none',
+                });
                 d.generatedWorkouts++;
               }
             }
 
-            // Update macro with workout count
-            d.id = savedMacro.id;
-            await db.put('macrocycles', d);
-
-            // Also create schedule entries for the calendar
-            for (const wk of generatedWorkouts) {
-              if (wk.exercises && wk.exercises.length > 0) {
-                await db.add('schedules', {
-                  studentId: d.studentId,
-                  workoutId: wk.id,
-                  date: wk.date,
-                  time: d.trainingTime,
-                  duration: d.sessionDuration,
-                  workoutName: wk.name,
-                  status: 'scheduled',
-                  repeat: 'none',
-                });
-              }
-            }
-
-            notify.success(`Macrociclo gerado! ${d.generatedWorkouts} treinos criados automaticamente.`);
+            await db.put('macrocycles', { ...savedMacro, ...d });
+            notify.success(`Macrociclo gerado — ${d.generatedWorkouts} sessões criadas`);
             closeModal();
             navigateFn('/periodizacao');
           }
@@ -373,88 +724,260 @@ export function initPeriodization(navigateFn) {
       ]
     });
 
-    // Show/hide block phases + populate workout models when student changes
     setTimeout(() => {
-      // System template click handler (item 5)
-      document.querySelectorAll('.periodi-template-card').forEach(card => {
+      // Quando o aluno selecionado mudar, recalcula as cargas baseadas nas avaliações do novo aluno
+      document.querySelector('#macroForm [name="studentId"]')?.addEventListener('change', () => {
+        if (selectedTemplate) {
+          const isCardio = selectedTemplate.category === 'Cardio / Endurance';
+          if (!isCardio) {
+            const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
+              .filter(e => (e.loadType || 'weight') === 'weight');
+            renderLoadInputs(allEx);
+          }
+        }
+      });
+
+      document.querySelectorAll('.periodo-tpl-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          if (!card.classList.contains('selected')) {
+            card.style.borderColor = 'var(--border-active)';
+            card.style.background = 'var(--bg-card-hover)';
+          }
+        });
+        card.addEventListener('mouseleave', () => {
+          if (!card.classList.contains('selected')) {
+            card.style.borderColor = 'var(--border-color)';
+            card.style.background = 'var(--bg-card)';
+          }
+        });
         card.addEventListener('click', () => {
-          document.querySelectorAll('.periodi-template-card').forEach(c => c.classList.remove('selected'));
+          document.querySelectorAll('.periodo-tpl-card').forEach(c => {
+            c.classList.remove('selected');
+            c.style.borderColor = 'var(--border-color)';
+            c.style.background = 'var(--bg-card)';
+          });
           card.classList.add('selected');
-          try {
-            const tpl = JSON.parse(card.dataset.tpl);
-            const form = document.getElementById('macroForm');
-            if (!form) return;
-            if (tpl.name) form.querySelector('[name="name"]').value = tpl.name;
-            if (tpl.type) form.querySelector('[name="type"]').value = tpl.type;
-            if (tpl.goal) form.querySelector('[name="goal"]').value = tpl.goal;
-            if (tpl.totalWeeks !== undefined) form.querySelector('[name="totalWeeks"]').value = tpl.totalWeeks;
-            if (tpl.deloadEvery !== undefined) form.querySelector('[name="deloadEvery"]').value = tpl.deloadEvery;
-            // Trigger block phases visibility
-            const typeChange = new Event('change');
-            form.querySelector('[name="type"]')?.dispatchEvent(typeChange);
-          } catch(e) { console.warn('Template parse error', e); }
+          card.style.borderColor = 'var(--primary)';
+          card.style.background = 'var(--primary-glow)';
+
+          const tplId = card.dataset.tplId;
+          if (tplId.startsWith('cycle_')) {
+            const cycleId = tplId.replace('cycle_', '');
+            db.get('cycles', cycleId).then(cycle => {
+              if (!cycle) return;
+              // Converter estrutura cycles → sessions para o sistema
+              selectedTemplate = {
+                name: cycle.name,
+                sessions: (cycle.workouts || []).map(w => ({
+                  name: w.name,
+                  exercises: (w.exercises || []).map(ex => ({
+                    name: ex.name,
+                    sets: ex.sets || 3,
+                    reps: ex.reps || '10-12',
+                    rest: ex.rest || 60,
+                  }))
+                }))
+              };
+              const allEx = selectedTemplate.sessions.flatMap(s => s.exercises);
+              renderLoadInputs(allEx);
+            });
+          } else {
+            selectedTemplate = BUILT_IN_WORKOUT_TEMPLATES.find(t => t.id === tplId);
+            if (selectedTemplate) {
+              // Auto-selecionar modelo de periodização correspondente
+              if (selectedTemplate.perioModel) {
+                const typeSelect = document.querySelector('#macroForm [name="type"]');
+                if (typeSelect) typeSelect.value = selectedTemplate.perioModel;
+              }
+
+              const isCardio   = selectedTemplate.category === 'Cardio / Endurance';
+              const loadsEl    = document.getElementById('tplExerciseLoads');
+              const allSess    = selectedTemplate.allSessions || selectedTemplate.sessions || [];
+
+              if (isCardio && loadsEl) {
+                // Seletor de protocolo (sessão) + local de treino
+                const hasMultiSess = allSess.length > 1;
+                loadsEl.innerHTML = `
+                  <div style="padding:12px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid var(--accent);margin-bottom:10px">
+                    <div style="font-size:0.78rem;color:var(--accent);font-weight:600;margin-bottom:3px">Template Cardio/Endurance</div>
+                    <div class="text-xs text-muted">Sessões baseadas em tempo e zonas de FC/VO₂max.</div>
+                  </div>
+                  ${hasMultiSess ? `
+                  <div class="form-group">
+                    <label class="form-label">Protocolo principal a gerar <span class="text-xs text-muted">(sessão a repetir no macrociclo)</span></label>
+                    <select class="form-select" id="cardioProtocolSel">
+                      ${allSess.map((s,i) => `<option value="${i}">${s.name}</option>`).join('')}
+                    </select>
+                    <div class="form-hint">Os demais protocolos ficam disponíveis como treinos complementares</div>
+                  </div>` : ''}
+                  <div class="form-group">
+                    <label class="form-label">Local / Equipamento principal</label>
+                    <select class="form-select" id="cardioLocalSel">
+                      <option value="Ao ar livre">Ao ar livre (corrida/caminhada)</option>
+                      <option value="Esteira">Esteira</option>
+                      <option value="Bicicleta ergométrica">Bicicleta ergométrica</option>
+                      <option value="Ciclismo outdoor">Ciclismo outdoor</option>
+                      <option value="Remo ergométrico">Remo ergométrico</option>
+                      <option value="Elíptico">Elíptico</option>
+                      <option value="Natação">Natação</option>
+                      <option value="Corda de pular">Corda de pular</option>
+                    </select>
+                  </div>`;
+
+                // Listener para trocar protocolo selecionado
+                if (hasMultiSess) {
+                  setTimeout(() => {
+                    document.getElementById('cardioProtocolSel')?.addEventListener('change', e => {
+                      const idx = parseInt(e.target.value);
+                      selectedTemplate = { ...selectedTemplate, sessions: [allSess[idx]] };
+                    });
+                  }, 50);
+                }
+
+                // Selecionar a primeira sessão por padrão
+                selectedTemplate = { ...selectedTemplate, sessions: [allSess[0]] };
+
+              } else {
+                // Musculação: mostrar inputs de carga
+                const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
+                  .filter(e => (e.loadType || 'weight') === 'weight');
+                renderLoadInputs(allEx);
+              }
+            }
+          }
         });
       });
-
-      const typeSel = document.querySelector('[name="type"]');
-      const blockGroup = document.getElementById('blockPhasesGroup');
-      typeSel?.addEventListener('change', () => {
-        blockGroup.style.display = typeSel.value === 'block' ? '' : 'none';
-      });
-
-      // Populate workout model dropdown when student is selected (item 14)
-      const studentSel = document.querySelector('[name="studentId"]');
-      const modelSel = document.getElementById('workoutModelSelect');
-      studentSel?.addEventListener('change', async () => {
-        const sid = studentSel.value;
-        if (!sid || !modelSel) return;
-        const wks = (await db.getAll('workouts')).filter(w => w.studentId === sid);
-        modelSel.innerHTML = '<option value="">Gerar automaticamente da biblioteca</option>' +
-          wks.map(w => `<option value="${w.id}">${w.name} (${(w.exercises||[]).length} exercícios)</option>`).join('');
-      });
-    }, 100);
+    }, 80);
   });
+}
 
-  // Delete
-  document.querySelectorAll('.delete-macro').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (window.confirm('Excluir macrociclo e todos os treinos gerados?')) {
-        const macroId = btn.dataset.id;
-        // Delete associated workouts
-        const workouts = await db.getAll('workouts');
-        for (const w of workouts.filter(w => w.macrocycleId === macroId)) {
-          await db.delete('workouts', w.id);
-        }
-        await db.delete('macrocycles', macroId);
-        notify.success('Macrociclo e treinos removidos');
-        navigateFn('/periodizacao');
-      }
-    });
-  });
+async function renderLoadInputs(exercises) {
+  const preview = document.getElementById('tplPreview');
+  const container = document.getElementById('tplExerciseLoads');
+  if (!preview || !container || !exercises.length) return;
+  preview.style.display = '';
 
-  initMacroCharts();
+  const BODYWEIGHT_KEYWORDS = ['prancha','flexão','burpee','barra fixa','pull-up','dip','afundo','superman','bird dog','russian twist','abdominal','crunch','mountain climber','jumping jack','polichinelo','ponte'];
+  const TIMED_PATTERN = /^\d+s$/i;
+
+  // Obter aluno selecionado
+  const studentId = document.querySelector('#macroForm [name="studentId"]')?.value;
+  let forceAssessments = [];
+  if (studentId) {
+    try {
+      const allAssessments = await db.getAll('assessments');
+      forceAssessments = allAssessments.filter(a => a.studentId === studentId && a.type === 'forca');
+    } catch (e) {
+      console.warn('Erro ao carregar avaliações do aluno para 1RM:', e);
+    }
+  }
+
+  let html = '';
+  for (const ex of exercises) {
+    const nameLower = ex.name.toLowerCase();
+    const isTimed = ex.loadType === 'time' || TIMED_PATTERN.test(String(ex.reps || ''));
+    const isBodyweight = ex.loadType === 'bodyweight' || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k));
+
+    if (isTimed) {
+      const defaultSec = parseInt(String(ex.reps).replace('s','')) || 30;
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
+          <div style="flex:1">
+            <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
+            <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">Isométrico · ${ex.sets} séries × ${ex.reps}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
+            <input class="form-input load-input" data-ex-key="${ex.name}" data-type="time"
+              type="number" min="5" step="5" value="${defaultSec}"
+              style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem" />
+            <span style="font-size:0.72rem;color:var(--text-muted);min-width:22px">seg</span>
+          </div>
+        </div>`;
+      continue;
+    }
+
+    if (isBodyweight) {
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
+          <div style="flex:1">
+            <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
+            <div style="font-size:0.68rem;color:var(--success);margin-top:1px">Peso corporal · ${ex.sets} séries × ${ex.reps} reps</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
+            <input class="form-input load-input" data-ex-key="${ex.name}" data-type="bodyweight"
+              type="number" min="0" step="0.5" value="0"
+              style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem" />
+            <span style="font-size:0.72rem;color:var(--text-muted);min-width:24px">+kg</span>
+          </div>
+        </div>`;
+      continue;
+    }
+
+    // Tenta encontrar avaliação física para esse exercício (match parcial ou exato)
+    const match = forceAssessments.find(a => 
+      a.exercise && (
+        a.exercise.toLowerCase() === nameLower ||
+        nameLower.includes(a.exercise.toLowerCase()) ||
+        a.exercise.toLowerCase().includes(nameLower)
+      )
+    );
+    const defaultValue = match && match.rm1 ? match.rm1 : 60;
+    const isFromAssessment = !!(match && match.rm1);
+
+    html += `
+      <div style="padding:7px 0;border-bottom:1px solid var(--border-color)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="flex:1">
+            <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px">
+              ${ex.sets} séries × ${ex.reps} · ${ex.rest}s descanso
+              ${isFromAssessment ? ` <span style="color:#22c55e;font-weight:600">📊 1RM Avaliado (${match.rm1}kg)</span>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:0.68rem;color:var(--text-muted)">1RM</span>
+                <input class="form-input load-input" data-ex-key="${ex.name}" data-type="weight"
+                  type="number" min="0" step="2.5" value="${defaultValue}"
+                  style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem; ${isFromAssessment ? 'border-color:var(--success);box-shadow:0 0 4px rgba(16,185,129,0.3);' : ''}"
+                  oninput="
+                    const pct = 65;
+                    const load = Math.round(parseFloat(this.value || 0) * (pct/100) * 2) / 2;
+                    const el = this.closest('div').parentNode.querySelector('.load-preview');
+                    if(el) el.textContent = 'Semana 1: ~' + load + 'kg (' + pct + '% 1RM)';
+                  " />
+                <span style="font-size:0.72rem;color:var(--text-muted)">kg</span>
+              </div>
+              <span class="load-preview" style="font-size:0.65rem;color:var(--primary)">Semana 1: ~${Math.round(defaultValue * 0.65 * 2) / 2}kg (65% 1RM)</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+  container.innerHTML = html;
 }
 
 async function initMacroCharts() {
   const macros = await db.getAll('macrocycles');
   macros.forEach(m => {
     const canvas = document.getElementById(`macroChart_${m.id}`);
-    if (!canvas || typeof Chart === 'undefined' || !m.weeks) return;
+    if (!canvas || typeof Chart === 'undefined' || !m.weeks?.length) return;
     new Chart(canvas, {
       type: 'line',
       data: {
         labels: m.weeks.map(w => `S${w.week}`),
         datasets: [
-          { label: 'Volume %', data: m.weeks.map(w => w.volumePct), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true },
-          { label: 'Intensidade %', data: m.weeks.map(w => w.intensityPct), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.3, fill: true },
+          { label: 'Volume %', data: m.weeks.map(w => w.volumePct), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.07)', tension: 0.3, fill: true, pointRadius: 2, borderWidth: 1.5 },
+          { label: 'Intensidade %', data: m.weeks.map(w => w.intensityPct), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.07)', tension: 0.3, fill: true, pointRadius: 2, borderWidth: 1.5 },
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#94a3b8' } } },
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 12 } } },
         scales: {
-          y: { min: 0, max: 110, ticks: { color: '#64748b', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          y: { min: 0, max: 110, ticks: { color: '#64748b', callback: v => v+'%', font: { size: 10 } }, grid: { color: 'rgba(148,163,184,0.07)' } },
+          x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } }
         }
       }
     });

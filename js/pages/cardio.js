@@ -109,7 +109,7 @@ export async function renderCardio() {
     <div id="tabSessions" class="cardio-tab" style="display:none">
       ${cardioSessions.length ? `
         <div class="table-container"><table class="data-table"><thead><tr>
-          <th>Aluno</th><th>Método</th><th>Data</th><th>Duração</th><th>FC Méd</th><th>Zona Méd</th><th>Carga</th>
+          <th>Aluno</th><th>Método</th><th>Data</th><th>Duração</th><th>FC Méd</th><th>Zona Méd</th><th>Intensidade (%)</th><th>Velocidade/Potência</th>
         </tr></thead><tbody>
         ${cardioSessions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(s => {
           const st = students.find(x => x.id === s.studentId);
@@ -120,7 +120,8 @@ export async function renderCardio() {
             <td>${s.cardioDuration || '-'} min</td>
             <td>${s.avgHR || '-'} bpm</td>
             <td>Z${s.avgZone || '-'}</td>
-            <td>${s.cardioLoad || '-'}</td>
+            <td>${s.cardioIntensity ? s.cardioIntensity + '%' : '-'}</td>
+            <td>${s.cardioSpeed || '-'}</td>
           </tr>`;
         }).join('')}
         </tbody></table></div>
@@ -250,6 +251,7 @@ export function initCardio(navigateFn) {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
     openModal({
       title: '+ Nova Sessão Cardio', size: 'lg',
+      preventBackdropClose: true,
       content: `<form id="cardioForm">
         <div class="form-row">
           <div class="form-group"><label class="form-label">Aluno *</label>
@@ -275,12 +277,13 @@ export function initCardio(navigateFn) {
           <h4 class="mb-sm">Dados da Sessão (opcional)</h4>
           <div class="form-row">
             <div class="form-group"><label class="form-label">FC Média (bpm)</label><input class="form-input" name="avgHR" type="number" placeholder="Ex: 145" /></div>
-            <div class="form-group"><label class="form-label">FC Máx Atingida</label><input class="form-input" name="maxHR" type="number" placeholder="Ex: 175" /></div>
-            <div class="form-group"><label class="form-label">Distância (km)</label><input class="form-input" name="distance" type="number" step="0.1" placeholder="Ex: 5.2" /></div>
+            <div class="form-group"><label class="form-label">Intensidade (%)</label><input class="form-input" name="cardioIntensity" type="number" placeholder="Ex: 75" /></div>
+            <div class="form-group"><label class="form-label">Velocidade/Potência/Ritmo</label><input class="form-input" name="cardioSpeed" placeholder="Ex: 10 km/h ou 5:30/km" /></div>
             <div class="form-group"><label class="form-label">Calorias</label><input class="form-input" name="calories" type="number" placeholder="Ex: 350" /></div>
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">PSE (1-10)</label><input class="form-input" name="pse" type="number" min="1" max="10" value="6" /></div>
+            <div class="form-group"><label class="form-label">Distância (km)</label><input class="form-input" name="distance" type="number" step="0.1" placeholder="Ex: 5.2" /></div>
             <div class="form-group"><label class="form-label">Notas</label><input class="form-input" name="notes" placeholder="Observações..." /></div>
           </div>
         </div>
@@ -296,6 +299,8 @@ export function initCardio(navigateFn) {
           d.maxHR = parseInt(d.maxHR) || null;
           d.distance = parseFloat(d.distance) || null;
           d.calories = parseInt(d.calories) || null;
+          d.cardioIntensity = parseInt(d.cardioIntensity) || null;
+          d.cardioSpeed = d.cardioSpeed || '';
           d.pse = parseInt(d.pse) || 6;
           d.cardioLoad = d.pse * d.cardioDuration;
           d.sessionType = 'cardio';
