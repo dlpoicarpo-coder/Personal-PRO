@@ -57,7 +57,7 @@ export function renderSidebar(currentPath) {
             <div class="avatar avatar-sm" id="trainerAvatar">PRO</div>
             <div class="sidebar-user-info">
               <span class="sidebar-user-name" id="trainerName">Treinador</span>
-              <span class="sidebar-user-role">Personal Trainer</span>
+              <span class="sidebar-user-role" id="roleBadge">Personal Trainer</span>
             </div>
           </div>
           <button id="logoutBtn" title="Sair do Sistema" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 8px; opacity: 0.8; transition: all 0.2s; display: flex; align-items: center; border-radius: 6px;" onmouseover="this.style.opacity='1';this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.opacity='0.8';this.style.background='none'">

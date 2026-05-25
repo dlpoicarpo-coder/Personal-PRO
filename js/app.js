@@ -91,7 +91,7 @@ export async function navigateTo(path) {
     if (a.getAttribute('href') === '#' + path) a.classList.add('active');
   });
 
-  // Update trainer name/avatar in sidebar
+  // Update trainer name/avatar/role in sidebar
   import('./db.js').then(({ default: db }) => {
     db.get('settings', 'trainer_auth').then(trainer => {
       if (trainer && trainer.trainerName) {
@@ -103,6 +103,11 @@ export async function navigateTo(path) {
           avatarEl.textContent = initials;
         }
       }
+      
+      // Apply Role UI dynamically
+      import('./utils/roles.js').then(({ applyRoleUI }) => {
+        applyRoleUI().catch(console.error);
+      });
     });
   });
 

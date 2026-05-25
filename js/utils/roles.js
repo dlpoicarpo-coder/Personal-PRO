@@ -82,9 +82,9 @@ export async function applyRoleUI() {
   // Badge de papel na sidebar
   const badge = document.getElementById('roleBadge');
   if (badge) {
-    badge.textContent  = admin ? 'Admin' : 'Personal';
-    badge.style.background = admin ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
-    badge.style.color  = admin ? 'var(--danger)' : 'var(--primary)';
+    badge.textContent  = admin ? 'Administrador' : 'Personal Trainer';
+    badge.style.color  = admin ? 'var(--danger)' : 'var(--text-muted)';
+    badge.style.fontWeight = admin ? '700' : '400';
   }
 
   return admin;

@@ -109,8 +109,59 @@ export function onAuthChange(callback) {
   return () => subscription.unsubscribe();
 }
 
+// Sync trainer profile settings in database from Supabase Auth metadata
+export async function syncTrainerProfile() {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return null;
+
+    const dbModule = await import('../db.js');
+    const db = dbModule.default;
+
+    const trainerName = user.user_metadata?.trainer_name || user.user_metadata?.name || user.email.split('@')[0];
+    const cref = user.user_metadata?.cref || '';
+    const email = user.email;
+
+    // Check settings table
+    let trainerAuth = await db.get('settings', 'trainer_auth');
+    if (!trainerAuth) {
+      trainerAuth = {
+        id: 'trainer_auth',
+        trainerName,
+        email,
+        cref,
+        isSetup: true,
+        createdAt: new Date().toISOString(),
+      };
+      await db.put('settings', trainerAuth);
+    }
+
+    let trainer = await db.get('settings', 'trainer');
+    if (!trainer) {
+      trainer = {
+        id: 'trainer',
+        trainerName,
+        cref,
+        email,
+        trainerPhone: user.user_metadata?.phone || '',
+      };
+      await db.put('settings', trainer);
+    }
+
+    return { trainerAuth, trainer };
+  } catch (err) {
+    console.warn('Erro ao sincronizar perfil do treinador:', err);
+    return null;
+  }
+}
+
 // Check if current session is valid
 export async function isAuthenticated() {
   const user = await getCurrentUser();
-  return !!user;
+  if (user) {
+    // Sincroniza o perfil em segundo plano para garantir que os dados existem
+    await syncTrainerProfile();
+    return true;
+  }
+  return false;
 }
