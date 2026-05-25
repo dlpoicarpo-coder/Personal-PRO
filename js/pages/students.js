@@ -323,7 +323,7 @@ async function viewStudentHTML(student) {
           <td>${Calc.formatDate(b.date)}</td>
           <td><strong>${b.cycle || 'Geral'}</strong></td>
           <td style="color:${(b.sleep||0)<5?'var(--danger)':(b.sleep||0)<7?'var(--warning)':'var(--success)'}">${b.sleep||'-'}</td>
-          <td style="color:${(b.tqr ?? b.energy || 0)<5?'var(--danger)':(b.tqr ?? b.energy || 0)<7?'var(--warning)':'var(--success)'}">${b.tqr ?? b.energy ?? '-'}</td>
+          <td style="color:${(b.tqr || b.energy || 0)<5?'var(--danger)':(b.tqr || b.energy || 0)<7?'var(--warning)':'var(--success)'}">${b.tqr || b.energy || '-'}</td>
           <td style="color:${(b.stress||0)>=8?'var(--danger)':(b.stress||0)>=6?'var(--warning)':'inherit'}">${b.stress||'-'}</td>
           <td style="color:${(b.pain||0)>=5?'var(--danger)':(b.pain||0)>=3?'var(--warning)':'inherit'}">${b.pain||'-'}</td>
           <td style="color:${(b.pse||0)>8?'var(--danger)':(b.pse||0)>6?'var(--warning)':'var(--success)'}"><strong>${b.pse||'-'}</strong></td>
