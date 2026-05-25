@@ -56,7 +56,7 @@ export async function navigateTo(path) {
     initPostForm();
     return;
   }
-  if (path === '/form/anamnese') {
+  if (path.startsWith('/form/anamnese')) {
     appContainer.className = '';
     appContainer.innerHTML = await renderAnamneseForm();
     initAnamneseForm();
@@ -93,7 +93,7 @@ export async function navigateTo(path) {
 
   // Update trainer name/avatar/role in sidebar
   import('./db.js').then(({ default: db }) => {
-    db.get('settings', 'trainer_auth').then(trainer => {
+    db.get('settings', 'trainer').then(trainer => {
       if (trainer && trainer.trainerName) {
         const nameEl = document.getElementById('trainerName');
         const avatarEl = document.getElementById('trainerAvatar');

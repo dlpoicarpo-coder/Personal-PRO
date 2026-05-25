@@ -246,7 +246,7 @@ export async function renderFinancial() {
           <thead><tr><th>Aluno</th><th>Realizadas</th><th>Esperadas</th><th>Progresso</th><th title="Mensalidade ÷ sessões esperadas">Custo/sessão</th><th title="Custo por sessão × sessões realizadas">Valor proporcional</th></tr></thead>
           <tbody>${active.map(s => {
             const ms = monthSessions.filter(x=>x.studentId===s.id).length;
-            const exp = s.expectedSessions || 12;
+            const exp = parseInt(s.expectedSessions) || 12;
             const pct = Math.min(100, Math.round((ms/exp)*100));
             const fee = s.monthlyFee ? parseFloat(s.monthlyFee) : null;
             const perSess = fee && exp ? (fee/exp).toFixed(2) : '-';

@@ -24,12 +24,19 @@ export async function renderPreForm(studentId) {
             <div class="avatar avatar-lg">${student.name[0]}</div>
             <div><h3 style="margin:0">${student.name}</h3><div class="text-muted text-sm">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
           </div>
+
+          <!-- Google Forms Alternativo -->
+          <div style="margin-bottom: 20px; border-left: 3px solid var(--primary); background: rgba(16,185,129,0.04); border-radius: var(--radius-md); padding: 12px 16px; border: 1px solid var(--border-color); border-left-width: 3px;">
+            <strong style="font-size: 0.85rem; color: var(--primary);">📋 Google Forms Oficial</strong>
+            <p class="text-xs text-muted" style="margin-top: 4px; line-height: 1.4;">Se preferir, você também pode responder pelo formulário oficial do Google Forms:</p>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSeovTLfRFi5-5IMmCx8B1Efz0Zsc83KeoxC4BdQaagTOZyHZw/viewform?usp=header" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%; text-align: center; margin-top: 10px; font-size: 0.78rem;">Responder pelo Google Forms</a>
+          </div>
+
           <form id="preStudentForm">
             <input type="hidden" name="studentId" value="${studentId}" />
             ${[
               { id: 'sleep', icon: '', label: 'Qualidade do Sono', hint: '1 = péssimo · 10 = ótimo' },
-              { id: 'mood', icon: '', label: 'Humor', hint: '1 = péssimo · 10 = ótimo' },
-              { id: 'energy', icon: '', label: 'Disposição/Energia', hint: '1 = exausto · 10 = energizado' },
+              { id: 'tqr', icon: '', label: 'Nível de Recuperação (TQR)', hint: '1 = exausto/sem recuperação · 10 = totalmente recuperado' },
               { id: 'stress', icon: '', label: 'Nível de Estresse', hint: '1 = relaxado · 10 = muito estressado' },
               { id: 'pain', icon: '', label: 'Dor/Desconforto', hint: '1 = nenhuma · 10 = muita dor' },
             ].map(f => `
@@ -74,7 +81,22 @@ export function initPreForm() {
     const data = Object.fromEntries(fd);
     data.formType = 'pre';
     data.date = new Date().toISOString();
-    ['sleep', 'mood', 'energy', 'stress', 'pain'].forEach(k => data[k] = parseInt(data[k]) || 5);
+    ['sleep', 'tqr', 'stress', 'pain'].forEach(k => data[k] = parseInt(data[k]) || 5);
+    
+    // Mapeamento para retrocompatibilidade
+    data.mood = data.tqr;
+    data.energy = data.tqr;
+
+    // Busca o aluno para obter o trainer_id para RLS do Supabase
+    const student = await db.get('students', data.studentId);
+    if (student) {
+      const tId = student.trainerId || student.trainer_id;
+      if (tId) {
+        data.trainerId = tId;
+        data.trainer_id = tId;
+      }
+    }
+
     await db.add('biofeedback', data);
     e.target.classList.add('hidden');
     document.getElementById('preSuccess')?.classList.remove('hidden');
@@ -103,6 +125,14 @@ export async function renderPostForm(sessionId) {
               <div class="text-muted text-sm">${session.workoutName || 'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
             </div>
           </div>
+
+          <!-- Google Forms Alternativo -->
+          <div style="margin-bottom: 20px; border-left: 3px solid var(--primary); background: rgba(16,185,129,0.04); border-radius: var(--radius-md); padding: 12px 16px; border: 1px solid var(--border-color); border-left-width: 3px;">
+            <strong style="font-size: 0.85rem; color: var(--primary);">📋 Google Forms Oficial</strong>
+            <p class="text-xs text-muted" style="margin-top: 4px; line-height: 1.4;">Se preferir, você também pode responder pelo formulário oficial do Google Forms:</p>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSdeAD_1ZV_sS-97dexYBp3vprSJOYYklU1ArgtxhDtUX28Qlg/viewform?usp=header" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%; text-align: center; margin-top: 10px; font-size: 0.78rem;">Responder pelo Google Forms</a>
+          </div>
+
           <form id="postStudentForm">
             <input type="hidden" name="sessionId" value="${sessionId}" />
             <div class="form-group" style="margin-bottom:20px">
@@ -133,7 +163,7 @@ export async function renderPostForm(sessionId) {
             </div>
             <div class="form-group">
               <label class="form-label">Observações</label>
-              <textarea class="form-textarea" name="notes" rows="3" placeholder="Como se sentiu durante o treino? Algum exercício causou desconforto?"></textarea>
+              <textarea class="form-textarea" name="notes" rows="3" placeholder="Como se sentiu durante o treino? Algum exercício causou desconforto?">${session.notes || ''}</textarea>
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%;padding:16px;font-size:1rem;margin-top:12px">Enviar Pós-Treino</button>
           </form>
@@ -156,6 +186,10 @@ export function initPostForm() {
     const session = await db.get('sessions', data.sessionId);
 
     if (session) {
+      // Busca o aluno para obter o trainer_id para RLS do Supabase
+      const student = await db.get('students', session.studentId);
+      const tId = student ? (student.trainerId || student.trainer_id) : null;
+
       session.postBiofeedback = {
         pse: parseInt(data.pse) || 7,
         satisfaction: parseInt(data.satisfaction) || 8,
@@ -165,12 +199,17 @@ export function initPostForm() {
         submittedByStudent: true,
         submittedAt: new Date().toISOString(),
       };
+      if (tId) {
+        session.trainerId = tId;
+        session.trainer_id = tId;
+      }
       await db.put('sessions', session);
 
       if (session.studentId) {
         const dur = session.totalDuration ? Math.round(session.totalDuration / 60) : 60;
         const pse = parseInt(data.pse) || 7;
-        await db.add('biofeedback', {
+        
+        const bfEntry = {
           studentId: session.studentId,
           date: session.date || new Date().toISOString(),
           pse, duration: dur,
@@ -180,7 +219,12 @@ export function initPostForm() {
           notes: data.notes,
           formType: 'post',
           sessionId: data.sessionId,
-        });
+        };
+        if (tId) {
+          bfEntry.trainerId = tId;
+          bfEntry.trainer_id = tId;
+        }
+        await db.add('biofeedback', bfEntry);
       }
     }
 

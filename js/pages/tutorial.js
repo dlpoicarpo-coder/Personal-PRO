@@ -135,6 +135,31 @@ const TUTORIALS = [
     ]
   },
   {
+    section: 'Biblioteca de Modelos & Financeiro',
+    icon: '📚',
+    items: [
+      {
+        title: 'Criar seus próprios Modelos de Treino',
+        steps: [
+          'Acesse <strong>Exercícios</strong> e vá na aba <strong>Meus Modelos</strong>',
+          'Clique em <strong>+ Novo Modelo</strong>',
+          'Monte o template com exercícios, cargas e intervalos',
+          'Ao salvar, ele ficará disponível para uso rápido na criação de Fichas e Macrociclos',
+        ],
+        tip: 'Você pode visualizar ou editar seus modelos criados a qualquer momento.'
+      },
+      {
+        title: 'Cálculo de Custo por Sessão (Financeiro)',
+        steps: [
+          'No cadastro do aluno, defina as <strong>Sessões Esperadas (Mês)</strong> e a <strong>Mensalidade</strong>',
+          'Na aba <strong>Financeiro</strong>, o sistema calculará automaticamente o <strong>Custo/sessão</strong> (Mensalidade ÷ Sessões Esperadas)',
+          'Veja o <strong>Valor proporcional</strong> gerado pelas sessões efetivamente realizadas no mês',
+        ],
+        tip: 'Isso ajuda a ter controle exato da rentabilidade de cada aluno por treino executado.'
+      },
+    ]
+  },
+  {
     section: 'Relatórios & Dossiê',
     icon: '📋',
     items: [

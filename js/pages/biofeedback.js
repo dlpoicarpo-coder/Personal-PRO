@@ -11,6 +11,7 @@ import { sendWhatsApp, preFormMsg } from '../utils/whatsapp.js';
 
 const ICON_DEL = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
 const ICON_WA  = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+const ICON_EYE = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
 function colorForVal(val, inverse) {
   if (val == null) return 'var(--text-muted)';
@@ -164,6 +165,7 @@ function renderBfContent(entries, students, filterStudentId) {
           <thead><tr>
             <th>Data</th>
             ${!student ? '<th>Aluno</th>' : ''}
+            <th>Ciclo</th>
             <th>Sono</th><th>TQR</th><th>Estresse</th><th>Dor</th>
             <th>PSE</th><th>Carga</th><th>Status</th><th>Recomendação</th><th></th>
           </tr></thead>
@@ -174,6 +176,7 @@ function renderBfContent(entries, students, filterStudentId) {
             const painLabel = Array.isArray(e.painRegions) && e.painRegions.length > 0
               ? e.painRegions.slice(0,2).join(', ') + (e.painRegions.length > 2 ? ` +${e.painRegions.length-2}` : '')
               : e.painRegion || '';
+            const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
             return `<tr>
               <td style="font-size:0.8rem;white-space:nowrap">${Calc.formatDate(e.date)}</td>
               ${!student ? `<td>
@@ -182,9 +185,9 @@ function renderBfContent(entries, students, filterStudentId) {
                   <span style="font-size:0.82rem">${st?.name||'?'}</span>
                 </div>
               </td>` : ''}
+              <td style="font-size:0.8rem;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis" title="${e.cycle || 'Geral'}"><strong>${e.cycle || 'Geral'}</strong></td>
               <td style="font-weight:600;color:${colorForVal(e.sleep,false)}">${e.sleep||'-'}</td>
-              <td style="color:${colorForVal(e.mood,false)}">${e.mood||'-'}</td>
-              <td style="color:${colorForVal(e.energy,false)}">${e.energy||'-'}</td>
+              <td style="color:${colorForVal(e.tqr ?? e.energy,false)}">${e.tqr ?? e.energy ?? '-'}</td>
               <td style="font-weight:600;color:${colorForVal(e.stress,true)}">${e.stress||'-'}</td>
               <td style="color:${colorForVal(e.pain,true)}">
                 ${e.pain||'-'}
@@ -196,6 +199,8 @@ function renderBfContent(entries, students, filterStudentId) {
               <td style="font-size:0.75rem;color:var(--text-muted);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${rec.label}</td>
               <td>
                 <div style="display:flex;gap:3px">
+                  <button class="btn btn-ghost btn-sm view-bf" data-id="${e.id}" title="Visualizar" style="padding:4px 5px;color:var(--accent)">${ICON_EYE}</button>
+                  <button class="btn btn-ghost btn-sm edit-bf" data-id="${e.id}" title="Editar" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
                   ${st?.phone ? `<button class="btn btn-ghost btn-sm wa-bf" data-student="${e.studentId}" title="WhatsApp" style="padding:4px 5px;color:#25d366">${ICON_WA}</button>` : ''}
                   <button class="btn btn-ghost btn-sm delete-bf" data-id="${e.id}" title="Excluir" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
                 </div>
@@ -345,6 +350,257 @@ export function initBiofeedback(navigateFn) {
 }
 
 function bindBfActions(navigateFn, studentsCache) {
+  document.querySelectorAll('.view-bf').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const entry = await db.get('biofeedback', btn.dataset.id);
+      if (!entry) return;
+      
+      const st = studentsCache
+        ? studentsCache.find(s => s.id === entry.studentId)
+        : await db.get('students', entry.studentId);
+        
+      const status = overallStatus(entry);
+      const rec = trainingRecommendation(entry);
+      const painLabel = Array.isArray(entry.painRegions) && entry.painRegions.length > 0
+        ? entry.painRegions.map(r => PAIN_REGIONS.find(pr => pr.id === r)?.label || r).join(', ')
+        : entry.painRegion || 'Nenhuma';
+
+      const html = `
+        <div class="flex items-center gap-md mb-lg">
+          <div class="avatar">${st ? st.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+          <div>
+            <h3 style="margin:0">${st?.name || 'Aluno'}</h3>
+            <p class="text-muted text-xs">Registro em ${Calc.formatDate(entry.date)}</p>
+          </div>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">
+          <div style="padding:10px;background:var(--bg-page);border-radius:8px;border:1px solid var(--border-color)">
+            <div class="text-xs text-muted">STATUS GERAL</div>
+            <div style="font-size:1.1rem;font-weight:700;color:var(--${status.color});margin-top:2px">${status.icon} ${status.label}</div>
+          </div>
+          <div style="padding:10px;background:var(--bg-page);border-radius:8px;border:1px solid var(--border-color)">
+            <div class="text-xs text-muted">CARGA ACUMULADA</div>
+            <div style="font-size:1.1rem;font-weight:700;color:var(--primary);margin-top:2px">${entry.trainingLoad || 0} (PSE × Duração)</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <h4 style="color:var(--primary);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border-color)">Indicadores de Bem-estar</h4>
+          
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">😴 Qualidade do Sono</span>
+            <strong>${entry.sleep || '—'}/10</strong>
+          </div>
+          
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">⚡ Recuperação (TQR)</span>
+            <strong>${(entry.tqr ?? entry.energy) || '—'}/10</strong>
+          </div>
+          
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">🧠 Nível de Estresse</span>
+            <strong>${entry.stress || '—'}/10</strong>
+          </div>
+          
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">🤕 Dor Corporal</span>
+            <strong>${entry.pain || '—'}/10</strong>
+          </div>
+
+          ${entry.pain >= 3 ? `
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+              <span class="text-muted">📍 Local da Dor</span>
+              <strong>${painLabel}</strong>
+            </div>
+            ${entry.painDescription ? `
+              <div style="padding:8px;background:rgba(245,158,11,0.05);border-radius:6px;margin-top:6px;font-size:0.82rem;color:var(--warning)">
+                <strong>Descrição da dor:</strong> ${entry.painDescription}
+              </div>
+            ` : ''}
+          ` : ''}
+        </div>
+
+        <div style="margin-bottom:16px">
+          <h4 style="color:var(--primary);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border-color)">Dados do Treino</h4>
+          
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">📈 Percepção de Esforço (PSE)</span>
+            <strong>${entry.pse || '—'}/10</strong>
+          </div>
+          
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">⏱ Duração do Treino</span>
+            <strong>${entry.duration || '—'} minutos</strong>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <h4 style="color:var(--primary);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border-color)">Recomendação Técnica</h4>
+          <p class="text-sm" style="line-height:1.6;color:var(--text-secondary)">${rec.label}</p>
+        </div>
+
+        ${entry.notes ? `
+          <div style="margin-bottom:16px">
+            <h4 style="color:var(--primary);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border-color)">Observações</h4>
+            <p class="text-sm" style="line-height:1.5">${entry.notes}</p>
+          </div>
+        ` : ''}
+      `;
+
+      openModal({
+        title: `Detalhes de Biofeedback`, size: 'md', content: html,
+        actions: [{ label: 'Fechar', class: 'btn-primary', onClick: () => closeModal() }]
+      });
+    });
+  });
+
+  document.querySelectorAll('.edit-bf').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const entry = await db.get('biofeedback', btn.dataset.id);
+      if (!entry) return;
+      
+      const st = studentsCache
+        ? studentsCache.find(s => s.id === entry.studentId)
+        : await db.get('students', entry.studentId);
+        
+      const pRegs = entry.painRegions || [];
+
+      openModal({
+        title: `Editar Biofeedback — ${st?.name || 'Aluno'}`, size: 'lg',
+        preventBackdropClose: true,
+        content: `<form id="editBfForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="${entry.date ? entry.date.slice(0,10) : new Date().toISOString().slice(0,10)}" />
+            </div>
+            <div class="form-group"><label class="form-label">Ciclo de Treino</label>
+              <input class="form-input" name="cycle" value="${entry.cycle || ''}" placeholder="Ex: Hipertrofia I, Geral" />
+            </div>
+          </div>
+          ${[
+            { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: entry.sleep || 5 },
+            { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5 },
+            { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5 },
+            { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: entry.pain || 1,
+              extra:`document.getElementById('editPainGrp').style.display=this.value>=3? 'block' : 'none'` },
+          ].map(f=>`
+            <div class="form-group" style="margin-bottom:14px">
+              <div class="flex items-center justify-between mb-xs">
+                <label class="form-label" style="margin:0">${f.label}</label>
+                <span style="font-size:1.2rem;font-weight:800;color:var(--primary)" id="editBfV_${f.id}">${f.val}</span>
+              </div>
+              <input type="range" name="${f.id}" min="1" max="10" value="${f.val}"
+                style="width:100%;accent-color:var(--primary)"
+                oninput="document.getElementById('editBfV_${f.id}').textContent=this.value;${f.extra||''}" />
+              <div class="flex justify-between text-xs text-muted mt-xs">
+                <span>${f.hint.split('·')[0].trim()}</span>
+                <span>${f.hint.split('·')[1]?.trim()||''}</span>
+              </div>
+            </div>`).join('')}
+          <div id="editPainGrp" style="display:${(entry.pain || 1) >= 3 ? 'block' : 'none'};margin-bottom:14px">
+            <label class="form-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+              ${PAIN_REGIONS.map(r=>`
+                <label class="edit-pain-chip" style="
+                  display:flex;align-items:center;gap:4px;padding:4px 10px;
+                  border:1px solid ${pRegs.includes(r.id) ? 'var(--primary)' : 'var(--border-color)'};
+                  background:${pRegs.includes(r.id) ? 'rgba(16,185,129,0.1)' : ''};
+                  color:${pRegs.includes(r.id) ? 'var(--primary)' : ''};
+                  border-radius:20px;
+                  cursor:pointer;font-size:0.78rem;transition:all 0.15s">
+                  <input type="checkbox" name="painRegions" value="${r.id}" ${pRegs.includes(r.id) ? 'checked' : ''} style="display:none" />
+                  ${r.label}
+                </label>`).join('')}
+            </div>
+            <div class="form-group mt-sm">
+              <input class="form-input" name="painDescription" value="${entry.painDescription || ''}" placeholder="Descrição da dor (opcional)..." />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">PSE — Esforço percebido no treino</label>
+              <div class="flex items-center gap-sm">
+                <input type="range" name="pse" min="1" max="10" value="${entry.pse || 7}"
+                  style="flex:1;accent-color:var(--primary)"
+                  oninput="document.getElementById('editBfVpse').textContent=this.value" />
+                <span id="editBfVpse" style="font-weight:800;color:var(--primary);min-width:20px">${entry.pse || 7}</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duração do treino (min)</label>
+              <input class="form-input" name="duration" type="number" value="${entry.duration || 60}" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Observações adicionais</label>
+            <textarea class="form-textarea" name="notes" rows="2" placeholder="Dores específicas, cansaço incomum...">${entry.notes || ''}</textarea>
+          </div>
+        </form>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
+            const fd = new FormData(document.getElementById('editBfForm'));
+            const pse = parseInt(fd.get('pse')) || 1;
+            const duration = parseInt(fd.get('duration')) || 0;
+            const trainingLoad = pse * duration;
+            const painVal = parseInt(fd.get('pain')) || 1;
+            
+            const selectedPainRegs = [];
+            document.querySelectorAll('#editPainGrp input[name="painRegions"]:checked').forEach(cb => {
+              selectedPainRegs.push(cb.value);
+            });
+
+            const updated = {
+              ...entry,
+              date: fd.get('date'),
+              cycle: fd.get('cycle'),
+              sleep: parseInt(fd.get('sleep')),
+              tqr: parseInt(fd.get('tqr')),
+              mood: parseInt(fd.get('tqr')),
+              energy: parseInt(fd.get('tqr')),
+              stress: parseInt(fd.get('stress')),
+              pain: painVal,
+              painRegions: selectedPainRegs,
+              painDescription: painVal >= 3 ? fd.get('painDescription') : '',
+              pse,
+              duration,
+              trainingLoad,
+              notes: fd.get('notes'),
+            };
+
+            await db.put('biofeedback', updated);
+            notify.success('Registro de biofeedback atualizado!');
+            closeModal();
+            navigateFn('/biofeedback');
+          }}
+        ]
+      });
+
+      // Bind edit-pain-chip toggling
+      setTimeout(() => {
+        document.querySelectorAll('.edit-pain-chip').forEach(tag => {
+          tag.addEventListener('click', (ev) => {
+            if (ev.target.tagName === 'INPUT') return;
+            const cb = tag.querySelector('input');
+            if (cb) {
+              cb.checked = !cb.checked;
+              tag.style.borderColor = cb.checked ? 'var(--primary)' : '';
+              tag.style.background  = cb.checked ? 'rgba(16,185,129,0.1)' : '';
+              tag.style.color       = cb.checked ? 'var(--primary)' : '';
+            }
+          });
+          tag.querySelector('input')?.addEventListener('change', (ev) => {
+            const cb = ev.target;
+            tag.style.borderColor = cb.checked ? 'var(--primary)' : '';
+            tag.style.background  = cb.checked ? 'rgba(16,185,129,0.1)' : '';
+            tag.style.color       = cb.checked ? 'var(--primary)' : '';
+          });
+        });
+      }, 100);
+    });
+  });
+
   document.querySelectorAll('.wa-bf').forEach(btn => {
     btn.addEventListener('click', async () => {
       const sid = btn.dataset.student;

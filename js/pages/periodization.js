@@ -403,6 +403,8 @@ export function initPeriodization(navigateFn) {
 
   document.getElementById('addMacroBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
+    const settings = await db.get('settings', 'trainer') || {};
+    const defaultWeeks = settings.defaultMacrocycleWeeks || 12;
     // Busca modelos personalizados da aba Exercícios → Meus Modelos (store cycles com isTemplate)
     const customCycles = (await db.getAll('cycles')).filter(c => c.isTemplate);
 
@@ -439,7 +441,7 @@ export function initPeriodization(navigateFn) {
         </div>`;
     }
 
-    const CAT_ORDER = ['Hipertrofia','Força','Emagrecimento','Funcional','Reabilitação','Cardio / Endurance'];
+    const CAT_ORDER = ['Iniciante', 'Intermediário', 'Avançado', 'Hipertrofia', 'Força', 'Emagrecimento', 'Funcional', 'Reabilitação', 'Cardio / Endurance'];
     const builtInHTML = CAT_ORDER
       .filter(cat => tplByCategory[cat]?.length)
       .map(cat => `
@@ -537,7 +539,7 @@ export function initPeriodization(navigateFn) {
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label">Duração (semanas)</label>
-                  <input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="12" />
+                  <input class="form-input" name="totalWeeks" type="number" min="4" max="52" value="${defaultWeeks}" />
                 </div>
                 <div class="form-group">
                   <label class="form-label">Deload a cada (sem)</label>

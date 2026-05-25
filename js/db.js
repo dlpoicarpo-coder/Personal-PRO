@@ -92,12 +92,27 @@ class Database {
     if (idx >= 0) localAll[idx] = item; else localAll.push(item);
     this._saveLocal(storeName, localAll);
 
-    if (!this.supabase) return item;
+    let trainerId = item.trainer_id || item.trainerId || null;
+    if (!trainerId && this.supabase) {
+      try {
+        const { data: { user } } = await this.supabase.auth.getUser();
+        if (user) {
+          trainerId = user.id;
+        }
+      } catch (err) {
+        console.warn('Erro ao obter trainerId para o payload do Supabase:', err);
+      }
+    }
 
     const payload = {
       id: item.id,
       data: item
     };
+    if (trainerId) {
+      payload.trainer_id = trainerId;
+      item.trainer_id = trainerId;
+      item.trainerId = trainerId;
+    }
 
     try {
       const { error } = await this.supabase

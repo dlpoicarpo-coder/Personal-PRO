@@ -183,6 +183,12 @@ function studentFormHTML(student = {}) {
           </select>
         </div>
         <div class="form-group">
+          <label class="form-label">Sessões Esperadas (Mês)</label>
+          <input class="form-input" name="expectedSessions" type="number" min="1" max="31" value="${student.expectedSessions || ''}" placeholder="Ex: 12" title="Número de sessões pagas/esperadas por mês para cálculo preciso de Custo da Sessão" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
           <label class="form-label">Horário Preferido</label>
           <select class="form-select" name="preferredTime">
             <option value="">Selecione</option>
@@ -312,14 +318,16 @@ async function viewStudentHTML(student) {
         <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos →</a>
       </div>
       ${bfData.length ? `<table class="data-table" style="font-size:0.82rem">
-        <thead><tr><th>Data</th><th>Sono</th><th>Disposição</th><th>Energia</th><th>Estresse</th><th>PSE</th></tr></thead>
+        <thead><tr><th>Data</th><th>Ciclo</th><th>Sono</th><th>TQR</th><th>Estresse</th><th>Dor</th><th>PSE</th><th>Carga</th></tr></thead>
         <tbody>${bfData.map(b => `<tr>
           <td>${Calc.formatDate(b.date)}</td>
+          <td><strong>${b.cycle || 'Geral'}</strong></td>
           <td style="color:${(b.sleep||0)<5?'var(--danger)':(b.sleep||0)<7?'var(--warning)':'var(--success)'}">${b.sleep||'-'}</td>
-          <td>${b.mood||'-'}</td>
-          <td>${b.energy||'-'}</td>
+          <td style="color:${(b.tqr ?? b.energy || 0)<5?'var(--danger)':(b.tqr ?? b.energy || 0)<7?'var(--warning)':'var(--success)'}">${b.tqr ?? b.energy ?? '-'}</td>
           <td style="color:${(b.stress||0)>=8?'var(--danger)':(b.stress||0)>=6?'var(--warning)':'inherit'}">${b.stress||'-'}</td>
+          <td style="color:${(b.pain||0)>=5?'var(--danger)':(b.pain||0)>=3?'var(--warning)':'inherit'}">${b.pain||'-'}</td>
           <td style="color:${(b.pse||0)>8?'var(--danger)':(b.pse||0)>6?'var(--warning)':'var(--success)'}"><strong>${b.pse||'-'}</strong></td>
+          <td>${b.trainingLoad||'-'}</td>
         </tr>`).join('')}</tbody></table>`
       : '<p class="text-muted text-sm">Nenhum registro de biofeedback</p>'}
     </div>

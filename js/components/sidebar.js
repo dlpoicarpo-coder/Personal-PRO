@@ -2,6 +2,7 @@
 // PERSONAL PRO — Sidebar Component (v4)
 // ========================================
 import { ICONS } from '../utils/icons.js';
+import db from '../db.js';
 
 const MENU_ITEMS = [
   { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', path: '/' },
@@ -104,10 +105,13 @@ export function initSidebar() {
 
   // LOGOUT
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
+    logoutBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
       if (window.confirm('Tem certeza que deseja sair do sistema?')) {
+        if (db.supabase) {
+          await db.supabase.auth.signOut();
+        }
         localStorage.removeItem('pp_session');
         const baseUrl = window.location.href.split('#')[0];
         window.location.href = baseUrl + '#/';

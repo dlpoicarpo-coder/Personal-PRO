@@ -257,9 +257,11 @@ export async function renderExercisesLibrary() {
                   <div style="font-weight:700">${t.name}</div>
                   ${t.goal?`<span class="badge badge-info" style="margin-top:3px">${t.goal}</span>`:''}
                 </div>
-                <div style="display:flex;gap:4px">
-                  <button class="btn btn-primary btn-sm apply-custom-tpl" data-id="${t.id}">Aplicar</button>
-                  <button class="btn btn-ghost btn-sm delete-custom-tpl" data-id="${t.id}" style="color:var(--danger);padding:4px 6px">${t.is_default ? "" : ICON_DEL}</button>
+                <div style="display:flex;gap:4px;flex-wrap:wrap">
+                  <button class="btn btn-primary btn-sm apply-custom-tpl" data-id="${t.id}" style="padding:4px 8px;font-size:0.75rem">Aplicar</button>
+                  <button class="btn btn-secondary btn-sm view-custom-tpl" data-id="${t.id}" style="padding:4px 8px;font-size:0.75rem">Ver</button>
+                  <button class="btn btn-ghost btn-sm edit-custom-tpl" data-id="${t.id}" style="padding:4px 6px;color:var(--text-muted)" title="Editar">${ICON_EDIT}</button>
+                  <button class="btn btn-ghost btn-sm delete-custom-tpl" data-id="${t.id}" style="color:var(--danger);padding:4px 6px" title="Excluir">${t.is_default ? "" : ICON_DEL}</button>
                 </div>
               </div>
               ${t.description?`<p class="text-xs text-muted mb-sm">${t.description}</p>`:''}
@@ -533,6 +535,134 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
+  // Ver meu modelo personalizado
+  document.querySelectorAll('.view-custom-tpl').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tpl = await db.get('cycles', btn.dataset.id);
+      if (!tpl) return;
+      openModal({
+        title: tpl.name, size: 'lg',
+        content: `
+          <div class="flex gap-sm mb-md">${tpl.goal?`<span class="badge badge-success">${tpl.goal}</span>`:''}</div>
+          ${tpl.description?`<p class="text-sm text-muted mb-lg">${tpl.description}</p>`:''}
+          ${(tpl.workouts||[]).map(w=>`
+            <div style="margin-bottom:16px">
+              <h4 style="margin-bottom:8px;color:var(--primary)">${w.name}</h4>
+              <div class="table-container">
+                <table class="data-table" style="font-size:0.8rem">
+                  <thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Desc.</th><th>Método</th></tr></thead>
+                  <tbody>${(w.exercises||[]).map(e=>`<tr><td>${e.name}</td><td>${e.sets||3}</td><td>${e.reps||'12'}</td><td>${e.rest||'60'}s</td><td>${e.method||'-'}</td></tr>`).join('')}</tbody>
+                </table>
+              </div>
+            </div>`).join('')}`,
+        actions: [
+          { label: 'Fechar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Aplicar a Aluno', class: 'btn-primary', onClick: () => { closeModal(); showApplyTemplateModal(tpl, navigateFn); }}
+        ]
+      });
+    });
+  });
+
+  // Editar meu modelo personalizado
+  document.querySelectorAll('.edit-custom-tpl').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tpl = await db.get('cycles', btn.dataset.id);
+      if (!tpl) return;
+      const allEx  = await db.getAll('exercises');
+      const allMet = await db.getAll('methods');
+      let wkCount  = tpl.workouts ? tpl.workouts.length : 0;
+      
+      const workoutsHTML = tpl.workouts && tpl.workouts.length
+        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, allMet, w)).join('')
+        : buildTplWorkoutHTML(0, allMet);
+
+      openModal({
+        title: 'Editar Modelo de Treino', size: 'xl',
+        preventBackdropClose: true,
+        content: `<form id="editCustomTplForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Nome do Modelo *</label>
+              <input class="form-input" name="name" value="${tpl.name}" required placeholder="Ex: Full Body 3x/sem Hipertrofia" />
+            </div>
+            <div class="form-group"><label class="form-label">Objetivo</label>
+              <select class="form-select" name="goal">
+                ${['Hipertrofia','Força','Emagrecimento','Condicionamento','Resistência','Performance','Reabilitação','Funcional']
+                  .map(g => `<option ${tpl.goal===g?'selected':''}>${g}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Descrição</label>
+            <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem é indicado, observações...">${tpl.description||''}</textarea>
+          </div>
+          <div id="tplWorkoutsEdit">
+            ${workoutsHTML}
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm mt-sm" id="addTplWorkoutEdit">+ Adicionar Treino</button>
+          <datalist id="tplExList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>
+        </form>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
+            const fd = new FormData(document.getElementById('editCustomTplForm'));
+            const name = fd.get('name');
+            if (!name) { notify.error('Nome obrigatório'); return; }
+            const workouts = [];
+            document.querySelectorAll('#tplWorkoutsEdit .tpl-workout').forEach(wkEl => {
+              const wi = wkEl.dataset.wi;
+              const exercises = [];
+              wkEl.querySelectorAll('.tpl-ex-row').forEach(exEl => {
+                const ei = exEl.dataset.ei;
+                const n  = fd.get(`wk_${wi}_ex_${ei}`);
+                if (n) exercises.push({
+                  name: n, sets: parseInt(fd.get(`wk_${wi}_sets_${ei}`))||3,
+                  reps: fd.get(`wk_${wi}_reps_${ei}`)||'12',
+                  rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
+                  method: fd.get(`wk_${wi}_method_${ei}`)||'', load:'',
+                });
+              });
+              const wn = fd.get(`wk_name_${wi}`) || `Treino ${parseInt(wi)+1}`;
+              if (exercises.length) workouts.push({ name: wn, exercises });
+            });
+            await db.put('cycles', { ...tpl, name, goal: fd.get('goal'), description: fd.get('description'), workouts, daysPerWeek: workouts.length });
+            notify.success('Modelo atualizado!'); closeModal(); navigateFn('/exercicios');
+          }}
+        ]
+      });
+
+      setTimeout(() => {
+        document.getElementById('addTplWorkoutEdit')?.addEventListener('click', () => {
+          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet));
+          bindTplEventsEdit(allMet);
+        });
+        bindTplEventsEdit(allMet);
+      }, 100);
+    });
+  });
+
+  // Helper bindings for editing
+  function bindTplEventsEdit(allMethods = []) {
+    document.querySelectorAll('#tplWorkoutsEdit .add-tpl-ex').forEach(btn => {
+      btn.onclick = () => {
+        const wi  = btn.dataset.wi;
+        const cnt = document.querySelector(`#tplWorkoutsEdit .tpl-exercises[data-wi="${wi}"]`);
+        if (!cnt) return;
+        const ei  = cnt.querySelectorAll('.tpl-ex-row').length;
+        cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods));
+        bindRemoveTplExEdit();
+      };
+    });
+    document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-workout').forEach(btn => {
+      btn.onclick = () => btn.closest('.tpl-workout')?.remove();
+    });
+    bindRemoveTplExEdit();
+  }
+
+  function bindRemoveTplExEdit() {
+    document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-ex').forEach(btn => {
+      btn.onclick = () => btn.closest('.tpl-ex-row')?.remove();
+    });
+  }
+
   // Novo modelo personalizado
   const openCustomTpl = async () => {
     const allEx  = await db.getAll('exercises');
@@ -603,30 +733,41 @@ export function initExercisesLibrary(navigateFn) {
   document.getElementById('addCustomTplBtnEmpty')?.addEventListener('click', openCustomTpl);
 }
 
-function buildTplWorkoutHTML(wi, allMethods = []) {
+function buildTplWorkoutHTML(wi, allMethods = [], wk = null) {
+  const nameVal = wk ? wk.name : '';
+  const exercisesHTML = wk && wk.exercises && wk.exercises.length
+    ? wk.exercises.map((e, ei) => buildTplExRowHTML(wi, ei, allMethods, e)).join('')
+    : buildTplExRowHTML(wi, 0, allMethods);
+  
   return `
     <div class="card mb-md tpl-workout" data-wi="${wi}" style="border:1px solid var(--border-active)">
       <div class="card-header">
-        <input class="form-input" name="wk_name_${wi}" placeholder="Nome do Treino (ex: Treino A — Peito/Tríceps)" style="font-weight:600;flex:1" />
+        <input class="form-input" name="wk_name_${wi}" value="${nameVal}" placeholder="Nome do Treino (ex: Treino A — Peito/Tríceps)" style="font-weight:600;flex:1" />
         <button type="button" class="btn btn-ghost btn-sm rm-tpl-workout" style="color:var(--danger);margin-left:8px;white-space:nowrap">Remover</button>
       </div>
       <div class="tpl-exercises" data-wi="${wi}">
-        ${buildTplExRowHTML(wi, 0, allMethods)}
+        ${exercisesHTML}
       </div>
       <button type="button" class="btn btn-ghost btn-sm add-tpl-ex mt-xs" data-wi="${wi}">+ Exercício</button>
     </div>`;
 }
 
-function buildTplExRowHTML(wi, ei, allMethods = []) {
+function buildTplExRowHTML(wi, ei, allMethods = [], ex = null) {
+  const nameVal = ex ? ex.name : '';
+  const setsVal = ex && ex.sets !== undefined ? ex.sets : 3;
+  const repsVal = ex && ex.reps !== undefined ? ex.reps : '12';
+  const restVal = ex && ex.rest !== undefined ? ex.rest : '60';
+  const methodVal = ex ? ex.method : '';
+  
   return `
     <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-ei="${ei}" style="flex-wrap:wrap">
-      <input class="form-input" name="wk_${wi}_ex_${ei}" list="tplExList" placeholder="Exercício" style="flex:2;min-width:150px;font-size:0.82rem" />
-      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="3" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" />
-      <input class="form-input" name="wk_${wi}_reps_${ei}" value="12" style="width:60px;text-align:center;font-size:0.82rem" title="Reps/Tempo" />
-      <input class="form-input" name="wk_${wi}_rest_${ei}" value="60" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" />
+      <input class="form-input" name="wk_${wi}_ex_${ei}" value="${nameVal}" list="tplExList" placeholder="Exercício" style="flex:2;min-width:150px;font-size:0.82rem" />
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" />
+      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Reps/Tempo" />
+      <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" />
       <select class="form-select" name="wk_${wi}_method_${ei}" style="width:120px;font-size:0.75rem">
         <option value="">— Método —</option>
-        ${allMethods.map(m=>`<option value="${m.name}">${m.name}</option>`).join('')}
+        ${allMethods.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''}>${m.name}</option>`).join('')}
       </select>
       <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">✕</button>
     </div>`;

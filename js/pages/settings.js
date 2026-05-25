@@ -39,6 +39,10 @@ export async function renderSettings() {
             <label class="form-label">Email de Contato</label>
             <input class="form-input" name="trainerEmail" type="email" value="${settings.trainerEmail || ''}" placeholder="seu@email.com" />
           </div>
+          <div class="form-group">
+            <label class="form-label">Semanas padrão (Macrociclo)</label>
+            <input class="form-input" name="defaultMacrocycleWeeks" type="number" min="1" max="52" value="${settings.defaultMacrocycleWeeks || 12}" title="Duração padrão em semanas ao criar um novo macrociclo." />
+          </div>
           <button type="submit" class="btn btn-primary mt-md" style="width:100%">Salvar Perfil</button>
         </form>
       </div>
@@ -144,9 +148,12 @@ export function initSettings(navigateFn) {
   });
 
   // LOGOUT
-  document.getElementById('logoutSettingsBtn')?.addEventListener('click', (e) => {
+  document.getElementById('logoutSettingsBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
     if (window.confirm('Tem certeza que deseja sair da conta?')) {
+      if (db.supabase) {
+        await db.supabase.auth.signOut();
+      }
       localStorage.removeItem('pp_session');
       const baseUrl = window.location.href.split('#')[0];
       window.location.href = baseUrl + '#/';

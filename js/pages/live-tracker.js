@@ -809,6 +809,11 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
   const setLog = session.setLog||[];
   const ini    = (student?.name||'?').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase();
 
+  const pse = session.postBiofeedback?.pse || 7;
+  const cargaTotal = Math.round(pse * durMin);
+  const peso = student?.weight || session?.studentWeight || (session?.preBiofeedback?.peso) || 70;
+  const kcalEst = Calc.caloriasAtividade(peso, durMin, 'musculacao');
+
   const exRows = exs.map((ex,i) => {
     const sets = setLog.filter(l=>l.exIdx===i);
     if (!sets.length) return `<tr style="opacity:0.4"><td colspan="7">${ex.name} — não realizado</td></tr>`;
@@ -862,17 +867,18 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
             <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR')}</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
           ${[
-            ['Duração',      durMin+'min',                           'var(--primary)'],
-            ['Volume',       Math.round(session.totalVolume||0)+'kg','var(--primary)'],
-            ['Séries',       String(session.totalSets||0),           'var(--primary)'],
-            ['TQR Entrada',  String((session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || '—'),'var(--accent)'],
+            ['Duração',      durMin+' min',                           '#3b82f6', 'rgba(59,130,246,0.08)'],
+            ['Volume',       Math.round(session.totalVolume||0)+' kg','#10b981', 'rgba(16,185,129,0.08)'],
+            ['Carga Total',  String(cargaTotal),                      '#f59e0b', 'rgba(245,158,11,0.08)'],
+            ['Séries',       String(session.totalSets||0),            '#8b5cf6', 'rgba(139,92,246,0.08)'],
             ['PSE Final',    String(session.postBiofeedback?.pse||'—'),
-              (session.postBiofeedback?.pse||0)>8?'var(--danger)':(session.postBiofeedback?.pse||0)>6?'var(--warning)':'var(--success)'],
-            ['Satisfação',   String(session.postBiofeedback?.satisfaction||'—')+'★','var(--accent)'],
-          ].map(([l,v,c])=>`
-            <div style="text-align:center;padding:10px;background:var(--bg-card);border-radius:8px">
+              (session.postBiofeedback?.pse||0)>8?'#ef4444':(session.postBiofeedback?.pse||0)>6?'#f59e0b':'#10b981',
+              (session.postBiofeedback?.pse||0)>8?'rgba(239,68,68,0.08)':(session.postBiofeedback?.pse||0)>6?'rgba(245,158,11,0.08)':'rgba(16,185,129,0.08)'],
+            ['Gasto Kcal',   kcalEst+' kcal',                         '#06b6d4', 'rgba(6,182,212,0.08)'],
+          ].map(([l,v,c,bg])=>`
+            <div style="text-align:center;padding:10px;background:${bg};border:1px solid ${c}33;border-radius:8px">
               <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">${l}</div>
               <div style="font-size:1.2rem;font-weight:700;color:${c};margin-top:2px">${v}</div>
             </div>`).join('')}
@@ -934,12 +940,36 @@ function generateSessionPDF(session, student) {
     doc.setTextColor(...mu);
     doc.text(session.workoutName||'Treino',14,42);
 
-    let bx=14;
-    [[`Duração`,durMin+' min'],[`Volume`,(session.totalVolume||0)+' kg'],[`Séries`,String(session.totalSets||0)],[`PSE`,String(session.postBiofeedback?.pse||'-')],[`Densidade`,(session.density||0).toFixed(2)]].forEach(([l,v])=>{
-      doc.setFillColor(...li); doc.roundedRect(bx,48,36,16,2,2,'F');
-      doc.setTextColor(...mu); doc.setFontSize(6.5); doc.text(l.toUpperCase(),bx+18,53,{align:'center'});
-      doc.setTextColor(...g); doc.setFontSize(11); doc.setFont('helvetica','bold');
-      doc.text(v,bx+18,60,{align:'center'}); doc.setFont('helvetica','normal'); bx+=39;
+    const pse = session.postBiofeedback?.pse || 7;
+    const cargaTotal = Math.round(pse * durMin);
+    const peso = student?.weight || session?.studentWeight || (session?.preBiofeedback?.peso) || 70;
+    const kcalEst = Calc.caloriasAtividade(peso, durMin, 'musculacao');
+
+    const cards = [
+      { label: 'DURAÇÃO', value: durMin + ' min', bg: [239, 246, 255], accent: [59, 130, 246] },
+      { label: 'VOLUME', value: (session.totalVolume || 0) + ' kg', bg: [240, 253, 248], accent: [16, 185, 129] },
+      { label: 'CARGA TOTAL', value: String(cargaTotal), bg: [254, 243, 199], accent: [245, 158, 11] },
+      { label: 'SÉRIES', value: String(session.totalSets || 0), bg: [245, 243, 255], accent: [139, 92, 246] },
+      { label: 'PSE', value: String(session.postBiofeedback?.pse || '-'), bg: [254, 226, 226], accent: [239, 68, 68] },
+      { label: 'EST. KCAL', value: kcalEst + ' kcal', bg: [224, 242, 254], accent: [2, 132, 199] },
+    ];
+
+    let bx = 14;
+    cards.forEach(card => {
+      doc.setFillColor(...card.bg);
+      doc.roundedRect(bx, 48, 28, 16, 2, 2, 'F');
+      
+      doc.setTextColor(100, 116, 139); // Slate-500 for secondary label
+      doc.setFontSize(5.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(card.label, bx + 14, 53, { align: 'center' });
+      
+      doc.setTextColor(...card.accent);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(card.value, bx + 14, 60, { align: 'center' });
+      
+      bx += 31; // 28 width + 3 gap = 31
     });
 
     let y=74;
