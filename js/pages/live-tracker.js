@@ -970,9 +970,9 @@ function editSessionSummaryModal(session, student, navigateFn) {
           
           let totalVol = 0;
           (session.setLog || []).forEach((s, i) => {
-            s.reps = parseInt(fd.get(\`set_\${i}_reps\`)) || 0;
-            s.load = parseFloat(fd.get(\`set_\${i}_load\`)) || 0;
-            s.restDuration = parseInt(fd.get(\`set_\${i}_rest\`)) || 0;
+            s.reps = parseInt(fd.get(`set_${i}_reps`)) || 0;
+            s.load = parseFloat(fd.get(`set_${i}_load`)) || 0;
+            s.restDuration = parseInt(fd.get(`set_${i}_rest`)) || 0;
             totalVol += (s.reps * s.load);
           });
           
