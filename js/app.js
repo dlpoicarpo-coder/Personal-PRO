@@ -64,11 +64,23 @@ export async function navigateTo(path) {
     return;
   }
   if (path.startsWith('/portal/')) {
+    // Inject custom PWA Mobile student portal stylesheet
+    if (!document.getElementById('studentPortalStylesheet')) {
+      const link = document.createElement('link');
+      link.id = 'studentPortalStylesheet';
+      link.rel = 'stylesheet';
+      link.href = 'css/student-portal.css';
+      document.head.appendChild(link);
+    }
     const rawParam = path.split('/portal/')[1];
     appContainer.className = '';
     appContainer.innerHTML = await renderStudentPortal(rawParam);
     initStudentPortal();
     return;
+  } else {
+    // Remove student portal stylesheet if on trainer routes
+    const link = document.getElementById('studentPortalStylesheet');
+    if (link) link.remove();
   }
 
   // 1. Auth check

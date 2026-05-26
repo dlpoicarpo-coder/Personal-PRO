@@ -617,6 +617,18 @@ export function initPeriodization(navigateFn) {
               <div id="tplExerciseLoads"></div>
             </div>
           </div>
+
+          <!-- Planejamento de Cargas e Fases Semana a Semana -->
+          <div style="grid-column: span 2; border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 8px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="display:inline-block;width:3px;height:16px;background:var(--accent);border-radius:2px"></span>
+              <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Planejamento de Fases e Cargas Semana a Semana</span>
+            </div>
+            <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">Ajuste os blocos de treinamento, fases, intensidades %, volumes % e repetições de cada semana antes de gerar os treinos.</p>
+            <div id="weeklyPlanGrid" style="max-height: 280px; overflow-y: auto; background: var(--bg-page); border-radius: 8px; border: 1px solid var(--border-color); padding: 8px;">
+              <!-- Preenchido dinamicamente -->
+            </div>
+          </div>
         </div>
 
         <datalist id="tplExList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>
@@ -680,8 +692,25 @@ export function initPeriodization(navigateFn) {
               return;
             }
 
-            // Gerar plano semanal interno (não depende de generateWeeklyPlan)
-            d.weeks = generateInternalWeeklyPlan(d.type, d.totalWeeks, d.deloadEvery);
+            // Obter plano semanal ajustado no grid pelo treinador
+            const weeks = [];
+            const weekRows = document.querySelectorAll('#weeklyPlanGrid .week-row');
+            weekRows.forEach(row => {
+              const weekNum = parseInt(row.dataset.week);
+              const phase = row.querySelector('.week-phase').value;
+              const intensityPct = parseInt(row.querySelector('.week-intensity').value) || 70;
+              const volumePct = parseInt(row.querySelector('.week-volume').value) || 70;
+              const repsRange = row.querySelector('.week-reps').value || '10-12';
+              weeks.push({
+                week: weekNum,
+                phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
+                label: `Semana ${weekNum} — ${phase}`,
+                intensityPct,
+                volumePct,
+                repsRange
+              });
+            });
+            d.weeks = weeks;
 
             const allExercises = sessions.flatMap(s => s.exercises);
 
@@ -856,6 +885,77 @@ export function initPeriodization(navigateFn) {
     };
 
     setTimeout(() => {
+      // ── GERADOR DE GRID SEMANAL INTERATIVO ──
+      const renderWeeklyPlanGrid = () => {
+        const typeSelect = document.querySelector('#macroForm [name="type"]');
+        const type = typeSelect ? typeSelect.value : 'linear';
+        const totalWeeksInput = document.querySelector('#macroForm [name="totalWeeks"]');
+        const totalWeeks = totalWeeksInput ? (parseInt(totalWeeksInput.value) || 12) : 12;
+        const deloadInput = document.querySelector('#macroForm [name="deloadEvery"]');
+        const deloadEvery = deloadInput ? (parseInt(deloadInput.value) || 0) : 0;
+
+        const baseWeeks = generateInternalWeeklyPlan(type, totalWeeks, deloadEvery);
+        const gridContainer = document.getElementById('weeklyPlanGrid');
+        if (!gridContainer) return;
+
+        const phases = ['Adaptação', 'Hipertrofia', 'Força', 'Pico/RML', 'Deload', 'Resistência', 'Aeróbico', 'Cardio HIIT'];
+
+        let html = `
+          <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%">
+            <thead>
+              <tr style="background:var(--bg-card)">
+                <th style="width:70px; padding:6px">Semana</th>
+                <th style="padding:6px">Fase / Trabalho Principal</th>
+                <th style="width:100px; padding:6px">Intensidade %</th>
+                <th style="width:100px; padding:6px">Volume %</th>
+                <th style="width:110px; padding:6px">Repetições</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        baseWeeks.forEach(w => {
+          html += `
+            <tr class="week-row" data-week="${w.week}">
+              <td style="padding:6px"><strong>Sem ${w.week}</strong></td>
+              <td style="padding:6px">
+                <select class="form-select week-phase" style="padding:4px 6px; font-size:0.75rem; width:100%; height:auto; background:var(--bg-card)">
+                  ${phases.map(p => {
+                    const selected = w.phase.toLowerCase().includes(p.toLowerCase().substring(0, 4)) || 
+                                     (p === 'Deload' && w.phase === 'deload');
+                    return `<option value="${p}" ${selected ? 'selected' : ''}>${p}</option>`;
+                  }).join('')}
+                </select>
+              </td>
+              <td style="padding:6px">
+                <input class="form-input week-intensity" type="number" min="30" max="100" value="${w.intensityPct}" style="padding:4px 6px; font-size:0.75rem; text-align:center; width:100%; height:auto; background:var(--bg-card)" />
+              </td>
+              <td style="padding:6px">
+                <input class="form-input week-volume" type="number" min="10" max="100" value="${w.volumePct}" style="padding:4px 6px; font-size:0.75rem; text-align:center; width:100%; height:auto; background:var(--bg-card)" />
+              </td>
+              <td style="padding:6px">
+                <input class="form-input week-reps" value="${w.repsRange}" style="padding:4px 6px; font-size:0.75rem; text-align:center; width:100%; height:auto; background:var(--bg-card)" />
+              </td>
+            </tr>
+          `;
+        });
+
+        html += `
+            </tbody>
+          </table>
+        `;
+
+        gridContainer.innerHTML = html;
+      };
+
+      // Bind events to update grid automatically
+      document.querySelector('#macroForm [name="type"]')?.addEventListener('change', renderWeeklyPlanGrid);
+      document.querySelector('#macroForm [name="totalWeeks"]')?.addEventListener('input', renderWeeklyPlanGrid);
+      document.querySelector('#macroForm [name="deloadEvery"]')?.addEventListener('input', renderWeeklyPlanGrid);
+
+      // Render initially
+      renderWeeklyPlanGrid();
+
       // Listener on student selection to load their force data if available
       document.querySelector('#macroForm [name="studentId"]')?.addEventListener('change', () => {
         if (selectedTemplate && selectedTemplate.id !== 'custom_builder') {

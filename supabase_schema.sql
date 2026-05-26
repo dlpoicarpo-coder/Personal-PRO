@@ -192,7 +192,7 @@ CREATE POLICY "assessments_delete" ON assessments FOR DELETE USING (auth.uid() =
 
 -- BIOFEEDBACK
 CREATE POLICY "biofeedback_select" ON biofeedback FOR SELECT USING (auth.uid() = trainer_id);
-CREATE POLICY "biofeedback_insert" ON biofeedback FOR INSERT WITH CHECK (auth.uid() = trainer_id);
+CREATE POLICY "biofeedback_insert" ON biofeedback FOR INSERT WITH CHECK (true);
 CREATE POLICY "biofeedback_update" ON biofeedback FOR UPDATE USING (auth.uid() = trainer_id);
 CREATE POLICY "biofeedback_delete" ON biofeedback FOR DELETE USING (auth.uid() = trainer_id);
 

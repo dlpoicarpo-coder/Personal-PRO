@@ -13,8 +13,12 @@ const ICON_WA = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" 
 const ICON_EYE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
 export async function renderStudents() {
-  const students = await db.getAll('students');
-  const sessions = await db.getAll('sessions');
+  const [students, sessions, settings] = await Promise.all([
+    db.getAll('students'),
+    db.getAll('sessions'),
+    db.get('settings', 'trainer').catch(() => ({}))
+  ]);
+  const trainerId = settings?.id || 'trainer';
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   // Enriquecer com dados de sessão
@@ -47,7 +51,7 @@ export async function renderStudents() {
     </div>
 
     <div id="studentsList">
-      ${enriched.length ? renderStudentCards(enriched) : `
+      ${enriched.length ? renderStudentCards(enriched, trainerId) : `
         <div class="empty-state">
           <div class="empty-icon">—</div>
           <h3>Nenhum aluno cadastrado</h3>
@@ -59,7 +63,7 @@ export async function renderStudents() {
   `;
 }
 
-function renderStudentCards(students) {
+function renderStudentCards(students, trainerId = 'trainer') {
   return `<div class="students-grid stagger-children">${students.map(s => {
     const initials = s.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
     const age = s.birthDate ? Calc.calcularIdade(s.birthDate) : s.age || null;
@@ -99,22 +103,26 @@ function renderStudentCards(students) {
         </div>
       </div>
 
-      <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px">
-        <button class="btn btn-ghost btn-sm view-student" data-id="${s.id}" title="Ver perfil" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px">
-          ${ICON_EYE} <span style="font-size:0.78rem">Ver</span>
+      <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm view-student" data-id="${s.id}" title="Ver perfil" style="flex:1;min-width:45px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px">
+          ${ICON_EYE} <span style="font-size:0.72rem">Ver</span>
         </button>
-        <button class="btn btn-ghost btn-sm edit-student" data-id="${s.id}" title="Editar" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px">
-          ${ICON_EDIT} <span style="font-size:0.78rem">Editar</span>
+        <button class="btn btn-ghost btn-sm edit-student" data-id="${s.id}" title="Editar" style="flex:1;min-width:45px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px">
+          ${ICON_EDIT} <span style="font-size:0.72rem">Editar</span>
         </button>
-        ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-ghost btn-sm" title="WhatsApp" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;color:#25d366;text-decoration:none">
-          ${ICON_WA} <span style="font-size:0.78rem">WA</span>
+        <a href="#/portal/${s.id}?t=${trainerId}" target="_blank" class="btn btn-ghost btn-sm" title="Portal do Aluno" style="flex:1;min-width:55px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--primary);text-decoration:none">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span style="font-size:0.72rem">Portal</span>
+        </a>
+        ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-ghost btn-sm" title="WhatsApp" style="flex:1;min-width:40px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:#25d366;text-decoration:none">
+          ${ICON_WA} <span style="font-size:0.72rem">WA</span>
         </a>` : ''}
-        <button class="btn btn-ghost btn-sm delete-student" data-id="${s.id}" title="Excluir" style="color:var(--danger);padding:6px 8px">
+        <button class="btn btn-ghost btn-sm delete-student" data-id="${s.id}" title="Excluir" style="color:var(--danger);padding:4px 6px">
           ${ICON_DELETE}
         </button>
       </div>
     </div>
-  `}).join('')}</div>`;
+    `}).join('')}</div>`;
 }
 
 function studentFormHTML(student = {}) {

@@ -301,7 +301,7 @@ export function initAnamneseForm(trainerId = '') {
           const { getSupabase } = await import('../utils/auth.js');
           const sb = getSupabase?.();
           if (sb) {
-            const { error } = await sb.from('anamnesis').insert([{ ...data, trainer_id: tid }]);
+            const { error } = await sb.from('anamneses').insert([{ ...data, trainer_id: tid }]);
             if (error) throw error;
           } else throw new Error('no sb');
         } catch {

@@ -25,6 +25,11 @@ class Database {
     }
   }
 
+  _getTableName(storeName) {
+    if (storeName === 'anamnesis') return 'anamneses';
+    return storeName;
+  }
+
   _saveLocal(storeName, items) {
     try {
       localStorage.setItem(`pp_${storeName}`, JSON.stringify(items));
@@ -39,7 +44,7 @@ class Database {
 
     try {
       const { data, error } = await this.supabase
-        .from(storeName)
+        .from(this._getTableName(storeName))
         .select('data')
         .eq('id', id)
         .single();
@@ -57,11 +62,11 @@ class Database {
 
   async getAll(storeName) {
     let localData = this._getLocal(storeName);
-    if (!this.supabase || !SUPABASE_TABLES.includes(storeName)) return localData;
+    if (!this.supabase || !SUPABASE_TABLES.includes(this._getTableName(storeName))) return localData;
 
     try {
       const { data, error } = await this.supabase
-        .from(storeName)
+        .from(this._getTableName(storeName))
         .select('data');
         
       if (error) {
@@ -94,11 +99,11 @@ class Database {
 
   async getAllForStudent(storeName, studentId, trainerId) {
     let localData = this._getLocal(storeName).filter(i => i.studentId === studentId);
-    if (!this.supabase || !SUPABASE_TABLES.includes(storeName)) return localData;
+    if (!this.supabase || !SUPABASE_TABLES.includes(this._getTableName(storeName))) return localData;
 
     try {
       let query = this.supabase
-        .from(storeName)
+        .from(this._getTableName(storeName))
         .select('data');
       
       // We can't easily filter by data->studentId in basic select without specific indexing,
@@ -174,7 +179,7 @@ class Database {
 
     try {
       const { error } = await this.supabase
-        .from(storeName)
+        .from(this._getTableName(storeName))
         .upsert(payload);
         
       if (error) {
@@ -200,7 +205,7 @@ class Database {
 
     try {
       const { error } = await this.supabase
-        .from(storeName)
+        .from(this._getTableName(storeName))
         .delete()
         .eq('id', id);
         
@@ -218,7 +223,7 @@ class Database {
 
     try {
       const { error } = await this.supabase
-        .from(storeName)
+        .from(this._getTableName(storeName))
         .delete()
         .not('id', 'is', null);
         
@@ -252,7 +257,7 @@ class Database {
 
     try {
       const { count, error } = await this.supabase
-        .from(storeName)
+        .from(this._getTableName(storeName))
         .select('id', { count: 'exact', head: true });
         
       if (error) {
