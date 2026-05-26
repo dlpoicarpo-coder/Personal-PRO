@@ -5,9 +5,15 @@ import { Calc } from '../utils/calculations.js';
 export async function checkNotifications() {
   const students = await db.getAll('students');
   const activeStudents = students.filter(s => s.status === 'Ativo');
+  const settings = await db.get('settings', 'trainer') || {};
+  const tz = settings.timezone || 'America/Sao_Paulo';
+  
+  // Calculate "now" based on timezone
+  const nowStr = new Date().toLocaleString("en-US", { timeZone: tz });
+  const now = new Date(nowStr);
+  const nowMs = now.getTime();
   
   const notifications = [];
-  const now = new Date();
   
   // 1. Avaliações Vencidas (mais de 90 dias)
   const assessments = await db.getAll('assessments');
@@ -16,21 +22,17 @@ export async function checkNotifications() {
     studentAsses.sort((a,b) => new Date(b.date) - new Date(a.date));
     const last = studentAsses[0];
     if (last) {
-      const days = (now - new Date(last.date)) / (1000 * 60 * 60 * 24);
+      const days = (nowMs - new Date(last.date).getTime()) / (1000 * 60 * 60 * 24);
       if (days > 90) {
         notifications.push({
-          type: 'warning',
-          icon: '📊',
-          title: 'Avaliação Vencida',
+          type: 'warning', icon: '📊', title: 'Avaliação Vencida',
           desc: `A última avaliação de <strong>${s.name}</strong> foi há ${Math.round(days)} dias.`,
           link: '#/avaliacoes'
         });
       }
     } else {
       notifications.push({
-        type: 'info',
-        icon: '📝',
-        title: 'Avaliação Pendente',
+        type: 'info', icon: '📝', title: 'Avaliação Pendente',
         desc: `<strong>${s.name}</strong> não possui nenhuma avaliação registrada.`,
         link: '#/avaliacoes'
       });
@@ -44,12 +46,102 @@ export async function checkNotifications() {
       const bDate = new Date(s.birthDate);
       if (bDate.getMonth() === currentMonth) {
         notifications.push({
-          type: 'success',
-          icon: '🎂',
-          title: 'Aniversariante do Mês',
+          type: 'success', icon: '🎂', title: 'Aniversariante do Mês',
           desc: `<strong>${s.name}</strong> faz aniversário este mês (dia ${bDate.getDate() + 1}).`,
           link: '#/alunos'
         });
+      }
+    }
+  });
+
+  // 3. Fim de Ciclo (Macrociclos)
+  const macros = await db.getAll('macrocycles');
+  activeStudents.forEach(s => {
+    const studentMacros = macros.filter(m => m.studentId === s.id && m.endDate);
+    studentMacros.forEach(m => {
+      const diffDays = (new Date(m.endDate).getTime() - nowMs) / (1000 * 60 * 60 * 24);
+      // Avisa se faltam 5 dias ou se terminou nos últimos 3 dias
+      if (diffDays <= 5 && diffDays >= -3) {
+        let msg = diffDays >= 0 ? `termina em ${Math.ceil(diffDays)} dia(s)` : `terminou há ${Math.abs(Math.floor(diffDays))} dia(s)`;
+        if (Math.ceil(diffDays) === 0) msg = 'termina hoje';
+        notifications.push({
+          type: 'warning', icon: '🔄', title: 'Fim de Macrociclo',
+          desc: `O macrociclo "<strong>${m.name}</strong>" de ${s.name} ${msg}.`,
+          link: '#/periodizacao'
+        });
+      }
+    });
+  });
+
+  // 4. Respostas da Anamnese
+  const anamneses = await db.getAll('anamneses');
+  anamneses.forEach(a => {
+    if (a.submittedAt) {
+      const diffDays = (nowMs - new Date(a.submittedAt).getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays <= 3 && diffDays >= 0) {
+        notifications.push({
+          type: 'info', icon: '📋', title: 'Nova Anamnese',
+          desc: `Nova resposta de anamnese recebida de <strong>${a.fullName}</strong>.`,
+          link: '#/anamnese'
+        });
+      }
+    }
+  });
+
+  // 5. Biofeedback (Pré e Pós Treino)
+  const biofeedbacks = await db.getAll('biofeedback');
+  biofeedbacks.forEach(b => {
+    const diffHours = (nowMs - new Date(b.date).getTime()) / (1000 * 60 * 60);
+    if (diffHours >= 0 && diffHours <= 24) {
+      const st = students.find(s => s.id === b.studentId);
+      if (!st) return;
+      if (b.formType === 'pre') {
+        const estresseAlert = b.stress >= 7 ? '<span style="color:var(--danger)"> (Estresse Alto)</span>' : '';
+        const painAlert = b.pain >= 7 ? '<span style="color:var(--danger)"> (Dor Alta)</span>' : '';
+        notifications.push({
+          type: 'info', icon: '🔋', title: 'Check-in Pré-treino',
+          desc: `<strong>${st.name}</strong> enviou check-in${estresseAlert}${painAlert}.`,
+          link: '#/treino-ao-vivo'
+        });
+      } else if (b.formType === 'post') {
+        notifications.push({
+          type: 'info', icon: '🥵', title: 'Biofeedback Pós-treino',
+          desc: `<strong>${st.name}</strong> reportou PSE ${b.pse || '-'} no último treino.`,
+          link: '#/relatorios'
+        });
+      }
+    }
+  });
+
+  // 6. Aulas / Agendamentos e Sessões
+  const schedules = await db.getAll('schedules');
+  const todayStr = now.toLocaleDateString("en-CA"); // YYYY-MM-DD local format
+  schedules.forEach(sch => {
+    if (sch.date === todayStr) {
+      const st = students.find(s => s.id === sch.studentId);
+      if (st) {
+        notifications.push({
+          type: 'info', icon: '📅', title: 'Aula Agendada Hoje',
+          desc: `Você tem aula agendada às <strong>${sch.time}</strong> com ${st.name}.`,
+          link: '#/agenda'
+        });
+      }
+    }
+  });
+
+  const sessions = await db.getAll('sessions');
+  sessions.forEach(sess => {
+    if (sess.status === 'completed') {
+      const diffHours = (nowMs - new Date(sess.date).getTime()) / (1000 * 60 * 60);
+      if (diffHours >= 0 && diffHours <= 24) {
+        const st = students.find(s => s.id === sess.studentId);
+        if (st) {
+          notifications.push({
+            type: 'success', icon: '🏆', title: 'Treino Concluído',
+            desc: `<strong>${st.name}</strong> concluiu o treino "${sess.workoutName || 'Sessão'}".`,
+            link: '#/treino-ao-vivo'
+          });
+        }
       }
     }
   });

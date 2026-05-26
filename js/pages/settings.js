@@ -43,6 +43,15 @@ export async function renderSettings() {
             <label class="form-label">Semanas padrão (Macrociclo)</label>
             <input class="form-input" name="defaultMacrocycleWeeks" type="number" min="1" max="52" value="${settings.defaultMacrocycleWeeks || 12}" title="Duração padrão em semanas ao criar um novo macrociclo." />
           </div>
+          <div class="form-group">
+            <label class="form-label">Fuso Horário</label>
+            <select class="form-select" name="timezone">
+              <option value="America/Sao_Paulo" ${settings.timezone === 'America/Sao_Paulo' || !settings.timezone ? 'selected' : ''}>Brasília (America/Sao_Paulo)</option>
+              <option value="America/Manaus" ${settings.timezone === 'America/Manaus' ? 'selected' : ''}>Manaus (America/Manaus)</option>
+              <option value="America/Rio_Branco" ${settings.timezone === 'America/Rio_Branco' ? 'selected' : ''}>Rio Branco (America/Rio_Branco)</option>
+              <option value="America/Noronha" ${settings.timezone === 'America/Noronha' ? 'selected' : ''}>Fernando de Noronha (America/Noronha)</option>
+            </select>
+          </div>
           <button type="submit" class="btn btn-primary mt-md" style="width:100%">Salvar Perfil</button>
         </form>
       </div>
