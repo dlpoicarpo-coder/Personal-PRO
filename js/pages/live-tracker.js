@@ -467,10 +467,10 @@ export function initTracker(navigateFn) {
     }
   }
 
-  document.getElementById('genPreLinkBtn')?.addEventListener('click', () => {
+  document.getElementById('genPreLinkBtn')?.addEventListener('click', async () => {
     const sid = sSel?.value;
     if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
-    const st = students.find(x => x.id === sid);
+    const st = await db.get('students', sid);
     if (!st) { notify.error('Aluno não encontrado'); return; }
     const trainerId = st.trainer_id || window.currentUser?.id || '';
     const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}?t=${trainerId}&n=${encodeURIComponent(st.name||'')}`;
