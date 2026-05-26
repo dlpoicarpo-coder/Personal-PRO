@@ -1032,22 +1032,22 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
 
     return `
       <tr>
-        <td>
+        <td style="vertical-align:middle; min-width:140px">
           <strong style="font-size:0.85rem">${ex.name}</strong>
           ${ex.method?`<div style="font-size:0.68rem;color:var(--accent)">${ex.method}</div>`:''}
-          <div id="setDetail_${i}" style="display:none">${setDetail}</div>
+          <div id="setDetail_${i}" style="display:none;margin-top:6px">${setDetail}</div>
           <button onclick="const d=document.getElementById('setDetail_${i}');d.style.display=d.style.display==='none'?'':'none'"
-            style="font-size:0.65rem;color:var(--primary);background:none;border:none;cursor:pointer;padding:1px 0">
+            style="font-size:0.65rem;color:var(--primary);background:none;border:none;cursor:pointer;padding:2px 0;margin-top:4px">
             ▸ séries
           </button>
         </td>
-        <td style="text-align:center">${sets.length}</td>
-        <td style="text-align:center">${totalReps}</td>
-        <td style="text-align:center;font-weight:600">${maxLoad}kg</td>
-        <td style="text-align:center;color:var(--primary)">${vol}kg</td>
-        <td style="text-align:center;color:var(--warning)">${avgPse}</td>
-        <td style="text-align:center;color:var(--accent)">${avgRir}</td>
-        ${rm1Est?`<td style="text-align:center;color:var(--success);font-weight:600">${rm1Est}kg</td>`:`<td style="text-align:center;color:var(--text-muted)">—</td>`}
+        <td style="text-align:center;vertical-align:middle;white-space:nowrap">${sets.length}</td>
+        <td style="text-align:center;vertical-align:middle;white-space:nowrap">${totalReps}</td>
+        <td style="text-align:center;vertical-align:middle;font-weight:600;white-space:nowrap">${maxLoad}kg</td>
+        <td style="text-align:center;vertical-align:middle;color:var(--primary);white-space:nowrap">${vol}kg</td>
+        <td style="text-align:center;vertical-align:middle;color:var(--warning);white-space:nowrap">${avgPse}</td>
+        <td style="text-align:center;vertical-align:middle;color:var(--accent);white-space:nowrap">${avgRir}</td>
+        ${rm1Est?`<td style="text-align:center;vertical-align:middle;color:var(--success);font-weight:600;white-space:nowrap">${rm1Est}kg</td>`:`<td style="text-align:center;vertical-align:middle;color:var(--text-muted)">—</td>`}
       </tr>`;
   }).join('');
 
@@ -1086,13 +1086,16 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
         <span style="color:var(--success)">■ 1RM = Estimativa Epley</span>
       </div>
       <div class="table-container">
-        <table class="data-table" style="font-size:0.82rem">
+        <table class="data-table" style="font-size:0.8rem">
           <thead><tr>
-            <th>Exercício</th><th style="text-align:center">Séries</th><th style="text-align:center">Reps</th>
-            <th style="text-align:center">Carga máx</th><th style="text-align:center">Volume</th>
-            <th style="text-align:center;color:var(--warning)">PSE</th>
-            <th style="text-align:center;color:var(--accent)">RIR</th>
-            <th style="text-align:center;color:var(--success)">1RM Est.</th>
+            <th style="min-width:140px">Exercício</th>
+            <th style="text-align:center;white-space:nowrap">Séries</th>
+            <th style="text-align:center;white-space:nowrap">Reps</th>
+            <th style="text-align:center;white-space:nowrap">Carga Máx</th>
+            <th style="text-align:center;white-space:nowrap">Volume</th>
+            <th style="text-align:center;color:var(--warning);white-space:nowrap">PSE</th>
+            <th style="text-align:center;color:var(--accent);white-space:nowrap">RIR</th>
+            <th style="text-align:center;color:var(--success);white-space:nowrap">1RM Est.</th>
           </tr></thead>
           <tbody>${exRows}</tbody>
         </table>
