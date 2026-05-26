@@ -918,8 +918,9 @@ async function saveAssessment(tipo, d, navigateFn) {
     }
     const comp = pct&&peso ? Calc.composicaoCorporal(peso,pct) : {};
     const rcq  = d.cintura&&d.quadril ? Calc.rcq(parseFloat(d.cintura),parseFloat(d.quadril)) : null;
-    const smm = Calc.massaMuscularEsqueletica(peso, altura, idade, genero, 0);
-    const pctMassaMuscular = Calc.pctMassaMuscular(smm, peso);
+    const pctMassaManual = parseFloat(d.pctMassaMuscularManual)||null;
+    const smm = pctMassaManual && peso ? (pctMassaManual / 100) * peso : Calc.massaMuscularEsqueletica(peso, altura, idade, genero, 0);
+    const pctMassaMuscular = pctMassaManual || Calc.pctMassaMuscular(smm, peso);
 
     await db.add('assessments',{...base, peso, altura,
       imc:     imc?Math.round(imc*10)/10:null,
@@ -1015,6 +1016,9 @@ function composicaoFormHTML(students) {
     <div style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:8px">
       <div class="form-row">
         <div class="form-group"><label class="form-label">% Gordura (manual)</label><input class="form-input" name="percentualGorduraManual" type="number" step="0.1" placeholder="Se não usar dobras" /></div>
+        <div class="form-group"><label class="form-label">% M. Muscular Esq.</label><input class="form-input" name="pctMassaMuscularManual" type="number" step="0.1" placeholder="Via Bioimpedância" /></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label class="form-label">PA Sistólica</label><input class="form-input" name="paSistolica" type="number" placeholder="120" /></div>
         <div class="form-group"><label class="form-label">PA Diastólica</label><input class="form-input" name="paDiastolica" type="number" placeholder="80" /></div>
       </div>

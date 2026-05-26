@@ -673,11 +673,16 @@ export function initTracker(navigateFn) {
       const rb = document.getElementById('goRest'); if (rb) rb.textContent = '⏸ Pausar Descanso';
       const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
 
-      openModal({
-        title: `Feedback da Série ${i + 1}`,
-        size: 'sm',
-        content: `
-          <div class="form-row">
+      db.get('settings', 'trainer').then(settings => {
+        const setts = settings || {};
+        const showPSE = setts.enablePSE !== 'false';
+        const showRIR = setts.enableRIR !== 'false';
+
+        openModal({
+          title: `Feedback da Série ${i + 1}`,
+          size: 'sm',
+          content: `
+            <div class="form-row">
             <div class="form-group">
               <label class="form-label">Reps Realizadas</label>
               <input type="${isCardio ? 'text' : 'number'}" id="modalReps" class="form-input" value="${isCardio ? repsStr : reps}">
@@ -687,6 +692,7 @@ export function initTracker(navigateFn) {
               <input type="${isCardio ? 'text' : 'number'}" step="0.5" id="modalLoad" class="form-input" value="${isCardio ? loadStr : load}">
             </div>
           </div>
+          ${showPSE ? `
           <div class="form-group">
             <label class="form-label">PSE (Escala de Borg Modificada) *</label>
             <select class="form-select" id="modalPse" style="font-size:0.9rem">
@@ -703,7 +709,8 @@ export function initTracker(navigateFn) {
               <option value="9">9 - Quase máximo</option>
               <option value="10">10 - Esforço Máximo</option>
             </select>
-          </div>
+          </div>` : '<input type="hidden" id="modalPse" value="0" />'}
+          ${showRIR ? `
           <div class="form-group">
             <label class="form-label">RIR (Repetições na Reserva) *</label>
             <select class="form-select" id="modalRir" style="font-size:0.9rem">
@@ -714,7 +721,7 @@ export function initTracker(navigateFn) {
               <option value="3">3 - Sobraram 3 reps</option>
               <option value="4">4+ - Sobraram 4 ou mais</option>
             </select>
-          </div>
+          </div>` : '<input type="hidden" id="modalRir" value="0" />'}
           <div class="form-group" style="margin-bottom:20px">
             <label class="form-label">Observações da Série</label>
             <textarea id="modalNotes" class="form-textarea" rows="2" placeholder="Observações específicas..."></textarea>
@@ -727,7 +734,7 @@ export function initTracker(navigateFn) {
       document.getElementById('modalSaveSet').addEventListener('click', () => {
         const pse = parseInt(document.getElementById('modalPse').value);
         const rir = parseInt(document.getElementById('modalRir').value);
-        if (isNaN(rir) && !isCardio) {
+        if (showRIR && isNaN(rir) && !isCardio) {
           notify.error('Por favor, preencha o RIR.');
           return;
         }
@@ -780,6 +787,7 @@ export function initTracker(navigateFn) {
         db.put('sessions', state.session);
 
         notify.info(`Série ${i+1} ✓ — ${finalReps}×${finalLoad}${isCardio?'':'kg'}`);
+      });
       });
     });
   });

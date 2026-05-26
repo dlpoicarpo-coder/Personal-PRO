@@ -164,7 +164,7 @@ function initApp() {
           }
         }
         const methods = await db.getAll('methods');
-        if (methods.length < 15) {
+        if (methods.length < 35) {
           const defaultMethods = [
             { name: 'Drop-set', description: 'Executa até a falha, reduz carga ~20% e continua sem descanso', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '0s' },
             { name: 'Rest-Pause', description: 'Até a falha, pausa 15-20s, continua até nova falha', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '15s' },
@@ -195,7 +195,10 @@ function initApp() {
             { name: 'Wave Loading', description: 'Ondulação de carga (ex: 3 reps Pesado, 1 rep Muito Pesado x3)', category: 'Força', is_default: true, sets: '6', repsHint: '3-1-3-1', restHint: '120s' },
             { name: 'Blood Flow Restriction (Kaatsu)', description: 'Treino com oclusão vascular parcial, altas repetições, baixa carga', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '30-15-15-15', restHint: '30s' },
             { name: 'Drop-set Duplo', description: 'Duas reduções de carga em seguida, até a falha', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Falha x3', restHint: '0s' },
-            { name: 'Pré-Exaustão', description: 'Exercício isolador seguido imediatamente de um composto', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '12-15', restHint: '60s' }
+            { name: 'Pré-Exaustão', description: 'Exercício isolador seguido imediatamente de um composto', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '12-15', restHint: '60s' },
+            { name: 'Cardio Contínuo', description: 'Exercício cardiovascular mantendo a mesma intensidade', category: 'Condicionamento', is_default: true, sets: '1', repsHint: 'Tempo', restHint: '0s' },
+            { name: 'Endurance (Resistência)', description: 'Foco na resistência muscular (cargas leves, altas repetições)', category: 'Resistência', is_default: true, sets: '3-4', repsHint: '15-20+', restHint: '30-45s' },
+            { name: 'Pirâmide Completa', description: 'Sobe carga e desce rep, depois desce carga e sobe rep', category: 'Hipertrofia', is_default: true, sets: '6', repsHint: '12-10-8-8-10-12', restHint: '60-90s' }
           ];
           for (const m of defaultMethods) {
             if (!methods.find(x => x.name === m.name)) await db.add('methods', m);

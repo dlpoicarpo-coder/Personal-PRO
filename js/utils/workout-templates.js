@@ -61,6 +61,33 @@ export const BUILT_IN_TEMPLATES = [
       ]}
     ]
   },
+  {
+    id: 'tpl_pyramid_hypertrophy',
+    name: 'Pirâmide de Hipertrofia',
+    category: 'Hipertrofia',
+    goal: 'Hipertrofia',
+    description: 'Foco na exaustão total e controle de fadiga usando métodos de pirâmide completa e decrescente.',
+    daysPerWeek: 4,
+    builtIn: true,
+    workouts: [
+      { name: 'Peito e Tríceps', exercises: [
+        { name: 'Supino Reto com Barra', sets: 5, reps: '12-10-8-10-12', load: '', rest: '90', method: 'Pirâmide Completa' },
+        { name: 'Supino Inclinado com Halteres', sets: 4, reps: '8-10-12-15', load: '', rest: '90', method: 'Pirâmide Decrescente' },
+        { name: 'Crucifixo Máquina', sets: 3, reps: '12-15', load: '', rest: '60', method: 'Tensão Contínua' },
+        { name: 'Tríceps Pulley', sets: 4, reps: '10-12-15-20', load: '', rest: '60', method: 'Pirâmide Decrescente' },
+      ]},
+      { name: 'Costas e Bíceps', exercises: [
+        { name: 'Puxada Frontal', sets: 5, reps: '12-10-8-10-12', load: '', rest: '90', method: 'Pirâmide Completa' },
+        { name: 'Remada Curvada com Barra', sets: 4, reps: '8-10-12-15', load: '', rest: '90', method: 'Pirâmide Decrescente' },
+        { name: 'Rosca Direta com Barra', sets: 4, reps: '12-10-8-12', load: '', rest: '60', method: 'Pirâmide' },
+      ]},
+      { name: 'Pernas', exercises: [
+        { name: 'Agachamento Livre com Barra', sets: 5, reps: '12-10-8-10-12', load: '', rest: '120', method: 'Pirâmide Completa' },
+        { name: 'Leg Press 45°', sets: 4, reps: '10-12-15-20', load: '', rest: '90', method: 'Pirâmide Decrescente' },
+        { name: 'Cadeira Extensora', sets: 4, reps: '15', load: '', rest: '60', method: 'Drop set' },
+      ]}
+    ]
+  },
 
   // ================= FORÇA =================
   {
@@ -245,6 +272,36 @@ export const BUILT_IN_TEMPLATES = [
         { name: 'Agachamento Búlgaro', sets: 4, reps: '15', load: 'Corporal', rest: '60', method: '' },
         { name: 'Agachamento com Salto', sets: 3, reps: '15', load: 'Corporal', rest: '60', method: '' },
         { name: 'Elevação de Pelve', sets: 3, reps: '20', load: 'Corporal', rest: '60', method: '' },
+      ]}
+    ]
+  },
+  {
+    id: 'tpl_endurance_pro',
+    name: 'Endurance Avançado (Resistência)',
+    category: 'Resistência',
+    goal: 'Resistência',
+    description: 'Volume extremamente alto com cargas moderadas/leves, focado em capacidade de trabalho e resistência à fadiga muscular (Lactato).',
+    daysPerWeek: 3,
+    builtIn: true,
+    workouts: [
+      { name: 'Endurance Inferior', exercises: [
+        { name: 'Agachamento Livre com Barra', sets: 4, reps: '20', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Leg Press 45°', sets: 4, reps: '20-25', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Passada/Avanço com Halteres', sets: 3, reps: '30 passos', load: 'Leve', rest: '45', method: 'Tensão Contínua' },
+        { name: 'Cadeira Extensora', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'Rest-Pause' },
+      ]},
+      { name: 'Endurance Superior', exercises: [
+        { name: 'Supino Reto com Halteres', sets: 4, reps: '15-20', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Puxada Frontal', sets: 4, reps: '15-20', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Desenvolvimento com Halteres', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'Tensão Contínua' },
+        { name: 'Remada Baixa', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'Endurance (Resistência)' },
+      ]},
+      { name: 'Endurance Full Body', exercises: [
+        { name: 'Levantamento Terra', sets: 3, reps: '15', load: 'Moderado', rest: '90', method: '' },
+        { name: 'Agachamento Búlgaro', sets: 3, reps: '15', load: 'Corporal', rest: '60', method: '' },
+        { name: 'Flexão de Braços', sets: 3, reps: 'Máx', load: 'Corporal', rest: '60', method: '' },
+        { name: 'Remada Curvada com Barra', sets: 3, reps: '15', load: 'Leve', rest: '60', method: '' },
+        { name: 'Abdominal Crunch', sets: 3, reps: '40', load: 'Corporal', rest: '45', method: '' },
       ]}
     ]
   }

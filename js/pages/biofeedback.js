@@ -236,6 +236,7 @@ export function initBiofeedback(navigateFn) {
 
   document.getElementById('addBfBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s => s.status === 'Ativo');
+    const settings = await db.get('settings', 'trainer') || {};
     openModal({
       title: '+ Registrar Biofeedback', size: 'lg',
       preventBackdropClose: true,
@@ -288,6 +289,7 @@ export function initBiofeedback(navigateFn) {
           </div>
         </div>
         <div class="form-row">
+          ${settings.enablePSE !== 'false' ? `
           <div class="form-group">
             <label class="form-label">PSE — Esforço percebido no treino</label>
             <div class="flex items-center gap-sm">
@@ -296,7 +298,8 @@ export function initBiofeedback(navigateFn) {
                 oninput="document.getElementById('bfVpse').textContent=this.value" />
               <span id="bfVpse" style="font-weight:800;color:var(--primary);min-width:20px">7</span>
             </div>
-          </div>
+            <div class="text-xs text-muted mt-xs">1=Muito Fácil · 3=Moderado · 5=Difícil · 7=Muito Difícil · 10=Máximo</div>
+          </div>` : '<input type="hidden" name="pse" value="0" />'}
           <div class="form-group">
             <label class="form-label">Duração do treino (min)</label>
             <input class="form-input" name="duration" type="number" value="60" />
@@ -462,6 +465,7 @@ function bindBfActions(navigateFn, studentsCache) {
         ? studentsCache.find(s => s.id === entry.studentId)
         : await db.get('students', entry.studentId);
         
+      const settings = await db.get('settings', 'trainer') || {};
       const pRegs = entry.painRegions || [];
 
       openModal({
@@ -513,6 +517,7 @@ function bindBfActions(navigateFn, studentsCache) {
             </div>
           </div>
           <div class="form-row">
+            ${settings.enablePSE !== 'false' ? `
             <div class="form-group">
               <label class="form-label">PSE — Esforço percebido no treino</label>
               <div class="flex items-center gap-sm">
@@ -521,7 +526,8 @@ function bindBfActions(navigateFn, studentsCache) {
                   oninput="document.getElementById('editBfVpse').textContent=this.value" />
                 <span id="editBfVpse" style="font-weight:800;color:var(--primary);min-width:20px">${entry.pse || 7}</span>
               </div>
-            </div>
+              <div class="text-xs text-muted mt-xs">1=Muito Fácil · 3=Moderado · 5=Difícil · 7=Muito Difícil · 10=Máximo</div>
+            </div>` : `<input type="hidden" name="pse" value="${entry.pse || 0}" />`}
             <div class="form-group">
               <label class="form-label">Duração do treino (min)</label>
               <input class="form-input" name="duration" type="number" value="${entry.duration || 60}" />
@@ -567,7 +573,19 @@ function bindBfActions(navigateFn, studentsCache) {
             await db.put('biofeedback', updated);
             notify.success('Registro de biofeedback atualizado!');
             closeModal();
-            navigateFn('/biofeedback');
+            
+            // Força o re-render da tela via clique simulado no menu (mais limpo) ou chamando init
+            const sid = document.getElementById('bfStudentFilter')?.value;
+            const studentsList = await db.getAll('students');
+            const newBf = (await db.getAll('biofeedback')).sort((a,b)=>new Date(b.date)-new Date(a.date));
+            const contentEl = document.getElementById('bfContent');
+            if(contentEl) {
+              contentEl.innerHTML = renderBfContent(newBf, studentsList, sid);
+              initBfCharts(newBf, studentsList, sid);
+              bindBfActions(navigateFn, studentsList);
+            } else {
+              navigateFn('/biofeedback');
+            }
           }}
         ]
       });
