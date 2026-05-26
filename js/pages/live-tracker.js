@@ -1215,7 +1215,7 @@ function generateSessionPDF(session, student, format = 'mobile') {
       bx += 46.5; 
     });
 
-    let y = (cards.length > cardsPerRow) ? (isMobile && cards.length > cardsPerRow * 2 ? 112 : 92) : 74;
+    let y = by + 24;
     doc.setTextColor(...dk); doc.setFontSize(10); doc.setFont('helvetica','bold');
     doc.text('Exercícios Realizados',14,y); y+=5;
     doc.setFillColor(...g); doc.rect(14,y, pw - 28, 6.5,'F');
