@@ -672,9 +672,46 @@ export function initWorkouts(navigateFn) {
       const allMethods = await db.getAll('methods');   // ← carrega métodos
       let exIndex      = (w.exercises || []).length;
 
+      // Find last completed session for this workout
+      const allSessions = await db.getAll('sessions');
+      const lastSession = allSessions
+        .filter(s => s.status === 'completed' && s.studentId === w.studentId && s.workoutName === w.name)
+        .sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+
+      let lastSessionBanner = '';
+      if (lastSession) {
+        lastSessionBanner = `
+          <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); padding:12px; border-radius:8px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <div style="font-weight:600; color:var(--success); font-size:0.9rem;">
+                Última realização deste treino: ${new Date(lastSession.date).toLocaleDateString('pt-BR')}
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted); background:var(--bg-card); padding:2px 8px; border-radius:12px; border:1px solid var(--border-color);">
+                ⏱ ${Math.round((lastSession.totalDuration||0)/60)}m &nbsp;|&nbsp; 🏋️ ${lastSession.totalVolume||0}kg &nbsp;|&nbsp; 🥵 PSE ${lastSession.postBiofeedback?.pse || '-'}
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:6px; font-size:0.75rem;">
+              ${(lastSession.exercises || []).map((e, i) => {
+                const sets = lastSession.setLog?.filter(l => l.exIdx === i) || [];
+                if (!sets.length) return '';
+                const maxLoad = Math.max(...sets.map(s => s.load || 0));
+                const totalReps = sets.reduce((sum, s) => sum + (s.reps || 0), 0);
+                return `<div style="background:var(--bg-card); padding:6px 8px; border-radius:6px; border:1px solid var(--border-color);">
+                  <div style="font-weight:600; color:var(--text-primary); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.name}</div>
+                  <div style="color:var(--text-muted); display:flex; justify-content:space-between;">
+                    <span>${sets.length} sér. / ${totalReps} reps</span>
+                    <span>Máx: <strong style="color:var(--primary)">${maxLoad}kg</strong></span>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
       openModal({
         title: 'Editar Treino', size: 'xl',
-        content: workoutFormHTML(students, w, allEx, allMethods) + `<datalist id="exerciseList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>`,
+        content: lastSessionBanner + workoutFormHTML(students, w, allEx, allMethods) + `<datalist id="exerciseList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: 'Salvar', class: 'btn-primary', onClick: async () => {
