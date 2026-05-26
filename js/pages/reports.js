@@ -948,6 +948,10 @@ async function loadPeriodizationForReport(studentId, selectedMacroId = null) {
       <span style="color:#f97316">● Alta</span>
       <span style="color:#ef4444">● Muito Alta</span>
       <span style="color:#3b82f6">● Deload</span>
-    </div>
+    </div>` : '<p class="text-xs text-muted">Macrociclo sem semanas definidas.</p>'}
   `;
+
+  document.getElementById('reportMacroSelect')?.addEventListener('change', (e) => {
+    loadPeriodizationForReport(studentId, e.target.value);
+  });
 }
