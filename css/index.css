@@ -6,6 +6,8 @@
 
 /* --- CSS Variables --- */
 :root {
+  color-scheme: dark;
+  
   /* Colors */
   --bg-primary: #0a0e17;
   --bg-secondary: #111827;
@@ -1106,6 +1108,7 @@ h4 {
    LIGHT MODE
    ======================================== */
 [data-theme="light"] {
+  color-scheme: light;
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f1f5f9;

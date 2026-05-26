@@ -8,17 +8,6 @@ import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { sendWhatsApp, reminderMsg, preFormMsg, postFormMsg } from '../utils/whatsapp.js';
 
-function renderTimeSelect(name, selectedTime) {
-  const opts = [];
-  for(let i=0; i<24*4; i++){
-    const h = String(Math.floor(i/4)).padStart(2, '0');
-    const m = String((i%4)*15).padStart(2, '0');
-    const t = `${h}:${m}`;
-    opts.push(`<option value="${t}" ${t === selectedTime ? 'selected' : ''}>${t}</option>`);
-  }
-  return `<select class="form-select" name="${name}">${opts.join('')}</select>`;
-}
-
 const DURATIONS = [30, 45, 50, 60, 75, 90, 120];
 const WEEKDAYS = [
   { id: 0, label: 'Dom', short: 'D' }, { id: 1, label: 'Seg', short: 'S' },
@@ -352,7 +341,7 @@ function bindDayActions(navigateFn) {
               <input class="form-input" name="date" type="date" value="${ev.date}" required />
             </div>
             <div class="form-group"><label class="form-label">Horário</label>
-              ${renderTimeSelect('time', ev.time || '07:00')}
+              <input class="form-input" name="time" type="time" step="900" value="${ev.time || '07:00'}" />
             </div>
           </div>
           <div class="form-row">
@@ -453,7 +442,7 @@ function bindAddEvent(navigateFn) {
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Data Início *</label><input class="form-input" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required /></div>
-          <div class="form-group"><label class="form-label">Horário</label>${renderTimeSelect('time', '07:00')}</div>
+          <div class="form-group"><label class="form-label">Horário</label><input class="form-input" name="time" type="time" step="900" value="07:00" /></div>
           <div class="form-group"><label class="form-label">Duração (min)</label><select class="form-select" name="duration">${DURATIONS.map(d => `<option ${d === 60 ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
         </div>
         <div class="form-group"><label class="form-label">Semanas de Repetição</label>
