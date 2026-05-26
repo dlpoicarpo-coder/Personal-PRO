@@ -351,18 +351,11 @@ export function initTracker(navigateFn) {
   // Editar sessão
   document.querySelectorAll('.edit-session-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const sessions = await db.getAll('sessions');
-      if (sessions.some(s => s.status === 'running' && s.id !== btn.dataset.id)) {
-        notify.warning('Finalize a sessão em andamento antes de editar outra.');
-        return;
-      }
-      const session = sessions.find(s => s.id === btn.dataset.id);
+      const session = await db.get('sessions', btn.dataset.id);
       if (!session) return;
-      if (window.confirm('Deseja reabrir esta sessão para editar exercícios, cargas e repetições no Tracker?')) {
-        session.status = 'running';
-        await db.put('sessions', session);
-        window.location.reload();
-      }
+      const students = await db.getAll('students');
+      const student  = students.find(x => x.id === session.studentId);
+      editSessionSummaryModal(session, student, navigateFn);
     });
   });
 
@@ -920,7 +913,20 @@ function editSessionSummaryModal(session, student, navigateFn) {
       title: 'Editar Resumo da Sessão', size: 'md',
       content: `
         <form id="editPostF">
-          <div class="form-group">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="${session.date ? session.date.slice(0,10) : ''}" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Duração (min)</label>
+              <input class="form-input" name="duration" type="number" value="${session.totalDuration ? Math.round(session.totalDuration/60) : 0}" />
+            </div>
+            <div class="form-group"><label class="form-label">Volume Total (kg)</label>
+              <input class="form-input" name="volume" type="number" value="${session.totalVolume ? Math.round(session.totalVolume) : 0}" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:10px">
             <div class="flex items-center justify-between mb-xs">
               <label class="form-label" style="margin:0">PSE (Esforço)</label>
               <span style="font-size:1.2rem;font-weight:700;color:var(--primary)" id="editPseV">${session.postBiofeedback?.pse || 7}</span>
@@ -935,17 +941,21 @@ function editSessionSummaryModal(session, student, navigateFn) {
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => {
           closeModal();
-          showSessionSummary(buildSessionSummary(session, student), session, student, navigateFn);
+          // Optionally reopen the view summary if needed, but since it could have been accessed from the list, just close.
+          if (document.querySelector('.view-session')) window.location.reload(); 
         }},
         { label: 'Salvar', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('editPostF'));
           session.postBiofeedback = session.postBiofeedback || {};
           session.postBiofeedback.pse = parseInt(fd.get('pse'));
           session.postBiofeedback.notes = fd.get('notes');
+          session.date = fd.get('date') ? new Date(fd.get('date') + 'T12:00:00').toISOString() : session.date;
+          session.totalDuration = (parseInt(fd.get('duration')) || 0) * 60;
+          session.totalVolume = parseInt(fd.get('volume')) || 0;
           await db.put('sessions', session);
-          notify.success('Resumo atualizado!');
+          notify.success('Sessão atualizada!');
           closeModal(() => {
-            showSessionSummary(buildSessionSummary(session, student), session, student, navigateFn);
+            window.location.reload();
           });
         }}
       ]
