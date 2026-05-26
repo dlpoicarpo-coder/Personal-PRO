@@ -63,14 +63,20 @@ export async function initNotifications() {
   if (!btn) return;
 
   const notifs = await checkNotifications();
-  if (notifs.length > 0) {
+  const seenHashes = JSON.parse(localStorage.getItem('pp_notifs_seen') || '[]');
+  const currentHashes = notifs.map(n => n.title + n.desc);
+  const unread = currentHashes.filter(h => !seenHashes.includes(h));
+
+  if (unread.length > 0) {
     badge.style.display = 'flex';
-    badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
+    badge.textContent = unread.length > 9 ? '9+' : unread.length;
   } else {
     badge.style.display = 'none';
   }
 
   btn.addEventListener('click', () => {
+    localStorage.setItem('pp_notifs_seen', JSON.stringify(currentHashes));
+    badge.style.display = 'none';
     openModal({
       title: '🔔 Central de Notificações',
       size: 'md',

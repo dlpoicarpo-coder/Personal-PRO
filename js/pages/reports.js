@@ -348,13 +348,16 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     ${assessments.length ? `
     <div class="card mb-lg"><div class="card-header"><span class="card-title">Evolução de Medidas Corporais</span></div>
       <p class="text-xs text-muted mb-sm">Acompanhamento de peso corporal e percentual de gordura ao longo das avaliações. A tendência é mais importante que valores isolados.</p>
-      <div style="height:280px;position:relative"><canvas id="measuresChart"></canvas></div>
-    </div>` : ''}
-
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Gasto Calórico nos Treinos</span></div>
       <p class="text-xs text-muted mb-sm">Estimativa de calorias gastas por sessão, baseada na duração e peso corporal (MET de musculação).</p>
       <div style="height:280px;position:relative"><canvas id="kcalChart"></canvas></div>
+    </div>
+    
+    <div class="card mb-lg" id="densityChart_card">
+      <div class="card-header"><span class="card-title">Densidade de Treino (kg/min)</span></div>
+      <p class="text-xs text-muted mb-sm">Relação entre Volume (kg) e Duração (min) das sessões.</p>
+      <div style="height:280px;position:relative"><canvas id="densityChart"></canvas></div>
     </div>
 
     <div class="grid-2 mb-lg">
@@ -542,6 +545,7 @@ export async function initReports(navigateFn) {
       { id: 'freqChart',      title: 'Frequência Semanal',          desc: 'Sessões realizadas por semana. Consistência ≥3x/semana é fundamental para resultados duradouros.' },
       { id: 'measuresChart',  title: 'Evolução de Medidas Corporais', desc: 'Tendência de peso e % de gordura ao longo das avaliações físicas.' },
       { id: 'kcalChart',      title: 'Gasto Calórico',              desc: 'Estimativa de calorias gastas por sessão ao longo do tempo.' },
+      { id: 'densityChart',   title: 'Densidade de Treino',         desc: 'Relação entre Volume (kg) e Duração (min) das sessões.' },
       { id: 'cycleDiffChart', title: 'Comparação de Períodos',      desc: 'Comparação entre a primeira e segunda metade dos dados coletados. Melhoras aparecem como barras verdes maiores.' },
     ];
 
@@ -762,7 +766,10 @@ async function initReportCharts(studentId) {
   const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
   const sessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
   const assessments = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
+  const sortedSes = [...sessions].filter(s => s.status === 'completed').sort((a,b) => new Date(a.date) - new Date(b.date));
+  const student = await db.get('students', studentId);
   const co = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: { y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } };
+  const chartsInstance = {};
 
   // Wellness chart — filtrar apenas registros que têm dados de bem-estar (não só PSE do tracker)
   const wCtx = document.getElementById('wellnessChart');
@@ -839,35 +846,36 @@ async function initReportCharts(studentId) {
     if (ds.length) new Chart(mCtx, { type: 'line', data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y1: { position: 'right', ticks: { color: '#f59e0b' }, grid: { display: false } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } } });
   }
 
-  // ── GRÁFICO DE GASTO CALÓRICO ──
   const kcCtx = document.getElementById('kcalChart');
-  if (kcCtx && sessions.length >= 1) {
-    const sortedKcal = [...sessions].filter(s=>s.status==='completed').sort((a,b)=>new Date(a.date)-new Date(b.date));
-    const labels = sortedKcal.map(s => Calc.formatDate(s.date).slice(0,5));
-    const data = sortedKcal.map(s => {
+  if (kcCtx && sortedSes.length > 0) {
+    const labels = sortedSes.map(s => Calc.formatDate(s.date).slice(0,5));
+    const data = sortedSes.map(s => {
       const durMin = s.totalDuration ? s.totalDuration / 60 : 0;
-      const peso = s.studentWeight || 70; // fallback if no weight
-      if (durMin) return Calc.caloriasAtividade(peso, durMin, 'musculacao');
-      return 0;
+      const p = s.studentWeight || student.weight || 70;
+      return durMin ? Calc.caloriasAtividade(p, durMin, 'musculacao') : 0;
     });
     
-    new Chart(kcCtx, {
+    chartsInstance['kcalChart'] = new Chart(kcCtx, {
       type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Kcal Estimada',
-          data: data,
-          backgroundColor: 'rgba(249, 115, 22, 0.5)',
-          borderColor: '#f97316',
-          borderWidth: 1,
-          borderRadius: 4
-        }]
-      },
-      options: {
-        ...co,
-        plugins: { legend: { display: false } },
-      }
+      data: { labels, datasets: [{ label: 'Kcal Estimada', data, backgroundColor: 'rgba(249, 115, 22, 0.5)', borderColor: '#f97316', borderWidth: 1, borderRadius: 4 }] },
+      options: { ...co, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Densidade
+  const denCtx = document.getElementById('densityChart');
+  if (denCtx && sortedSes.length > 0) {
+    const denLabels = sortedSes.map(s => Calc.formatDate(s.date).slice(0,5));
+    const denData = sortedSes.map(s => {
+      const vol = s.totalVolume || 0;
+      const dur = s.totalDuration ? s.totalDuration / 60 : 0;
+      return dur > 0 ? parseFloat((vol / dur).toFixed(1)) : 0;
+    });
+
+    chartsInstance['densityChart'] = new Chart(denCtx, {
+      type: 'line',
+      data: { labels: denLabels, datasets: [{ label: 'Densidade (kg/min)', data: denData, borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.1)', fill: true, tension: 0.3 }] },
+      options: { ...co, plugins: { legend: { display: false } } }
     });
   }
 

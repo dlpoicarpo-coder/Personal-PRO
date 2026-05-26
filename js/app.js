@@ -141,6 +141,46 @@ function initApp() {
 
   import('./db.js').then(({ default: db }) => {
     db.seedTemplates().catch(console.error);
+
+    // Database deduplication and methods repair
+    setTimeout(async () => {
+      if (localStorage.getItem('fixed_db_v3')) return;
+      try {
+        const exs = await db.getAll('exercises');
+        const seen = new Map();
+        for (const ex of exs) {
+          const name = (ex.name || '').toLowerCase().trim();
+          if (!name) continue;
+          if (!seen.has(name)) { seen.set(name, ex); } else {
+            const existing = seen.get(name);
+            if (ex.is_default && !existing.is_default) {
+              await db.delete('exercises', existing.id);
+              seen.set(name, ex);
+            } else if (!ex.is_default && existing.is_default) {
+              await db.delete('exercises', ex.id);
+            } else {
+              await db.delete('exercises', ex.id);
+            }
+          }
+        }
+        const methods = await db.getAll('methods');
+        if (methods.length === 0) {
+          const defaultMethods = [
+            { name: 'Drop-set', description: 'Executa até a falha, reduz carga ~20% e continua sem descanso', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '0s' },
+            { name: 'Rest-Pause', description: 'Até a falha, pausa 15-20s, continua até nova falha', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '15s' },
+            { name: 'Cluster', description: '2-3 reps, pausa 10-15s, repetir 5x. Força máxima.', category: 'Força', is_default: true, sets: '5', repsHint: '2-3', restHint: '10-15s' },
+            { name: 'Bi-set', description: 'Dois exercícios seguidos sem descanso', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60s' },
+            { name: 'Tri-set', description: 'Três exercícios seguidos sem descanso', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60-90s' },
+            { name: 'Pirâmide Crescente', description: 'Aumenta a carga e diminui as repetições a cada série', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '12-10-8-6', restHint: '60-90s' },
+            { name: 'FST-7', description: '7 séries do exercício com 30s de descanso no final do treino', category: 'Hipertrofia', is_default: true, sets: '7', repsHint: '10-12', restHint: '30s' },
+            { name: 'GVT (10x10)', description: '10 séries de 10 repetições com a mesma carga (60% de 1RM)', category: 'Hipertrofia', is_default: true, sets: '10', repsHint: '10', restHint: '60s' }
+          ];
+          for (const m of defaultMethods) await db.add('methods', m);
+        }
+        localStorage.setItem('fixed_db_v3', '1');
+        window.location.reload();
+      } catch(e) {}
+    }, 2000);
   });
   
   const path = window.location.hash.slice(1) || '/';
