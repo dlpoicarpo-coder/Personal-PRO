@@ -277,6 +277,29 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     macroProgress = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
   }
 
+  // Identificar sessões pendentes de checkout (não completas ou sem postBiofeedback)
+  const pendingCheckout = sessions.filter(s => s.status !== 'completed' || !s.postBiofeedback);
+  let pendingHtml = '';
+  if (pendingCheckout.length > 0) {
+    pendingHtml = pendingCheckout.slice(0, 2).map(s => `
+      <div class="glass-card" style="background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(239,68,68,0.08)); border-color:rgba(245,158,11,0.25); margin-bottom:12px; display:flex; flex-direction:column; gap:8px">
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
+          <div>
+            <div style="font-size:0.62rem; font-weight:700; color:#f59e0b; text-transform:uppercase; letter-spacing:0.06em">⚠️ Feedback Pendente (Checkout)</div>
+            <div style="font-size:0.88rem; font-weight:700; color:white; margin-top:2px">${s.workoutName || 'Treino'}</div>
+          </div>
+          <span style="font-size:0.75rem; color:var(--text-muted)">${s.date ? new Date(s.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'}) : ''}</span>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:2px">
+          <a href="#/form/post/${s.id}?t=${portalState.trainerId}" class="btn" style="font-size:0.75rem; padding:6px 12px; background:#f59e0b; color:#000; font-weight:700; border-radius:8px; border:none; text-decoration:none; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(245,158,11,0.2)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Fazer Checkout do Treino
+          </a>
+        </div>
+      </div>
+    `).join('');
+  }
+
   return `
     <div class="portal-section">
       <!-- Greeting -->
@@ -287,6 +310,9 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         </div>
         ${lastSession ? `<div class="portal-last-session">Último treino: ${Math.floor((now - new Date(lastSession.date))/86400000)}d atrás</div>` : ''}
       </div>
+
+      <!-- Pendentes de Checkout -->
+      ${pendingHtml}
 
       <!-- Stats rápidas -->
       <div class="portal-stats-row">
