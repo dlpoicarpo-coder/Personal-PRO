@@ -1195,13 +1195,25 @@ function generateSessionPDF(session, student) {
       const vol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
       doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255);
       doc.rect(14,y,182,6.5,'F');
-      doc.setTextColor(...dk); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+      doc.setTextColor(...dk); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
       doc.text(ex.name||'-',15,y+4.5);
+      doc.setFont('helvetica','normal');
       doc.text(String(sets.length),95,y+4.5);
       doc.text(String(totalReps),115,y+4.5);
       doc.text(maxLoad+'kg',135,y+4.5);
       doc.text(vol+'kg',163,y+4.5);
-      y+=6.5; if(y>272){doc.addPage();y=20;}
+      y+=7.5; 
+      
+      sets.forEach((s) => {
+        doc.setFontSize(6.5);
+        doc.setTextColor(100, 116, 139);
+        const setTxt = `S${(s.setIdx||0)+1}: ${s.reps||0}x ${s.load||0}kg ${s.pse ? ' (PSE: ' + s.pse + ')' : ''} ${s.restDuration ? ' (Desc: ' + s.restDuration + 's)' : ''}`;
+        doc.text(setTxt, 18, y+2);
+        y+=3.5;
+        if(y>272){doc.addPage();y=20;}
+      });
+      y+=2.5;
+      if(y>272){doc.addPage();y=20;}
     });
 
     if (session.postBiofeedback?.notes) {

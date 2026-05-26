@@ -617,16 +617,14 @@ export async function initReports(navigateFn) {
     });
 
     // ── Gerar PDF via Blob URL (evita bloqueio de popup no Brave/Chrome) ──
-    const currentTheme = localStorage.getItem('pp_theme') || 'light';
-    const isDark = currentTheme === 'dark';
-
-    const pdfBg = isDark ? '#0b0f19' : '#ffffff';
-    const pdfText = isDark ? '#f1f5f9' : '#222222';
-    const pdfSubText = isDark ? '#94a3b8' : '#666666';
-    const pdfCardBg = isDark ? '#111827' : '#fafafa';
-    const pdfBorder = isDark ? '#1f2937' : '#e5e7eb';
-    const pdfTableEven = isDark ? '#111827' : '#fafafa';
-    const pdfTableTh = isDark ? '#1f2937' : '#f3f4f6';
+    // Forçando tema escuro e layout mobile a pedido do usuário
+    const pdfBg = '#0b0f19';
+    const pdfText = '#f1f5f9';
+    const pdfSubText = '#94a3b8';
+    const pdfCardBg = '#111827';
+    const pdfBorder = '#1f2937';
+    const pdfTableEven = '#111827';
+    const pdfTableTh = '#1f2937';
 
       const customAnnotations = document.getElementById('pdfAnnotations')?.value || '';
 
@@ -634,34 +632,35 @@ export async function initReports(navigateFn) {
       <meta charset="UTF-8">
       <title>Dossiê — ${student.name}</title>
       <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; color: ${pdfText}; background-color: ${pdfBg}; padding: 28px 36px; max-width: 820px; margin: 0 auto; font-size: 13px; line-height: 1.55; }
+        @page { size: 420px 850px; margin: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; print-color-adjust: exact !important; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: ${pdfText}; background-color: ${pdfBg}; padding: 24px 20px; width: 420px; margin: 0 auto; font-size: 12px; line-height: 1.5; }
 
         /* Header */
-        .doc-header { border-bottom: 3px solid #10b981; padding-bottom: 10px; margin-bottom: 6px; }
-        .doc-header h1 { font-size: 22px; color: #10b981; font-weight: 800; letter-spacing: -0.5px; }
-        .doc-subtitle { font-size: 11px; color: ${pdfSubText}; margin-top: 3px; }
+        .doc-header { border-bottom: 2px solid #10b981; padding-bottom: 8px; margin-bottom: 6px; }
+        .doc-header h1 { font-size: 20px; color: #10b981; font-weight: 800; letter-spacing: -0.5px; }
+        .doc-subtitle { font-size: 10px; color: ${pdfSubText}; margin-top: 3px; }
 
         /* Info do aluno */
-        .student-block { display: flex; align-items: center; gap: 14px; background: ${isDark ? '#111827' : '#f0fdf8'}; border-radius: 8px; padding: 14px 16px; margin: 14px 0; border: 1px solid ${pdfBorder}; }
-        .avatar { width: 52px; height: 52px; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex-shrink: 0; }
-        .student-info h2 { font-size: 17px; color: ${isDark ? '#ffffff' : '#111'}; margin-bottom: 2px; }
-        .student-info p { font-size: 11px; color: ${pdfSubText}; }
-        .cycle-tag { display: inline-block; background: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-top: 4px; }
+        .student-block { display: flex; align-items: center; gap: 12px; background: ${pdfCardBg}; border-radius: 8px; padding: 12px; margin: 12px 0; border: 1px solid ${pdfBorder}; }
+        .avatar { width: 44px; height: 44px; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; flex-shrink: 0; }
+        .student-info h2 { font-size: 15px; color: #ffffff; margin-bottom: 2px; }
+        .student-info p { font-size: 10px; color: ${pdfSubText}; }
+        .cycle-tag { display: inline-block; background: #065f46; color: #d1fae5; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; margin-top: 4px; border: 1px solid #10b981; }
 
         /* Stats */
-        .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 14px 0; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0; }
         .stat { text-align: center; padding: 10px 6px; border: 1px solid ${pdfBorder}; border-radius: 8px; background: ${pdfCardBg}; }
         .stat-val { font-size: 22px; font-weight: 800; color: #10b981; }
         .stat-lbl { font-size: 9px; color: ${pdfSubText}; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
         /* Secções */
-        h2 { font-size: 15px; color: #10b981; margin: 20px 0 6px; border-bottom: 1px solid ${isDark ? '#1f2937' : '#d1fae5'}; padding-bottom: 5px; font-weight: 700; }
+        h2 { font-size: 15px; color: #10b981; margin: 20px 0 6px; border-bottom: 1px solid #1f2937; padding-bottom: 5px; font-weight: 700; }
         .section-desc { font-size: 11px; color: ${pdfSubText}; margin: 3px 0 10px; }
 
         /* Pareceres */
-        .parecer { background: ${isDark ? '#111827' : '#f0fdf8'}; border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 13px; line-height: 1.7; border: 1px solid ${pdfBorder}; border-left-width: 4px; }
-        .tecnico { background: ${isDark ? '#1e293b' : '#eff6ff'}; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 12px; line-height: 1.6; color: ${isDark ? '#60a5fa' : '#1e3a5f'}; border: 1px solid ${isDark ? '#334155' : '#dbeafe'}; border-left-width: 4px; }
+        .parecer { background: #111827; border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 13px; line-height: 1.7; border: 1px solid ${pdfBorder}; border-left-width: 4px; }
+        .tecnico { background: #1e293b; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 12px; line-height: 1.6; color: #60a5fa; border: 1px solid #334155; border-left-width: 4px; }
 
         /* Tabelas */
         table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 12px; }
@@ -771,22 +770,16 @@ export async function initReports(navigateFn) {
             const summaryStr = exSummary.join(' • ');
 
             return `<tr>
-              <td style="border-bottom:none">${new Date(se.date).toLocaleDateString('pt-BR')}</td>
-              <td style="border-bottom:none"><strong>${se.workoutName||'-'}</strong></td>
-              <td style="border-bottom:none">${durMin?durMin+'min':'-'}</td>
-              <td style="border-bottom:none">${vol?vol+' kg':'-'}</td>
-              <td style="border-bottom:none">${se.totalSets||'-'}</td>
-              <td style="border-bottom:none;color:${pseColor};font-weight:600">${pse}</td>
-              <td style="border-bottom:none">${tqrPost}/10</td>
-              <td style="border-bottom:none">${avgRir}</td>
-              <td style="border-bottom:none">${kcalEst!=='-'?kcalEst+'kcal':'-'}</td>
-              <td style="border-bottom:none;font-size:10px;color:#888">${dens!=='-'?dens+' kg/min':'-'}</td>
-            </tr>
-            <tr>
-              <td colspan="10" style="font-size:9.5px;color:#6b7280;padding:2px 10px 10px;line-height:1.3">
-                <strong>Detalhes:</strong> ${summaryStr || 'Sem registros de exercícios'}
-                ${se.postBiofeedback?.notes ? `<br><span style="color:#f59e0b">Obs: ${se.postBiofeedback.notes}</span>` : ''}
-              </td>
+              <td>${new Date(se.date).toLocaleDateString('pt-BR')}</td>
+              <td><strong>${se.workoutName||'-'}</strong></td>
+              <td>${durMin?durMin+'min':'-'}</td>
+              <td>${vol?vol+' kg':'-'}</td>
+              <td>${se.totalSets||'-'}</td>
+              <td style="color:${pseColor};font-weight:600">${pse}</td>
+              <td>${tqrPost}/10</td>
+              <td>${avgRir}</td>
+              <td>${kcalEst!=='-'?kcalEst+'kcal':'-'}</td>
+              <td style="font-size:10px;color:#888">${dens!=='-'?dens+' kg/min':'-'}</td>
             </tr>`;
           }).join('')}
         </tbody>
