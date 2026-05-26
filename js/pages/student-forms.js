@@ -79,7 +79,7 @@ export async function renderPreForm(studentIdRaw) {
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Qualidade do Sono</label>
               <div class="form-hint" style="margin-bottom:16px">1 = Péssimo · 10 = Ótimo</div>
               <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => \`<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="sleep" value="\${val}" \${val === 7 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">\${val}</span></label>\`).join('')}
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="sleep" value="${val}" ${val === 7 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
               </div>
             </div>
 
@@ -134,7 +134,7 @@ export async function renderPreForm(studentIdRaw) {
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Dor / Desconforto Articular</label>
               <div class="form-hint" style="margin-bottom:16px">1 = Nenhuma dor · 10 = Muita dor</div>
               <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => \`<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="pain" value="\${val}" \${val === 1 ? 'checked' : ''} onchange="document.getElementById('painGroup').style.display=this.value>=3?'block':'none'" style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">\${val}</span></label>\`).join('')}
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="pain" value="${val}" ${val === 1 ? 'checked' : ''} onchange="document.getElementById('painGroup').style.display=this.value>=3?'block':'none'" style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
               </div>
             </div>
             <div class="form-group" id="painGroup" style="display:none">
@@ -275,7 +275,7 @@ export async function renderPostForm(sessionIdRaw) {
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Satisfação com o treino</label>
               <div class="form-hint" style="margin-bottom:16px">1 = Péssimo · 10 = Excelente</div>
               <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => \`<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="satisfaction" value="\${val}" \${val === 8 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">\${val}</span></label>\`).join('')}
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="satisfaction" value="${val}" ${val === 8 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
               </div>
             </div>
             <div class="form-group" style="margin-bottom:20px">
