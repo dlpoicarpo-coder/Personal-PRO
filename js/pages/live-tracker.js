@@ -117,7 +117,7 @@ export async function renderTracker() {
       <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
       <div class="table-container">
         <table class="data-table">
-          <thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th>Carga</th><th></th></tr></thead>
+          <thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th>Carga</th><th style="text-align:right;min-width:100px">Ações</th></tr></thead>
           <tbody>${completed.map(s => {
             const st = students.find(x => x.id === s.studentId);
             const pse = s.postBiofeedback?.pse || 0;
@@ -130,7 +130,7 @@ export async function renderTracker() {
               <td>${s.totalSets || '-'}</td>
               <td style="color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}"><strong>${pse||'-'}</strong></td>
               <td>${Math.round(pse * ((s.totalDuration || 0) / 60))}</td>
-              <td style="display:flex;gap:4px">
+              <td style="display:flex;gap:4px;justify-content:flex-end">
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver" style="padding:4px 6px;color:var(--accent)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -352,14 +352,14 @@ export function initTracker(navigateFn) {
   document.querySelectorAll('.edit-session-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const sessions = await db.getAll('sessions');
-      if (sessions.some(s => s.status === 'active' && s.id !== btn.dataset.id)) {
+      if (sessions.some(s => s.status === 'running' && s.id !== btn.dataset.id)) {
         notify.warning('Finalize a sessão em andamento antes de editar outra.');
         return;
       }
       const session = sessions.find(s => s.id === btn.dataset.id);
       if (!session) return;
       if (window.confirm('Deseja reabrir esta sessão para editar exercícios, cargas e repetições no Tracker?')) {
-        session.status = 'active';
+        session.status = 'running';
         await db.put('sessions', session);
         window.location.reload();
       }

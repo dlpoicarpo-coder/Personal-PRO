@@ -165,7 +165,6 @@ function renderBfContent(entries, students, filterStudentId) {
           <thead><tr>
             <th>Data</th>
             ${!student ? '<th>Aluno</th>' : ''}
-            <th>Ciclo</th>
             <th>Sono</th><th>TQR</th><th>Estresse</th><th>Dor</th>
             <th>PSE</th><th>Carga</th><th>Status</th><th>Recomendação</th><th></th>
           </tr></thead>
@@ -185,7 +184,6 @@ function renderBfContent(entries, students, filterStudentId) {
                   <span style="font-size:0.82rem">${st?.name||'?'}</span>
                 </div>
               </td>` : ''}
-              <td style="font-size:0.8rem;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis" title="${e.cycle || 'Geral'}"><strong>${e.cycle || 'Geral'}</strong></td>
               <td style="font-weight:600;color:${colorForVal(e.sleep,false)}">${e.sleep||'-'}</td>
               <td style="color:${colorForVal(e.tqr ?? e.energy,false)}">${e.tqr ?? e.energy ?? '-'}</td>
               <td style="font-weight:600;color:${colorForVal(e.stress,true)}">${e.stress||'-'}</td>
@@ -472,10 +470,7 @@ function bindBfActions(navigateFn, studentsCache) {
         content: `<form id="editBfForm">
           <div class="form-row">
             <div class="form-group"><label class="form-label">Data</label>
-              <input class="form-input" name="date" type="date" value="${entry.date ? entry.date.slice(0,10) : new Date().toISOString().slice(0,10)}" />
-            </div>
-            <div class="form-group"><label class="form-label">Ciclo de Treino</label>
-              <input class="form-input" name="cycle" value="${entry.cycle || ''}" placeholder="Ex: Hipertrofia I, Geral" />
+              <input class="form-input" name="date" type="date" value="${entry.date ? entry.date.slice(0,10) : new Date().toISOString().slice(0,10)}" style="max-width: 200px" />
             </div>
           </div>
           ${[
