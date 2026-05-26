@@ -934,10 +934,26 @@ function editSessionSummaryModal(session, student, navigateFn) {
             <input name="pse" type="range" min="1" max="10" value="${session.postBiofeedback?.pse || 7}" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('editPseV').textContent=this.value" />
           </div>
           <div class="form-group">
-            <label class="form-label">Observações</label>
-            <textarea class="form-textarea" name="notes" rows="3">${session.postBiofeedback?.notes || ''}</textarea>
+            <label class="form-label">Séries Realizadas</label>
+            <div style="max-height: 250px; overflow-y: auto; padding-right: 4px; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; background: var(--bg-page);">
+              ${(session.setLog || []).map((s, i) => {
+                 const exName = (session.exercises || [])[s.exIdx]?.name || 'Exercício';
+                 return \`<div class="flex items-center gap-xs mb-xs" style="font-size:0.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+                    <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="\${exName}">\${s.setNum} - \${exName}</div>
+                    <div style="display:flex;gap:4px">
+                      <input class="form-input form-sm" name="set_\${i}_reps" type="number" value="\${s.reps||0}" style="width:45px;padding:2px;text-align:center" title="Repetições" />
+                      <input class="form-input form-sm" name="set_\${i}_load" type="number" value="\${s.load||0}" style="width:45px;padding:2px;text-align:center" title="Carga (kg)" />
+                      <input class="form-input form-sm" name="set_\${i}_rest" type="number" value="\${s.restDuration||0}" style="width:55px;padding:2px;text-align:center" title="Descanso (s)" />
+                    </div>
+                 </div>\`;
+              }).join('')}
+            </div>
           </div>
-        </form>`,
+          <div class="form-group">
+            <label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="2">${session.postBiofeedback?.notes || ''}</textarea>
+          </div>
+        </form>\`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => {
           closeModal();
@@ -951,7 +967,17 @@ function editSessionSummaryModal(session, student, navigateFn) {
           session.postBiofeedback.notes = fd.get('notes');
           session.date = fd.get('date') ? new Date(fd.get('date') + 'T12:00:00').toISOString() : session.date;
           session.totalDuration = (parseInt(fd.get('duration')) || 0) * 60;
-          session.totalVolume = parseInt(fd.get('volume')) || 0;
+          
+          let totalVol = 0;
+          (session.setLog || []).forEach((s, i) => {
+            s.reps = parseInt(fd.get(\`set_\${i}_reps\`)) || 0;
+            s.load = parseFloat(fd.get(\`set_\${i}_load\`)) || 0;
+            s.restDuration = parseInt(fd.get(\`set_\${i}_rest\`)) || 0;
+            totalVol += (s.reps * s.load);
+          });
+          
+          session.totalVolume = totalVol > 0 ? totalVol : (parseInt(fd.get('volume')) || 0);
+
           await db.put('sessions', session);
           notify.success('Sessão atualizada!');
           closeModal(() => {
