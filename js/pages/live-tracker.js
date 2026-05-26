@@ -1134,7 +1134,18 @@ function generateSessionPDF(session, student, format = 'mobile') {
     const isMobile = format === 'mobile';
     const pw = isMobile ? 120 : 210;
     const doc = new jsPDF({ unit:'mm', format: isMobile ? [pw, 260] : 'a4' });
-    const g=[16,185,129], dk=[15,23,42], mu=[100,116,139], li=[241,245,249];
+    
+    const g=[16,185,129];
+    const dk=isMobile?[241,245,249]:[15,23,42];
+    const mu=isMobile?[148,163,184]:[100,116,139];
+    const bgPage=isMobile?[11,15,25]:[255,255,255];
+    const bgCard=isMobile?[17,24,39]:null;
+    const tableEven=isMobile?[17,24,39]:[248,250,252];
+    const tableOdd=isMobile?[11,15,25]:[255,255,255];
+    
+    const addNewPage = () => { doc.addPage(); if(isMobile){ doc.setFillColor(...bgPage); doc.rect(0,0,pw,260,'F'); } };
+    if(isMobile){ doc.setFillColor(...bgPage); doc.rect(0,0,pw,260,'F'); }
+
     const durMin=Math.round((session.totalDuration||0)/60);
     const exs=session.exercises||[], setLog=session.setLog||[];
     const date=new Date(session.date).toLocaleDateString('pt-BR');
@@ -1159,13 +1170,13 @@ function generateSessionPDF(session, student, format = 'mobile') {
 
     const densidade = session.density ? session.density.toFixed(2) : '0.00';
     const cards = [
-      { label: 'DURAÇÃO', value: durMin + 'm', bg: [239, 246, 255], accent: [59, 130, 246] },
-      { label: 'VOLUME', value: (session.totalVolume || 0) + 'kg', bg: [240, 253, 248], accent: [16, 185, 129] },
-      { label: 'CARGA TOT.', value: String(cargaTotal), bg: [254, 243, 199], accent: [245, 158, 11] },
-      { label: 'SÉRIES', value: String(session.totalSets || 0), bg: [245, 243, 255], accent: [139, 92, 246] },
-      { label: 'DENSIDADE', value: densidade, bg: [254, 242, 242], accent: [220, 38, 38] },
-      { label: 'PSE', value: String(session.postBiofeedback?.pse || '-'), bg: [254, 226, 226], accent: [239, 68, 68] },
-      { label: 'KCAL', value: String(kcalEst), bg: [224, 242, 254], accent: [2, 132, 199] },
+      { label: 'DURAÇÃO', value: durMin + 'm', bg: isMobile?bgCard:[239, 246, 255], accent: [59, 130, 246] },
+      { label: 'VOLUME', value: (session.totalVolume || 0) + 'kg', bg: isMobile?bgCard:[240, 253, 248], accent: [16, 185, 129] },
+      { label: 'CARGA TOT.', value: String(cargaTotal), bg: isMobile?bgCard:[254, 243, 199], accent: [245, 158, 11] },
+      { label: 'SÉRIES', value: String(session.totalSets || 0), bg: isMobile?bgCard:[245, 243, 255], accent: [139, 92, 246] },
+      { label: 'DENSIDADE', value: densidade, bg: isMobile?bgCard:[254, 242, 242], accent: [220, 38, 38] },
+      { label: 'PSE', value: String(session.postBiofeedback?.pse || '-'), bg: isMobile?bgCard:[254, 226, 226], accent: [239, 68, 68] },
+      { label: 'KCAL', value: String(kcalEst), bg: isMobile?bgCard:[224, 242, 254], accent: [2, 132, 199] },
     ];
 
     let bx = 14;
@@ -1179,7 +1190,9 @@ function generateSessionPDF(session, student, format = 'mobile') {
       doc.setFillColor(...card.bg);
       doc.roundedRect(bx, by, 42.5, 16, 2, 2, 'F');
       
-      doc.setTextColor(100, 116, 139); // Slate-500 for secondary label
+      if(isMobile) { doc.setDrawColor(31, 41, 55); doc.roundedRect(bx, by, 42.5, 16, 2, 2, 'D'); }
+
+      doc.setTextColor(...mu); // Muted text for secondary label
       doc.setFontSize(5);
       doc.setFont('helvetica', 'normal');
       doc.text(card.label, bx + 21.25, by + 5, { align: 'center' });
@@ -1207,8 +1220,9 @@ function generateSessionPDF(session, student, format = 'mobile') {
       const maxLoad=Math.max(...sets.map(s=>s.load||0));
       const totalReps=sets.reduce((t,s)=>t+(s.reps||0),0);
       const vol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
-      doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255);
+      doc.setFillColor(...(i%2===0?tableEven:tableOdd));
       doc.rect(14,y,pw - 28,6.5,'F');
+      if (isMobile) { doc.setDrawColor(31, 41, 55); doc.rect(14,y,pw-28,6.5,'D'); }
       doc.setTextColor(...dk); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
       let exName = ex.name||'-';
       if (isMobile && exName.length > 18) exName = exName.substring(0, 18) + '...';
@@ -1222,19 +1236,19 @@ function generateSessionPDF(session, student, format = 'mobile') {
       
       sets.forEach((s) => {
         doc.setFontSize(6.5);
-        doc.setTextColor(100, 116, 139);
+        doc.setTextColor(...mu);
         const setTxt = `S${(s.setIdx||0)+1}: ${s.reps||0}x ${s.load||0}kg ${s.pse ? ' (PSE: ' + s.pse + ')' : ''} ${s.restDuration ? ' (Desc: ' + s.restDuration + 's)' : ''}`;
         doc.text(setTxt, 18, y+2);
         y+=3.5;
-        if(y > (isMobile?245:272)){doc.addPage();y=20;}
+        if(y > (isMobile?245:272)){addNewPage();y=20;}
       });
       y+=2.5;
-      if(y > (isMobile?245:272)){doc.addPage();y=20;}
+      if(y > (isMobile?245:272)){addNewPage();y=20;}
     });
 
     if (session.postBiofeedback?.notes) {
       y += 5;
-      if (y > (isMobile?235:260)) { doc.addPage(); y = 20; }
+      if (y > (isMobile?235:260)) { addNewPage(); y = 20; }
       doc.setTextColor(...dk); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
       doc.text('Observações:', 14, y);
       y += 5;
@@ -1245,7 +1259,7 @@ function generateSessionPDF(session, student, format = 'mobile') {
     }
 
     const pageH = isMobile ? 260 : 297;
-    doc.setFillColor(...dk); doc.rect(0, pageH - 10, pw, 10, 'F');
+    doc.setFillColor(...(isMobile?[17,24,39]:dk)); doc.rect(0, pageH - 10, pw, 10, 'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7);
     doc.text('Personal PRO — Sistema Profissional de Personal Trainer', pw/2, pageH - 4, {align:'center'});
     doc.save(`sessao_${(student?.name||'aluno').replace(/\s/g,'_')}_${date.replace(/\//g,'-')}.pdf`);
