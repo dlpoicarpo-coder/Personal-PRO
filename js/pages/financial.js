@@ -92,7 +92,7 @@ export async function renderFinancial() {
     <div class="page-header">
       <div><h1>Gestão Financeira</h1><p class="subtitle">${now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" id="genMonthlyBtn">⚡ Gerar Mensalidades</button>
+        <button class="btn btn-secondary btn-sm" id="genMonthlyBtn">Gerar Mensalidades</button>
         <button class="btn btn-primary btn-sm" id="addFinancialBtn">+ Novo Registro</button>
       </div>
     </div>
@@ -487,7 +487,7 @@ export function initFinancial(navigateFn) {
   document.getElementById('genMonthlyBtn')?.addEventListener('click', async () => {
     const students = (await db.getAll('students')).filter(s=>s.status==='Ativo');
     openModal({
-      title: '⚡ Gerar Mensalidades', size: 'lg',
+      title: 'Gerar Mensalidades', size: 'lg',
       preventBackdropClose: true,
       content: `<form id="genMonthForm">
         <p class="text-muted text-sm mb-md">Gera registros de cobrança automaticamente para todos os alunos selecionados.</p>
@@ -535,7 +535,7 @@ export function initFinancial(navigateFn) {
       </form>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-        { label: '⚡ Gerar', class: 'btn-primary', onClick: async () => {
+        { label: 'Gerar', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('genMonthForm'));
           const startMonth = fd.get('startMonth');
           const numMonths  = parseInt(fd.get('months'))||1;
