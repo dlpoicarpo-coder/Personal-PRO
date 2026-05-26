@@ -1,6 +1,7 @@
 import db from '../db.js';
 import { openModal, closeModal } from './modal.js';
 import { Calc } from '../utils/calculations.js';
+import { notify } from './toast.js';
 
 export async function checkNotifications() {
   const students = await db.getAll('students');

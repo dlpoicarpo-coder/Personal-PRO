@@ -144,8 +144,9 @@ function initApp() {
 
     // Database deduplication and methods repair
     setTimeout(async () => {
-      if (localStorage.getItem('fixed_db_v4')) return;
+      if (localStorage.getItem('fixed_db_v6')) return;
       try {
+        // Dedup exercises
         const exs = await db.getAll('exercises');
         const seen = new Map();
         for (const ex of exs) {
@@ -163,50 +164,62 @@ function initApp() {
             }
           }
         }
-        const methods = await db.getAll('methods');
-        if (methods.length < 35) {
-          const defaultMethods = [
-            { name: 'Drop-set', description: 'Executa até a falha, reduz carga ~20% e continua sem descanso', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '0s' },
-            { name: 'Rest-Pause', description: 'Até a falha, pausa 15-20s, continua até nova falha', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '15s' },
-            { name: 'Cluster', description: '2-3 reps, pausa 10-15s, repetir 5x. Força máxima.', category: 'Força', is_default: true, sets: '5', repsHint: '2-3', restHint: '10-15s' },
-            { name: 'Bi-set', description: 'Dois exercícios seguidos sem descanso', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60s' },
-            { name: 'Tri-set', description: 'Três exercícios seguidos sem descanso', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60-90s' },
-            { name: 'Quad-set / Super-set', description: 'Quatro ou mais exercícios em sequência', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60-90s' },
-            { name: 'Pirâmide Crescente', description: 'Aumenta a carga e diminui repetições a cada série', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '15-12-10-8', restHint: '60-90s' },
-            { name: 'Pirâmide Decrescente', description: 'Diminui a carga e aumenta repetições a cada série', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '8-10-12-15', restHint: '60-90s' },
-            { name: 'FST-7', description: '7 séries do mesmo exercício no fim do treino com 30s de descanso', category: 'Hipertrofia', is_default: true, sets: '7', repsHint: '10-12', restHint: '30s' },
-            { name: 'GVT (10x10)', description: '10 séries de 10 repetições com a mesma carga (60% 1RM)', category: 'Hipertrofia', is_default: true, sets: '10', repsHint: '10', restHint: '60s' },
-            { name: 'SST (Sarcoplasma Stimulating)', description: 'Alta variação de estímulos (falha, rests curtos, isometria)', category: 'Hipertrofia Avançada', is_default: true, sets: '1', repsHint: 'Até falhar 3x', restHint: '15s' },
-            { name: 'Método Búlgaro', description: 'Múltiplas sessões diárias, foco em 1RM (levantamento de peso)', category: 'Força', is_default: true, sets: '5-8', repsHint: '1-3', restHint: '120-180s' },
-            { name: 'Ponto Zero', description: 'Isometria de 3-5s no ponto de maior tensão do movimento', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '8-12', restHint: '60s' },
-            { name: 'Exaustão (Falha Concentrica)', description: 'Séries levadas até o limite da falha muscular concêntrica', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Falha', restHint: '90s' },
-            { name: 'Heavy Duty', description: '1-2 séries até a falha total (incluindo forçadas/negativas)', category: 'Hipertrofia Avançada', is_default: true, sets: '1-2', repsHint: 'Falha', restHint: '120s' },
-            { name: 'Agonista-Antagonista', description: 'Bi-set com músculos opostos (ex: Bíceps e Tríceps)', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '10-12', restHint: '60s' },
-            { name: 'Pico de Contração', description: 'Segurar a contração máxima por 2s no final de cada repetição', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '10-12', restHint: '60s' },
-            { name: 'Tensão Contínua', description: 'Movimento lento sem pausar nos pontos de descanso articular', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '12-15', restHint: '60s' },
-            { name: 'Negativa Focada', description: 'Fase excêntrica controlada (4-6 segundos)', category: 'Força', is_default: true, sets: '3-4', repsHint: '6-8', restHint: '90s' },
-            { name: 'Circuito', description: 'Passagem por vários exercícios com mínimo ou nenhum descanso', category: 'Condicionamento', is_default: true, sets: '3', repsHint: '15-20', restHint: '0s' },
-            { name: 'Tabata (20/10)', description: '20s de esforço máximo, 10s de descanso, 8 rounds', category: 'Condicionamento', is_default: true, sets: '8', repsHint: 'Máximo', restHint: '10s' },
-            { name: 'EMOM', description: 'Every Minute on the Minute: Realizar trabalho no inicio de cada minuto', category: 'Condicionamento', is_default: true, sets: '10', repsHint: 'Atingir meta', restHint: 'Restante' },
-            { name: 'AMRAP', description: 'As Many Rounds/Reps As Possible no tempo estipulado', category: 'Condicionamento', is_default: true, sets: '1', repsHint: 'Máximo', restHint: 'N/A' },
-            { name: 'Rest-Pause Estendido', description: 'Falha -> 15s -> Falha -> 15s -> Falha', category: 'Hipertrofia Avançada', is_default: true, sets: '3', repsHint: 'Falha', restHint: '15s' },
-            { name: 'Myo-Reps', description: 'Série de ativação (12-15) + pequenas séries (3-5) com curtas pausas', category: 'Hipertrofia', is_default: true, sets: '1+4', repsHint: '15 + 3', restHint: '15s' },
-            { name: 'Série 21', description: '7 reps parciais base, 7 parciais topo, 7 completas', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: '21', restHint: '60s' },
-            { name: 'Wave Loading', description: 'Ondulação de carga (ex: 3 reps Pesado, 1 rep Muito Pesado x3)', category: 'Força', is_default: true, sets: '6', repsHint: '3-1-3-1', restHint: '120s' },
-            { name: 'Blood Flow Restriction (Kaatsu)', description: 'Treino com oclusão vascular parcial, altas repetições, baixa carga', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '30-15-15-15', restHint: '30s' },
-            { name: 'Drop-set Duplo', description: 'Duas reduções de carga em seguida, até a falha', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Falha x3', restHint: '0s' },
-            { name: 'Pré-Exaustão', description: 'Exercício isolador seguido imediatamente de um composto', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '12-15', restHint: '60s' },
-            { name: 'Cardio Contínuo', description: 'Exercício cardiovascular mantendo a mesma intensidade', category: 'Condicionamento', is_default: true, sets: '1', repsHint: 'Tempo', restHint: '0s' },
-            { name: 'Endurance (Resistência)', description: 'Foco na resistência muscular (cargas leves, altas repetições)', category: 'Resistência', is_default: true, sets: '3-4', repsHint: '15-20+', restHint: '30-45s' },
-            { name: 'Pirâmide Completa', description: 'Sobe carga e desce rep, depois desce carga e sobe rep', category: 'Hipertrofia', is_default: true, sets: '6', repsHint: '12-10-8-8-10-12', restHint: '60-90s' }
-          ];
-          for (const m of defaultMethods) {
-            if (!methods.find(x => x.name === m.name)) await db.add('methods', m);
+
+        // Dedup methods too
+        const allMethods = await db.getAll('methods');
+        const seenM = new Map();
+        for (const m of allMethods) {
+          const name = (m.name || '').toLowerCase().trim();
+          if (!name) continue;
+          if (!seenM.has(name)) { seenM.set(name, m); } else {
+            await db.delete('methods', m.id);
           }
         }
-        localStorage.setItem('fixed_db_v4', '1');
+
+        // Add missing methods
+        const freshMethods = await db.getAll('methods');
+        const defaultMethods = [
+          { name: 'Drop-set', description: 'Executa até a falha, reduz carga ~20% e continua sem descanso', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '0s' },
+          { name: 'Rest-Pause', description: 'Até a falha, pausa 15-20s, continua até nova falha', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Até a falha', restHint: '15s' },
+          { name: 'Cluster', description: '2-3 reps, pausa 10-15s, repetir 5x. Força máxima.', category: 'Força', is_default: true, sets: '5', repsHint: '2-3', restHint: '10-15s' },
+          { name: 'Bi-set', description: 'Dois exercícios seguidos sem descanso', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60s' },
+          { name: 'Tri-set', description: 'Três exercícios seguidos sem descanso', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60-90s' },
+          { name: 'Quad-set / Super-set', description: 'Quatro ou mais exercícios em sequência', category: 'Condicionamento', is_default: true, sets: '3-4', repsHint: '10-15', restHint: '60-90s' },
+          { name: 'Pirâmide Crescente', description: 'Aumenta a carga e diminui repetições a cada série', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '15-12-10-8', restHint: '60-90s' },
+          { name: 'Pirâmide Decrescente', description: 'Diminui a carga e aumenta repetições a cada série', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '8-10-12-15', restHint: '60-90s' },
+          { name: 'FST-7', description: '7 séries do mesmo exercício no fim do treino com 30s de descanso', category: 'Hipertrofia', is_default: true, sets: '7', repsHint: '10-12', restHint: '30s' },
+          { name: 'GVT (10x10)', description: '10 séries de 10 repetições com a mesma carga (60% 1RM)', category: 'Hipertrofia', is_default: true, sets: '10', repsHint: '10', restHint: '60s' },
+          { name: 'SST (Sarcoplasma Stimulating)', description: 'Alta variação de estímulos (falha, rests curtos, isometria)', category: 'Hipertrofia Avançada', is_default: true, sets: '1', repsHint: 'Até falhar 3x', restHint: '15s' },
+          { name: 'Método Búlgaro', description: 'Múltiplas sessões diárias, foco em 1RM (levantamento de peso)', category: 'Força', is_default: true, sets: '5-8', repsHint: '1-3', restHint: '120-180s' },
+          { name: 'Ponto Zero', description: 'Isometria de 3-5s no ponto de maior tensão do movimento', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '8-12', restHint: '60s' },
+          { name: 'Exaustão (Falha Concentrica)', description: 'Séries levadas até o limite da falha muscular concêntrica', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Falha', restHint: '90s' },
+          { name: 'Heavy Duty', description: '1-2 séries até a falha total (incluindo forçadas/negativas)', category: 'Hipertrofia Avançada', is_default: true, sets: '1-2', repsHint: 'Falha', restHint: '120s' },
+          { name: 'Agonista-Antagonista', description: 'Bi-set com músculos opostos (ex: Bíceps e Tríceps)', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '10-12', restHint: '60s' },
+          { name: 'Pico de Contração', description: 'Segurar a contração máxima por 2s no final de cada repetição', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '10-12', restHint: '60s' },
+          { name: 'Tensão Contínua', description: 'Movimento lento sem pausar nos pontos de descanso articular', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '12-15', restHint: '60s' },
+          { name: 'Negativa Focada', description: 'Fase excêntrica controlada (4-6 segundos)', category: 'Força', is_default: true, sets: '3-4', repsHint: '6-8', restHint: '90s' },
+          { name: 'Circuito', description: 'Passagem por vários exercícios com mínimo ou nenhum descanso', category: 'Condicionamento', is_default: true, sets: '3', repsHint: '15-20', restHint: '0s' },
+          { name: 'Tabata (20/10)', description: '20s de esforço máximo, 10s de descanso, 8 rounds', category: 'Condicionamento', is_default: true, sets: '8', repsHint: 'Máximo', restHint: '10s' },
+          { name: 'EMOM', description: 'Every Minute on the Minute: Realizar trabalho no inicio de cada minuto', category: 'Condicionamento', is_default: true, sets: '10', repsHint: 'Atingir meta', restHint: 'Restante' },
+          { name: 'AMRAP', description: 'As Many Rounds/Reps As Possible no tempo estipulado', category: 'Condicionamento', is_default: true, sets: '1', repsHint: 'Máximo', restHint: 'N/A' },
+          { name: 'Rest-Pause Estendido', description: 'Falha -> 15s -> Falha -> 15s -> Falha', category: 'Hipertrofia Avançada', is_default: true, sets: '3', repsHint: 'Falha', restHint: '15s' },
+          { name: 'Myo-Reps', description: 'Série de ativação (12-15) + pequenas séries (3-5) com curtas pausas', category: 'Hipertrofia', is_default: true, sets: '1+4', repsHint: '15 + 3', restHint: '15s' },
+          { name: 'Série 21', description: '7 reps parciais base, 7 parciais topo, 7 completas', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: '21', restHint: '60s' },
+          { name: 'Wave Loading', description: 'Ondulação de carga (ex: 3 reps Pesado, 1 rep Muito Pesado x3)', category: 'Força', is_default: true, sets: '6', repsHint: '3-1-3-1', restHint: '120s' },
+          { name: 'Blood Flow Restriction (Kaatsu)', description: 'Treino com oclusão vascular parcial, altas repetições, baixa carga', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '30-15-15-15', restHint: '30s' },
+          { name: 'Drop-set Duplo', description: 'Duas reduções de carga em seguida, até a falha', category: 'Hipertrofia', is_default: true, sets: '3', repsHint: 'Falha x3', restHint: '0s' },
+          { name: 'Pré-Exaustão', description: 'Exercício isolador seguido imediatamente de um composto', category: 'Hipertrofia', is_default: true, sets: '3-4', repsHint: '12-15', restHint: '60s' },
+          { name: 'Cardio Contínuo', description: 'Exercício cardiovascular mantendo a mesma intensidade', category: 'Condicionamento', is_default: true, sets: '1', repsHint: 'Tempo', restHint: '0s' },
+          { name: 'Endurance (Resistência)', description: 'Foco na resistência muscular (cargas leves, altas repetições)', category: 'Resistência', is_default: true, sets: '3-4', repsHint: '15-20+', restHint: '30-45s' },
+          { name: 'Pirâmide Completa', description: 'Sobe carga e desce rep, depois desce carga e sobe rep', category: 'Hipertrofia', is_default: true, sets: '6', repsHint: '12-10-8-8-10-12', restHint: '60-90s' },
+          { name: 'Pirâmide', description: 'Variação de pirâmide com ajuste de carga por série', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '12-10-8-6', restHint: '60-90s' },
+        ];
+        for (const m of defaultMethods) {
+          if (!freshMethods.find(x => x.name === m.name)) await db.add('methods', m);
+        }
+        localStorage.setItem('fixed_db_v6', '1');
         window.location.reload();
-      } catch(e) {}
+      } catch(e) { console.error('DB repair error:', e); }
     }, 2000);
   });
   
