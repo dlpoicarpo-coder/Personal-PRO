@@ -134,6 +134,9 @@ export async function renderTracker() {
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver" style="padding:4px 6px;color:var(--accent)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
+                <button class="btn btn-ghost btn-sm edit-session-btn" data-id="${s.id}" title="Editar" style="padding:4px 6px;color:var(--text-muted)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
                 <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir" style="padding:4px 6px;color:var(--danger)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 </button>
@@ -342,6 +345,17 @@ export function initTracker(navigateFn) {
       const students = await db.getAll('students');
       const student  = students.find(x => x.id === session.studentId);
       showSessionSummary(buildSessionSummary(session, student), session, student, navigateFn);
+    });
+  });
+
+  // Editar sessão
+  document.querySelectorAll('.edit-session-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const session  = await db.get('sessions', btn.dataset.id);
+      if (!session) return;
+      const students = await db.getAll('students');
+      const student  = students.find(x => x.id === session.studentId);
+      editSessionSummaryModal(session, student, navigateFn);
     });
   });
 
@@ -892,6 +906,46 @@ function buildSessionSummary(session, student) {
   return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${new Date(session.date).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
 }
 
+// ── EDIT SUMMARY ─────────────────────────────────────────────
+function editSessionSummaryModal(session, student, navigateFn) {
+  closeModal(() => {
+    openModal({
+      title: 'Editar Resumo da Sessão', size: 'md',
+      content: `
+        <form id="editPostF">
+          <div class="form-group">
+            <div class="flex items-center justify-between mb-xs">
+              <label class="form-label" style="margin:0">PSE (Esforço)</label>
+              <span style="font-size:1.2rem;font-weight:700;color:var(--primary)" id="editPseV">${session.postBiofeedback?.pse || 7}</span>
+            </div>
+            <input name="pse" type="range" min="1" max="10" value="${session.postBiofeedback?.pse || 7}" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('editPseV').textContent=this.value" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="3">${session.postBiofeedback?.notes || ''}</textarea>
+          </div>
+        </form>`,
+      actions: [
+        { label: 'Cancelar', class: 'btn-secondary', onClick: () => {
+          closeModal();
+          showSessionSummary(buildSessionSummary(session, student), session, student, navigateFn);
+        }},
+        { label: 'Salvar', class: 'btn-primary', onClick: async () => {
+          const fd = new FormData(document.getElementById('editPostF'));
+          session.postBiofeedback = session.postBiofeedback || {};
+          session.postBiofeedback.pse = parseInt(fd.get('pse'));
+          session.postBiofeedback.notes = fd.get('notes');
+          await db.put('sessions', session);
+          notify.success('Resumo atualizado!');
+          closeModal(() => {
+            showSessionSummary(buildSessionSummary(session, student), session, student, navigateFn);
+          });
+        }}
+      ]
+    });
+  });
+}
+
 // ── SHOW SUMMARY ─────────────────────────────────────────────
 function showSessionSummary(summaryText, session, student, navigateFn) {
   const durMin = Math.round((session.totalDuration||0)/60);
@@ -1000,6 +1054,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
         window.open(`https://wa.me/${phone.startsWith('55')?phone:'55'+phone}?text=${encodeURIComponent(summaryText)}`, '_blank');
       }},
       { label: 'Copiar', class: 'btn-secondary', onClick: () => { navigator.clipboard?.writeText(summaryText); notify.success('Copiado!'); }},
+      { label: 'Editar', class: 'btn-secondary', onClick: () => editSessionSummaryModal(session, student, navigateFn) },
       { label: 'PDF', class: 'btn-secondary', onClick: () => generateSessionPDF(session, student) },
       { label: 'Fechar', class: 'btn-primary', onClick: () => { closeModal(); navigateFn('/tracker'); }},
     ]
