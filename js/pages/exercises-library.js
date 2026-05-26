@@ -105,6 +105,7 @@ export async function renderExercisesLibrary() {
             <option value="">Todas as categorias</option>
             ${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}
           </select>
+          ${adminMode ? `<button class="btn btn-secondary btn-sm" id="dedupBtn">Limpar Duplicados</button>` : ''}
           <button class="btn btn-primary btn-sm" id="addExerciseBtn">+ Novo Exercício</button>
         </div>
         <div class="flex gap-sm mt-sm" style="flex-wrap:wrap;align-items:center">
@@ -411,7 +412,6 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
-  // Adicionar exercício
   const openAddEx = () => openModal({
     title: '+ Novo Exercício', size: 'md',
     preventBackdropClose: true,
@@ -429,6 +429,28 @@ export function initExercisesLibrary(navigateFn) {
     ]
   });
   document.getElementById('addExerciseBtn')?.addEventListener('click', openAddEx);
+
+  document.getElementById('dedupBtn')?.addEventListener('click', async () => {
+    if (!window.confirm('Isto removerá exercícios com nomes idênticos mantendo apenas um. Continuar?')) return;
+    const allEx = await db.getAll('exercises');
+    const seen = new Set();
+    let count = 0;
+    for (const ex of allEx) {
+      const name = ex.name.toLowerCase().trim();
+      if (seen.has(name)) {
+        await db.delete('exercises', ex.id);
+        count++;
+      } else {
+        seen.add(name);
+      }
+    }
+    if (count > 0) {
+      notify.success(`${count} exercícios duplicados removidos!`);
+      navigateFn('/exercicios');
+    } else {
+      notify.success('Nenhum exercício duplicado encontrado.');
+    }
+  });
 
   // Editar exercício
   document.querySelectorAll('.edit-exercise').forEach(btn => {

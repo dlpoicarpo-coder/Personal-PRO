@@ -134,7 +134,7 @@ export async function syncTrainerProfile() {
       await db.put('settings', trainer);
     }
 
-    return { trainerAuth, trainer };
+    return { user, trainer };
   } catch (err) {
     console.warn('Erro ao sincronizar perfil do treinador:', err);
     return null;

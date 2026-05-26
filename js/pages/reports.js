@@ -653,7 +653,7 @@ export async function initReports(navigateFn) {
 
       ${sessions.length ? `
       <h2>Sessões Realizadas</h2>
-      <p class="section-desc">${sessions.length} sessão(ões) · Volume total: ${totalVol.toLocaleString('pt-BR')} kg · Média/sessão: ${avgVolPerSession.toLocaleString('pt-BR')} kg · Duração média: ${avgDuration}min</p>
+      <p class="section-desc">${sessions.length} sessão(ões) · Volume total: ${totalVol.toLocaleString('pt-BR')} kg · Média/sessão: ${sessions.length ? Math.round(totalVol / sessions.length).toLocaleString('pt-BR') : 0} kg · Duração média: ${avgDuration}min</p>
       <table>
         <thead><tr>
           <th>Data</th><th>Treino</th><th>Dur.</th><th>Volume</th><th>Séries</th>

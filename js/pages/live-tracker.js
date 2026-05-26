@@ -616,25 +616,36 @@ export function initTracker(navigateFn) {
       const curEx = state.session?.exercises?.[state.exIdx] || {};
       const isCardio = (curEx.name || '').toLowerCase().match(/cardio|aeróbico|esteira|bike|hiit|corrida|elíptico|natação/);
 
+      // Iniciar timer de descanso assim que abrir o modal (conforme solicitado)
+      state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
+      state.restTimer.reset(); state.restTimer.start();
+      const rb = document.getElementById('goRest'); if (rb) rb.textContent = '⏸ Pausar Descanso';
+      const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
+
       openModal({
         title: `Feedback da Série ${i + 1}`,
         size: 'sm',
         content: `
-          <div style="margin-bottom:16px">
-            <label class="form-label">PSE (Quão difícil foi?) *</label>
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-              ${[1,2,3,4,5,6,7,8,9,10].map(val => `
-                <label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px">
-                  <input type="radio" name="modalPse" value="${val}" ${val===7?'checked':''} style="width:20px;height:20px;accent-color:var(--warning)" />
-                  <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span>
-                </label>
-              `).join('')}
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted)"><span>1=Fácil</span><span>5=Médio</span><span>10=Máximo</span></div>
+          <div class="form-group">
+            <label class="form-label">PSE (Escala de Borg Modificada) *</label>
+            <select class="form-select" id="modalPse" style="font-size:0.9rem">
+              <option value="">Selecione o esforço</option>
+              <option value="0">0 - Repouso / Nenhum esforço</option>
+              <option value="1">1 - Muito fraco</option>
+              <option value="2">2 - Fraco</option>
+              <option value="3">3 - Moderado</option>
+              <option value="4">4 - Um pouco forte</option>
+              <option value="5">5 - Forte</option>
+              <option value="6">6 - Forte +</option>
+              <option value="7" selected>7 - Muito forte</option>
+              <option value="8">8 - Muito forte +</option>
+              <option value="9">9 - Quase máximo</option>
+              <option value="10">10 - Esforço Máximo</option>
+            </select>
           </div>
-          <div style="margin-bottom:16px">
+          <div class="form-group" style="margin-bottom:20px">
             <label class="form-label">RIR (Repetições na Reserva) *</label>
-            <select class="form-select" id="modalRir">
+            <select class="form-select" id="modalRir" style="font-size:0.9rem">
               <option value="">Selecione</option>
               <option value="0">0 - Falha / Sem sobrar nada</option>
               <option value="1">1 - Sobrou 1 rep</option>
@@ -643,13 +654,13 @@ export function initTracker(navigateFn) {
               <option value="4">4+ - Sobraram 4 ou mais</option>
             </select>
           </div>
-          <button id="modalSaveSet" class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem">Confirmar Série</button>
+          <button id="modalSaveSet" class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem">Concluir Série</button>
         `,
         actions: []
       });
 
       document.getElementById('modalSaveSet').addEventListener('click', () => {
-        const pse = parseInt(document.querySelector('input[name="modalPse"]:checked')?.value) || 0;
+        const pse = parseInt(document.getElementById('modalPse').value);
         const rir = parseInt(document.getElementById('modalRir').value);
         if (isNaN(rir) && !isCardio) {
           notify.error('Por favor, preencha o RIR.');
@@ -698,11 +709,6 @@ export function initTracker(navigateFn) {
         state.session.currentExIdx = state.exIdx;
         state.session.workSec = state.workSec;
         db.put('sessions', state.session);
-
-        state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
-        state.restTimer.reset(); state.restTimer.start();
-        const rb = document.getElementById('goRest'); if (rb) rb.textContent = '⏸ Pausar Descanso';
-        const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
 
         notify.info(`Série ${i+1} ✓ — ${finalReps}×${finalLoad}${isCardio?'':'kg'}`);
       });
@@ -993,31 +999,33 @@ function generateSessionPDF(session, student) {
     const peso = student?.weight || session?.studentWeight || (session?.preBiofeedback?.peso) || 70;
     const kcalEst = Calc.caloriasAtividade(peso, durMin, 'musculacao');
 
+    const densidade = session.density ? session.density.toFixed(2) : '0.00';
     const cards = [
-      { label: 'DURAÇÃO', value: durMin + ' min', bg: [239, 246, 255], accent: [59, 130, 246] },
-      { label: 'VOLUME', value: (session.totalVolume || 0) + ' kg', bg: [240, 253, 248], accent: [16, 185, 129] },
-      { label: 'CARGA TOTAL', value: String(cargaTotal), bg: [254, 243, 199], accent: [245, 158, 11] },
+      { label: 'DURAÇÃO', value: durMin + 'm', bg: [239, 246, 255], accent: [59, 130, 246] },
+      { label: 'VOLUME', value: (session.totalVolume || 0) + 'kg', bg: [240, 253, 248], accent: [16, 185, 129] },
+      { label: 'CARGA TOT.', value: String(cargaTotal), bg: [254, 243, 199], accent: [245, 158, 11] },
       { label: 'SÉRIES', value: String(session.totalSets || 0), bg: [245, 243, 255], accent: [139, 92, 246] },
+      { label: 'DENSIDADE', value: densidade, bg: [254, 242, 242], accent: [220, 38, 38] },
       { label: 'PSE', value: String(session.postBiofeedback?.pse || '-'), bg: [254, 226, 226], accent: [239, 68, 68] },
-      { label: 'EST. KCAL', value: kcalEst + ' kcal', bg: [224, 242, 254], accent: [2, 132, 199] },
+      { label: 'KCAL', value: String(kcalEst), bg: [224, 242, 254], accent: [2, 132, 199] },
     ];
 
     let bx = 14;
     cards.forEach(card => {
       doc.setFillColor(...card.bg);
-      doc.roundedRect(bx, 48, 28, 16, 2, 2, 'F');
+      doc.roundedRect(bx, 48, 25, 16, 2, 2, 'F');
       
       doc.setTextColor(100, 116, 139); // Slate-500 for secondary label
-      doc.setFontSize(5.5);
+      doc.setFontSize(5);
       doc.setFont('helvetica', 'normal');
-      doc.text(card.label, bx + 14, 53, { align: 'center' });
+      doc.text(card.label, bx + 12.5, 53, { align: 'center' });
       
       doc.setTextColor(...card.accent);
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setFont('helvetica', 'bold');
-      doc.text(card.value, bx + 14, 60, { align: 'center' });
+      doc.text(card.value, bx + 12.5, 60, { align: 'center' });
       
-      bx += 31; // 28 width + 3 gap = 31
+      bx += 26; // 25 width + 1 gap = 26
     });
 
     let y=74;

@@ -86,7 +86,13 @@ export async function renderWorkouts() {
               ${workouts.map(w => {
                 const st = students.find(s => s.id === w.studentId);
                 const macro = macros.find(m => m.id === w.macrocycleId);
-                const doneSessions = sessions.filter(s => s.workoutId === w.id && s.status === 'completed');
+                const doneSessions = sessions.filter(s => {
+                  if (s.status !== 'completed') return false;
+                  if (s.studentId !== w.studentId) return false;
+                  const sw = workouts.find(xw => xw.id === s.workoutId);
+                  if (!sw) return false;
+                  return sw.name === w.name && sw.macrocycleId === w.macrocycleId;
+                });
                 const isRealizado = doneSessions.length > 0;
                 const isDeload = w.isDeload;
                 const intensityColor = !w.intensityPct ? '' :
@@ -509,7 +515,14 @@ export function initWorkouts(navigateFn) {
       if (!w) return;
       const st = await db.get('students', w.studentId);
       const macro = w.macrocycleId ? await db.get('macrocycles', w.macrocycleId) : null;
-      const doneSessions = (await db.getAll('sessions')).filter(s => s.workoutId === w.id && s.status === 'completed');
+      const allWorkouts = await db.getAll('workouts');
+      const doneSessions = (await db.getAll('sessions')).filter(s => {
+        if (s.status !== 'completed') return false;
+        if (s.studentId !== w.studentId) return false;
+        const sw = allWorkouts.find(xw => xw.id === s.workoutId);
+        if (!sw) return false;
+        return sw.name === w.name && sw.macrocycleId === w.macrocycleId;
+      });
 
       openModal({
         title: w.name, size: 'lg',
