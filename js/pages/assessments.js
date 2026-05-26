@@ -335,6 +335,7 @@ export async function renderAssessments() {
                       </td>
                       <td style="display:flex;gap:3px">
                         <button class="btn btn-ghost btn-sm view-rm1" data-id="${a.id}" style="padding:4px 5px;color:var(--accent)">${ICON_EYE}</button>
+                        <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
                         <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
                       </td>
                     </tr>`;
@@ -376,7 +377,8 @@ export async function renderAssessments() {
                     <td style="color:var(--accent);font-weight:700">${a.vo2max?Calc.formatNum(a.vo2max)+' ml/kg/min':'—'}</td>
                     <td>${a.fcLimiar?a.fcLimiar+' bpm':'—'}</td>
                     <td>${a.limiar2?a.limiar2+' km/h':'—'}</td>
-                    <td>
+                    <td style="display:flex;gap:3px">
+                      <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
                       <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
                     </td>
                   </tr>`;
@@ -785,16 +787,116 @@ export function initAssessments(navigateFn) {
     });
   });
 
-  // ── EDITAR AVALIAÇÃO (composição) ──────────────────────────
+  // ── EDITAR AVALIAÇÃO (composição, força, conconi) ──────────
   document.querySelectorAll('.edit-assessment').forEach(btn => {
     btn.addEventListener('click', async () => {
       const a = await db.get('assessments', btn.dataset.id);
       if (!a) return;
       const st = await db.get('students', a.studentId);
-      openModal({
-        title: `Editar Avaliação — ${st?.name || 'Aluno'}`, size: 'lg',
-        preventBackdropClose: true,
-        content: `<form id="editAssForm">
+      
+      let content = '';
+      let title = `Editar Avaliação — ${st?.name || 'Aluno'}`;
+      let onSaveFn = async () => {};
+
+      if (a.type === 'forca') {
+        title = `Editar 1RM — ${st?.name || 'Aluno'}`;
+        content = `<form id="editAssForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="${a.date ? a.date.slice(0,10) : ''}" />
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Exercício</label>
+            <input class="form-input" name="exercise" list="editAssExList" value="${a.exercise || ''}" placeholder="Ex: Supino Reto" required />
+            <datalist id="editAssExList">${RM_EXERCISES.map(e=>`<option value="${e}">`).join('')}</datalist>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Carga (kg)</label>
+              <input class="form-input" name="carga" type="number" step="0.5" value="${a.carga || ''}" required />
+            </div>
+            <div class="form-group"><label class="form-label">Repetições</label>
+              <input class="form-input" name="reps" type="number" min="1" max="20" value="${a.reps || ''}" required />
+            </div>
+            <div class="form-group"><label class="form-label">Fórmula</label>
+              <select class="form-select" name="formula">
+                <option value="epley" ${a.formula==='epley'?'selected':''}>Epley</option>
+                <option value="brzycki" ${a.formula==='brzycki'?'selected':''}>Brzycki</option>
+                <option value="lander" ${a.formula==='lander'?'selected':''}>Lander</option>
+                <option value="lombardi" ${a.formula==='lombardi'?'selected':''}>Lombardi</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="2">${a.notes || ''}</textarea>
+          </div>
+        </form>`;
+        onSaveFn = async () => {
+          const fd = new FormData(document.getElementById('editAssForm'));
+          const carga = parseFloat(fd.get('carga')) || 0;
+          const reps = parseInt(fd.get('reps')) || 0;
+          const formula = fd.get('formula') || 'epley';
+          const exercise = fd.get('exercise');
+          const rm1 = Calc.rm1Estimado(carga, reps, formula);
+          const all = await db.getAll('assessments');
+          const prev = all.filter(x => x.studentId === a.studentId && x.exercise === exercise && x.id !== a.id && x.rm1).sort((x,y)=>new Date(y.date)-new Date(x.date));
+          const isPR = !prev.length || rm1 > prev[0].rm1;
+          const updated = {
+            ...a, date: fd.get('date') || a.date,
+            exercise, carga, reps, formula, rm1, isPR,
+            notes: fd.get('notes'),
+          };
+          await db.put('assessments', updated);
+          notify.success('1RM atualizado!');
+        };
+      } else if (a.type === 'conconi') {
+        title = `Editar Conconi — ${st?.name || 'Aluno'}`;
+        content = `<form id="editAssForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="${a.date ? a.date.slice(0,10) : ''}" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">FC Pico (bpm)</label>
+              <input class="form-input" name="fcPico" type="number" value="${a.fcPico || ''}" />
+            </div>
+            <div class="form-group"><label class="form-label">FC Limiar Anaeróbio</label>
+              <input class="form-input" name="fcLimiar" type="number" value="${a.fcLimiar || ''}" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">VMA (km/h)</label>
+              <input class="form-input" name="vma" type="number" step="0.1" value="${a.vma || ''}" />
+            </div>
+            <div class="form-group"><label class="form-label">Limiar 2 (km/h)</label>
+              <input class="form-input" name="limiar2" type="number" step="0.1" value="${a.limiar2 || ''}" />
+            </div>
+            <div class="form-group"><label class="form-label">VO₂max</label>
+              <input class="form-input" name="vo2max" type="number" step="0.1" value="${a.vo2max || ''}" />
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="2">${a.notes || ''}</textarea>
+          </div>
+        </form>`;
+        onSaveFn = async () => {
+          const fd = new FormData(document.getElementById('editAssForm'));
+          const vma = parseFloat(fd.get('vma')) || null;
+          const vo2 = vma ? Calc.vo2maxConconi(vma) : null;
+          const updated = {
+            ...a, date: fd.get('date') || a.date,
+            fcPico: parseFloat(fd.get('fcPico')) || null,
+            fcLimiar: parseFloat(fd.get('fcLimiar')) || null,
+            vma,
+            limiar2: parseFloat(fd.get('limiar2')) || null,
+            vo2max: parseFloat(fd.get('vo2max')) || vo2,
+            notes: fd.get('notes'),
+          };
+          await db.put('assessments', updated);
+          notify.success('Protocolo Conconi atualizado!');
+        };
+      } else {
+        content = `<form id="editAssForm">
           <div class="form-row">
             <div class="form-group"><label class="form-label">Data</label>
               <input class="form-input" name="date" type="date" value="${a.date ? a.date.slice(0,10) : ''}" />
@@ -835,29 +937,38 @@ export function initAssessments(navigateFn) {
           <div class="form-group"><label class="form-label">Observações</label>
             <textarea class="form-textarea" name="notes" rows="2">${a.notes || ''}</textarea>
           </div>
-        </form>`,
+        </form>`;
+        onSaveFn = async () => {
+          const fd = new FormData(document.getElementById('editAssForm'));
+          const peso = parseFloat(fd.get('peso')) || a.peso;
+          const altura = parseFloat(fd.get('altura')) || a.altura;
+          const percentualGordura = parseFloat(fd.get('percentualGordura')) || a.percentualGordura;
+          const massaMagra = parseFloat(fd.get('massaMagra')) || a.massaMagra;
+          const pctMassaMuscular = parseFloat(fd.get('pctMassaMuscular')) || a.pctMassaMuscular;
+          const cintura = parseFloat(fd.get('cintura')) || a.cintura;
+          const quadril = parseFloat(fd.get('quadril')) || a.quadril;
+          const braco = parseFloat(fd.get('braco')) || a.braco;
+          const massaGorda = peso && massaMagra ? Math.round((peso - massaMagra) * 10) / 10 : a.massaGorda;
+          const rcq = cintura && quadril ? Math.round((cintura / quadril) * 100) / 100 : a.rcq;
+          const updated = {
+            ...a, date: fd.get('date') || a.date,
+            peso, altura, percentualGordura, massaMagra, massaGorda,
+            pctMassaMuscular, cintura, quadril, braco, rcq,
+            notes: fd.get('notes'),
+          };
+          await db.put('assessments', updated);
+          notify.success('Avaliação atualizada!');
+        };
+      }
+
+      openModal({
+        title, size: a.type==='composicao'?'lg':'md',
+        preventBackdropClose: true,
+        content,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
-            const fd = new FormData(document.getElementById('editAssForm'));
-            const peso = parseFloat(fd.get('peso')) || a.peso;
-            const altura = parseFloat(fd.get('altura')) || a.altura;
-            const percentualGordura = parseFloat(fd.get('percentualGordura')) || a.percentualGordura;
-            const massaMagra = parseFloat(fd.get('massaMagra')) || a.massaMagra;
-            const pctMassaMuscular = parseFloat(fd.get('pctMassaMuscular')) || a.pctMassaMuscular;
-            const cintura = parseFloat(fd.get('cintura')) || a.cintura;
-            const quadril = parseFloat(fd.get('quadril')) || a.quadril;
-            const braco = parseFloat(fd.get('braco')) || a.braco;
-            const massaGorda = peso && massaMagra ? Math.round((peso - massaMagra) * 10) / 10 : a.massaGorda;
-            const rcq = cintura && quadril ? Math.round((cintura / quadril) * 100) / 100 : a.rcq;
-            const updated = {
-              ...a, date: fd.get('date') || a.date,
-              peso, altura, percentualGordura, massaMagra, massaGorda,
-              pctMassaMuscular, cintura, quadril, braco, rcq,
-              notes: fd.get('notes'),
-            };
-            await db.put('assessments', updated);
-            notify.success('Avaliação atualizada!');
+            await onSaveFn();
             closeModal();
             navigateFn('/avaliacoes');
           }}

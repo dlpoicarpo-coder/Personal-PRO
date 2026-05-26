@@ -18,6 +18,7 @@ import { renderSettings, initSettings } from './pages/settings.js';
 import { renderPreForm, initPreForm, renderPostForm, initPostForm } from './pages/student-forms.js';
 import { renderAnamnesis, initAnamnesis, renderAnamneseForm, initAnamneseForm } from './pages/anamnesis.js';
 import { renderTutorial, initTutorial } from './pages/tutorial.js';
+import { renderStudentPortal, initStudentPortal } from './pages/student-portal.js';
 
 // Central Router
 const routes = {
@@ -60,6 +61,13 @@ export async function navigateTo(path) {
     appContainer.className = '';
     appContainer.innerHTML = await renderAnamneseForm();
     initAnamneseForm();
+    return;
+  }
+  if (path.startsWith('/portal/')) {
+    const rawParam = path.split('/portal/')[1];
+    appContainer.className = '';
+    appContainer.innerHTML = await renderStudentPortal(rawParam);
+    initStudentPortal();
     return;
   }
 

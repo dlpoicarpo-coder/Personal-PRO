@@ -407,6 +407,8 @@ export function initPeriodization(navigateFn) {
     const defaultWeeks = settings.defaultMacrocycleWeeks || 12;
     // Busca modelos personalizados da aba Exercícios → Meus Modelos (store cycles com isTemplate)
     const customCycles = (await db.getAll('cycles')).filter(c => c.isTemplate);
+    const allMet = await db.getAll('methods');
+    const allEx = await db.getAll('exercises');
 
     let selectedTemplate = null;
 
@@ -480,17 +482,40 @@ export function initPeriodization(navigateFn) {
 
           <!-- COLUNA ESQUERDA: Modelo de Treino -->
           <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-              <span style="display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px"></span>
-              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Modelo de Treino</span>
+            <div id="standardTplList">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span style="display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px"></span>
+                <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Modelo de Treino</span>
+              </div>
+
+              <!-- Cartão do Builder Personalizado -->
+              <div class="periodo-tpl-card" id="customBuilderCard" data-tpl-id="custom_builder" style="
+                padding:12px 14px;border:2px dashed var(--primary);
+                border-radius:var(--radius-md);cursor:pointer;margin-bottom:16px;
+                transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
+                <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">✨ Criar Periodização Personalizada (Do Zero)</div>
+                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">Selecione para montar sua própria periodização, selecionando os exercícios da biblioteca um por um.</div>
+              </div>
+
+              <p class="text-xs text-muted mb-sm">Templates padrão do sistema <span style="color:var(--text-muted);font-size:0.65rem">(Musculação + Cardio)</span></p>
+              <div style="display:flex;flex-direction:column;gap:0;margin-bottom:16px;max-height:280px;overflow-y:auto;padding-right:2px" id="builtInTpls">${builtInHTML}</div>
+
+              <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:4px">
+                <p class="text-xs text-muted mb-sm">Seus modelos <span style="color:var(--text-muted);font-size:0.65rem">(Exercícios → Meus Modelos)</span></p>
+                <div style="display:flex;flex-direction:column;gap:5px" id="personalTpls">${personalHTML}</div>
+              </div>
             </div>
 
-            <p class="text-xs text-muted mb-sm">Templates padrão do sistema <span style="color:var(--text-muted);font-size:0.65rem">(Musculação + Cardio)</span></p>
-            <div style="display:flex;flex-direction:column;gap:0;margin-bottom:16px;max-height:340px;overflow-y:auto;padding-right:2px" id="builtInTpls">${builtInHTML}</div>
-
-            <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:4px">
-              <p class="text-xs text-muted mb-sm">Seus modelos <span style="color:var(--text-muted);font-size:0.65rem">(Exercícios → Meus Modelos)</span></p>
-              <div style="display:flex;flex-direction:column;gap:5px" id="personalTpls">${personalHTML}</div>
+            <!-- Builder customizado oculto inicialmente -->
+            <div id="customBuilderList" style="display:none">
+              <button type="button" class="btn btn-ghost btn-sm mb-sm" id="cancelCustomBuilderBtn" style="font-size:0.75rem;padding:4px">← Escolher Template Pronto</button>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span style="display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px"></span>
+                <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Periodização Personalizada</span>
+              </div>
+              <div id="customPeriodizationBuilder" style="max-height:450px;overflow-y:auto;padding-right:4px">
+                <!-- Preenchido dinamicamente -->
+              </div>
             </div>
           </div>
 
@@ -555,7 +580,7 @@ export function initPeriodization(navigateFn) {
 
               <div class="form-group">
                 <label class="form-label">Dias de treino</label>
-                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <div style="display:flex;flex-wrap:wrap;gap:6px" id="builderDaysSelector">
                   ${TRAINING_DAYS.map(d => `
                     <label style="display:flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--border-color);border-radius:var(--radius-sm);cursor:pointer;font-size:0.8rem;transition:border-color var(--transition-fast),background var(--transition-fast)">
                       <input type="checkbox" name="trainingDays" value="${d.id}" ${[1,3,5].includes(d.id)?'checked':''}/>${d.label}
@@ -593,6 +618,8 @@ export function initPeriodization(navigateFn) {
             </div>
           </div>
         </div>
+
+        <datalist id="tplExList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>
       `,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
@@ -601,7 +628,7 @@ export function initPeriodization(navigateFn) {
             const fd = new FormData(document.getElementById('macroForm'));
             const d = Object.fromEntries(fd);
             if (!d.studentId) { notify.error('Selecione um aluno'); return; }
-            if (!selectedTemplate) { notify.error('Selecione um modelo de treino à esquerda'); return; }
+            if (!selectedTemplate) { notify.error('Selecione um modelo de treino ou crie um personalizado'); return; }
 
             d.totalWeeks  = parseInt(d.totalWeeks) || 12;
             d.deloadEvery = d.deloadEvery === '' ? 4 : parseInt(d.deloadEvery);
@@ -609,19 +636,53 @@ export function initPeriodization(navigateFn) {
             d.sessionDuration = parseInt(d.sessionDuration) || 60;
             d.status    = 'active';
             d.createdAt = new Date().toISOString();
-            d.workoutModelName = selectedTemplate.name;
-            // Capturar local de treino (cardio)
-            const localSel = document.getElementById('cardioLocalSel');
-            if (localSel) d.cardioLocal = localSel.value;
+
+            let sessions = [];
+            const exerciseLoads = {};
+
+            if (selectedTemplate.id === 'custom_builder') {
+              d.workoutModelName = 'Personalizado';
+              // Build dynamic sessions array from builder inputs
+              for (let di = 0; di < d.trainingDays.length; di++) {
+                const exercises = [];
+                const wkEl = document.querySelector(`#customPeriodizationBuilder .tpl-workout[data-wi="${di}"]`);
+                if (wkEl) {
+                  wkEl.querySelectorAll('.tpl-ex-row').forEach((exEl, ei) => {
+                    const name = document.querySelector(`[name="wk_${di}_ex_${ei}"]`)?.value || '';
+                    if (name) {
+                      const sets = parseInt(document.querySelector(`[name="wk_${di}_sets_${ei}"]`)?.value) || 3;
+                      const reps = document.querySelector(`[name="wk_${di}_reps_${ei}"]`)?.value || '12';
+                      const rest = document.querySelector(`[name="wk_${di}_rest_${ei}"]`)?.value || '60';
+                      const method = document.querySelector(`[name="wk_${di}_method_${ei}"]`)?.value || '';
+                      const ex1rm = parseFloat(document.querySelector(`[name="wk_${di}_1rm_${ei}"]`)?.value) || 60;
+                      
+                      exercises.push({ name, sets, reps, rest, method });
+                      exerciseLoads[name] = ex1rm;
+                    }
+                  });
+                }
+                const name = document.querySelector(`[name="wk_name_${di}"]`)?.value || `Treino ${String.fromCharCode(65 + di)}`;
+                sessions.push({ name, exercises });
+              }
+              selectedTemplate = { name: 'Personalizado', sessions };
+            } else {
+              d.workoutModelName = selectedTemplate.name;
+              const localSel = document.getElementById('cardioLocalSel');
+              if (localSel) d.cardioLocal = localSel.value;
+
+              const loadInputs = document.querySelectorAll('.load-input');
+              loadInputs.forEach(inp => { exerciseLoads[inp.dataset.exKey] = parseFloat(inp.value) || 20; });
+              sessions = selectedTemplate.sessions || [{ name: selectedTemplate.name, exercises: selectedTemplate.exercises || [] }];
+            }
+
+            if (sessions.length === 0 || sessions.every(s => s.exercises.length === 0)) {
+              notify.error('Configure pelo menos um exercício nos seus treinos.');
+              return;
+            }
 
             // Gerar plano semanal interno (não depende de generateWeeklyPlan)
             d.weeks = generateInternalWeeklyPlan(d.type, d.totalWeeks, d.deloadEvery);
 
-            const loadInputs = document.querySelectorAll('.load-input');
-            const exerciseLoads = {};
-            loadInputs.forEach(inp => { exerciseLoads[inp.dataset.exKey] = parseFloat(inp.value) || 20; });
-
-            const sessions = selectedTemplate.sessions || [{ name: selectedTemplate.name, exercises: selectedTemplate.exercises || [] }];
             const allExercises = sessions.flatMap(s => s.exercises);
 
             d.weekDetails = (d.weeks || []).map((w, i) => {
@@ -665,25 +726,22 @@ export function initPeriodization(navigateFn) {
                 const date = new Date(weekStart);
                 const currentDay = date.getDay();
 
-                // Corrigir cálculo de data: nunca voltar para semana anterior
                 let diff = dayOfWeek - currentDay;
-                if (w === 0 && diff < 0) diff += 7; // primeira semana: avança para próxima ocorrência
+                if (w === 0 && diff < 0) diff += 7;
                 else if (diff < 0) diff += 7;
                 date.setDate(date.getDate() + diff);
 
                 const wkExercises = session.exercises.map(ex => {
                   const oneRM = exerciseLoads[ex.name] || 60;
-                  const exType = document.querySelector(`.load-input[data-ex-key="${ex.name}"]`)?.dataset.type || 'weight';
+                  const dbEx = allEx.find(e => e.name.toLowerCase().trim() === ex.name.toLowerCase().trim());
+                  const exType = dbEx?.loadType || 'weight';
 
                   let load;
                   if (exType === 'time') {
-                    // Tempo: aumenta proporcionalmente com a intensidade
                     load = Math.round(oneRM * loadMultiplier);
                   } else if (exType === 'bodyweight') {
-                    // Peso corporal: carga adicional aumenta
                     load = Math.round(oneRM * loadMultiplier * 2) / 2;
                   } else {
-                    // Carga = 1RM × % intensidade da semana
                     load = Math.round(oneRM * (weekPlan.intensityPct / 100) * 2) / 2;
                     if (isDeload) load = Math.round(oneRM * 0.5 * 2) / 2;
                   }
@@ -718,7 +776,7 @@ export function initPeriodization(navigateFn) {
             }
 
             await db.put('macrocycles', { ...savedMacro, ...d });
-            notify.success(`Macrociclo gerado — ${d.generatedWorkouts} sessões criadas`);
+            notify.success(`Macrociclo gerado — ${d.generatedWorkouts} treinos criados`);
             closeModal();
             navigateFn('/periodizacao');
           }
@@ -726,10 +784,81 @@ export function initPeriodization(navigateFn) {
       ]
     });
 
+    // Custom periodization builder logic
+    const customBuilderContainer = document.getElementById('customPeriodizationBuilder');
+    const updateCustomBuilder = async () => {
+      if (selectedTemplate?.id === 'custom_builder') {
+        const checkedDays = Array.from(document.querySelectorAll('#macroForm [name="trainingDays"]:checked')).map(el => parseInt(el.value));
+        const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        
+        let html = '';
+        checkedDays.forEach((day, idx) => {
+          html += `
+            <div class="card mb-md tpl-workout" data-wi="${idx}" style="border:1px solid var(--border-active);padding:12px;margin-bottom:12px">
+              <div class="card-header" style="padding:4px 0 8px">
+                <input class="form-input" name="wk_name_${idx}" value="Treino ${String.fromCharCode(65 + idx)} (${dayNames[day]})" placeholder="Nome do Treino" style="font-weight:600;flex:1;font-size:0.82rem;padding:4px" />
+              </div>
+              <div class="tpl-exercises" data-wi="${idx}">
+                <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-ei="0" style="flex-wrap:wrap">
+                  <input class="form-input" name="wk_${idx}_ex_0" list="tplExList" placeholder="Exercício" style="flex:2;min-width:130px;font-size:0.8rem;padding:4px" required />
+                  <input class="form-input" name="wk_${idx}_sets_0" type="number" value="3" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Séries" />
+                  <input class="form-input" name="wk_${idx}_reps_0" value="12" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="Reps" />
+                  <input class="form-input" name="wk_${idx}_rest_0" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
+                  <select class="form-select" name="wk_${idx}_method_0" style="width:110px;font-size:0.75rem;padding:4px">
+                    <option value="">— Método —</option>
+                    ${allMet.map(m=>`<option value="${m.name}">${m.name}</option>`).join('')}
+                  </select>
+                  <input class="form-input load-input" name="wk_${idx}_1rm_0" type="number" step="0.5" value="60" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM Estimado (kg)" />
+                  <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
+                </div>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm add-tpl-ex mt-xs" data-wi="${idx}" style="font-size:0.75rem;padding:2px 6px">+ Exercício</button>
+            </div>`;
+        });
+
+        if (checkedDays.length === 0) {
+          html = `<div style="padding:20px;text-align:center;color:var(--text-muted)">Selecione pelo menos um dia de treino na coluna de Configuração à direita.</div>`;
+        }
+
+        customBuilderContainer.innerHTML = html;
+
+        // Bind events
+        customBuilderContainer.querySelectorAll('.add-tpl-ex').forEach(btn => {
+          btn.onclick = () => {
+            const wi = btn.dataset.wi;
+            const cnt = customBuilderContainer.querySelector(`.tpl-exercises[data-wi="${wi}"]`);
+            if (!cnt) return;
+            const ei = cnt.querySelectorAll('.tpl-ex-row').length;
+            cnt.insertAdjacentHTML('beforeend', `
+              <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-ei="${ei}" style="flex-wrap:wrap">
+                <input class="form-input" name="wk_${wi}_ex_${ei}" list="tplExList" placeholder="Exercício" style="flex:2;min-width:130px;font-size:0.8rem;padding:4px" required />
+                <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="3" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Séries" />
+                <input class="form-input" name="wk_${wi}_reps_${ei}" value="12" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="Reps" />
+                <input class="form-input" name="wk_${wi}_rest_${ei}" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
+                <select class="form-select" name="wk_${wi}_method_${ei}" style="width:110px;font-size:0.75rem;padding:4px">
+                  <option value="">— Método —</option>
+                  ${allMet.map(m=>`<option value="${m.name}">${m.name}</option>`).join('')}
+                </select>
+                <input class="form-input load-input" name="wk_${wi}_1rm_${ei}" type="number" step="0.5" value="60" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM Estimado (kg)" />
+                <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
+              </div>
+            `);
+            customBuilderContainer.querySelectorAll('.rm-tpl-ex').forEach(b => {
+              b.onclick = () => b.closest('.tpl-ex-row')?.remove();
+            });
+          };
+        });
+
+        customBuilderContainer.querySelectorAll('.rm-tpl-ex').forEach(b => {
+          b.onclick = () => b.closest('.tpl-ex-row')?.remove();
+        });
+      }
+    };
+
     setTimeout(() => {
-      // Quando o aluno selecionado mudar, recalcula as cargas baseadas nas avaliações do novo aluno
+      // Listener on student selection to load their force data if available
       document.querySelector('#macroForm [name="studentId"]')?.addEventListener('change', () => {
-        if (selectedTemplate) {
+        if (selectedTemplate && selectedTemplate.id !== 'custom_builder') {
           const isCardio = selectedTemplate.category === 'Cardio / Endurance';
           if (!isCardio) {
             const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
@@ -739,7 +868,36 @@ export function initPeriodization(navigateFn) {
         }
       });
 
-      document.querySelectorAll('.periodo-tpl-card').forEach(card => {
+      // Bind trainingDays checkboxes changes to update the builder dynamically
+      document.querySelectorAll('#builderDaysSelector input[name="trainingDays"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateCustomBuilder);
+      });
+
+      // Card custom builder selection
+      document.getElementById('customBuilderCard')?.addEventListener('click', () => {
+        document.querySelectorAll('.periodo-tpl-card').forEach(c => {
+          c.classList.remove('selected');
+          c.style.borderColor = 'var(--border-color)';
+          c.style.background = 'var(--bg-card)';
+        });
+        document.getElementById('customBuilderCard').classList.add('selected');
+        document.getElementById('customBuilderCard').style.borderColor = 'var(--primary)';
+
+        selectedTemplate = { id: 'custom_builder', name: 'Personalizado' };
+        document.getElementById('standardTplList').style.display = 'none';
+        document.getElementById('customBuilderList').style.display = 'block';
+        document.getElementById('tplPreview').style.display = 'none';
+        updateCustomBuilder();
+      });
+
+      document.getElementById('cancelCustomBuilderBtn')?.addEventListener('click', () => {
+        selectedTemplate = null;
+        document.getElementById('customBuilderList').style.display = 'none';
+        document.getElementById('standardTplList').style.display = 'block';
+      });
+
+      // Standard templates selection
+      document.querySelectorAll('.periodo-tpl-card:not(#customBuilderCard)').forEach(card => {
         card.addEventListener('mouseenter', () => {
           if (!card.classList.contains('selected')) {
             card.style.borderColor = 'var(--border-active)';
@@ -767,7 +925,6 @@ export function initPeriodization(navigateFn) {
             const cycleId = tplId.replace('cycle_', '');
             db.get('cycles', cycleId).then(cycle => {
               if (!cycle) return;
-              // Converter estrutura cycles → sessions para o sistema
               selectedTemplate = {
                 name: cycle.name,
                 sessions: (cycle.workouts || []).map(w => ({
@@ -787,7 +944,6 @@ export function initPeriodization(navigateFn) {
           } else {
             selectedTemplate = BUILT_IN_WORKOUT_TEMPLATES.find(t => t.id === tplId);
             if (selectedTemplate) {
-              // Auto-selecionar modelo de periodização correspondente
               if (selectedTemplate.perioModel) {
                 const typeSelect = document.querySelector('#macroForm [name="type"]');
                 if (typeSelect) typeSelect.value = selectedTemplate.perioModel;
@@ -796,7 +952,6 @@ export function initPeriodization(navigateFn) {
               const isCardio   = selectedTemplate.category === 'Cardio / Endurance';
               const loadsEl    = document.getElementById('tplExerciseLoads');
               
-              // Converte workouts para sessions se necessário
               if (!selectedTemplate.sessions && selectedTemplate.workouts) {
                 selectedTemplate = {
                   ...selectedTemplate,
@@ -809,7 +964,6 @@ export function initPeriodization(navigateFn) {
               const allSess = selectedTemplate.allSessions || selectedTemplate.sessions || [];
 
               if (isCardio && loadsEl) {
-                // Seletor de protocolo (sessão) + local de treino
                 const hasMultiSess = allSess.length > 1;
                 loadsEl.innerHTML = `
                   <div style="padding:12px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid var(--accent);margin-bottom:10px">
@@ -822,7 +976,6 @@ export function initPeriodization(navigateFn) {
                     <select class="form-select" id="cardioProtocolSel">
                       ${allSess.map((s,i) => `<option value="${i}">${s.name}</option>`).join('')}
                     </select>
-                    <div class="form-hint">Os demais protocolos ficam disponíveis como treinos complementares</div>
                   </div>` : ''}
                   <div class="form-group">
                     <label class="form-label">Local / Equipamento principal</label>
@@ -831,14 +984,9 @@ export function initPeriodization(navigateFn) {
                       <option value="Esteira">Esteira</option>
                       <option value="Bicicleta ergométrica">Bicicleta ergométrica</option>
                       <option value="Ciclismo outdoor">Ciclismo outdoor</option>
-                      <option value="Remo ergométrico">Remo ergométrico</option>
-                      <option value="Elíptico">Elíptico</option>
-                      <option value="Natação">Natação</option>
-                      <option value="Corda de pular">Corda de pular</option>
                     </select>
                   </div>`;
 
-                // Listener para trocar protocolo selecionado
                 if (hasMultiSess) {
                   setTimeout(() => {
                     document.getElementById('cardioProtocolSel')?.addEventListener('change', e => {
@@ -847,12 +995,8 @@ export function initPeriodization(navigateFn) {
                     });
                   }, 50);
                 }
-
-                // Selecionar a primeira sessão por padrão
                 selectedTemplate = { ...selectedTemplate, sessions: [allSess[0]] };
-
               } else {
-                // Musculação: mostrar inputs de carga
                 const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
                   .filter(e => (e.loadType || 'weight') === 'weight');
                 renderLoadInputs(allEx);

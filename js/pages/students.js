@@ -206,9 +206,20 @@ function studentFormHTML(student = {}) {
           <input class="form-input" name="height" type="number" value="${student.height || ''}" placeholder="Ex: 175" />
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Plano / Mensalidade (R$)</label>
+          <input class="form-input" name="monthlyFee" type="number" step="0.01" value="${student.monthlyFee || ''}" placeholder="Ex: 250.00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vencimento da Mensalidade</label>
+          <input class="form-input" name="paymentDue" type="date" value="${student.paymentDue || ''}" />
+        </div>
+      </div>
       <div class="form-group">
-        <label class="form-label">Plano / Mensalidade (R$)</label>
-        <input class="form-input" name="monthlyFee" type="number" step="0.01" value="${student.monthlyFee || ''}" placeholder="Ex: 250.00" />
+        <label class="form-label">PIN do Portal (4 dígitos)</label>
+        <input class="form-input" name="portalPin" type="password" maxlength="4" pattern="[0-9]{4}" value="${student.portalPin || ''}" placeholder="Ex: 1234" />
+        <div class="form-hint">Padrão: 1234</div>
       </div>
       <div class="form-group">
         <label class="form-label">Observações</label>
@@ -220,11 +231,12 @@ function studentFormHTML(student = {}) {
 
 async function viewStudentHTML(student) {
   const age = student.birthDate ? Calc.calcularIdade(student.birthDate) : student.age || '-';
-  const [workouts, assessments, bfData, sessions] = await Promise.all([
+  const [workouts, assessments, bfData, sessions, settings] = await Promise.all([
     db.getAll('workouts').then(w => w.filter(x => x.studentId === student.id).sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,5)),
     db.getAll('assessments').then(a => a.filter(x => x.studentId === student.id).sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,3)),
     db.getAll('biofeedback').then(b => b.filter(x => x.studentId === student.id).sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,5)),
     db.getAll('sessions').then(s => s.filter(x => x.studentId === student.id && x.status === 'completed')),
+    db.get('settings', 'trainer').catch(() => ({})),
   ]);
 
   const totalVol = sessions.reduce((t, s) => t + (s.totalVolume || 0), 0);
@@ -233,9 +245,11 @@ async function viewStudentHTML(student) {
     : '-';
   const phone = student.phone?.replace(/\D/g,'') || '';
   const waUrl = phone ? `https://wa.me/${phone.startsWith('55') ? phone : '55'+phone}` : null;
+  const trainerId = settings?.id || 'trainer';
+  const portalUrl = `${window.location.origin}${window.location.pathname}#/portal/${student.id}?t=${trainerId}`;
 
   return `
-    <div class="flex items-center gap-lg mb-lg">
+    <div class="flex items-center gap-lg mb-lg" style="flex-wrap:wrap">
       <div class="avatar" style="width:64px;height:64px;font-size:1.4rem">
         ${student.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}
       </div>
@@ -247,9 +261,11 @@ async function viewStudentHTML(student) {
           ${student.goal ? `<span class="badge badge-info">${student.goal}</span>` : ''}
         </div>
       </div>
-      <div class="flex gap-sm">
-        ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366">WhatsApp</a>` : ''}
-        <a href="#/tracker" class="btn btn-primary btn-sm">▶ Treino</a>
+      <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
+        ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
+        <a href="#/portal/${student.id}?t=${trainerId}" target="_blank" class="btn btn-secondary btn-sm" style="color:var(--primary);border-color:var(--primary);padding:4px 8px">Portal do Aluno</a>
+        <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${portalUrl}'); notify.success('Link do portal copiado!');">Copiar Link</button>
+        <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">▶ Treino</a>
       </div>
     </div>
 
@@ -266,7 +282,6 @@ async function viewStudentHTML(student) {
       </div>`).join('')}
     </div>
 
-    <!-- Info de contato -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
       ${student.phone ? `<div class="text-sm"><span class="text-muted">Telefone:</span> ${student.phone}</div>` : ''}
       ${student.email ? `<div class="text-sm"><span class="text-muted">Email:</span> ${student.email}</div>` : ''}
@@ -274,6 +289,8 @@ async function viewStudentHTML(student) {
       ${student.height ? `<div class="text-sm"><span class="text-muted">Altura:</span> ${student.height}cm</div>` : ''}
       ${student.weeklyFrequency ? `<div class="text-sm"><span class="text-muted">Frequência:</span> ${student.weeklyFrequency}</div>` : ''}
       ${student.preferredTime ? `<div class="text-sm"><span class="text-muted">Horário:</span> ${student.preferredTime}</div>` : ''}
+      ${student.paymentDue ? `<div class="text-sm"><span class="text-muted">Vencimento:</span> ${Calc.formatDate(student.paymentDue)}</div>` : ''}
+      ${student.portalPin ? `<div class="text-sm"><span class="text-muted">PIN Portal:</span> <code>${student.portalPin}</code></div>` : ''}
     </div>
     ${student.notes ? `<div class="mb-md"><span class="text-muted text-sm">Observações:</span><p class="text-sm" style="margin-top:4px">${student.notes}</p></div>` : ''}
 
