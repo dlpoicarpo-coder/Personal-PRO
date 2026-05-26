@@ -938,14 +938,14 @@ function editSessionSummaryModal(session, student, navigateFn) {
             <div style="max-height: 250px; overflow-y: auto; padding-right: 4px; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; background: var(--bg-page);">
               ${(session.setLog || []).map((s, i) => {
                  const exName = (session.exercises || [])[s.exIdx]?.name || 'Exercício';
-                 return \`<div class="flex items-center gap-xs mb-xs" style="font-size:0.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
-                    <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="\${exName}">\${s.setNum} - \${exName}</div>
+                 return `<div class="flex items-center gap-xs mb-xs" style="font-size:0.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+                    <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${exName}">${s.setNum} - ${exName}</div>
                     <div style="display:flex;gap:4px">
-                      <input class="form-input form-sm" name="set_\${i}_reps" type="number" value="\${s.reps||0}" style="width:45px;padding:2px;text-align:center" title="Repetições" />
-                      <input class="form-input form-sm" name="set_\${i}_load" type="number" value="\${s.load||0}" style="width:45px;padding:2px;text-align:center" title="Carga (kg)" />
-                      <input class="form-input form-sm" name="set_\${i}_rest" type="number" value="\${s.restDuration||0}" style="width:55px;padding:2px;text-align:center" title="Descanso (s)" />
+                      <input class="form-input form-sm" name="set_${i}_reps" type="number" value="${s.reps||0}" style="width:45px;padding:2px;text-align:center" title="Repetições" />
+                      <input class="form-input form-sm" name="set_${i}_load" type="number" value="${s.load||0}" style="width:45px;padding:2px;text-align:center" title="Carga (kg)" />
+                      <input class="form-input form-sm" name="set_${i}_rest" type="number" value="${s.restDuration||0}" style="width:55px;padding:2px;text-align:center" title="Descanso (s)" />
                     </div>
-                 </div>\`;
+                 </div>`;
               }).join('')}
             </div>
           </div>
@@ -953,7 +953,7 @@ function editSessionSummaryModal(session, student, navigateFn) {
             <label class="form-label">Observações</label>
             <textarea class="form-textarea" name="notes" rows="2">${session.postBiofeedback?.notes || ''}</textarea>
           </div>
-        </form>\`,
+        </form>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => {
           closeModal();

@@ -755,17 +755,34 @@ export async function initReports(navigateFn) {
             // Densidade de treino (volume / minutos)
             const dens    = vol && durMin ? Math.round(vol / durMin) : '-';
             const pseColor = typeof pse==='number' ? (pse>=9?'#ef4444':pse>=7?'#f59e0b':'#10b981') : '#888';
+            
+            const exSummary = [];
+            (se.exercises || []).forEach((ex, idx) => {
+              const setsForEx = setLog.filter(s => s.exIdx === idx);
+              if (setsForEx.length) {
+                const maxLoad = Math.max(...setsForEx.map(s => s.load || 0));
+                exSummary.push(`${ex.name} (${setsForEx.length}x máx ${maxLoad}kg)`);
+              }
+            });
+            const summaryStr = exSummary.join(' • ');
+
             return `<tr>
-              <td>${new Date(se.date).toLocaleDateString('pt-BR')}</td>
-              <td><strong>${se.workoutName||'-'}</strong></td>
-              <td>${durMin?durMin+'min':'-'}</td>
-              <td>${vol?vol+' kg':'-'}</td>
-              <td>${se.totalSets||'-'}</td>
-              <td style="color:${pseColor};font-weight:600">${pse}</td>
-              <td>${tqrPost}/10</td>
-              <td>${avgRir}</td>
-              <td>${kcalEst!=='-'?kcalEst+'kcal':'-'}</td>
-              <td style="font-size:10px;color:#888">${dens!=='-'?dens+' kg/min':'-'}</td>
+              <td style="border-bottom:none">${new Date(se.date).toLocaleDateString('pt-BR')}</td>
+              <td style="border-bottom:none"><strong>${se.workoutName||'-'}</strong></td>
+              <td style="border-bottom:none">${durMin?durMin+'min':'-'}</td>
+              <td style="border-bottom:none">${vol?vol+' kg':'-'}</td>
+              <td style="border-bottom:none">${se.totalSets||'-'}</td>
+              <td style="border-bottom:none;color:${pseColor};font-weight:600">${pse}</td>
+              <td style="border-bottom:none">${tqrPost}/10</td>
+              <td style="border-bottom:none">${avgRir}</td>
+              <td style="border-bottom:none">${kcalEst!=='-'?kcalEst+'kcal':'-'}</td>
+              <td style="border-bottom:none;font-size:10px;color:#888">${dens!=='-'?dens+' kg/min':'-'}</td>
+            </tr>
+            <tr>
+              <td colspan="10" style="font-size:9.5px;color:#6b7280;padding:2px 10px 10px;line-height:1.3">
+                <strong>Detalhes:</strong> ${summaryStr || 'Sem registros de exercícios'}
+                ${se.postBiofeedback?.notes ? `<br><span style="color:#f59e0b">Obs: ${se.postBiofeedback.notes}</span>` : ''}
+              </td>
             </tr>`;
           }).join('')}
         </tbody>
