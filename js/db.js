@@ -226,6 +226,26 @@ class Database {
     } catch(err) {}
   }
 
+  async exportAll() {
+    const data = { _version: 'v4' };
+    for (const store of SUPABASE_TABLES) {
+      data[store] = await this.getAll(store);
+    }
+    return data;
+  }
+
+  async importAll(data) {
+    if (!data._version) throw new Error('Invalid format');
+    for (const store of SUPABASE_TABLES) {
+      if (data[store]) {
+        await this.clear(store);
+        for (const item of data[store]) {
+          await this.put(store, item);
+        }
+      }
+    }
+  }
+
   async count(storeName) {
     const localCount = this._getLocal(storeName).length;
     if (!this.supabase) return localCount;

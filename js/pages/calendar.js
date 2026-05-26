@@ -337,13 +337,11 @@ function bindDayActions(navigateFn) {
             </select>
           </div>
           <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Data</label>
+            <div class="form-group"><label class="form-label">Data</label>
               <input class="form-input" name="date" type="date" value="${ev.date}" required />
             </div>
-            <div class="form-group">
-              <label class="form-label">Horário</label>
-              <input class="form-input" name="time" type="time" value="${ev.time || '07:00'}" />
+            <div class="form-group"><label class="form-label">Horário</label>
+              <input class="form-input" name="time" type="time" step="900" value="${ev.time || '07:00'}" />
             </div>
           </div>
           <div class="form-row">
@@ -444,7 +442,7 @@ function bindAddEvent(navigateFn) {
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Data Início *</label><input class="form-input" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required /></div>
-          <div class="form-group"><label class="form-label">Horário</label><input class="form-input" name="time" type="time" value="07:00" /></div>
+          <div class="form-group"><label class="form-label">Horário</label><input class="form-input" name="time" type="time" step="900" value="07:00" /></div>
           <div class="form-group"><label class="form-label">Duração (min)</label><select class="form-select" name="duration">${DURATIONS.map(d => `<option ${d === 60 ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
         </div>
         <div class="form-group"><label class="form-label">Semanas de Repetição</label>
