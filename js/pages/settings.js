@@ -52,6 +52,20 @@ export async function renderSettings() {
               <option value="America/Noronha" ${settings.timezone === 'America/Noronha' ? 'selected' : ''}>Fernando de Noronha (America/Noronha)</option>
             </select>
           </div>
+          <div class="form-group" style="border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-top:16px;">
+            <label style="font-weight:600;display:block;margin-bottom:8px">Configurações de Feedback Pós-Série</label>
+            <div style="display:flex; gap:16px; align-items:center;">
+              <label class="flex items-center gap-sm">
+                <input type="checkbox" name="enablePSE" value="true" ${settings.enablePSE !== 'false' ? 'checked' : ''} />
+                Habilitar PSE (Foster)
+              </label>
+              <label class="flex items-center gap-sm">
+                <input type="checkbox" name="enableRIR" value="true" ${settings.enableRIR !== 'false' ? 'checked' : ''} />
+                Habilitar RIR
+              </label>
+            </div>
+            <p class="text-xs text-muted" style="margin-top:8px">Se desmarcados, os campos não aparecerão para o aluno durante o Live Tracker.</p>
+          </div>
           <button type="submit" class="btn btn-primary mt-md" style="width:100%">Salvar Perfil</button>
         </form>
       </div>
@@ -119,6 +133,9 @@ export function initSettings(navigateFn) {
     try {
       const fd = new FormData(e.target);
       const data = { id: 'trainer', ...Object.fromEntries(fd) };
+      data.enablePSE = fd.get('enablePSE') ? 'true' : 'false';
+      data.enableRIR = fd.get('enableRIR') ? 'true' : 'false';
+      
       await db.put('settings', data);
       const nameEl = document.getElementById('trainerName');
       if (nameEl && data.trainerName) nameEl.textContent = data.trainerName;

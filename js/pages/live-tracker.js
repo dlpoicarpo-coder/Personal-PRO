@@ -694,19 +694,19 @@ export function initTracker(navigateFn) {
           </div>
           ${showPSE ? `
           <div class="form-group">
-            <label class="form-label">PSE (Escala de Borg Modificada) *</label>
+            <label class="form-label">PSE (Escala de Borg-Foster) *</label>
             <select class="form-select" id="modalPse" style="font-size:0.9rem">
               <option value="">Selecione o esforço</option>
-              <option value="0">0 - Repouso / Nenhum esforço</option>
-              <option value="1">1 - Muito fraco</option>
-              <option value="2">2 - Fraco</option>
+              <option value="0">0 - Repouso</option>
+              <option value="1">1 - Muito Fácil</option>
+              <option value="2">2 - Fácil</option>
               <option value="3">3 - Moderado</option>
-              <option value="4">4 - Um pouco forte</option>
-              <option value="5">5 - Forte</option>
-              <option value="6">6 - Forte +</option>
-              <option value="7" selected>7 - Muito forte</option>
-              <option value="8">8 - Muito forte +</option>
-              <option value="9">9 - Quase máximo</option>
+              <option value="4">4 - Um Pouco Difícil</option>
+              <option value="5">5 - Difícil</option>
+              <option value="6">6 - Difícil +</option>
+              <option value="7" selected>7 - Muito Difícil</option>
+              <option value="8">8 - Muito Difícil +</option>
+              <option value="9">9 - Quase Máximo</option>
               <option value="10">10 - Esforço Máximo</option>
             </select>
           </div>` : '<input type="hidden" id="modalPse" value="0" />'}
