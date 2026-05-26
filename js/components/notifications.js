@@ -73,8 +73,20 @@ export async function checkNotifications() {
     });
   });
 
-  // 4. Respostas da Anamnese
+  // 4. Anamnese não preenchida
   const anamneses = await db.getAll('anamneses');
+  activeStudents.forEach(s => {
+    const hasAnamnese = anamneses.some(a => a.studentId === s.id || a.fullName === s.name);
+    if (!hasAnamnese) {
+      notifications.push({
+        type: 'info', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>', title: 'Anamnese Pendente',
+        desc: `<strong>${s.name}</strong> ainda não preencheu a anamnese.`,
+        link: '#/anamnese'
+      });
+    }
+  });
+
+  // 5. Respostas de Anamnese Recentes
   anamneses.forEach(a => {
     if (a.submittedAt) {
       const diffDays = (nowMs - new Date(a.submittedAt).getTime()) / (1000 * 60 * 60 * 24);
@@ -173,6 +185,10 @@ export async function initNotifications() {
       title: '<svg style="display:inline;vertical-align:text-bottom;margin-right:4px" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg> Central de Notificações',
       size: 'md',
       content: `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="text-sm text-muted">${notifs.length} notificação(oes)</span>
+          ${notifs.length ? `<button id="clearAllNotifBtn" class="btn btn-ghost btn-sm" style="color:var(--danger);font-size:0.78rem">Limpar todas</button>` : ''}
+        </div>
         <div class="notifications-list" style="display:flex;flex-direction:column;gap:12px;">
           ${notifs.length ? notifs.map(n => `
             <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card)">
@@ -192,5 +208,16 @@ export async function initNotifications() {
         </div>
       `
     });
+
+    // Bind clear all button
+    setTimeout(() => {
+      document.getElementById('clearAllNotifBtn')?.addEventListener('click', () => {
+        const allHashes = notifs.map(n => n.title + n.desc);
+        localStorage.setItem('pp_notifs_seen', JSON.stringify(allHashes));
+        badge.style.display = 'none';
+        closeModal();
+        notify.success('Notificações limpas!');
+      });
+    }, 100);
   });
 }

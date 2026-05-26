@@ -7,8 +7,9 @@ import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 
-const ICON_EYE = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const ICON_EYE  = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const ICON_DEL  = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
+const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 
 const RM_EXERCISES = [
   'Supino Reto com Barra','Agachamento Livre com Barra','Levantamento Terra',
@@ -215,6 +216,7 @@ export async function renderAssessments() {
                     <td>
                       <div style="display:flex;gap:4px">
                         <button class="btn btn-ghost btn-sm view-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--accent)">${ICON_EYE}</button>
+                        <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--text-muted)">${ICON_EDIT}</button>
                         <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
                       </div>
                     </td>
@@ -779,6 +781,87 @@ export function initAssessments(navigateFn) {
             </div>`).join('')}
           </div>
           ${a.notes?`<div class="text-sm text-muted mt-md"><strong>Obs:</strong> ${a.notes}</div>`:''}`
+      });
+    });
+  });
+
+  // ── EDITAR AVALIAÇÃO (composição) ──────────────────────────
+  document.querySelectorAll('.edit-assessment').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const a = await db.get('assessments', btn.dataset.id);
+      if (!a) return;
+      const st = await db.get('students', a.studentId);
+      openModal({
+        title: `Editar Avaliação — ${st?.name || 'Aluno'}`, size: 'lg',
+        preventBackdropClose: true,
+        content: `<form id="editAssForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="${a.date ? a.date.slice(0,10) : ''}" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Peso (kg)</label>
+              <input class="form-input" name="peso" type="number" step="0.1" value="${a.peso || ''}" placeholder="Ex: 70" />
+            </div>
+            <div class="form-group"><label class="form-label">Altura (cm)</label>
+              <input class="form-input" name="altura" type="number" value="${a.altura || ''}" placeholder="Ex: 170" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">% Gordura</label>
+              <input class="form-input" name="percentualGordura" type="number" step="0.1" value="${a.percentualGordura || ''}" placeholder="Ex: 20" />
+            </div>
+            <div class="form-group"><label class="form-label">Massa Magra (kg)</label>
+              <input class="form-input" name="massaMagra" type="number" step="0.1" value="${a.massaMagra || ''}" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">% Massa Musc. Esq.</label>
+              <input class="form-input" name="pctMassaMuscular" type="number" step="0.1" value="${a.pctMassaMuscular || ''}" placeholder="Ex: 32" />
+            </div>
+            <div class="form-group"><label class="form-label">Cintura (cm)</label>
+              <input class="form-input" name="cintura" type="number" step="0.1" value="${a.cintura || ''}" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Quadril (cm)</label>
+              <input class="form-input" name="quadril" type="number" step="0.1" value="${a.quadril || ''}" />
+            </div>
+            <div class="form-group"><label class="form-label">Braço (cm)</label>
+              <input class="form-input" name="braco" type="number" step="0.1" value="${a.braco || ''}" />
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="2">${a.notes || ''}</textarea>
+          </div>
+        </form>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
+            const fd = new FormData(document.getElementById('editAssForm'));
+            const peso = parseFloat(fd.get('peso')) || a.peso;
+            const altura = parseFloat(fd.get('altura')) || a.altura;
+            const percentualGordura = parseFloat(fd.get('percentualGordura')) || a.percentualGordura;
+            const massaMagra = parseFloat(fd.get('massaMagra')) || a.massaMagra;
+            const pctMassaMuscular = parseFloat(fd.get('pctMassaMuscular')) || a.pctMassaMuscular;
+            const cintura = parseFloat(fd.get('cintura')) || a.cintura;
+            const quadril = parseFloat(fd.get('quadril')) || a.quadril;
+            const braco = parseFloat(fd.get('braco')) || a.braco;
+            const massaGorda = peso && massaMagra ? Math.round((peso - massaMagra) * 10) / 10 : a.massaGorda;
+            const rcq = cintura && quadril ? Math.round((cintura / quadril) * 100) / 100 : a.rcq;
+            const updated = {
+              ...a, date: fd.get('date') || a.date,
+              peso, altura, percentualGordura, massaMagra, massaGorda,
+              pctMassaMuscular, cintura, quadril, braco, rcq,
+              notes: fd.get('notes'),
+            };
+            await db.put('assessments', updated);
+            notify.success('Avaliação atualizada!');
+            closeModal();
+            navigateFn('/avaliacoes');
+          }}
+        ]
       });
     });
   });

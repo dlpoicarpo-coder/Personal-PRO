@@ -759,11 +759,17 @@ export function initTracker(navigateFn) {
 
         state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps: finalReps, load: finalLoad, pse, rir: isNaN(rir) ? null : rir, notes: finalNotes, rm1Estimated, time: Date.now() });
 
+        // Update DOM inputs with the final values BEFORE disabling
+        const repsInput = row.querySelector('.set-reps');
+        const loadInput = row.querySelector('.set-load');
+        if (repsInput) repsInput.value = finalReps;
+        if (loadInput) loadInput.value = finalLoad;
+
         row.classList.add('set-done'); row.classList.remove('set-active');
         row.style.background = 'rgba(16,185,129,0.04)';
         row.querySelectorAll('input').forEach(inp => inp.disabled = true);
         
-        row.children[3].innerHTML = `<span style="font-size:0.55rem;color:var(--warning)">PSE</span><span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${pse}</span>`;
+        row.children[3].innerHTML = `<span style="font-size:0.55rem;color:var(--warning)">PSE</span><span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${pse || '—'}</span>`;
         row.children[4].innerHTML = `<span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span><span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${isNaN(rir)?'—':rir}</span>`;
         
         btn.replaceWith(Object.assign(document.createElement('span'), { className: 'badge badge-success', textContent: '✓', style: 'min-width:32px;text-align:center' }));
