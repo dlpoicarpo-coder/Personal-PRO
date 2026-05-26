@@ -19,6 +19,11 @@ function colorForVal(val, inverse) {
   return val <= 3 ? 'var(--danger)' : val <= 5 ? 'var(--warning)' : 'var(--success)';
 }
 
+function colorForFood(val) {
+  if (val == null) return 'var(--text-muted)';
+  return val <= 2 ? 'var(--danger)' : val <= 3 ? 'var(--warning)' : 'var(--success)';
+}
+
 function computeWeeklyLoads(entries) {
   const weeks = {};
   entries.forEach(e => {
@@ -165,7 +170,7 @@ function renderBfContent(entries, students, filterStudentId) {
           <thead><tr>
             <th>Data</th>
             ${!student ? '<th>Aluno</th>' : ''}
-            <th>Sono</th><th>TQR</th><th>Estresse</th><th>Dor</th>
+            <th>Sono</th><th>TQR</th><th>Alim</th><th>Estresse</th><th>Dor</th>
             <th>PSE</th><th>Carga</th><th>Status</th><th>Recomendação</th><th></th>
           </tr></thead>
           <tbody>${recent.map(e => {
@@ -186,6 +191,7 @@ function renderBfContent(entries, students, filterStudentId) {
               </td>` : ''}
               <td style="font-weight:600;color:${colorForVal(e.sleep,false)}">${e.sleep||'-'}</td>
               <td style="color:${colorForVal(e.tqr ?? e.energy,false)}">${e.tqr ?? e.energy ?? '-'}</td>
+              <td style="font-weight:600;color:${colorForFood(e.food)}">${e.food ? e.food+'/5' : '-'}</td>
               <td style="font-weight:600;color:${colorForVal(e.stress,true)}">${e.stress||'-'}</td>
               <td style="color:${colorForVal(e.pain,true)}">
                 ${e.pain||'-'}
@@ -253,18 +259,19 @@ export function initBiofeedback(navigateFn) {
           </div>
         </div>
         ${[
-          { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    inv:false },
-          { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', inv:false },
-          { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              inv:true  },
-          { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    inv:true,
+          { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: 7, max: 10 },
+          { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: 5, max: 10 },
+          { id:'food',   label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: 4, max: 5 },
+          { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: 5, max: 10 },
+          { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: 1, max: 10,
             extra:`document.getElementById('painGrp').style.display=this.value>=3?'block':'none'` },
         ].map(f=>`
           <div class="form-group" style="margin-bottom:14px">
             <div class="flex items-center justify-between mb-xs">
               <label class="form-label" style="margin:0">${f.label}</label>
-              <span style="font-size:1.2rem;font-weight:800;color:var(--primary)" id="bfV_${f.id}">5</span>
+              <span style="font-size:1.2rem;font-weight:800;color:var(--primary)" id="bfV_${f.id}">${f.val}</span>
             </div>
-            <input type="range" name="${f.id}" min="1" max="10" value="5"
+            <input type="range" name="${f.id}" min="1" max="${f.max}" value="${f.val}"
               style="width:100%;accent-color:var(--primary)"
               oninput="document.getElementById('bfV_${f.id}').textContent=this.value;${f.extra||''}" />
             <div class="flex justify-between text-xs text-muted mt-xs">
@@ -316,7 +323,7 @@ export function initBiofeedback(navigateFn) {
           const fd = new FormData(document.getElementById('bfForm'));
           const d  = Object.fromEntries(fd);
           if (!d.studentId) { notify.error('Selecione o aluno'); return; }
-          ['sleep','tqr','stress','pain','pse','duration'].forEach(k=>d[k]=parseInt(d[k])||0);
+          ['sleep','tqr','stress','pain','food','pse','duration'].forEach(k=>d[k]=parseInt(d[k])||0);
           d.energy = d.tqr; // compatibilidade com alertas e gráficos antigos
           d.mood   = d.tqr; // idem
           d.painRegions  = fd.getAll('painRegions');
@@ -478,10 +485,11 @@ function bindBfActions(navigateFn, studentsCache) {
             </div>
           </div>
           ${[
-            { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: entry.sleep || 5 },
-            { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5 },
-            { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5 },
-            { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: entry.pain || 1,
+            { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: entry.sleep || 5, max: 10 },
+            { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5, max: 10 },
+            { id:'food',   label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: entry.food || 4, max: 5 },
+            { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5, max: 10 },
+            { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: entry.pain || 1, max: 10,
               extra:`document.getElementById('editPainGrp').style.display=this.value>=3? 'block' : 'none'` },
           ].map(f=>`
             <div class="form-group" style="margin-bottom:14px">
@@ -489,7 +497,7 @@ function bindBfActions(navigateFn, studentsCache) {
                 <label class="form-label" style="margin:0">${f.label}</label>
                 <span style="font-size:1.2rem;font-weight:800;color:var(--primary)" id="editBfV_${f.id}">${f.val}</span>
               </div>
-              <input type="range" name="${f.id}" min="1" max="10" value="${f.val}"
+              <input type="range" name="${f.id}" min="1" max="${f.max}" value="${f.val}"
                 style="width:100%;accent-color:var(--primary)"
                 oninput="document.getElementById('editBfV_${f.id}').textContent=this.value;${f.extra||''}" />
               <div class="flex justify-between text-xs text-muted mt-xs">
@@ -558,6 +566,7 @@ function bindBfActions(navigateFn, studentsCache) {
               cycle: fd.get('cycle'),
               sleep: parseInt(fd.get('sleep')),
               tqr: parseInt(fd.get('tqr')),
+              food: parseInt(fd.get('food')) || 5,
               mood: parseInt(fd.get('tqr')),
               energy: parseInt(fd.get('tqr')),
               stress: parseInt(fd.get('stress')),

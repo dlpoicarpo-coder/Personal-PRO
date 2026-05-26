@@ -343,12 +343,13 @@ async function viewStudentHTML(student) {
         <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos →</a>
       </div>
       ${bfData.length ? `<table class="data-table" style="font-size:0.82rem">
-        <thead><tr><th>Data</th><th>Ciclo</th><th>Sono</th><th>TQR</th><th>Estresse</th><th>Dor</th><th>PSE</th><th>Carga</th></tr></thead>
+        <thead><tr><th>Data</th><th>Ciclo</th><th>Sono</th><th>TQR</th><th>Alim</th><th>Estresse</th><th>Dor</th><th>PSE</th><th>Carga</th></tr></thead>
         <tbody>${bfData.map(b => `<tr>
           <td>${Calc.formatDate(b.date)}</td>
           <td><strong>${b.cycle || 'Geral'}</strong></td>
           <td style="color:${(b.sleep||0)<5?'var(--danger)':(b.sleep||0)<7?'var(--warning)':'var(--success)'}">${b.sleep||'-'}</td>
           <td style="color:${(b.tqr || b.energy || 0)<5?'var(--danger)':(b.tqr || b.energy || 0)<7?'var(--warning)':'var(--success)'}">${b.tqr || b.energy || '-'}</td>
+          <td style="color:${(b.food||0)<=2?'var(--danger)':(b.food||0)<=3?'var(--warning)':'var(--success)'}"><strong>${b.food ? b.food+'/5' : '-'}</strong></td>
           <td style="color:${(b.stress||0)>=8?'var(--danger)':(b.stress||0)>=6?'var(--warning)':'inherit'}">${b.stress||'-'}</td>
           <td style="color:${(b.pain||0)>=5?'var(--danger)':(b.pain||0)>=3?'var(--warning)':'inherit'}">${b.pain||'-'}</td>
           <td style="color:${(b.pse||0)>8?'var(--danger)':(b.pse||0)>6?'var(--warning)':'var(--success)'}"><strong>${b.pse||'-'}</strong></td>

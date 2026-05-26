@@ -517,6 +517,16 @@ function renderBio(biofeedbacks, sid, tid) {
             <input type="range" name="tqr" min="0" max="10" value="5" class="portal-range" oninput="document.getElementById('tqrVal').textContent=this.value">
           </div>
           <div class="portal-bio-field">
+            <label class="portal-bio-label">Alimentação nas últimas 24h</label>
+            <select name="food" class="portal-textarea" style="background:rgba(255,255,255,0.05); color:#e2e8f0; font-size:0.85rem">
+              <option value="5" selected>Excelente (Bati as metas / Saudável)</option>
+              <option value="4">Boa (Maioria saudável / Poucos furos)</option>
+              <option value="3">Regular (Na média / Algumas escapadas)</option>
+              <option value="2">Ruim (Pulei refeições / Comi mal)</option>
+              <option value="1">Péssima (Fast food / Quase não comi)</option>
+            </select>
+          </div>
+          <div class="portal-bio-field">
             <label class="portal-bio-label">Estresse <span id="stressVal">5</span>/10</label>
             <input type="range" name="stress" min="1" max="10" value="5" class="portal-range" oninput="document.getElementById('stressVal').textContent=this.value">
           </div>
@@ -540,6 +550,7 @@ function renderBio(biofeedbacks, sid, tid) {
             <div class="portal-bio-row">
               ${b.sleep!=null?`<span>💤 ${b.sleep}</span>`:''}
               ${b.tqr!=null?`<span>⚡ ${b.tqr}</span>`:''}
+              ${b.food!=null?`<span>🍎 ${b.food}/5</span>`:''}
               ${b.stress!=null?`<span>😰 ${b.stress}</span>`:''}
               ${b.pain!=null?`<span>🩹 ${b.pain}</span>`:''}
               ${b.pse!=null?`<span>PSE ${b.pse}</span>`:''}
@@ -565,6 +576,7 @@ function initBio() {
       tqr: parseInt(fd.get('tqr')),
       stress: parseInt(fd.get('stress')),
       pain: parseInt(fd.get('pain')),
+      food: parseInt(fd.get('food')) || 5,
       notes: fd.get('notes'),
     };
 
