@@ -28,6 +28,10 @@ export async function renderReports() {
         <button class="btn btn-primary btn-sm" id="exportPdfBtn" style="display:none">Gerar PDF</button>
       </div>
     </div>
+    <div id="pdfAnnotationsContainer" style="display:none;margin-bottom:16px;">
+      <label class="form-label">Anotações do Treinador (para o PDF):</label>
+      <textarea id="pdfAnnotations" class="form-textarea" placeholder="Adicione notas, comentários ou orientações extras para o aluno..."></textarea>
+    </div>
     <div id="reportContent">
       <div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Selecione um aluno</h3><p class="text-muted">Escolha um aluno para ver o relatório completo</p></div>
     </div>
@@ -381,6 +385,8 @@ export async function initReports(navigateFn) {
     if (cycleSel) cycleSel.style.display = sid ? '' : 'none';
     const waBtn = document.getElementById('exportWaBtn');
     if (waBtn) waBtn.style.display = sid ? '' : 'none';
+    const annContainer = document.getElementById('pdfAnnotationsContainer');
+    if (annContainer) annContainer.style.display = sid ? 'block' : 'none';
 
     if (!sid) {
       content.innerHTML = '<div class="empty-state"><div class="empty-icon">—</div><h3>Selecione um aluno</h3></div>';
@@ -552,7 +558,9 @@ export async function initReports(navigateFn) {
     const pdfTableEven = isDark ? '#111827' : '#fafafa';
     const pdfTableTh = isDark ? '#1f2937' : '#f3f4f6';
 
-    const htmlContent = `<!DOCTYPE html><html lang="pt-BR"><head>
+      const customAnnotations = document.getElementById('pdfAnnotations')?.value || '';
+
+      const htmlContent = `<!DOCTYPE html><html lang="pt-BR"><head>
       <meta charset="UTF-8">
       <title>Dossiê — ${student.name}</title>
       <style>
@@ -650,6 +658,12 @@ export async function initReports(navigateFn) {
       <h2>Análise Técnica</h2>
       <p class="section-desc">Avaliação baseada nos indicadores de carga e bem-estar coletados.</p>
       <div class="tecnico">${parecerTecnico}</div>
+
+      ${customAnnotations ? `
+      <h2>Anotações do Treinador</h2>
+      <p class="section-desc">Observações e orientações personalizadas adicionadas neste relatório.</p>
+      <div class="tecnico" style="border-left-color: #f59e0b;">${customAnnotations.replace(/\n/g, '<br>')}</div>
+      ` : ''}
 
       ${sessions.length ? `
       <h2>Sessões Realizadas</h2>

@@ -188,7 +188,7 @@ export async function renderAssessments() {
             <table class="data-table">
               <thead><tr>
                 <th>Aluno</th><th>Data</th><th>Peso</th><th>Altura</th><th>IMC</th>
-                <th>% Gordura</th><th>M. Magra</th><th>Cintura</th><th>RCQ</th><th></th>
+                <th>% Gordura</th><th>M. Magra</th><th>M. Musc. Esq.</th><th>Cintura</th><th>RCQ</th><th></th>
               </tr></thead>
               <tbody>
                 ${compAss.map(a=>{
@@ -209,6 +209,7 @@ export async function renderAssessments() {
                     <td>${imc?`<span class="badge badge-${imcC.color}" title="${imcC.label}">${Calc.formatNum(imc)}</span>`:'—'}</td>
                     <td style="color:${pctColor};font-weight:600">${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':'—'}</td>
                     <td style="color:var(--primary);font-weight:600">${a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'}</td>
+                    <td style="color:var(--accent);font-weight:600">${a.pctMassaMuscular?Calc.formatNum(a.pctMassaMuscular)+'%':'—'}</td>
                     <td>${a.cintura?a.cintura+'cm':'—'}</td>
                     <td>${a.rcq?Calc.formatNum(a.rcq,2):'—'}</td>
                     <td>
@@ -225,7 +226,7 @@ export async function renderAssessments() {
         </div>
 
         <!-- Cálculo de Calorias por aluno (usa avaliação mais recente) -->
-        <div id="assEnergyCardContainer">
+        <div id="assEnergyCardContainer" style="display:none">
           ${renderEnergyExpenditureCardHTML(students, compAss, '')}
         </div>
       `}
@@ -500,9 +501,14 @@ export function initAssessments(navigateFn) {
     // Update Energy Card Container dynamically!
     const container = document.getElementById('assEnergyCardContainer');
     if (container) {
-      const [all, students] = await Promise.all([db.getAll('assessments'), db.getAll('students')]);
-      const compAss = all.filter(a => a.type === 'composicao').sort((a,b)=>new Date(b.date)-new Date(a.date));
-      container.innerHTML = renderEnergyExpenditureCardHTML(students, compAss, sid);
+      if (sid) {
+        container.style.display = 'block';
+        const [all, students] = await Promise.all([db.getAll('assessments'), db.getAll('students')]);
+        const compAss = all.filter(a => a.type === 'composicao').sort((a,b)=>new Date(b.date)-new Date(a.date));
+        container.innerHTML = renderEnergyExpenditureCardHTML(students, compAss, sid);
+      } else {
+        container.style.display = 'none';
+      }
     }
   });
 
@@ -912,11 +918,16 @@ async function saveAssessment(tipo, d, navigateFn) {
     }
     const comp = pct&&peso ? Calc.composicaoCorporal(peso,pct) : {};
     const rcq  = d.cintura&&d.quadril ? Calc.rcq(parseFloat(d.cintura),parseFloat(d.quadril)) : null;
+    const smm = Calc.massaMuscularEsqueletica(peso, altura, idade, genero, 0);
+    const pctMassaMuscular = Calc.pctMassaMuscular(smm, peso);
+
     await db.add('assessments',{...base, peso, altura,
       imc:     imc?Math.round(imc*10)/10:null,
       percentualGordura: comp.percentualGordura||pct,
       massaMagra:  comp.massaMagra||null,
       massaGorda:  comp.massaGorda||null,
+      massaMuscularEsqueletica: smm,
+      pctMassaMuscular: pctMassaMuscular,
       cintura:     parseFloat(d.cintura)||null,
       quadril:     parseFloat(d.quadril)||null,
       braco:       parseFloat(d.braco)||null,
@@ -1200,7 +1211,7 @@ async function renderFichaCompleta(sid) {
       <div class="text-xs text-muted mb-sm" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Composição Corporal</div>
       <div class="table-container">
         <table class="data-table" style="font-size:0.82rem">
-          <thead><tr><th>Data</th><th>Peso</th><th>IMC</th><th>% Gordura</th><th>M. Magra</th><th>Cintura</th><th>RCQ</th><th>Δ Peso</th></tr></thead>
+          <thead><tr><th>Data</th><th>Peso</th><th>IMC</th><th>% Gordura</th><th>M. Magra</th><th>M. Musc. Esq.</th><th>Cintura</th><th>RCQ</th><th>Δ Peso</th></tr></thead>
           <tbody>${[...comp].reverse().map((a,i,arr)=>{
             const prev=arr[i-1];
             const dp=prev&&a.peso&&prev.peso?(a.peso-prev.peso):null;
@@ -1212,6 +1223,7 @@ async function renderFichaCompleta(sid) {
               <td>${imc?`<span class="badge badge-${imcC.color}">${Calc.formatNum(imc)}</span>`:'—'}</td>
               <td style="color:${(a.percentualGordura||0)>25?'var(--warning)':'var(--success)'}">${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':'—'}</td>
               <td style="color:var(--primary);font-weight:600">${a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'}</td>
+              <td style="color:var(--accent);font-weight:600">${a.pctMassaMuscular?Calc.formatNum(a.pctMassaMuscular)+'%':'—'}</td>
               <td>${a.cintura?a.cintura+'cm':'—'}</td>
               <td>${a.rcq?Calc.formatNum(a.rcq,2):'—'}</td>
               <td style="color:${dp===null?'inherit':dp<0?'var(--success)':'var(--danger)'};font-weight:600">${dp===null?'—':(dp>0?'+':'')+Calc.formatNum(dp)+'kg'}</td>

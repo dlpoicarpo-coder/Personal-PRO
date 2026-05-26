@@ -117,7 +117,7 @@ export async function renderTracker() {
       <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
       <div class="table-container">
         <table class="data-table">
-          <thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th></th></tr></thead>
+          <thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th>Carga</th><th></th></tr></thead>
           <tbody>${completed.map(s => {
             const st = students.find(x => x.id === s.studentId);
             const pse = s.postBiofeedback?.pse || 0;
@@ -129,6 +129,7 @@ export async function renderTracker() {
               <td>${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
               <td>${s.totalSets || '-'}</td>
               <td style="color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}"><strong>${pse||'-'}</strong></td>
+              <td>${Math.round(pse * ((s.totalDuration || 0) / 60))}</td>
               <td style="display:flex;gap:4px">
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver" style="padding:4px 6px;color:var(--accent)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -367,7 +368,19 @@ export function initTracker(navigateFn) {
       sBtn.disabled = !wSel.value;
       if (wSel.value) {
         const wk = await db.get('workouts', wSel.value);
-        if (wk?.studentId) await checkPreBioStatus(wk.studentId);
+        if (wk?.studentId) {
+          await checkPreBioStatus(wk.studentId);
+          
+          if (wk.macrocycleId) {
+            const macro = await db.get('macrocycles', wk.macrocycleId).catch(()=>null);
+            if (macro && macro.endDate) {
+              const diffDays = Math.ceil((new Date(macro.endDate) - new Date()) / (1000 * 60 * 60 * 24));
+              if (diffDays >= 0 && diffDays <= 7) {
+                notify.warning(`Atenção: Macrociclo deste treino encerra em ${diffDays} dia(s)!`);
+              }
+            }
+          }
+        }
       }
     });
 
@@ -396,9 +409,12 @@ export function initTracker(navigateFn) {
             ['Estresse', todayPre.stress,               true],
             ['Dor',      todayPre.pain,                 true],
           ];
+          if (todayPre.food != null) vals.push(['Alim.', todayPre.food, false]);
+          if (todayPre.menstrualCycle) vals.push(['Ciclo', todayPre.menstrualCycle, false]);
+          
           valuesEl.innerHTML = vals.map(([l,v,inv])=>`
             <span style="padding:3px 8px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-color);color:${
-              v==null?'var(--text-muted)':inv?(v>=7?'var(--danger)':v>=5?'var(--warning)':'var(--success)'):(v<=3?'var(--danger)':v<=5?'var(--warning)':'var(--success)')
+              v==null?'var(--text-muted)':(typeof v==='string'?'var(--primary)':(inv?(v>=7?'var(--danger)':v>=5?'var(--warning)':'var(--success)'):(v<=3?'var(--danger)':v<=5?'var(--warning)':'var(--success)')))
             }">
               ${l} <strong>${v??'—'}</strong>
             </span>`).join('');
@@ -464,6 +480,8 @@ export function initTracker(navigateFn) {
         energy: todayPre.tqr ?? todayPre.energy,
         stress: todayPre.stress,
         pain:   todayPre.pain,
+        food:   todayPre.food,
+        menstrualCycle: todayPre.menstrualCycle,
       });
       notify.success('Dados pré-treino do aluno carregados!');
     }
@@ -626,6 +644,16 @@ export function initTracker(navigateFn) {
         title: `Feedback da Série ${i + 1}`,
         size: 'sm',
         content: `
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Reps Realizadas</label>
+              <input type="${isCardio ? 'text' : 'number'}" id="modalReps" class="form-input" value="${isCardio ? repsStr : reps}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Carga</label>
+              <input type="${isCardio ? 'text' : 'number'}" step="0.5" id="modalLoad" class="form-input" value="${isCardio ? loadStr : load}">
+            </div>
+          </div>
           <div class="form-group">
             <label class="form-label">PSE (Escala de Borg Modificada) *</label>
             <select class="form-select" id="modalPse" style="font-size:0.9rem">
@@ -643,7 +671,7 @@ export function initTracker(navigateFn) {
               <option value="10">10 - Esforço Máximo</option>
             </select>
           </div>
-          <div class="form-group" style="margin-bottom:20px">
+          <div class="form-group">
             <label class="form-label">RIR (Repetições na Reserva) *</label>
             <select class="form-select" id="modalRir" style="font-size:0.9rem">
               <option value="">Selecione</option>
@@ -653,6 +681,10 @@ export function initTracker(navigateFn) {
               <option value="3">3 - Sobraram 3 reps</option>
               <option value="4">4+ - Sobraram 4 ou mais</option>
             </select>
+          </div>
+          <div class="form-group" style="margin-bottom:20px">
+            <label class="form-label">Observações da Série</label>
+            <textarea id="modalNotes" class="form-textarea" rows="2" placeholder="Observações específicas..."></textarea>
           </div>
           <button id="modalSaveSet" class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem">Concluir Série</button>
         `,
@@ -674,14 +706,18 @@ export function initTracker(navigateFn) {
         }
 
         let rm1Estimated = null;
-        if (load > 0 && reps > 0 && reps <= 12) {
-          rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2; // Epley
+        const modalReps = document.getElementById('modalReps');
+        const modalLoad = document.getElementById('modalLoad');
+        const finalReps = isCardio ? (modalReps ? modalReps.value : repsStr) : (modalReps ? parseInt(modalReps.value) : reps);
+        const finalLoad = isCardio ? (modalLoad ? modalLoad.value : loadStr) : (modalLoad ? parseFloat(modalLoad.value) : load);
+        const modalNotesInput = document.getElementById('modalNotes')?.value;
+        const finalNotes = modalNotesInput ? (notes ? notes + ' | ' + modalNotesInput : modalNotesInput) : notes;
+
+        if (finalLoad > 0 && finalReps > 0 && finalReps <= 12) {
+          rm1Estimated = Math.round((finalLoad * (1 + finalReps / 30)) * 2) / 2; // Epley
         }
 
-        const finalReps = isCardio ? repsStr : reps;
-        const finalLoad = isCardio ? loadStr : load;
-
-        state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps: finalReps, load: finalLoad, pse, rir: isNaN(rir) ? null : rir, notes, rm1Estimated, time: Date.now() });
+        state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps: finalReps, load: finalLoad, pse, rir: isNaN(rir) ? null : rir, notes: finalNotes, rm1Estimated, time: Date.now() });
 
         row.classList.add('set-done'); row.classList.remove('set-active');
         row.style.background = 'rgba(16,185,129,0.04)';
@@ -1011,24 +1047,29 @@ function generateSessionPDF(session, student) {
     ];
 
     let bx = 14;
-    cards.forEach(card => {
+    let by = 48;
+    cards.forEach((card, idx) => {
+      if (idx > 0 && idx % 4 === 0) {
+        bx = 14;
+        by += 20;
+      }
       doc.setFillColor(...card.bg);
-      doc.roundedRect(bx, 48, 25, 16, 2, 2, 'F');
+      doc.roundedRect(bx, by, 42.5, 16, 2, 2, 'F');
       
       doc.setTextColor(100, 116, 139); // Slate-500 for secondary label
       doc.setFontSize(5);
       doc.setFont('helvetica', 'normal');
-      doc.text(card.label, bx + 12.5, 53, { align: 'center' });
+      doc.text(card.label, bx + 21.25, by + 5, { align: 'center' });
       
       doc.setTextColor(...card.accent);
       doc.setFontSize(8.5);
       doc.setFont('helvetica', 'bold');
-      doc.text(card.value, bx + 12.5, 60, { align: 'center' });
+      doc.text(card.value, bx + 21.25, by + 12, { align: 'center' });
       
-      bx += 26; // 25 width + 1 gap = 26
+      bx += 46.5; 
     });
 
-    let y=74;
+    let y = (cards.length > 4) ? 92 : 74;
     doc.setTextColor(...dk); doc.setFontSize(10); doc.setFont('helvetica','bold');
     doc.text('Exercícios Realizados',14,y); y+=5;
     doc.setFillColor(...g); doc.rect(14,y,182,6.5,'F');

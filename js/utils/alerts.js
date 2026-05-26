@@ -143,6 +143,38 @@ export function analyzeBiofeedback(entry) {
     }
   }
 
+  // Menstrual Cycle alert
+  if (entry.menstrualCycle) {
+    if (entry.menstrualCycle === 'Lutea' || entry.menstrualCycle === 'Menstruacao') {
+      alerts.push({
+        level: 'warning',
+        metric: 'Ciclo Menstrual',
+        value: entry.menstrualCycle === 'Lutea' ? 'Fase Lútea' : 'Menstruação',
+        action: 'Possível queda de força e aumento de fadiga. Ajustar volume e carga se necessário.',
+        icon: '○'
+      });
+    } else if (entry.menstrualCycle === 'Folicular' || entry.menstrualCycle === 'Ovulatoria') {
+      alerts.push({
+        level: 'info',
+        metric: 'Ciclo Menstrual',
+        value: entry.menstrualCycle === 'Folicular' ? 'Fase Folicular' : 'Fase Ovulatória',
+        action: 'Fase de alta energia. Momento ideal para picos de intensidade e quebra de recordes.',
+        icon: '◦'
+      });
+    }
+  }
+
+  // Food alert
+  if (entry.food != null && entry.food <= 2) {
+    alerts.push({
+      level: 'warning',
+      metric: 'Alimentação',
+      value: entry.food,
+      action: 'Baixa ingestão de nutrientes nas últimas 24h. Risco de hipoglicemia e baixa performance.',
+      icon: '○'
+    });
+  }
+
   return alerts;
 }
 

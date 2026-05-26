@@ -480,21 +480,26 @@ export function initWorkouts(navigateFn) {
   });
 
   document.getElementById('workoutCycleFilter')?.addEventListener('change', async e => {
-    const val = e.target.value;
-    if (val === 'active') {
-      const macros = await db.getAll('macrocycles');
-      const ids = new Set(macros.filter(m => m.status === 'active').map(m => m.id));
-      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
-        row.dataset.macro = ids.has(row.dataset.macroid) ? 'active_match' : '';
-      });
-      activeCycleFilter = 'active_match';
-    } else {
-      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
-        row.dataset.macro = val ? (row.dataset.macroid === val ? val : '') : val;
-      });
-      activeCycleFilter = val;
+    try {
+      const val = e.target.value;
+      if (val === 'active') {
+        const macros = await db.getAll('macrocycles');
+        const ids = new Set(macros.filter(m => m.status === 'active').map(m => m.id));
+        document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+          row.dataset.macro = ids.has(row.dataset.macroid) ? 'active_match' : '';
+        });
+        activeCycleFilter = 'active_match';
+      } else {
+        document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+          row.dataset.macro = val ? (row.dataset.macroid === val ? val : '') : val;
+        });
+        activeCycleFilter = val;
+      }
+      applyFilters();
+    } catch (err) {
+      console.error(err);
+      notify?.error('Erro ao filtrar ciclos');
     }
-    applyFilters();
   });
 
   // Iniciar treino direto
@@ -521,7 +526,9 @@ export function initWorkouts(navigateFn) {
         if (s.studentId !== w.studentId) return false;
         const sw = allWorkouts.find(xw => xw.id === s.workoutId);
         if (!sw) return false;
-        return sw.name === w.name && sw.macrocycleId === w.macrocycleId;
+        const matchName = sw.name === w.name;
+        const matchMacro = w.macrocycleId ? sw.macrocycleId === w.macrocycleId : sw.cycle === w.cycle;
+        return matchName && matchMacro;
       });
 
       openModal({

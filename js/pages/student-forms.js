@@ -6,6 +6,44 @@ import db from '../db.js';
 import { notify } from '../components/toast.js';
 import { PAIN_REGIONS, painRegionSelector } from '../utils/alerts.js';
 
+// ======================== HELPER FORMS ========================
+function setupFormDraft(formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  
+  // Prevent Enter key submission
+  form.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
+  });
+
+  // Load draft
+  try {
+    const draft = JSON.parse(localStorage.getItem('draft_' + formId));
+    if (draft) {
+      Object.entries(draft).forEach(([k, v]) => {
+        const input = form.elements[k];
+        if (input) {
+          if (input.type === 'radio' || input.type === 'checkbox') {
+             if(input.length) Array.from(input).forEach(i => { if(i.value == v) i.checked = true; });
+             else if(input.value == v) input.checked = true;
+          } else {
+            input.value = v;
+          }
+        }
+      });
+      // trigger events
+      Array.from(form.elements).forEach(el => el.dispatchEvent(new Event('change', { bubbles: true })));
+    }
+  } catch(e){}
+
+  // Save on change
+  form.addEventListener('input', () => {
+    const fd = new FormData(form);
+    localStorage.setItem('draft_' + formId, JSON.stringify(Object.fromEntries(fd)));
+  });
+}
+
+
 // ======================== PRE-WORKOUT FORM ========================
 
 export async function renderPreForm(studentIdRaw) {
@@ -74,10 +112,21 @@ export async function renderPreForm(studentIdRaw) {
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Ciclo Menstrual (Se aplicável)</label>
+              <select class="form-select" name="menstrualCycle" style="font-size:0.95rem">
+                <option value="">Não se aplica / Prefiro não informar</option>
+                <option value="Menstruacao">Menstruação</option>
+                <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
+                <option value="Ovulatoria">Fase Ovulatória</option>
+                <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Nível de Estresse</label>
               <div class="form-hint" style="margin-bottom:16px">1 = Relaxado · 10 = Muito estressado</div>
               <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => \`<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="stress" value="\${val}" \${val === 5 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">\${val}</span></label>\`).join('')}
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="stress" value="${val}" ${val === 5 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
               </div>
             </div>
 
@@ -114,6 +163,7 @@ export async function renderPreForm(studentIdRaw) {
 }
 
 export function initPreForm() {
+  setupFormDraft('preStudentForm');
   document.getElementById('preStudentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -140,23 +190,28 @@ export function initPreForm() {
       data.trainer_id = tId;
     }
 
+    const isPublic = !!tIdUrl;
+
     try {
       if (tId) {
-        try {
-          const { getSupabase } = await import('../utils/auth.js');
-          const sb = getSupabase?.();
-          if (sb) {
-            const { error } = await sb.from('biofeedback').insert([data]);
-            if (error) throw error;
-          } else throw new Error('no sb');
-        } catch {
+        const { getSupabase } = await import('../utils/auth.js');
+        const sb = getSupabase?.();
+        if (sb) {
+          const { error } = await sb.from('biofeedback').insert([data]);
+          if (error) throw error;
+        } else if (!isPublic) {
           await db.add('biofeedback', data);
+        } else {
+          throw new Error('Supabase indisponível para envio público.');
         }
       } else {
         await db.add('biofeedback', data);
       }
+      localStorage.removeItem('draft_preStudentForm');
     } catch(err) {
-      console.warn('Erro ao salvar no supabase', err);
+      console.warn('Erro ao salvar form pre:', err);
+      // fallback local só se não for público
+      if (!isPublic) await db.add('biofeedback', data);
     }
     
     e.target.classList.add('hidden');
@@ -251,67 +306,73 @@ export async function renderPostForm(sessionIdRaw) {
 }
 
 export function initPostForm() {
+  setupFormDraft('postStudentForm');
   document.getElementById('postStudentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd);
-    const sessionIdsRaw = window.location.hash.split('/form/post/')[1] || '';
-    const [sessionId, query] = sessionIdsRaw.split('?');
-    const params = new URLSearchParams(query || '');
-    const tIdUrl = params.get('t');
-
-    // Mapeamento post-form (sessão)
+    
+    const sessionId = data.sessionId;
     const session = await db.get('sessions', sessionId).catch(()=>null);
-    if (session) {
-      session.postBiofeedback = {
-        pse: parseInt(data.pse) || 7,
-        satisfaction: parseInt(data.satisfaction) || 8,
-        postPain: parseInt(data.postPain) || 1,
-        painRegion: data.painRegion || '',
-        painDescription: data.painDescription || '',
-        notes: data.notes || '',
-        submittedAt: new Date().toISOString()
-      };
-      await db.put('sessions', session);
-    }
+    if (!session) return;
 
-    // Criar biofeedback "pós"
+    session.postBiofeedback = {
+      pse: parseInt(data.pse) || 7,
+      satisfaction: parseInt(data.satisfaction) || 8,
+      postPain: parseInt(data.postPain) || 1,
+      painRegion: data.painRegion || '',
+      painDescription: data.painDescription || '',
+      notes: data.notes || '',
+    };
+    session.notes = data.notes || session.notes;
+    session.status = 'completed';
+
+    await db.put('sessions', session);
+
+    // Salvar também no biofeedback history
     const bfData = {
-      formType: 'post',
+      studentId: session.studentId,
       date: new Date().toISOString(),
-      studentId: session ? session.studentId : null,
+      formType: 'post',
       sessionId: sessionId,
       pse: parseInt(data.pse) || 7,
       satisfaction: parseInt(data.satisfaction) || 8,
       postPain: parseInt(data.postPain) || 1,
       painRegion: data.painRegion || '',
       painDescription: data.painDescription || '',
-      notes: data.notes || ''
+      notes: data.notes || '',
     };
 
-    const student = session ? await db.get('students', session.studentId).catch(()=>null) : null;
+    const studentIdRaw = window.location.hash.split('/form/post/')[1] || '';
+    const query = studentIdRaw.split('?')[1] || '';
+    const params = new URLSearchParams(query);
+    const tIdUrl = params.get('t');
+
+    const student = await db.get('students', session.studentId).catch(()=>null);
     const tId = tIdUrl || (student ? (student.trainerId || student.trainer_id) : null);
+    
     if (tId) {
       bfData.trainerId = tId;
       bfData.trainer_id = tId;
     }
 
+    const isPublic = !!tIdUrl;
     try {
       if (tId) {
-        try {
-          const { getSupabase } = await import('../utils/auth.js');
-          const sb = getSupabase?.();
-          if (sb) {
-            await sb.from('biofeedback').insert([bfData]);
-          } else throw new Error('no sb');
-        } catch {
+        const { getSupabase } = await import('../utils/auth.js');
+        const sb = getSupabase?.();
+        if (sb) {
+          await sb.from('biofeedback').insert([bfData]);
+        } else if (!isPublic) {
           await db.add('biofeedback', bfData);
         }
       } else {
         await db.add('biofeedback', bfData);
       }
+      localStorage.removeItem('draft_postStudentForm');
     } catch(err) {
       console.warn('Erro pós form supabase:', err);
+      if (!isPublic) await db.add('biofeedback', bfData);
     }
 
     e.target.classList.add('hidden');

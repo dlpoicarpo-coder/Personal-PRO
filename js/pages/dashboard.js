@@ -141,6 +141,15 @@ export async function renderDashboard() {
         <canvas id="weeklyChart"></canvas>
       </div>
     </div>
+
+    <div class="card mt-lg">
+      <div class="card-header">
+        <span class="card-title">Densidade de Treino (kg/min)</span>
+      </div>
+      <div style="height: 260px; position: relative;">
+        <canvas id="densityChart"></canvas>
+      </div>
+    </div>
   `;
 }
 
@@ -185,4 +194,43 @@ export async function initDashboardCharts() {
       }
     }
   });
+
+  const densityCanvas = document.getElementById('densityChart');
+  if (densityCanvas) {
+    const sessions = await db.getAll('sessions');
+    const recentCompleted = sessions.filter(s => s.status === 'completed').sort((a,b) => new Date(a.date) - new Date(b.date)).slice(-15);
+    
+    const densityLabels = recentCompleted.map(s => Calc.formatDate(s.date).slice(0,5));
+    const densityData = recentCompleted.map(s => {
+      const vol = s.totalVolume || 0;
+      const dur = s.totalDuration ? s.totalDuration / 60 : 0;
+      return dur > 0 ? (vol / dur).toFixed(1) : 0;
+    });
+
+    new Chart(densityCanvas, {
+      type: 'line',
+      data: {
+        labels: densityLabels,
+        datasets: [{
+          label: 'Densidade (kg/min)',
+          data: densityData,
+          borderColor: 'rgb(6, 182, 212)',
+          backgroundColor: 'rgba(6, 182, 212, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: 'rgb(6, 182, 212)',
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+        }
+      }
+    });
+  }
 }

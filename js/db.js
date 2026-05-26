@@ -4,6 +4,7 @@
 
 const supabaseUrl = 'https://vbxedlloesvjpqzunqyv.supabase.co'; 
 const supabaseKey = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
+const SUPABASE_TABLES = ['students', 'workouts', 'sessions', 'biofeedback', 'macrocycles', 'assessments', 'anamneses'];
 
 class Database {
   constructor() {
@@ -56,7 +57,7 @@ class Database {
 
   async getAll(storeName) {
     let localData = this._getLocal(storeName);
-    if (!this.supabase) return localData;
+    if (!this.supabase || !SUPABASE_TABLES.includes(storeName)) return localData;
 
     try {
       const { data, error } = await this.supabase
@@ -67,7 +68,64 @@ class Database {
         console.warn(`Supabase getAll error (${storeName}), usando fallback local:`, error.message);
         return localData;
       }
-      return data ? data.map(row => row.data) : localData;
+      
+      if (data) {
+        const remoteData = data.map(row => row.data);
+        // Merge with local data (remote overrides local if id matches)
+        const merged = [...localData];
+        remoteData.forEach(remoteItem => {
+          const idx = merged.findIndex(i => i.id === remoteItem.id);
+          if (idx >= 0) {
+            // Keep remote if updated later or simply override
+            merged[idx] = remoteItem;
+          } else {
+            merged.push(remoteItem);
+          }
+        });
+        // Update local cache
+        this._saveLocal(storeName, merged);
+        return merged;
+      }
+      return localData;
+    } catch (err) {
+      return localData;
+    }
+  }
+
+  async getAllForStudent(storeName, studentId, trainerId) {
+    let localData = this._getLocal(storeName).filter(i => i.studentId === studentId);
+    if (!this.supabase || !SUPABASE_TABLES.includes(storeName)) return localData;
+
+    try {
+      let query = this.supabase
+        .from(storeName)
+        .select('data');
+      
+      // We can't easily filter by data->studentId in basic select without specific indexing,
+      // but if the table has trainer_id we can filter by it to reduce payload.
+      if (trainerId) {
+        query = query.eq('trainer_id', trainerId);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.warn(`Supabase getAllForStudent error (${storeName}):`, error.message);
+        return localData;
+      }
+      
+      if (data) {
+        const remoteData = data.map(row => row.data).filter(d => d.studentId === studentId);
+        // Merge
+        const merged = [...localData];
+        remoteData.forEach(remoteItem => {
+          const idx = merged.findIndex(i => i.id === remoteItem.id);
+          if (idx >= 0) merged[idx] = remoteItem;
+          else merged.push(remoteItem);
+        });
+        return merged;
+      }
+      return localData;
     } catch (err) {
       return localData;
     }

@@ -160,6 +160,26 @@ export const Calc = {
     return rcq < 0.80 ? { label: 'Baixo risco', color: 'success' } : rcq < 0.85 ? { label: 'Risco moderado', color: 'warning' } : { label: 'Alto risco', color: 'danger' };
   },
 
+  // ── MASSA MUSCULAR ESQUELÉTICA (Lee et al. 2000) ─────────
+  massaMuscularEsqueletica(peso, alturaCm, idade, sexo, raca = 0) {
+    if (!peso || !alturaCm || !idade) return null;
+    const altM = alturaCm / 100;
+    const sexoNum = (sexo === 'M' || sexo === 'Masculino') ? 1 : 0;
+    const racaNum = isNaN(parseFloat(raca)) ? 0 : parseFloat(raca);
+    const smm = (0.244 * peso) + (7.8 * altM) + (6.6 * sexoNum) - (0.098 * idade) + racaNum - 3.3;
+    return Math.round(smm * 10) / 10;
+  },
+
+  pctMassaMuscular(smm, peso) {
+    if (!smm || !peso) return null;
+    return Math.round((smm / peso) * 100 * 10) / 10;
+  },
+
+  nowISO() {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1);
+  },
+
   // ── FORÇA / 1RM ──────────────────────────────────────────
   // Epley (padrão)
   rm1Estimado(carga, reps, formula = 'epley') {
