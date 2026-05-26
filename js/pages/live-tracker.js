@@ -351,11 +351,18 @@ export function initTracker(navigateFn) {
   // Editar sessão
   document.querySelectorAll('.edit-session-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const session  = await db.get('sessions', btn.dataset.id);
+      const sessions = await db.getAll('sessions');
+      if (sessions.some(s => s.status === 'active' && s.id !== btn.dataset.id)) {
+        notify.warning('Finalize a sessão em andamento antes de editar outra.');
+        return;
+      }
+      const session = sessions.find(s => s.id === btn.dataset.id);
       if (!session) return;
-      const students = await db.getAll('students');
-      const student  = students.find(x => x.id === session.studentId);
-      editSessionSummaryModal(session, student, navigateFn);
+      if (window.confirm('Deseja reabrir esta sessão para editar exercícios, cargas e repetições no Tracker?')) {
+        session.status = 'active';
+        await db.put('sessions', session);
+        window.location.reload();
+      }
     });
   });
 

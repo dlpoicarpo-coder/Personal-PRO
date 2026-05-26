@@ -39,19 +39,26 @@ export async function renderReports() {
 }
 
 async function getStudentCycles(studentId) {
-  const workouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
-  const cycles = [...new Set(workouts.map(w => w.cycle).filter(Boolean))];
-  return cycles.sort();
+  const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === studentId);
+  return macros.map(m => ({ id: m.id, name: m.name, start: m.startDate, end: m.endDate }));
 }
 
 async function renderStudentReport(studentId, cycleFilter = '') {
   const student = await db.get('students', studentId);
   if (!student) return '';
+  let startDate = null, endDate = null;
+  if (cycleFilter) {
+    const macro = await db.get('macrocycles', cycleFilter);
+    if (macro) { startDate = new Date(macro.startDate); endDate = new Date(macro.endDate); endDate.setHours(23,59,59,999); }
+  }
   const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
-  const workouts = cycleFilter ? allWorkouts.filter(w => w.cycle === cycleFilter) : allWorkouts;
-  const sessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
-  const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const assessments = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
+  const workouts = cycleFilter ? allWorkouts.filter(w => w.macrocycleId === cycleFilter) : allWorkouts;
+  const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  const sessions = startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions;
+  const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const bf = startDate ? allBf.filter(b => new Date(b.date) >= startDate && new Date(b.date) <= endDate) : allBf;
+  const allAss = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
+  const assessments = startDate ? allAss.filter(a => new Date(a.date) >= startDate && new Date(a.date) <= endDate) : allAss;
   const completed = sessions.filter(s => s.status === 'completed');
   const recent10 = bf.slice(-10);
   const avgPse = recent10.length ? (recent10.reduce((s, b) => s + (b.pse || 0), 0) / recent10.length).toFixed(1) : '-';
@@ -346,8 +353,12 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     </div>
 
     ${assessments.length ? `
-    <div class="card mb-lg"><div class="card-header"><span class="card-title">Evolução de Medidas Corporais</span></div>
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">Evolução de Medidas Corporais</span></div>
       <p class="text-xs text-muted mb-sm">Acompanhamento de peso corporal e percentual de gordura ao longo das avaliações. A tendência é mais importante que valores isolados.</p>
+      <div style="height:280px;position:relative"><canvas id="measuresChart"></canvas></div>
+    </div>` : ''}
+
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Gasto Calórico nos Treinos</span></div>
       <p class="text-xs text-muted mb-sm">Estimativa de calorias gastas por sessão, baseada na duração e peso corporal (MET de musculação).</p>
@@ -405,7 +416,7 @@ export async function initReports(navigateFn) {
     // Populate cycles
     const cycles = await getStudentCycles(sid);
     if (cycleSel) {
-      cycleSel.innerHTML = '<option value="">Todos os ciclos</option>' + cycles.map(c => `<option value="${c}">${c}</option>`).join('');
+      cycleSel.innerHTML = '<option value="">Todos os macrociclos</option>' + cycles.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     }
 
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
