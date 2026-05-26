@@ -26,8 +26,8 @@ export async function renderReports() {
           Enviar
         </button>
         <select class="form-select form-select-sm" id="pdfFormatSel" style="display:none; min-width:140px; border-color:var(--primary); color:var(--primary); font-weight:600">
-          <option value="mobile">📱 Celular (Escuro)</option>
-          <option value="a4">📄 A4 (Claro)</option>
+          <option value="mobile">📱 Celular (Vertical)</option>
+          <option value="a4">📄 A4 (Horizontal)</option>
         </select>
         <button class="btn btn-primary btn-sm" id="exportPdfBtn" style="display:none">Gerar PDF</button>
       </div>
@@ -624,7 +624,7 @@ export async function initReports(navigateFn) {
 
     // ── Gerar PDF via Blob URL (evita bloqueio de popup no Brave/Chrome) ──
     const format = document.getElementById('pdfFormatSel')?.value || 'mobile';
-    const isDark = format === 'mobile';
+    const isDark = true; // Always dark theme for PDF
     
     // Forçando tema baseado no formato
     const pdfBg = isDark ? '#0b0f19' : '#ffffff';
