@@ -511,6 +511,8 @@ export async function initReports(navigateFn) {
     const avgTqrR   = avgTqr;
     const totalLoad = bf.reduce((t,b)=>t+(b.trainingLoad||0),0);
     const totalVol  = sessions.reduce((t,s)=>t+Math.round(s.totalVolume||0),0);
+    const totalDuration = sessions.reduce((t,s)=>t+(s.totalDuration||0),0);
+    const avgDuration = sessions.length ? Math.round((totalDuration / sessions.length) / 60) : 0;
 
     // ── Resumo de treinos — deduplica por nome+ciclo, mostra só únicas ──
     const uniqueWorkouts = [];
