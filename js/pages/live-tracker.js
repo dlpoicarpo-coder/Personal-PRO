@@ -1098,6 +1098,13 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
         </table>
       </div>
       ${session.postBiofeedback?.notes?`<p class="text-sm text-muted mt-md">Obs: ${session.postBiofeedback.notes}</p>`:''}
+      <div style="margin-top:16px; display:flex; align-items:center; gap:8px;">
+        <label class="form-label mb-none">Formato do PDF:</label>
+        <select id="sessionPdfFormatSel" class="form-select form-select-sm" style="width:auto; border-color:var(--primary); color:var(--primary); font-weight:600;">
+          <option value="mobile">📱 Celular (Vertical)</option>
+          <option value="a4">📄 A4 (Impressão)</option>
+        </select>
+      </div>
     `,
     actions: [
       { label: 'WhatsApp', class: 'btn-secondary', onClick: () => {
@@ -1107,29 +1114,34 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
       }},
       { label: 'Copiar', class: 'btn-secondary', onClick: () => { navigator.clipboard?.writeText(summaryText); notify.success('Copiado!'); }},
       { label: 'Editar', class: 'btn-secondary', onClick: () => editSessionSummaryModal(session, student, navigateFn) },
-      { label: 'PDF', class: 'btn-secondary', onClick: () => generateSessionPDF(session, student) },
+      { label: 'Gerar PDF', class: 'btn-secondary', onClick: () => {
+          const fmt = document.getElementById('sessionPdfFormatSel')?.value || 'mobile';
+          generateSessionPDF(session, student, fmt);
+      }},
       { label: 'Fechar', class: 'btn-primary', onClick: () => { closeModal(); navigateFn('/tracker'); }},
     ]
   });
 }
 
 // ── PDF ──────────────────────────────────────────────────────
-function generateSessionPDF(session, student) {
+function generateSessionPDF(session, student, format = 'mobile') {
   try {
     const { jsPDF } = window.jspdf;
     if (!jsPDF) { notify.error('jsPDF não disponível'); return; }
-    const doc = new jsPDF({ unit:'mm', format:'a4' });
+    const isMobile = format === 'mobile';
+    const pw = isMobile ? 120 : 210;
+    const doc = new jsPDF({ unit:'mm', format: isMobile ? [pw, 260] : 'a4' });
     const g=[16,185,129], dk=[15,23,42], mu=[100,116,139], li=[241,245,249];
     const durMin=Math.round((session.totalDuration||0)/60);
     const exs=session.exercises||[], setLog=session.setLog||[];
     const date=new Date(session.date).toLocaleDateString('pt-BR');
 
-    doc.setFillColor(...g); doc.rect(0,0,210,26,'F');
+    doc.setFillColor(...g); doc.rect(0,0,pw,26,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
     doc.text('Personal PRO',14,11);
     doc.setFontSize(9); doc.setFont('helvetica','normal');
     doc.text('Relatório de Sessão',14,19);
-    doc.text(date,196,11,{align:'right'});
+    doc.text(date, pw - 14, 11,{align:'right'});
 
     doc.setTextColor(...dk); doc.setFontSize(13); doc.setFont('helvetica','bold');
     doc.text(student?.name||'Aluno',14,36);
@@ -1155,8 +1167,9 @@ function generateSessionPDF(session, student) {
 
     let bx = 14;
     let by = 48;
+    const cardsPerRow = isMobile ? 2 : 4;
     cards.forEach((card, idx) => {
-      if (idx > 0 && idx % 4 === 0) {
+      if (idx > 0 && idx % cardsPerRow === 0) {
         bx = 14;
         by += 20;
       }
@@ -1176,12 +1189,13 @@ function generateSessionPDF(session, student) {
       bx += 46.5; 
     });
 
-    let y = (cards.length > 4) ? 92 : 74;
+    let y = (cards.length > cardsPerRow) ? (isMobile && cards.length > cardsPerRow * 2 ? 112 : 92) : 74;
     doc.setTextColor(...dk); doc.setFontSize(10); doc.setFont('helvetica','bold');
     doc.text('Exercícios Realizados',14,y); y+=5;
-    doc.setFillColor(...g); doc.rect(14,y,182,6.5,'F');
+    doc.setFillColor(...g); doc.rect(14,y, pw - 28, 6.5,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7.5);
-    [['Exercício',14],['Séries',94],['Reps',114],['Carga máx',134],['Volume',162]].forEach(([h,x])=>doc.text(h,x+1,y+4.5));
+    const cx = isMobile ? {s: 55, r: 70, c: 85, v: 100} : {s: 94, r: 114, c: 134, v: 162};
+    [['Exercício',14],['Séries',cx.s],['Reps',cx.r],['Carga',cx.c],['Vol',cx.v]].forEach(([h,x])=>doc.text(h,x+1,y+4.5));
     y+=6.5;
 
     exs.forEach((ex,i)=>{
@@ -1191,14 +1205,16 @@ function generateSessionPDF(session, student) {
       const totalReps=sets.reduce((t,s)=>t+(s.reps||0),0);
       const vol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
       doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255);
-      doc.rect(14,y,182,6.5,'F');
+      doc.rect(14,y,pw - 28,6.5,'F');
       doc.setTextColor(...dk); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
-      doc.text(ex.name||'-',15,y+4.5);
+      let exName = ex.name||'-';
+      if (isMobile && exName.length > 18) exName = exName.substring(0, 18) + '...';
+      doc.text(exName,15,y+4.5);
       doc.setFont('helvetica','normal');
-      doc.text(String(sets.length),95,y+4.5);
-      doc.text(String(totalReps),115,y+4.5);
-      doc.text(maxLoad+'kg',135,y+4.5);
-      doc.text(vol+'kg',163,y+4.5);
+      doc.text(String(sets.length),cx.s,y+4.5);
+      doc.text(String(totalReps),cx.r,y+4.5);
+      doc.text(maxLoad+'kg',cx.c,y+4.5);
+      doc.text(vol+'kg',cx.v,y+4.5);
       y+=7.5; 
       
       sets.forEach((s) => {
@@ -1207,27 +1223,28 @@ function generateSessionPDF(session, student) {
         const setTxt = `S${(s.setIdx||0)+1}: ${s.reps||0}x ${s.load||0}kg ${s.pse ? ' (PSE: ' + s.pse + ')' : ''} ${s.restDuration ? ' (Desc: ' + s.restDuration + 's)' : ''}`;
         doc.text(setTxt, 18, y+2);
         y+=3.5;
-        if(y>272){doc.addPage();y=20;}
+        if(y > (isMobile?245:272)){doc.addPage();y=20;}
       });
       y+=2.5;
-      if(y>272){doc.addPage();y=20;}
+      if(y > (isMobile?245:272)){doc.addPage();y=20;}
     });
 
     if (session.postBiofeedback?.notes) {
       y += 5;
-      if (y > 260) { doc.addPage(); y = 20; }
+      if (y > (isMobile?235:260)) { doc.addPage(); y = 20; }
       doc.setTextColor(...dk); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
       doc.text('Observações:', 14, y);
       y += 5;
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-      const splitNotes = doc.splitTextToSize(session.postBiofeedback.notes, 180);
+      const splitNotes = doc.splitTextToSize(session.postBiofeedback.notes, pw - 28);
       doc.text(splitNotes, 14, y);
       y += splitNotes.length * 4;
     }
 
-    doc.setFillColor(...dk); doc.rect(0,287,210,10,'F');
+    const pageH = isMobile ? 260 : 297;
+    doc.setFillColor(...dk); doc.rect(0, pageH - 10, pw, 10, 'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7);
-    doc.text('Personal PRO — Sistema Profissional de Personal Trainer',105,293,{align:'center'});
+    doc.text('Personal PRO — Sistema Profissional de Personal Trainer', pw/2, pageH - 4, {align:'center'});
     doc.save(`sessao_${(student?.name||'aluno').replace(/\s/g,'_')}_${date.replace(/\//g,'-')}.pdf`);
     notify.success('PDF gerado!');
   } catch(err) { notify.error('Erro ao gerar PDF.'); console.error(err); }
