@@ -117,19 +117,29 @@ export async function renderTracker() {
       <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
       <div class="table-container">
         <table class="data-table">
-          <thead><tr><th>Aluno</th><th>Treino</th><th>Data</th><th>Duração</th><th>Volume</th><th>Séries</th><th>PSE</th><th>Carga</th><th style="text-align:right;min-width:100px">Ações</th></tr></thead>
+          <thead><tr>
+            <th style="white-space:nowrap">Aluno</th>
+            <th style="white-space:nowrap">Treino</th>
+            <th style="white-space:nowrap;text-align:center">Data</th>
+            <th style="text-align:center;white-space:nowrap">Duração</th>
+            <th style="text-align:center;white-space:nowrap">Volume</th>
+            <th style="text-align:center;white-space:nowrap">Séries</th>
+            <th style="text-align:center;white-space:nowrap">PSE</th>
+            <th style="text-align:center;white-space:nowrap">Carga</th>
+            <th style="text-align:right;min-width:100px">Ações</th>
+          </tr></thead>
           <tbody>${completed.map(s => {
             const st = students.find(x => x.id === s.studentId);
             const pse = s.postBiofeedback?.pse || 0;
             return `<tr>
-              <td>${st?.name || '?'}</td>
-              <td>${s.workoutName || '-'}</td>
-              <td>${Calc.formatDate(s.date)}</td>
-              <td>${formatTimeHMS(s.totalDuration || 0)}</td>
-              <td>${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
-              <td>${s.totalSets || '-'}</td>
-              <td style="color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}"><strong>${pse||'-'}</strong></td>
-              <td>${Math.round(pse * ((s.totalDuration || 0) / 60))}</td>
+              <td style="white-space:nowrap">${st?.name || '?'}</td>
+              <td style="white-space:nowrap">${s.workoutName || '-'}</td>
+              <td style="text-align:center;white-space:nowrap">${Calc.formatDate(s.date)}</td>
+              <td style="text-align:center;white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
+              <td style="text-align:center;white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
+              <td style="text-align:center;white-space:nowrap">${s.totalSets || '-'}</td>
+              <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'};white-space:nowrap"><strong>${pse||'-'}</strong></td>
+              <td style="text-align:center;white-space:nowrap">${Math.round(pse * ((s.totalDuration || 0) / 60))}</td>
               <td style="display:flex;gap:4px;justify-content:flex-end">
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver" style="padding:4px 6px;color:var(--accent)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>

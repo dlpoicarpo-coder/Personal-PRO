@@ -409,7 +409,9 @@ export async function initReports(navigateFn) {
   document.getElementById('reportStudent')?.addEventListener('change', async (e) => {
     const sid = e.target.value;
     const content = document.getElementById('reportContent');
+    const pdfFormatSel = document.getElementById('pdfFormatSel');
     if (pdfBtn) pdfBtn.style.display = sid ? '' : 'none';
+    if (pdfFormatSel) pdfFormatSel.style.display = sid ? 'inline-block' : 'none';
     if (cycleSel) cycleSel.style.display = sid ? '' : 'none';
     const waBtn = document.getElementById('exportWaBtn');
     if (waBtn) waBtn.style.display = sid ? '' : 'none';
