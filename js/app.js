@@ -144,7 +144,7 @@ function initApp() {
 
     // Database deduplication and methods repair
     setTimeout(async () => {
-      if (localStorage.getItem('fixed_db_v3')) return;
+      if (localStorage.getItem('fixed_db_v4')) return;
       try {
         const exs = await db.getAll('exercises');
         const seen = new Map();

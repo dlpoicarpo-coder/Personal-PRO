@@ -935,18 +935,30 @@ function editSessionSummaryModal(session, student, navigateFn) {
           </div>
           <div class="form-group">
             <label class="form-label">Séries Realizadas</label>
-            <div style="max-height: 250px; overflow-y: auto; padding-right: 4px; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; background: var(--bg-page);">
-              ${(session.setLog || []).map((s, i) => {
-                 const exName = (session.exercises || [])[s.exIdx]?.name || 'Exercício';
-                 return `<div class="flex items-center gap-xs mb-xs" style="font-size:0.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
-                    <div style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${exName}">${s.setNum} - ${exName}</div>
-                    <div style="display:flex;gap:4px">
-                      <input class="form-input form-sm" name="set_${i}_reps" type="number" value="${s.reps||0}" style="width:45px;padding:2px;text-align:center" title="Repetições" />
-                      <input class="form-input form-sm" name="set_${i}_load" type="number" value="${s.load||0}" style="width:45px;padding:2px;text-align:center" title="Carga (kg)" />
-                      <input class="form-input form-sm" name="set_${i}_rest" type="number" value="${s.restDuration||0}" style="width:55px;padding:2px;text-align:center" title="Descanso (s)" />
-                    </div>
-                 </div>`;
-              }).join('')}
+            <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-card);">
+              <table style="width:100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                <thead style="background: var(--bg-page); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10;">
+                  <tr>
+                    <th style="padding: 6px; font-weight: 600;">Exercício</th>
+                    <th style="padding: 6px; font-weight: 600; width: 50px; text-align: center;">Reps</th>
+                    <th style="padding: 6px; font-weight: 600; width: 50px; text-align: center;">Carga</th>
+                    <th style="padding: 6px; font-weight: 600; width: 50px; text-align: center;">Desc.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(session.setLog || []).map((s, i) => {
+                     const exName = (session.exercises || [])[s.exIdx]?.name || 'Exercício';
+                     return `<tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;" title="${exName}">
+                          <span style="color:var(--primary); font-weight: 600; margin-right: 4px;">S${(s.setIdx || 0) + 1}</span> ${exName}
+                        </td>
+                        <td style="padding: 4px; text-align: center;"><input class="form-input form-sm" name="set_${i}_reps" type="number" value="${s.reps||0}" style="width:40px; padding:2px; text-align:center; display:inline-block" /></td>
+                        <td style="padding: 4px; text-align: center;"><input class="form-input form-sm" name="set_${i}_load" type="number" value="${s.load||0}" style="width:40px; padding:2px; text-align:center; display:inline-block" /></td>
+                        <td style="padding: 4px; text-align: center;"><input class="form-input form-sm" name="set_${i}_rest" type="number" value="${s.restDuration||0}" style="width:45px; padding:2px; text-align:center; display:inline-block" /></td>
+                     </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
             </div>
           </div>
           <div class="form-group">

@@ -52,11 +52,15 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     if (macro) { startDate = new Date(macro.startDate); endDate = new Date(macro.endDate); endDate.setHours(23,59,59,999); }
   }
   const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
-  const workouts = cycleFilter ? allWorkouts.filter(w => w.macrocycleId === cycleFilter) : allWorkouts;
+  const workouts = cycleFilter ? allWorkouts.filter(w => w.macrocycleId === cycleFilter || w.cycle === cycleFilter) : allWorkouts;
+  const workoutIds = new Set(workouts.map(w => w.id));
+  
   const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
-  const sessions = startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions;
+  const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(s.workoutId)) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
+  
   const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const bf = startDate ? allBf.filter(b => new Date(b.date) >= startDate && new Date(b.date) <= endDate) : allBf;
+  const bf = cycleFilter ? allBf.filter(b => sessions.some(s => new Date(s.date).toDateString() === new Date(b.date).toDateString())) : (startDate ? allBf.filter(b => new Date(b.date) >= startDate && new Date(b.date) <= endDate) : allBf);
+  
   const allAss = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
   const assessments = startDate ? allAss.filter(a => new Date(a.date) >= startDate && new Date(a.date) <= endDate) : allAss;
   const completed = sessions.filter(s => s.status === 'completed');
