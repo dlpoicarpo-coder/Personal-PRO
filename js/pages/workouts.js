@@ -323,8 +323,16 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       </div>
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Desc.(s)</label>
-        <input class="form-input" name="ex_rest_${index}" value="${ex.rest||'60'}"
-          style="text-align:center;font-size:0.82rem;padding:4px 6px" />
+        <select class="form-select" name="ex_rest_${index}" style="font-size:0.78rem;padding:4px 6px">
+          <option value="15" ${ex.rest=='15'?'selected':''}>15</option>
+          <option value="30" ${ex.rest=='30'?'selected':''}>30</option>
+          <option value="45" ${ex.rest=='45'?'selected':''}>45</option>
+          <option value="60" ${(!ex.rest || ex.rest=='60')?'selected':''}>60</option>
+          <option value="90" ${ex.rest=='90'?'selected':''}>90</option>
+          <option value="120" ${ex.rest=='120'?'selected':''}>120</option>
+          <option value="150" ${ex.rest=='150'?'selected':''}>150</option>
+          <option value="180" ${ex.rest=='180'?'selected':''}>180</option>
+        </select>
       </div>
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Tipo carga</label>

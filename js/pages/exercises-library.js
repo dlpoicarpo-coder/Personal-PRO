@@ -16,9 +16,7 @@ function canEdit(item, adminMode)   { return item.is_default ? adminMode : true;
 function canDelete(item, adminMode) { return item.is_default ? adminMode : true; }
 
 function defaultBadge(adminMode) {
-  return adminMode
-    ? '<span class="badge" style="background:rgba(239,68,68,0.12);color:var(--danger);font-size:0.6rem;padding:1px 6px;margin-left:4px">Admin</span>'
-    : '<span class="badge" style="background:rgba(99,102,241,0.12);color:#6366f1;font-size:0.6rem;padding:1px 6px;margin-left:4px">Padrão</span>';
+  return '<span class="badge" style="background:rgba(239,68,68,0.12);color:var(--danger);font-size:0.6rem;padding:1px 6px;margin-left:4px">Admin</span>';
 }
 
 

@@ -351,6 +351,12 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <div style="height:280px;position:relative"><canvas id="measuresChart"></canvas></div>
     </div>` : ''}
 
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">Gasto Calórico nos Treinos</span></div>
+      <p class="text-xs text-muted mb-sm">Estimativa de calorias gastas por sessão, baseada na duração e peso corporal (MET de musculação).</p>
+      <div style="height:280px;position:relative"><canvas id="kcalChart"></canvas></div>
+    </div>
+
     <div class="grid-2 mb-lg">
       <div class="card"><div class="card-header"><span class="card-title">Frequência — Últimas 8 Semanas</span></div>
         <p class="text-xs text-muted mb-sm">Sessões realizadas por semana. A <strong>consistência</strong> (mínimo 3x/semana) é o fator mais importante para resultados a longo prazo.</p>
@@ -457,14 +463,23 @@ export async function initReports(navigateFn) {
   pdfBtn?.addEventListener('click', async () => {
     const sid = document.getElementById('reportStudent')?.value;
     if (!sid) return;
+    
+    const newWin = window.open('', '_blank');
+    if (!newWin) {
+      notify.error('Pop-up bloqueado. Permita a abertura de novas guias no seu navegador.');
+      return;
+    }
+    
+    newWin.document.write('<html><body style="font-family:sans-serif;padding:40px;text-align:center;"><h2>Gerando relatório...</h2></body></html>');
+    
     const student = await db.get('students', sid);
-    if (!student) return;
+    if (!student) { newWin.close(); return; }
     const cycleFilter = cycleSel?.value || '';
     const settings    = await db.get('settings', 'trainer') || {};
     const trainerName = settings?.trainerName || 'Personal PRO';
 
     const pdfArea = document.getElementById('pdfArea');
-    if (!pdfArea) { notify.error('Carregue o relatório primeiro'); return; }
+    if (!pdfArea) { newWin.close(); notify.error('Carregue o relatório primeiro'); return; }
 
     // ── Dados ──
     const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === sid);
@@ -526,6 +541,7 @@ export async function initReports(navigateFn) {
       { id: 'radarChart',     title: 'Radar de Wellness',           desc: 'Média dos últimos 5 check-ins. Quanto maior a área, melhor o estado geral. Pontas "encolhidas" indicam itens a melhorar.' },
       { id: 'freqChart',      title: 'Frequência Semanal',          desc: 'Sessões realizadas por semana. Consistência ≥3x/semana é fundamental para resultados duradouros.' },
       { id: 'measuresChart',  title: 'Evolução de Medidas Corporais', desc: 'Tendência de peso e % de gordura ao longo das avaliações físicas.' },
+      { id: 'kcalChart',      title: 'Gasto Calórico',              desc: 'Estimativa de calorias gastas por sessão ao longo do tempo.' },
       { id: 'cycleDiffChart', title: 'Comparação de Períodos',      desc: 'Comparação entre a primeira e segunda metade dos dados coletados. Melhoras aparecem como barras verdes maiores.' },
     ];
 
@@ -734,17 +750,10 @@ export async function initReports(navigateFn) {
       </div>
     </body></html>`;
 
-    const blob    = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const blobUrl = URL.createObjectURL(blob);
-    const tempLink = document.createElement('a');
-    tempLink.href   = blobUrl;
-    tempLink.target = '_blank';
-    tempLink.rel    = 'noopener noreferrer';
-    document.body.appendChild(tempLink);
-    tempLink.click();
-    document.body.removeChild(tempLink);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
-    notify.success('PDF aberto! Use Ctrl+P (ou ⌘+P) para salvar.');
+    newWin.document.open();
+    newWin.document.write(htmlContent);
+    newWin.document.close();
+    notify.success('PDF aberto em uma nova guia! Use Ctrl+P (ou ⌘+P) para salvar.');
   });
 }
 
@@ -828,6 +837,38 @@ async function initReportCharts(studentId) {
     if (sorted.some(a => a.peso)) ds.push({ label: 'Peso (kg)', data: sorted.map(a => a.peso || null), borderColor: '#10b981', tension: 0.3, yAxisID: 'y' });
     if (sorted.some(a => a.percentualGordura)) ds.push({ label: 'BF %', data: sorted.map(a => a.percentualGordura || null), borderColor: '#f59e0b', tension: 0.3, yAxisID: 'y1' });
     if (ds.length) new Chart(mCtx, { type: 'line', data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y1: { position: 'right', ticks: { color: '#f59e0b' }, grid: { display: false } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } } });
+  }
+
+  // ── GRÁFICO DE GASTO CALÓRICO ──
+  const kcCtx = document.getElementById('kcalChart');
+  if (kcCtx && sessions.length >= 1) {
+    const sortedKcal = [...sessions].filter(s=>s.status==='completed').sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const labels = sortedKcal.map(s => Calc.formatDate(s.date).slice(0,5));
+    const data = sortedKcal.map(s => {
+      const durMin = s.totalDuration ? s.totalDuration / 60 : 0;
+      const peso = s.studentWeight || 70; // fallback if no weight
+      if (durMin) return Calc.caloriasAtividade(peso, durMin, 'musculacao');
+      return 0;
+    });
+    
+    new Chart(kcCtx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Kcal Estimada',
+          data: data,
+          backgroundColor: 'rgba(249, 115, 22, 0.5)',
+          borderColor: '#f97316',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        ...co,
+        plugins: { legend: { display: false } },
+      }
+    });
   }
 
   // ── GRÁFICO DE PROGRESSÃO DE CARGA ──

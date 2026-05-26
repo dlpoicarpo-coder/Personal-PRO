@@ -5,13 +5,14 @@
 let container = null;
 
 function ensureContainer() {
-  if (!container) {
-    container = document.createElement('div');
-    container.className = 'toast-container';
-    container.id = 'toastContainer';
-    document.body.appendChild(container);
+  let c = document.getElementById('toastContainer');
+  if (!c) {
+    c = document.createElement('div');
+    c.className = 'toast-container';
+    c.id = 'toastContainer';
+    document.body.appendChild(c);
   }
-  return container;
+  return c;
 }
 
 export function toast(message, type = 'info', duration = 3500) {
@@ -28,9 +29,11 @@ export function toast(message, type = 'info', duration = 3500) {
 
   c.appendChild(el);
   setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(100%)';
-    setTimeout(() => el.remove(), 300);
+    if (el && el.parentNode) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(100%)';
+      setTimeout(() => { if (el && el.parentNode) el.remove(); }, 300);
+    }
   }, duration);
 }
 
