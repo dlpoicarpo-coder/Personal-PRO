@@ -291,7 +291,7 @@ function bindDayActions(navigateFn) {
       const ev = await db.get('schedules', btn.dataset.id); if (!ev) return;
       const st = await db.get('students', ev.studentId);
       if (!st?.phone) { notify.warning('Aluno sem telefone cadastrado'); return; }
-      const formLink = `${location.origin}${location.pathname}#/form/pre/${st.id}`;
+      const formLink = `${location.origin}${location.pathname}#/form/pre/${st.id}?t=${st.trainerId||st.trainer_id||''}&n=${encodeURIComponent(st.name)}`;
       sendWhatsApp(st.phone, reminderMsg(st.name.split(' ')[0], ev.workoutName || 'Treino', Calc.formatDate(ev.date), ev.time || '', formLink));
     });
   });
@@ -300,7 +300,7 @@ function bindDayActions(navigateFn) {
       const ev = await db.get('schedules', btn.dataset.id); if (!ev) return;
       const st = await db.get('students', ev.studentId);
       if (!st?.phone) { notify.warning('Sem telefone'); return; }
-      sendWhatsApp(st.phone, preFormMsg(st.name.split(' ')[0], `${location.origin}${location.pathname}#/form/pre/${st.id}`));
+      sendWhatsApp(st.phone, preFormMsg(st.name.split(' ')[0], `${location.origin}${location.pathname}#/form/pre/${st.id}?t=${st.trainerId||st.trainer_id||''}&n=${encodeURIComponent(st.name)}`));
     });
   });
   document.querySelectorAll('.wa-post').forEach(btn => {
@@ -556,7 +556,7 @@ async function checkReminders() {
       const diffMin = (eventMs - now) / 60_000;
 
       const base    = window.location.href.split('#')[0];
-      const preLink = `${base}#/form/pre/${ev.studentId}`;
+      const preLink = `${base}#/form/pre/${ev.studentId}?t=${ev.trainerId||ev.trainer_id||''}&n=${encodeURIComponent(ev.studentName)}`;
 
       // ── 10h antes ──────────────────────────────────────────
       const id10h = `${ev.id}_10h`;
@@ -679,3 +679,4 @@ function buildMsg30m(name, ev, preLink, trainerName) {
 
 // ── Mensagem pós-treino — exportada para uso externo ──────────
 // (inline no live-tracker.js — mantida aqui para referência)
+

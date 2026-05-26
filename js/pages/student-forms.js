@@ -8,9 +8,17 @@ import { PAIN_REGIONS, painRegionSelector } from '../utils/alerts.js';
 
 // ======================== PRE-WORKOUT FORM ========================
 
-export async function renderPreForm(studentId) {
-  const student = await db.get('students', studentId);
-  if (!student) return `<div class="student-form-page"><div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Aluno não encontrado</h3></div></div>`;
+export async function renderPreForm(studentIdRaw) {
+  const [studentId, query] = studentIdRaw.split('?');
+  const params = new URLSearchParams(query || '');
+  const tId = params.get('t') || '';
+  const sName = params.get('n') ? decodeURIComponent(params.get('n')) : '';
+
+  let student = await db.get('students', studentId).catch(() => null);
+  if (!student && !sName) return `<div class="student-form-page"><div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Aluno não encontrado</h3></div></div>`;
+
+  const displayName = student ? student.name : sName;
+  const displayInitial = displayName ? displayName[0] : '?';
 
   return `
     <div class="student-form-page">
@@ -21,8 +29,8 @@ export async function renderPreForm(studentId) {
         </div>
         <div class="form-card-body">
           <div class="flex items-center gap-md mb-lg">
-            <div class="avatar avatar-lg">${student.name[0]}</div>
-            <div><h3 style="margin:0">${student.name}</h3><div class="text-muted text-sm">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+            <div class="avatar avatar-lg">${displayInitial}</div>
+            <div><h3 style="margin:0">${displayName}</h3><div class="text-muted text-sm">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
           </div>
 
           <!-- Google Forms Alternativo -->
@@ -35,18 +43,22 @@ export async function renderPreForm(studentId) {
           <form id="preStudentForm">
             <input type="hidden" name="studentId" value="${studentId}" />
             ${[
-              { id: 'sleep', icon: '', label: 'Qualidade do Sono', hint: '1 = péssimo · 10 = ótimo' },
-              { id: 'tqr', icon: '', label: 'Nível de Recuperação (TQR)', hint: '1 = exausto/sem recuperação · 10 = totalmente recuperado' },
-              { id: 'stress', icon: '', label: 'Nível de Estresse', hint: '1 = relaxado · 10 = muito estressado' },
-              { id: 'pain', icon: '', label: 'Dor/Desconforto', hint: '1 = nenhuma · 10 = muita dor' },
+              { id: 'sleep', label: 'Qualidade do Sono', hint: '1 = péssimo · 10 = ótimo' },
+              { id: 'tqr', label: 'Nível de Recuperação (TQR)', hint: '1 = exausto/sem recuperação · 10 = totalmente recuperado' },
+              { id: 'stress', label: 'Nível de Estresse', hint: '1 = relaxado · 10 = muito estressado' },
+              { id: 'pain', label: 'Dor/Desconforto', hint: '1 = nenhuma · 10 = muita dor' },
             ].map(f => `
-              <div class="form-group" style="margin-bottom:20px">
-                <div class="flex items-center justify-between mb-sm">
-                  <label class="form-label" style="margin:0">${f.label}</label>
-                  <span class="text-gradient" style="font-size:1.4rem;font-weight:800" id="v_${f.id}">5</span>
+              <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+                <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">${f.label}</label>
+                <div class="form-hint" style="margin-bottom:16px">${f.hint}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
+                  ${[1,2,3,4,5,6,7,8,9,10].map(val => `
+                    <label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px">
+                      <input type="radio" name="${f.id}" value="${val}" ${val === 5 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer" ${f.id === 'pain' ? `onchange="document.getElementById('painGroup').style.display=this.value>=3?'block':'none'"` : ''}/>
+                      <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span>
+                    </label>
+                  `).join('')}
                 </div>
-                <input type="range" name="${f.id}" min="1" max="10" value="5" style="width:100%;height:32px" oninput="document.getElementById('v_${f.id}').textContent=this.value;${f.id === 'pain' ? "document.getElementById('painGroup').style.display=this.value>=3?'block':'none'" : ''}" />
-                <div class="form-hint text-center">${f.hint}</div>
               </div>
             `).join('')}
             <div class="form-group" id="painGroup" style="display:none">
@@ -87,17 +99,39 @@ export function initPreForm() {
     data.mood = data.tqr;
     data.energy = data.tqr;
 
-    // Busca o aluno para obter o trainer_id para RLS do Supabase
-    const student = await db.get('students', data.studentId);
-    if (student) {
-      const tId = student.trainerId || student.trainer_id;
-      if (tId) {
-        data.trainerId = tId;
-        data.trainer_id = tId;
-      }
+    const studentIdRaw = window.location.hash.split('/form/pre/')[1] || '';
+    const query = studentIdRaw.split('?')[1] || '';
+    const params = new URLSearchParams(query);
+    const tIdUrl = params.get('t');
+
+    // Busca o aluno para obter o trainer_id se não estiver na URL
+    const student = await db.get('students', data.studentId).catch(()=>null);
+    const tId = tIdUrl || (student ? (student.trainerId || student.trainer_id) : null);
+    
+    if (tId) {
+      data.trainerId = tId;
+      data.trainer_id = tId;
     }
 
-    await db.add('biofeedback', data);
+    try {
+      if (tId) {
+        try {
+          const { getSupabase } = await import('../utils/auth.js');
+          const sb = getSupabase?.();
+          if (sb) {
+            const { error } = await sb.from('biofeedback').insert([data]);
+            if (error) throw error;
+          } else throw new Error('no sb');
+        } catch {
+          await db.add('biofeedback', data);
+        }
+      } else {
+        await db.add('biofeedback', data);
+      }
+    } catch(err) {
+      console.warn('Erro ao salvar no supabase', err);
+    }
+    
     e.target.classList.add('hidden');
     document.getElementById('preSuccess')?.classList.remove('hidden');
   });
@@ -105,10 +139,18 @@ export function initPreForm() {
 
 // ======================== POST-WORKOUT FORM ========================
 
-export async function renderPostForm(sessionId) {
-  const session = await db.get('sessions', sessionId);
-  if (!session) return `<div class="student-form-page"><div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Sessão não encontrada</h3></div></div>`;
-  const student = await db.get('students', session.studentId);
+export async function renderPostForm(sessionIdRaw) {
+  const [sessionId, query] = sessionIdRaw.split('?');
+  const params = new URLSearchParams(query || '');
+  const tId = params.get('t') || '';
+  const sName = params.get('n') ? decodeURIComponent(params.get('n')) : '';
+
+  const session = await db.get('sessions', sessionId).catch(()=>null);
+  if (!session && !sName) return `<div class="student-form-page"><div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Sessão não encontrada</h3></div></div>`;
+  const student = session ? await db.get('students', session.studentId).catch(()=>null) : null;
+  
+  const displayName = student ? student.name : sName;
+  const displayInitial = displayName ? displayName[0] : '?';
 
   return `
     <div class="student-form-page">
@@ -119,10 +161,10 @@ export async function renderPostForm(sessionId) {
         </div>
         <div class="form-card-body">
           <div class="flex items-center gap-md mb-lg">
-            <div class="avatar avatar-lg">${student ? student.name[0] : '?'}</div>
+            <div class="avatar avatar-lg">${displayInitial}</div>
             <div>
-              <h3 style="margin:0">${student ? student.name : 'Aluno'}</h3>
-              <div class="text-muted text-sm">${session.workoutName || 'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
+              <h3 style="margin:0">${displayName}</h3>
+              <div class="text-muted text-sm">${session?.workoutName || 'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
             </div>
           </div>
 
@@ -135,27 +177,47 @@ export async function renderPostForm(sessionId) {
 
           <form id="postStudentForm">
             <input type="hidden" name="sessionId" value="${sessionId}" />
-            <div class="form-group" style="margin-bottom:20px">
-              <div class="flex items-center justify-between mb-sm">
-                <label class="form-label" style="margin:0">PSE — Quão difícil foi o treino?</label>
-                <span class="text-gradient" style="font-size:1.8rem;font-weight:800" id="v_pse">7</span>
+            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">PSE — Quão difícil foi o treino?</label>
+              <div class="form-hint" style="margin-bottom:16px">1 = Muito fácil · 5 = Moderado · 10 = Máximo</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `
+                  <label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px">
+                    <input type="radio" name="pse" value="${val}" ${val === 7 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer" />
+                    <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span>
+                  </label>
+                `).join('')}
               </div>
-              <input type="range" name="pse" min="1" max="10" value="7" style="width:100%;height:32px" oninput="document.getElementById('v_pse').textContent=this.value" />
-              <div class="flex justify-between text-xs text-muted" style="justify-content:space-between"><span>1 Muito fácil</span><span>5 Moderado</span><span>10 Máximo</span></div>
+            </div>
+            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Satisfação com o treino</label>
+              <div class="form-hint" style="margin-bottom:16px">1 = Péssimo · 10 = Excelente</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `
+                  <label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px">
+                    <input type="radio" name="satisfaction" value="${val}" ${val === 8 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer" />
+                    <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Recuperação Imediata (TQR Pós)</label>
+              <div class="form-hint" style="margin-bottom:16px">1 = Exausto · 10 = Recuperado</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `
+                  <label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px">
+                    <input type="radio" name="tqrPost" value="${val}" ${val === 6 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer" />
+                    <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span>
+                  </label>
+                `).join('')}
+              </div>
             </div>
             <div class="form-group" style="margin-bottom:20px">
-              <div class="flex items-center justify-between mb-sm">
-                <label class="form-label" style="margin:0">Satisfação com o treino</label>
-                <span class="text-gradient" style="font-size:1.4rem;font-weight:800" id="v_sat">8</span>
-              </div>
-              <input type="range" name="satisfaction" min="1" max="10" value="8" style="width:100%;height:32px" oninput="document.getElementById('v_sat').textContent=this.value" />
-            </div>
-            <div class="form-group" style="margin-bottom:20px">
-              <div class="flex items-center justify-between mb-sm">
-                <label class="form-label" style="margin:0">Sentiu dor durante o treino?</label>
-                <span class="text-gradient" style="font-size:1.4rem;font-weight:800" id="v_postpain">1</span>
-              </div>
-              <input type="range" name="postPain" min="1" max="10" value="1" style="width:100%;height:32px" oninput="document.getElementById('v_postpain').textContent=this.value;document.getElementById('postPainGroup').style.display=this.value>=3?'block':'none'" />
+              <label class="form-label">Sentiu dor durante o treino?</label>
+              <select name="postPain" class="form-select" onchange="document.getElementById('postPainGroup').style.display=this.value>=3?'block':'none'">
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<option value="${val}">${val} ${val==1?'(Sem dor)':val==10?'(Muita dor)':''}</option>`).join('')}
+              </select>
             </div>
             <div class="form-group" id="postPainGroup" style="display:none">
               <label class="form-label">Onde sentiu dor?</label>
@@ -183,49 +245,65 @@ export function initPostForm() {
     e.preventDefault();
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd);
-    const session = await db.get('sessions', data.sessionId);
+    const sessionIdsRaw = window.location.hash.split('/form/post/')[1] || '';
+    const [sessionId, query] = sessionIdsRaw.split('?');
+    const params = new URLSearchParams(query || '');
+    const tIdUrl = params.get('t');
 
+    // Mapeamento post-form (sessão)
+    const session = await db.get('sessions', sessionId).catch(()=>null);
     if (session) {
-      // Busca o aluno para obter o trainer_id para RLS do Supabase
-      const student = await db.get('students', session.studentId);
-      const tId = student ? (student.trainerId || student.trainer_id) : null;
-
       session.postBiofeedback = {
         pse: parseInt(data.pse) || 7,
         satisfaction: parseInt(data.satisfaction) || 8,
+        tqrPost: parseInt(data.tqrPost) || 6,
         postPain: parseInt(data.postPain) || 1,
         painRegion: data.painRegion || '',
+        painDescription: data.painDescription || '',
         notes: data.notes || '',
-        submittedByStudent: true,
-        submittedAt: new Date().toISOString(),
+        submittedAt: new Date().toISOString()
       };
-      if (tId) {
-        session.trainerId = tId;
-        session.trainer_id = tId;
-      }
       await db.put('sessions', session);
+    }
 
-      if (session.studentId) {
-        const dur = session.totalDuration ? Math.round(session.totalDuration / 60) : 60;
-        const pse = parseInt(data.pse) || 7;
-        
-        const bfEntry = {
-          studentId: session.studentId,
-          date: session.date || new Date().toISOString(),
-          pse, duration: dur,
-          trainingLoad: pse * dur,
-          pain: parseInt(data.postPain) || 1,
-          painRegion: data.painRegion || '',
-          notes: data.notes,
-          formType: 'post',
-          sessionId: data.sessionId,
-        };
-        if (tId) {
-          bfEntry.trainerId = tId;
-          bfEntry.trainer_id = tId;
+    // Criar biofeedback "pós"
+    const bfData = {
+      formType: 'post',
+      date: new Date().toISOString(),
+      studentId: session ? session.studentId : null,
+      sessionId: sessionId,
+      pse: parseInt(data.pse) || 7,
+      satisfaction: parseInt(data.satisfaction) || 8,
+      tqrPost: parseInt(data.tqrPost) || 6,
+      postPain: parseInt(data.postPain) || 1,
+      painRegion: data.painRegion || '',
+      painDescription: data.painDescription || '',
+      notes: data.notes || ''
+    };
+
+    const student = session ? await db.get('students', session.studentId).catch(()=>null) : null;
+    const tId = tIdUrl || (student ? (student.trainerId || student.trainer_id) : null);
+    if (tId) {
+      bfData.trainerId = tId;
+      bfData.trainer_id = tId;
+    }
+
+    try {
+      if (tId) {
+        try {
+          const { getSupabase } = await import('../utils/auth.js');
+          const sb = getSupabase?.();
+          if (sb) {
+            await sb.from('biofeedback').insert([bfData]);
+          } else throw new Error('no sb');
+        } catch {
+          await db.add('biofeedback', bfData);
         }
-        await db.add('biofeedback', bfEntry);
+      } else {
+        await db.add('biofeedback', bfData);
       }
+    } catch(err) {
+      console.warn('Erro pós form supabase:', err);
     }
 
     e.target.classList.add('hidden');

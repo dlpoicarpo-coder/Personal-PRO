@@ -216,11 +216,48 @@ export const BUILT_IN_TEMPLATES = [
         name: 'Dia B', exercises: [
           { name: 'Agachamento Livre com Barra', sets: 5, reps: '5', load: '', rest: '180', method: '' },
           { name: 'Desenvolvimento com Barra', sets: 5, reps: '5', load: '', rest: '180', method: '' },
-          { name: 'Levantamento Terra', sets: 1, reps: '5', load: '', rest: '180', method: '' },
+          { name: 'Rotação Externa de Ombros', sets: 2, reps: '15', load: '', rest: '45', method: '' },
         ]
       },
     ]
   },
+  {
+    id: 'tpl_cardio_hiit',
+    name: 'Cardio HIIT — Treino Intervalado',
+    category: 'Avançado',
+    goal: 'Emagrecimento',
+    description: 'Protocolo de alta intensidade (HIIT) para máxima queima de gordura e condicionamento. Duração curta (20-25min).',
+    daysPerWeek: 3,
+    builtIn: true,
+    workouts: [
+      {
+        name: 'HIIT - Bike ou Esteira', exercises: [
+          { name: 'Aquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z2', rest: '0', method: '' },
+          { name: 'Tiro/Sprint (Cardio)', sets: 8, reps: '30 seg', load: 'Z4', rest: '0', method: 'Série' },
+          { name: 'Recuperação Ativa (Cardio)', sets: 8, reps: '60 seg', load: 'Z1', rest: '0', method: 'Série' },
+          { name: 'Desaquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'tpl_endurance_base',
+    name: 'Endurance Base — LISS',
+    category: 'Iniciante',
+    goal: 'Condicionamento',
+    description: 'Treino contínuo de baixa/média intensidade (LISS) para construir resistência aeróbica de base.',
+    daysPerWeek: 4,
+    builtIn: true,
+    workouts: [
+      {
+        name: 'Aeróbico Contínuo (LISS)', exercises: [
+          { name: 'Aquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' },
+          { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '40 min', load: 'Z2', rest: '0', method: '' },
+          { name: 'Desaquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' }
+        ]
+      }
+    ]
+  }
 ];
 
 export function getTemplatesByCategory() {

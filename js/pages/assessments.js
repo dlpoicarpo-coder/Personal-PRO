@@ -106,8 +106,20 @@ function rm1Zones(rm1) {
 // ── RENDER PRINCIPAL ─────────────────────────────────────────
 export async function renderAssessments() {
   const students    = await db.getAll('students');
-  const assessments = await db.getAll('assessments');
+  let assessments = await db.getAll('assessments');
   const active      = students.filter(s=>s.status==='Ativo');
+
+  // Remove avaliações órfãs (alunos deletados como o caso da "Vitória")
+  const validAss = [];
+  for (const a of assessments) {
+    if (students.find(s => s.id === a.studentId)) {
+      validAss.push(a);
+    } else {
+      console.log('Removendo avaliação órfã:', a.id);
+      db.delete('assessments', a.id).catch(()=>{});
+    }
+  }
+  assessments = validAss;
 
   assessments.sort((a,b)=>new Date(b.date)-new Date(a.date));
 

@@ -912,17 +912,26 @@ async function initReportCharts(studentId) {
   }
 }
 
-async function loadPeriodizationForReport(studentId) {
+async function loadPeriodizationForReport(studentId, selectedMacroId = null) {
   const container = document.getElementById('reportPeriodization');
   if (!container) return;
   const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === studentId);
-  const active = macros.find(m => m.status === 'active') || macros[0];
-  if (!active || !active.weeks) {
+  if (!macros.length) {
     container.innerHTML = '<p class="text-muted text-sm">Nenhuma periodização encontrada para este aluno.</p>';
     return;
   }
+  
+  let active = selectedMacroId ? macros.find(m => m.id === selectedMacroId) : (macros.find(m => m.status === 'active') || macros[0]);
+  
   const currentWeek = Math.ceil((Date.now() - new Date(active.startDate).getTime()) / (7 * 86400000));
+  
   container.innerHTML = `
+    <div style="margin-bottom:12px">
+      <select class="form-select" id="reportMacroSelect" style="max-width:300px;font-size:0.85rem">
+        ${macros.map(m => `<option value="${m.id}" ${m.id === active.id ? 'selected' : ''}>${m.name} (${new Date(m.startDate).toLocaleDateString('pt-BR')})</option>`).join('')}
+      </select>
+    </div>
+    ${active.weeks ? `
     <div class="text-sm text-muted mb-sm"><strong>${active.name}</strong> · ${active.totalWeeks} semanas · Início: ${new Date(active.startDate).toLocaleDateString('pt-BR')}</div>
     <div class="week-timeline" style="min-height:60px">
       ${active.weeks.map((w, i) => {

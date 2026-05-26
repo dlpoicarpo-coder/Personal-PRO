@@ -177,7 +177,7 @@ function studentFormHTML(student = {}) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Frequência Semanal</label>
-          <select class="form-select" name="weeklyFrequency">
+          <select class="form-select" name="weeklyFrequency" onchange="const val = parseInt(this.value); if(val) this.form.querySelector('[name=expectedSessions]').value = Math.round(val * 4.33);">
             <option value="">Selecione</option>
             ${[2,3,4,5,6].map(n => `<option value="${n}x por semana" ${student.weeklyFrequency === n+'x por semana' ? 'selected' : ''}>${n}x por semana</option>`).join('')}
           </select>

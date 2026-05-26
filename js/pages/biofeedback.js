@@ -608,7 +608,7 @@ function bindBfActions(navigateFn, studentsCache) {
         ? studentsCache.find(s=>s.id===sid)
         : await db.get('students', sid);
       if (!st?.phone) { notify.warning('Aluno sem telefone cadastrado'); return; }
-      const url = `${location.origin}${location.pathname}#/form/pre/${st.id}`;
+      const url = `${location.origin}${location.pathname}#/form/pre/${st.id}?t=${st.trainerId||st.trainer_id||''}&n=${encodeURIComponent(st.name)}`;
       sendWhatsApp(st.phone, preFormMsg(st.name.split(' ')[0], url));
     });
   });
@@ -685,3 +685,4 @@ async function initBfCharts(allBfParam, studentsParam, filterSid) {
     }
   }
 }
+

@@ -777,6 +777,7 @@ export function initPeriodization(navigateFn) {
                     sets: ex.sets || 3,
                     reps: ex.reps || '10-12',
                     rest: ex.rest || 60,
+                    method: ex.method || '',
                   }))
                 }))
               };
@@ -794,7 +795,18 @@ export function initPeriodization(navigateFn) {
 
               const isCardio   = selectedTemplate.category === 'Cardio / Endurance';
               const loadsEl    = document.getElementById('tplExerciseLoads');
-              const allSess    = selectedTemplate.allSessions || selectedTemplate.sessions || [];
+              
+              // Converte workouts para sessions se necessário
+              if (!selectedTemplate.sessions && selectedTemplate.workouts) {
+                selectedTemplate = {
+                  ...selectedTemplate,
+                  sessions: selectedTemplate.workouts.map(w => ({
+                    name: w.name,
+                    exercises: w.exercises.map(ex => ({...ex}))
+                  }))
+                };
+              }
+              const allSess = selectedTemplate.allSessions || selectedTemplate.sessions || [];
 
               if (isCardio && loadsEl) {
                 // Seletor de protocolo (sessão) + local de treino

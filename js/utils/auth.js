@@ -122,20 +122,6 @@ export async function syncTrainerProfile() {
     const cref = user.user_metadata?.cref || '';
     const email = user.email;
 
-    // Check settings table
-    let trainerAuth = await db.get('settings', 'trainer_auth');
-    if (!trainerAuth) {
-      trainerAuth = {
-        id: 'trainer_auth',
-        trainerName,
-        email,
-        cref,
-        isSetup: true,
-        createdAt: new Date().toISOString(),
-      };
-      await db.put('settings', trainerAuth);
-    }
-
     let trainer = await db.get('settings', 'trainer');
     if (!trainer) {
       trainer = {

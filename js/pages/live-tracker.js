@@ -200,7 +200,7 @@ function renderLiveView(students) {
             <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
-              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}kg</span>` : ''}
+              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}${ex.name.toLowerCase().match(/cardio|aeróbico|esteira|bike|hiit|corrida|elíptico|natação/) ? '' : 'kg'}</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
               <span>${ex.rest || 60}s desc.</span>
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
@@ -209,9 +209,10 @@ function renderLiveView(students) {
 
           <div id="setArea" style="display:flex;flex-direction:column;gap:6px">
             ${Array.from({ length: exSets }, (_, i) => {
+              const isCardio = (ex.name || '').toLowerCase().match(/cardio|aeróbico|esteira|bike|hiit|corrida|elíptico|natação/);
               const done     = state.setLog.find(l => l.exIdx === state.exIdx && l.setIdx === i);
               const isActive = !done && i === state.setIdx;
-              const repsVal  = done ? done.reps : (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
+              const repsVal  = done ? done.reps : (isCardio ? (String(ex.reps||'')) : (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12);
               const loadVal  = done ? done.load : ex.load || '';
               const pseVal   = done ? done.pse  : '';
               const rirVal   = done && done.rir != null ? done.rir : '';
@@ -222,20 +223,20 @@ function renderLiveView(students) {
                 <span style="font-size:0.85rem;font-weight:700;min-width:18px;
                   color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
-                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">${isCardio ? 'Tempo/Reps' : 'Reps'}</span>
+                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${isCardio ? 'text' : 'number'}" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">kg</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">${isCardio ? 'Intens.' : 'kg'}</span>
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${isCardio ? 'text' : 'number'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
+                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE (Percepção de Esforço)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
-                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${pseVal || '—'}</span>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR — Reps in Reserve: quantas repetições ainda sobravam no tanque (0=falha, 1=1 rep sobrando...)">
+                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR (Reps na Reserva)">
                   <span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span>
-                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${rirVal !== '' ? rirVal : '—'}</span>
                 </div>
                 ${done
                   ? `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px">
@@ -429,7 +430,7 @@ export function initTracker(navigateFn) {
   document.getElementById('genPreLinkBtn')?.addEventListener('click', () => {
     const sid = sSel?.value;
     if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
-    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}`;
+    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}?t=${session?.trainerId||session?.trainer_id||''}&n=${encodeURIComponent(session?.studentName||'')}`;
     navigator.clipboard?.writeText(url);
     notify.success('Link pré-treino copiado!');
     openModal({
@@ -606,58 +607,105 @@ export function initTracker(navigateFn) {
     btn.addEventListener('click', () => {
       const i    = parseInt(btn.dataset.i);
       const row  = btn.closest('.set-row');
-      const reps  = parseInt(row.querySelector('.set-reps')?.value) || 0;
-      const load  = parseFloat(row.querySelector('.set-load')?.value) || 0;
-      const pse   = parseInt(row.querySelector('.set-pse')?.value) || 0;
-      const rirEl = row.querySelector('.set-rir');
-      const rir   = rirEl?.value !== '' ? parseInt(rirEl.value) : null;
+      const repsStr = row.querySelector('.set-reps')?.value || '';
+      const reps = parseInt(repsStr) || 0; // Se isCardio, pode não ser numero, mas mantemos o valor bruto
+      const loadStr = row.querySelector('.set-load')?.value || '';
+      const load = parseFloat(loadStr) || 0;
       const notes = document.getElementById('setNotes')?.value || '';
+      
+      const curEx = state.session?.exercises?.[state.exIdx] || {};
+      const isCardio = (curEx.name || '').toLowerCase().match(/cardio|aeróbico|esteira|bike|hiit|corrida|elíptico|natação/);
 
-      // Validação: avisar se PSE ou RIR estão inconsistentes
-      // RIR 0 com PSE < 8 é incomum — lembrete discreto
-      if (rir === 0 && pse > 0 && pse < 7) {
-        notify.warning('RIR 0 (falha) com PSE baixo — verifique os valores.');
-      }
+      openModal({
+        title: `Feedback da Série ${i + 1}`,
+        size: 'sm',
+        content: `
+          <div style="margin-bottom:16px">
+            <label class="form-label">PSE (Quão difícil foi?) *</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
+              ${[1,2,3,4,5,6,7,8,9,10].map(val => `
+                <label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px">
+                  <input type="radio" name="modalPse" value="${val}" ${val===7?'checked':''} style="width:20px;height:20px;accent-color:var(--warning)" />
+                  <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span>
+                </label>
+              `).join('')}
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted)"><span>1=Fácil</span><span>5=Médio</span><span>10=Máximo</span></div>
+          </div>
+          <div style="margin-bottom:16px">
+            <label class="form-label">RIR (Repetições na Reserva) *</label>
+            <select class="form-select" id="modalRir">
+              <option value="">Selecione</option>
+              <option value="0">0 - Falha / Sem sobrar nada</option>
+              <option value="1">1 - Sobrou 1 rep</option>
+              <option value="2">2 - Sobraram 2 reps</option>
+              <option value="3">3 - Sobraram 3 reps</option>
+              <option value="4">4+ - Sobraram 4 ou mais</option>
+            </select>
+          </div>
+          <button id="modalSaveSet" class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem">Confirmar Série</button>
+        `,
+        actions: []
+      });
 
-      // Estimativa de 1RM se tiver carga e reps
-      const ex = (state.session?.exercises || [])[state.exIdx] || {};
-      let rm1Estimated = null;
-      if (load > 0 && reps > 0 && reps <= 12) {
-        rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2; // Epley
-      }
+      document.getElementById('modalSaveSet').addEventListener('click', () => {
+        const pse = parseInt(document.querySelector('input[name="modalPse"]:checked')?.value) || 0;
+        const rir = parseInt(document.getElementById('modalRir').value);
+        if (isNaN(rir) && !isCardio) {
+          notify.error('Por favor, preencha o RIR.');
+          return;
+        }
+        closeModal();
 
-      state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps, load, pse, rir, notes, rm1Estimated, time: Date.now() });
+        // Validação: avisar se PSE ou RIR estão inconsistentes
+        if (rir === 0 && pse > 0 && pse < 7) {
+          notify.warning('RIR 0 (falha) com PSE baixo — verifique os valores.');
+        }
 
-      row.classList.add('set-done'); row.classList.remove('set-active');
-      row.style.background = 'rgba(16,185,129,0.04)';
-      row.querySelectorAll('input').forEach(inp => inp.disabled = true);
-      btn.replaceWith(Object.assign(document.createElement('span'), { className: 'badge badge-success', textContent: '✓', style: 'min-width:32px;text-align:center' }));
+        let rm1Estimated = null;
+        if (load > 0 && reps > 0 && reps <= 12) {
+          rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2; // Epley
+        }
 
-      const exSets = parseInt(curEx.sets) || 3;
-      if (i + 1 < exSets) {
-        state.setIdx = i + 1;
-        const nr = document.querySelector(`[data-si="${i+1}"]`);
-        if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
-      }
+        const finalReps = isCardio ? repsStr : reps;
+        const finalLoad = isCardio ? loadStr : load;
 
-      const volEl = document.getElementById('liveVol');
-      if (volEl) volEl.textContent = totalVolume() + ' kg';
-      const totalS = (state.session.exercises||[]).reduce((s,e)=>s+(parseInt(e.sets)||3),0);
-      const fill   = document.querySelector('.progress-fill');
-      if (fill) fill.style.width = Math.round((state.setLog.length/totalS)*100)+'%';
+        state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps: finalReps, load: finalLoad, pse, rir: isNaN(rir) ? null : rir, notes, rm1Estimated, time: Date.now() });
 
-      state.session.setLog = state.setLog;
-      state.session.currentExIdx = state.exIdx;
-      state.session.workSec = state.workSec;
-      db.put('sessions', state.session);
+        row.classList.add('set-done'); row.classList.remove('set-active');
+        row.style.background = 'rgba(16,185,129,0.04)';
+        row.querySelectorAll('input').forEach(inp => inp.disabled = true);
+        
+        row.children[3].innerHTML = `<span style="font-size:0.55rem;color:var(--warning)">PSE</span><span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${pse}</span>`;
+        row.children[4].innerHTML = `<span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span><span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${isNaN(rir)?'—':rir}</span>`;
+        
+        btn.replaceWith(Object.assign(document.createElement('span'), { className: 'badge badge-success', textContent: '✓', style: 'min-width:32px;text-align:center' }));
 
-      // Auto-iniciar descanso
-      state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
-      state.restTimer.reset(); state.restTimer.start();
-      const rb = document.getElementById('goRest'); if (rb) rb.textContent = '⏸ Pausar Descanso';
-      const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
+        const exSets = parseInt(curEx.sets) || 3;
+        if (i + 1 < exSets) {
+          state.setIdx = i + 1;
+          const nr = document.querySelector(`[data-si="${i+1}"]`);
+          if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
+        }
 
-      notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg`);
+        const volEl = document.getElementById('liveVol');
+        if (volEl) volEl.textContent = totalVolume() + ' kg';
+        const totalS = (state.session.exercises||[]).reduce((s,e)=>s+(parseInt(e.sets)||3),0);
+        const fill   = document.querySelector('.progress-fill');
+        if (fill) fill.style.width = Math.round((state.setLog.length/totalS)*100)+'%';
+
+        state.session.setLog = state.setLog;
+        state.session.currentExIdx = state.exIdx;
+        state.session.workSec = state.workSec;
+        db.put('sessions', state.session);
+
+        state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
+        state.restTimer.reset(); state.restTimer.start();
+        const rb = document.getElementById('goRest'); if (rb) rb.textContent = '⏸ Pausar Descanso';
+        const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
+
+        notify.info(`Série ${i+1} ✓ — ${finalReps}×${finalLoad}${isCardio?'':'kg'}`);
+      });
     });
   });
 
@@ -997,6 +1045,18 @@ function generateSessionPDF(session, student) {
       y+=6.5; if(y>272){doc.addPage();y=20;}
     });
 
+    if (session.postBiofeedback?.notes) {
+      y += 5;
+      if (y > 260) { doc.addPage(); y = 20; }
+      doc.setTextColor(...dk); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+      doc.text('Observações:', 14, y);
+      y += 5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      const splitNotes = doc.splitTextToSize(session.postBiofeedback.notes, 180);
+      doc.text(splitNotes, 14, y);
+      y += splitNotes.length * 4;
+    }
+
     doc.setFillColor(...dk); doc.rect(0,287,210,10,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7);
     doc.text('Personal PRO — Sistema Profissional de Personal Trainer',105,293,{align:'center'});
@@ -1004,3 +1064,4 @@ function generateSessionPDF(session, student) {
     notify.success('PDF gerado!');
   } catch(err) { notify.error('Erro ao gerar PDF.'); console.error(err); }
 }
+

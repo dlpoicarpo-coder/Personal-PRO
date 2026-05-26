@@ -81,6 +81,9 @@ export async function navigateTo(path) {
       </main>
     `;
     initSidebar(navigateTo);
+    import('./components/notifications.js').then(({ initNotifications }) => {
+      initNotifications();
+    });
   }
 
   const content = document.getElementById('pageContent');
