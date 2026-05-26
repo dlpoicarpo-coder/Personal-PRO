@@ -470,9 +470,16 @@ export function initTracker(navigateFn) {
   document.getElementById('genPreLinkBtn')?.addEventListener('click', () => {
     const sid = sSel?.value;
     if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
-    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}?t=${session?.trainerId||session?.trainer_id||''}&n=${encodeURIComponent(session?.studentName||'')}`;
-    navigator.clipboard?.writeText(url);
+    const st = students.find(x => x.id === sid);
+    if (!st) { notify.error('Aluno não encontrado'); return; }
+    const trainerId = st.trainer_id || window.currentUser?.id || '';
+    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}?t=${trainerId}&n=${encodeURIComponent(st.name||'')}`;
+    
+    try {
+      navigator.clipboard?.writeText(url);
+    } catch(e) {}
     notify.success('Link pré-treino copiado!');
+    
     openModal({
       title: 'Link Pré-Treino', size: 'sm',
       preventBackdropClose: true,
@@ -481,7 +488,9 @@ export function initTracker(navigateFn) {
           <input class="form-input" value="${url}" readonly onclick="this.select()" style="font-size:0.78rem;flex:1" />
           <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='✓'">Copiar</button>
         </div>
-        <a href="https://wa.me/?text=${encodeURIComponent('Check-in pré-treino: ' + url)}" target="_blank" class="btn btn-secondary btn-sm mt-sm">WhatsApp</a>`,
+        <div style="margin-top:16px;text-align:center;">
+          <a href="https://wa.me/?text=${encodeURIComponent('Olá ' + st.name + '! Faça seu check-in pré-treino aqui: ' + url)}" target="_blank" class="btn btn-secondary btn-sm" style="width:100%">Enviar pelo WhatsApp</a>
+        </div>`,
       actions: [{ label: 'Fechar', class: 'btn-primary', onClick: () => closeModal() }]
     });
   });
