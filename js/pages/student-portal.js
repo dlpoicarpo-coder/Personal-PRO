@@ -659,8 +659,17 @@ function renderTreinar(workouts, schedules) {
         </div>
 
         <div class="portal-bio-field" style="margin-top:12px">
-          <label class="portal-bio-label">PSE geral (1-10) <span id="soloPseVal">5</span></label>
-          <input type="range" id="soloPse" min="1" max="10" value="5" class="portal-range" oninput="document.getElementById('soloPseVal').textContent=this.value">
+          <label class="portal-bio-label">PSE geral (1-10) <span id="soloPseVal">5</span>
+            <span id="soloPseDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Moderado</span>
+          </label>
+          <input type="range" id="soloPse" min="1" max="10" value="5" class="portal-range" oninput="
+            document.getElementById('soloPseVal').textContent=this.value;
+            var d=['','Muito leve','Leve','Leve+','Moderado','Moderado+','Um pouco difícil','Difícil','Muito difícil','Muito difícil+','Exaustão máxima'];
+            document.getElementById('soloPseDesc').textContent=d[this.value]||'';
+          ">
+          <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--portal-text-muted);margin-top:4px">
+            <span>1 — Muito leve</span><span style="color:#f59e0b">5-6 — Moderado</span><span style="color:#ef4444">10 — Exaustão</span>
+          </div>
         </div>
 
         <button id="soloFinishBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:8px">
@@ -675,6 +684,7 @@ function initTreinar(workouts, schedules, student) {
   let soloTimerInterval = null;
   let soloStartTime = null;
   let workSeconds = 0, restSeconds = 0;
+  let isResting = false;
   let soundEnabled = true;
   let restTimer = null;
   let restTotal = 60;
@@ -714,6 +724,7 @@ function initTreinar(workouts, schedules, student) {
     if (restTimer) clearInterval(restTimer);
     restTotal = seconds;
     restRemaining = seconds;
+    isResting = true;
     const overlay = document.getElementById('restTimerOverlay');
     const cd = document.getElementById('restCountdown');
     const bar = document.getElementById('restBarFill');
@@ -726,10 +737,12 @@ function initTreinar(workouts, schedules, student) {
     updateUI();
     restTimer = setInterval(() => {
       restRemaining--;
+      restSeconds++;
       updateUI();
       if (restRemaining <= 0) {
         clearInterval(restTimer);
         overlay.style.display = 'none';
+        isResting = false;
         playBeep(660, 0.2, 3);
       }
     }, 1000);
@@ -737,6 +750,7 @@ function initTreinar(workouts, schedules, student) {
 
   function stopRestTimer() {
     if (restTimer) clearInterval(restTimer);
+    isResting = false;
     const overlay = document.getElementById('restTimerOverlay');
     if (overlay) overlay.style.display = 'none';
   }
@@ -888,14 +902,15 @@ function initTreinar(workouts, schedules, student) {
     soloStartTime = new Date();
     soloTimerInterval = setInterval(() => {
       const elapsed = Math.floor((new Date() - soloStartTime) / 1000);
+      // Only count work when NOT resting
+      if (!isResting) workSeconds++;
       const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
       const el = document.getElementById('liveTotal');
       const ew = document.getElementById('liveWork');
       const er = document.getElementById('liveRest');
       if (el) el.textContent = fmt(elapsed);
       if (ew) ew.textContent = fmt(workSeconds);
-      const rd = Math.max(0, elapsed - workSeconds);
-      if (er) er.textContent = fmt(rd);
+      if (er) er.textContent = fmt(restSeconds);
     }, 1000);
   }
 
@@ -1312,8 +1327,17 @@ function renderBio(biofeedbacks, sid, tid) {
             <input type="range" name="sleep" min="1" max="10" value="7" class="portal-range" oninput="document.getElementById('sleepVal').textContent=this.value">
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Recuperação (TQR) <span id="tqrVal">5</span>/10</label>
-            <input type="range" name="tqr" min="0" max="10" value="5" class="portal-range" oninput="document.getElementById('tqrVal').textContent=this.value">
+            <label class="portal-bio-label">Recuperação (TQR) <span id="tqrVal">5</span>/10
+              <span id="tqrDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Recuperação parcial</span>
+            </label>
+            <input type="range" name="tqr" min="0" max="10" value="5" class="portal-range" oninput="
+              document.getElementById('tqrVal').textContent=this.value;
+              var d=['Não recuperado','Muito mal recuperado','Mal recuperado','Pouco recuperado','Recuperação abaixo da média','Recuperação parcial','Razoavelmente recuperado','Bem recuperado','Muito bem recuperado','Excelente recuperação','Totalmente recuperado'];
+              document.getElementById('tqrDesc').textContent=d[this.value]||'';
+            ">
+            <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--portal-text-muted);margin-top:4px">
+              <span style="color:#ef4444">0 — Esgotado</span><span style="color:#f59e0b">5 — Parcial</span><span style="color:#10b981">10 — Pleno</span>
+            </div>
           </div>
           <div class="portal-bio-field">
             <label class="portal-bio-label">Alimentação nas últimas 24h</label>
