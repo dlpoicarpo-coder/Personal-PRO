@@ -170,7 +170,7 @@ function renderBfContent(entries, students, filterStudentId) {
           <thead><tr>
             <th>Data</th>
             ${!student ? '<th>Aluno</th>' : ''}
-            <th>Sono</th><th>TQR</th><th>Alim</th><th>Estresse</th><th>Dor</th>
+            <th>Sono</th><th>TQR</th><th>Alim</th><th>Estresse</th><th>Dor</th><th>Motiv</th>
             <th>PSE</th><th>Carga</th><th>Status</th><th>Recomendação</th><th></th>
           </tr></thead>
           <tbody>${recent.map(e => {
@@ -197,6 +197,7 @@ function renderBfContent(entries, students, filterStudentId) {
                 ${e.pain||'-'}
                 ${painLabel ? `<div style="font-size:0.62rem;color:var(--warning);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${painLabel}</div>` : ''}
               </td>
+              <td style="font-weight:600;color:${colorForVal(e.motivation,false)}">${e.motivation||'-'}</td>
               <td><strong style="color:${(e.pse||0)>8?'var(--danger)':(e.pse||0)>6?'var(--warning)':'var(--success)'}">${e.pse||'-'}</strong></td>
               <td style="font-size:0.8rem">${e.trainingLoad||'-'}</td>
               <td><span class="badge badge-${status.color}" style="font-size:0.7rem">${status.label}</span></td>
@@ -259,12 +260,13 @@ export function initBiofeedback(navigateFn) {
           </div>
         </div>
         ${[
-          { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: 7, max: 10 },
-          { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: 5, max: 10 },
-          { id:'food',   label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: 4, max: 5 },
-          { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: 5, max: 10 },
-          { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: 1, max: 10,
+          { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: 7, max: 10 },
+          { id:'tqr',        label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: 5, max: 10 },
+          { id:'food',       label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: 4, max: 5 },
+          { id:'stress',     label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: 5, max: 10 },
+          { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: 1, max: 10,
             extra:`document.getElementById('painGrp').style.display=this.value>=3?'block':'none'` },
+          { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 10 = muito alta',                 val: 7, max: 10 },
         ].map(f=>`
           <div class="form-group" style="margin-bottom:14px">
             <div class="flex items-center justify-between mb-xs">
@@ -279,6 +281,16 @@ export function initBiofeedback(navigateFn) {
               <span>${f.hint.split('·')[1]?.trim()||''}</span>
             </div>
           </div>`).join('')}
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">🩸 Ciclo Menstrual (Se aplicável)</label>
+          <select class="form-select" name="menstrualCycle" style="font-size:0.85rem">
+            <option value="">Não se aplica / Prefiro não informar</option>
+            <option value="Menstruacao">Menstruação</option>
+            <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
+            <option value="Ovulatoria">Fase Ovulatória</option>
+            <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
+          </select>
+        </div>
         <div id="painGrp" style="display:none;margin-bottom:14px">
           <label class="form-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
@@ -323,10 +335,11 @@ export function initBiofeedback(navigateFn) {
           const fd = new FormData(document.getElementById('bfForm'));
           const d  = Object.fromEntries(fd);
           if (!d.studentId) { notify.error('Selecione o aluno'); return; }
-          ['sleep','tqr','stress','pain','food','pse','duration'].forEach(k=>d[k]=parseInt(d[k])||0);
+          ['sleep','tqr','stress','pain','food','pse','duration','motivation'].forEach(k=>d[k]=parseInt(d[k])||(k==='motivation'?7:0));
           d.energy = d.tqr; // compatibilidade com alertas e gráficos antigos
           d.mood   = d.tqr; // idem
           d.painRegions  = fd.getAll('painRegions');
+          d.menstrualCycle = fd.get('menstrualCycle') || '';
           d.trainingLoad = Calc.cargaTreino(d.pse, d.duration);
           d.date         = d.date || new Date().toISOString().slice(0,10);
           await db.add('biofeedback', d);
@@ -415,6 +428,17 @@ function bindBfActions(navigateFn, studentsCache) {
             <span class="text-muted">🤕 Dor Corporal</span>
             <strong>${entry.pain || '—'}/10</strong>
           </div>
+          
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">🔥 Motivação para Treinar</span>
+            <strong>${entry.motivation || '—'}/10</strong>
+          </div>
+          
+          ${entry.menstrualCycle ? `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
+            <span class="text-muted">🩸 Ciclo Menstrual</span>
+            <strong>${entry.menstrualCycle === 'Lutea' ? 'Fase Lútea' : entry.menstrualCycle === 'Menstruacao' ? 'Menstruação' : entry.menstrualCycle === 'Folicular' ? 'Fase Folicular' : 'Fase Ovulatória'}</strong>
+          </div>` : ''}
 
           ${entry.pain >= 3 ? `
             <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
@@ -485,12 +509,13 @@ function bindBfActions(navigateFn, studentsCache) {
             </div>
           </div>
           ${[
-            { id:'sleep',  label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: entry.sleep || 5, max: 10 },
-            { id:'tqr',    label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5, max: 10 },
-            { id:'food',   label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: entry.food || 4, max: 5 },
-            { id:'stress', label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5, max: 10 },
-            { id:'pain',   label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: entry.pain || 1, max: 10,
+            { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: entry.sleep || 5, max: 10 },
+            { id:'tqr',        label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5, max: 10 },
+            { id:'food',       label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: entry.food || 4, max: 5 },
+            { id:'stress',     label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5, max: 10 },
+            { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: entry.pain || 1, max: 10,
               extra:`document.getElementById('editPainGrp').style.display=this.value>=3? 'block' : 'none'` },
+            { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 10 = muito alta',                 val: entry.motivation || 7, max: 10 },
           ].map(f=>`
             <div class="form-group" style="margin-bottom:14px">
               <div class="flex items-center justify-between mb-xs">
@@ -505,6 +530,16 @@ function bindBfActions(navigateFn, studentsCache) {
                 <span>${f.hint.split('·')[1]?.trim()||''}</span>
               </div>
             </div>`).join('')}
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label">🩸 Ciclo Menstrual (Se aplicável)</label>
+            <select class="form-select" name="menstrualCycle" style="font-size:0.85rem">
+              <option value="" ${!entry.menstrualCycle?'selected':''}>Não se aplica / Prefiro não informar</option>
+              <option value="Menstruacao" ${entry.menstrualCycle==='Menstruacao'?'selected':''}>Menstruação</option>
+              <option value="Folicular" ${entry.menstrualCycle==='Folicular'?'selected':''}>Fase Folicular (Pós-menstruação)</option>
+              <option value="Ovulatoria" ${entry.menstrualCycle==='Ovulatoria'?'selected':''}>Fase Ovulatória</option>
+              <option value="Lutea" ${entry.menstrualCycle==='Lutea'?'selected':''}>Fase Lútea (Pré-menstrual / TPM)</option>
+            </select>
+          </div>
           <div id="editPainGrp" style="display:${(entry.pain || 1) >= 3 ? 'block' : 'none'};margin-bottom:14px">
             <label class="form-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
@@ -567,6 +602,8 @@ function bindBfActions(navigateFn, studentsCache) {
               sleep: parseInt(fd.get('sleep')),
               tqr: parseInt(fd.get('tqr')),
               food: parseInt(fd.get('food')) || 5,
+              motivation: parseInt(fd.get('motivation')) || 7,
+              menstrualCycle: fd.get('menstrualCycle') || '',
               mood: parseInt(fd.get('tqr')),
               energy: parseInt(fd.get('tqr')),
               stress: parseInt(fd.get('stress')),

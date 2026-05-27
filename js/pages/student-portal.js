@@ -6,6 +6,7 @@
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
+import { PAIN_REGIONS } from '../utils/alerts.js';
 
 // ── PWA Install prompt ─────────────────────────────────────────
 let deferredPrompt = null;
@@ -1460,12 +1461,41 @@ function renderBio(biofeedbacks, sid, tid) {
             </select>
           </div>
           <div class="portal-bio-field">
+            <label class="portal-bio-label">Ciclo Menstrual (Se aplicável)</label>
+            <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
+              <option value="" selected>Não se aplica / Prefiro não informar</option>
+              <option value="Menstruacao">Menstruação</option>
+              <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
+              <option value="Ovulatoria">Fase Ovulatória</option>
+              <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
+            </select>
+          </div>
+          <div class="portal-bio-field">
             <label class="portal-bio-label">Estresse <span id="stressVal">5</span>/10</label>
             <input type="range" name="stress" min="1" max="10" value="5" class="portal-range" oninput="document.getElementById('stressVal').textContent=this.value">
           </div>
           <div class="portal-bio-field">
             <label class="portal-bio-label">Dor/Desconforto <span id="painVal">1</span>/10</label>
-            <input type="range" name="pain" min="1" max="10" value="1" class="portal-range" oninput="document.getElementById('painVal').textContent=this.value">
+            <input type="range" name="pain" min="1" max="10" value="1" class="portal-range" oninput="
+              document.getElementById('painVal').textContent=this.value;
+              document.getElementById('portalPainGrp').style.display=this.value>=3?'block':'none';
+            ">
+          </div>
+          <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
+            <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:150px;overflow-y:auto;padding:6px;background:rgba(255,255,255,0.02);border:1px solid var(--portal-border);border-radius:10px">
+              ${PAIN_REGIONS.map(r=>`
+                <label class="portal-pain-chip" style="
+                  display:flex;align-items:center;gap:4px;padding:4px 10px;
+                  border:1px solid var(--portal-border);border-radius:20px;
+                  cursor:pointer;font-size:0.78rem;transition:all 0.15s">
+                  <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
+                  ${r.label}
+                </label>`).join('')}
+            </div>
+            <div class="portal-bio-field" style="margin-top:10px">
+              <input class="portal-solo-input" name="painDescription" placeholder="Descrição da dor (opcional)..." style="text-align:left;padding:8px 12px;width:100%" />
+            </div>
           </div>
           <div class="portal-bio-field">
             <label class="portal-bio-label">Motivação <span id="motivVal">7</span>/10</label>
@@ -1525,9 +1555,23 @@ function renderBio(biofeedbacks, sid, tid) {
 }
 
 function initBio() {
+  setTimeout(() => {
+    document.querySelectorAll('.portal-pain-chip').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const cb = tag.querySelector('input');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        tag.style.borderColor = cb.checked ? 'var(--portal-primary)' : '';
+        tag.style.background  = cb.checked ? 'var(--portal-primary-glow)' : '';
+        tag.style.color       = cb.checked ? 'var(--portal-primary)' : '';
+      });
+    });
+  }, 100);
+
   document.getElementById('portalBioForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
+    const painVal = parseInt(fd.get('pain')) || 1;
     const data = {
       studentId: portalState.studentId,
       trainerId: portalState.trainerId,
@@ -1537,11 +1581,18 @@ function initBio() {
       sleep: parseInt(fd.get('sleep')),
       tqr: parseInt(fd.get('tqr')),
       stress: parseInt(fd.get('stress')),
-      pain: parseInt(fd.get('pain')),
+      pain: painVal,
+      painRegions: painVal >= 3 ? fd.getAll('painRegions') : [],
+      painDescription: painVal >= 3 ? fd.get('painDescription') : '',
       food: parseInt(fd.get('food')) || 5,
       motivation: parseInt(fd.get('motivation')) || 7,
+      menstrualCycle: fd.get('menstrualCycle') || '',
       notes: fd.get('notes'),
     };
+
+    // Mapeamento para retrocompatibilidade
+    data.mood = data.tqr;
+    data.energy = data.tqr;
 
     try {
       const { getSupabase } = await import('../utils/auth.js');

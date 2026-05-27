@@ -131,6 +131,14 @@ export async function renderPreForm(studentIdRaw) {
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Motivação para Treinar</label>
+              <div class="form-hint" style="margin-bottom:16px">1 = Muito baixa · 10 = Muito alta</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
+                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="motivation" value="${val}" ${val === 7 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Dor / Desconforto Articular</label>
               <div class="form-hint" style="margin-bottom:16px">1 = Nenhuma dor · 10 = Muita dor</div>
               <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
@@ -170,7 +178,7 @@ export function initPreForm() {
     const data = Object.fromEntries(fd);
     data.formType = 'pre';
     data.date = new Date().toISOString();
-    ['sleep', 'tqr', 'stress', 'pain', 'food'].forEach(k => data[k] = parseInt(data[k]) || 5);
+    ['sleep', 'tqr', 'stress', 'pain', 'food', 'motivation'].forEach(k => data[k] = parseInt(data[k]) || (k === 'pain' ? 1 : k === 'motivation' ? 7 : 5));
     
     // Mapeamento para retrocompatibilidade
     data.mood = data.tqr;
