@@ -291,21 +291,43 @@ const FORM_CSS = `
   }
 
   /* Scale picker (TQR/PSE) */
-  .scale-opt{
-    display:flex;align-items:center;gap:10px;
-    padding:9px 12px;
-    border:1px solid rgba(255,255,255,0.06);
-    border-radius:9px;
-    cursor:pointer;
-    transition:all 0.12s;
-    user-select:none;
-    margin-bottom:5px;
-    background:rgba(255,255,255,0.015);
+  .scale-opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.015);
+    box-sizing: border-box;
   }
-  .scale-opt:hover{border-color:rgba(16,185,129,0.2);background:rgba(16,185,129,0.04)}
-  .scale-opt.selected{
-    background:rgba(16,185,129,0.1)!important;
-    border-color:rgba(16,185,129,0.5)!important;
+  .scale-opt:hover {
+    border-color: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    transform: translateY(-1px);
+  }
+  .scale-opt.selected {
+    border-width: 2px !important;
+    border-color: var(--opt-color) !important;
+    background: var(--opt-bg) !important;
+    box-shadow: 0 0 12px var(--opt-bg) !important;
+    transform: scale(1.01);
+  }
+  .scale-badge-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50% !important; /* Perfect circle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    transition: all 0.2s;
   }
 
   /* Slider range */
@@ -391,6 +413,30 @@ const FORM_CSS = `
 
   .hidden{display:none!important}
   q-hint{font-size:0.75rem;color:#10b981;text-align:center;margin-top:6px;min-height:16px;font-weight:500}
+
+  /* Premium Feeling buttons (Checkout) */
+  .portal-feeling-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; margin-bottom: 16px; }
+  .portal-feeling-emoji-btn {
+    flex: 1; min-width: 60px; padding: 10px 4px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; color: #94a3b8; font-size: 1.25rem; cursor: pointer;
+    transition: all 0.2s ease; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .portal-feeling-emoji-btn:hover { background: rgba(255,255,255,0.06); transform: translateY(-1px); }
+  .portal-feeling-emoji-btn.active {
+    border-color: #10b981; color: #10b981;
+    background: rgba(16,185,129,0.12); transform: scale(1.05); font-weight: 700;
+  }
+  .portal-feeling-emoji-lbl { font-size: 0.65rem; font-weight: 600; }
+
+  /* Premium Articular Pain chips (Checkout) */
+  .portal-pain-chip-chk {
+    display: flex; align-items: center; gap: 4px; padding: 6px 12px;
+    border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02);
+    border-radius: 20px; cursor: pointer; font-size: 0.75rem; transition: all 0.15s ease; color: #94a3b8;
+  }
+  .portal-pain-chip-chk:hover { background: rgba(255,255,255,0.05); }
+  .portal-pain-chip-chk.active { background: rgba(239,68,68,0.12); border-color: #ef4444; color: #fca5a5; font-weight: 600; }
 `;
 
 
@@ -423,32 +469,88 @@ const PSE_SCALE = [
   { v:10, color:'#dc2626', label:'Máximo absoluto',              desc:'Esforço total — 100% do limite' },
 ];
 
+const SONO_SCALE = [
+  { v:1,  color:'#ef4444', label:'1 - Péssimo', desc:'Insônia / Noite em claro' },
+  { v:2,  color:'#ef4444', label:'2 - Péssimo', desc:'Insônia / Noite em claro' },
+  { v:3,  color:'#fb923c', label:'3 - Ruim', desc:'Acordei várias vezes / Agitado' },
+  { v:4,  color:'#fb923c', label:'4 - Ruim', desc:'Acordei várias vezes / Agitado' },
+  { v:5,  color:'#eab308', label:'5 - Regular', desc:'Dormi o suficiente, mas acordei cansado' },
+  { v:6,  color:'#eab308', label:'6 - Regular', desc:'Dormi o suficiente, mas acordei cansado' },
+  { v:7,  color:'#10b981', label:'7 - Bom', desc:'Sono contínuo e revigorante' },
+  { v:8,  color:'#10b981', label:'8 - Bom', desc:'Sono contínuo e revigorante' },
+  { v:9,  color:'#06b6d4', label:'9 - Excelente', desc:'Sono profundo e muito reparador' },
+  { v:10, color:'#06b6d4', label:'10 - Excelente', desc:'Sono profundo e muito reparador' }
+];
+
+const ALIMENTACAO_SCALE = [
+  { v:5, color:'#06b6d4', label:'5 - Excelente', desc:'Bati todas as metas nutricionais e hidratação' },
+  { v:4, color:'#10b981', label:'4 - Boa', desc:'Alimentação majoritariamente saudável / poucos furos' },
+  { v:3, color:'#eab308', label:'3 - Regular', desc:'Alimentação na média / algumas escapadas' },
+  { v:2, color:'#fb923c', label:'2 - Ruim', desc:'Pulei refeições ou comi alimentos pouco nutritivos' },
+  { v:1, color:'#ef4444', label:'1 - Péssima', desc:'Fast food excessivo ou quase sem comer nada' }
+];
+
+const ESTRESSE_SCALE = [
+  { v:1,  color:'#10b981', label:'1 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
+  { v:2,  color:'#10b981', label:'2 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
+  { v:3,  color:'#10b981', label:'3 - Tranquilo', desc:'Pouco estresse na rotina diária' },
+  { v:4,  color:'#10b981', label:'4 - Tranquilo', desc:'Pouco estresse na rotina diária' },
+  { v:5,  color:'#eab308', label:'5 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
+  { v:6,  color:'#eab308', label:'6 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
+  { v:7,  color:'#fb923c', label:'7 - Estressado', desc:'Rotina de trabalho/estudos pesada' },
+  { v:8,  color:'#fb923c', label:'8 - Estressado', desc:'Rotina de trabalho/estudos pesada' },
+  { v:9,  color:'#ef4444', label:'9 - Muito Estressado', desc:'Mente no limite, exaustão mental' },
+  { v:10, color:'#ef4444', label:'10 - Muito Estressado', desc:'Mente no limite, exaustão mental' }
+];
+
+const DOR_SCALE = [
+  { v:0,  color:'#10b981', label:'0 - Sem Dor', desc:'Articulações e tendões 100% confortáveis' },
+  { v:1,  color:'#10b981', label:'1 - Leve', desc:'Desconforto muscular leve residual pós-treino' },
+  { v:2,  color:'#10b981', label:'2 - Leve', desc:'Desconforto muscular leve residual pós-treino' },
+  { v:3,  color:'#eab308', label:'3 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
+  { v:4,  color:'#eab308', label:'4 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
+  { v:5,  color:'#fb923c', label:'5 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
+  { v:6,  color:'#fb923c', label:'6 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
+  { v:7,  color:'#ef4444', label:'7 - Forte', desc:'Dificulta a execução de movimentos específicos' },
+  { v:8,  color:'#ef4444', label:'8 - Forte', desc:'Dificulta a execução de movimentos específicos' },
+  { v:9,  color:'#ef4444', label:'9 - Intensa', desc:'Dor muito forte, impede ou dificulta treinar' },
+  { v:10, color:'#dc2626', label:'10 - Intensa / Lesão', desc:'Dor severa, risco de lesão ou incapacidade' }
+];
+
 function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
   return `
     <div class="q">
       <div class="q-label">${label}</div>
       ${sublabel?`<div style="font-size:0.72rem;color:#475569;margin:-6px 0 10px;line-height:1.4">${sublabel}</div>`:''}
       <input type="hidden" name="${id}" id="hidden_${id}" value="${defaultVal}" />
-      <div style="display:flex;flex-direction:column;gap:5px" id="scale_${id}">
-        ${scale.map(s=>`
-          <label onclick="
-            document.getElementById('hidden_${id}').value='${s.v}';
-            document.querySelectorAll('#scale_${id} .scale-opt').forEach(el=>el.classList.remove('selected'));
-            this.classList.add('selected');
-          " class="scale-opt${s.v===defaultVal?' selected':''}" data-val="${s.v}" style="
-            display:flex;align-items:center;gap:10px;padding:9px 12px;
-            border:1px solid rgba(255,255,255,0.07);border-radius:8px;
-            cursor:pointer;transition:all 0.12s;user-select:none;
-            ${s.v===defaultVal?`background:${s.color}18;border-color:${s.color}60;`:''}
-          ">
-            <span style="width:26px;height:26px;border-radius:50%;background:${s.color};
-              display:flex;align-items:center;justify-content:center;
-              font-size:0.8rem;font-weight:800;color:white;flex-shrink:0">${s.v}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:0.82rem;font-weight:600;color:#e2e8f0">${s.label}</div>
-              <div style="font-size:0.7rem;color:#64748b;margin-top:1px">${s.desc}</div>
-            </div>
-          </label>`).join('')}
+      <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;padding-right:4px;" id="scale_${id}">
+        ${scale.map(s => {
+          const bg = s.color + '15';
+          const isActive = String(s.v) === String(defaultVal);
+          return `
+            <label onclick="
+              document.getElementById('hidden_${id}').value='${s.v}';
+              document.querySelectorAll('#scale_${id} .scale-opt').forEach(el=>el.classList.remove('selected'));
+              this.classList.add('selected');
+              if ('${id}' === 'pain' && typeof window.onPrePainChange === 'function') {
+                window.onPrePainChange('${s.v}');
+              }
+              if ('${id}' === 'postPain' && typeof window.onPostPainChange === 'function') {
+                window.onPostPainChange('${s.v}');
+              }
+            " class="scale-opt${isActive?' selected':''}" 
+              data-val="${s.v}" 
+              style="--opt-color: ${s.color}; --opt-bg: ${bg};">
+              <span class="scale-badge-num" style="background:${bg}; color:${s.color}; border: 1px solid ${s.color}33">
+                ${s.v}
+              </span>
+              <div style="flex:1;min-width:0;text-align:left">
+                <div style="font-size:0.85rem;font-weight:700;color:#e2e8f0">${s.label}</div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:2px">${s.desc}</div>
+              </div>
+            </label>
+          `;
+        }).join('')}
       </div>
     </div>`;
 }
@@ -510,59 +612,16 @@ export async function renderPreForm(studentId) {
           <form id="preStudentForm" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();}">
             <input type="hidden" name="studentId" value="${cleanId}" />
             <input type="hidden" name="trainerId" value="${student.trainer_id||student.trainerId||''}" />
-            <input type="hidden" name="sleep" value="5" />
-            <input type="hidden" name="nutrition" value="5" />
-            <input type="hidden" name="pain" value="0" />
 
-            <div class="q">
-              <div class="q-label">Como foi sua última noite de sono? <span style="color:#ef4444">*</span></div>
-              <div class="opt-group">
-                <label class="opt-label"><input type="radio" name="sleepQual" value="boa" onchange="document.querySelector('[name=sleep]').value='7'" required /> Boa</label>
-                <label class="opt-label"><input type="radio" name="sleepQual" value="regular" onchange="document.querySelector('[name=sleep]').value='5'" /> Regular</label>
-                <label class="opt-label"><input type="radio" name="sleepQual" value="ruim" onchange="document.querySelector('[name=sleep]').value='3'" /> Ruim</label>
-              </div>
-            </div>
+            ${scalePickerHTML('sleep', SONO_SCALE, 7, '😴 Qualidade do Sono 🌙', 'Selecione o descritor que melhor representa sua última noite de sono.')}
 
-            <div class="q">
-              <div class="q-label">Como foi sua alimentação nas últimas 24h? <span style="color:#ef4444">*</span></div>
-              <div class="opt-group">
-                <label class="opt-label"><input type="radio" name="nutritionQual" value="8" onchange="document.querySelector('[name=nutrition]').value='8'" required /> Adequada — me alimentei bem</label>
-                <label class="opt-label"><input type="radio" name="nutritionQual" value="5" onchange="document.querySelector('[name=nutrition]').value='5'" /> Parcial — comi pouco ou de forma irregular</label>
-                <label class="opt-label"><input type="radio" name="nutritionQual" value="3" onchange="document.querySelector('[name=nutrition]').value='3'" /> Inadequada — não me alimentei bem</label>
-              </div>
-            </div>
+            ${scalePickerHTML('nutrition', ALIMENTACAO_SCALE, 4, '🍎 Alimentação nas últimas 24h', 'Como foi sua ingestão de alimentos e hidratação nas últimas 24h?')}
 
-            <div class="q">
-              <div class="q-label">Qual a sua disposição para o treino hoje? <span style="color:#ef4444">*</span></div>
-              <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
-                <span style="font-size:0.72rem;color:#64748b;width:40px">Baixa</span>
-                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="9" style="accent-color:#10b981;width:20px;height:20px" required /><span style="font-size:0.78rem;color:#64748b">1</span></label>
-                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="7" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">2</span></label>
-                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="5" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">3</span></label>
-                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="3" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">4</span></label>
-                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="1" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">5</span></label>
-                <span style="font-size:0.72rem;color:#64748b;width:40px;text-align:right">Alta</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#475569;margin-top:6px;padding:0 40px">
-                <span>Estresse alto</span><span>Estresse baixo</span>
-              </div>
-            </div>
+            ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, '🤯 Nível de Estresse Mental', 'Como está sua mente e seu nível de estresse hoje?')}
 
-            ${scalePickerHTML('tqr', TQR_SCALE, 6,
-              'TQR — Nível de Recuperação ⚡',
-              'Escala de Estado de Recuperação (Kenttä & Hassmén, 1998). Selecione o descritor que melhor representa como você se sente agora.'
-            )}
+            ${scalePickerHTML('tqr', TQR_SCALE, 7, '⚡ Nível de Recuperação (TQR)', 'Escala de Estado de Recuperação (Kenttä & Hassmén, 1998). Selecione seu estado de recuperação atual.')}
 
-            <div class="q">
-              <div class="q-label">Ainda sente alguma dor do último treino? <span style="color:#ef4444">*</span></div>
-              <div class="doms-info"><strong>DOMS</strong> (Dor Muscular de Início Tardio) é comum após treinos intensos — surge em 12-24h e pode durar até 72h.</div>
-              <div class="opt-group">
-                <label class="opt-label"><input type="radio" name="painLevel" value="0" onchange="document.querySelector('[name=pain]').value='0';document.getElementById('painGroup').style.display='none'" required /> Sem dor</label>
-                <label class="opt-label"><input type="radio" name="painLevel" value="3" onchange="document.querySelector('[name=pain]').value='3';document.getElementById('painGroup').style.display='block'" /> Dor leve</label>
-                <label class="opt-label"><input type="radio" name="painLevel" value="6" onchange="document.querySelector('[name=pain]').value='6';document.getElementById('painGroup').style.display='block'" /> Dor moderada</label>
-                <label class="opt-label"><input type="radio" name="painLevel" value="9" onchange="document.querySelector('[name=pain]').value='9';document.getElementById('painGroup').style.display='block'" /> Dor intensa</label>
-              </div>
-            </div>
+            ${scalePickerHTML('pain', DOR_SCALE, 0, '🩹 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo nas articulações ou tendões?')}
             <div id="painGroup" style="display:none;margin-bottom:22px">
               <div class="q-label" style="margin-bottom:10px">Selecione a região</div>
               <div class="pain-tags" id="pre_pain_regions_wrap">
@@ -611,6 +670,19 @@ export async function renderPreForm(studentId) {
 
 
 export function initPreForm() {
+  // Bind global pain change handler
+  window.onPrePainChange = (val) => {
+    const painVal = parseInt(val) || 0;
+    const grp = document.getElementById('painGroup');
+    if (grp) grp.style.display = painVal >= 3 ? 'block' : 'none';
+  };
+
+  // Trigger initial state
+  setTimeout(() => {
+    const initPain = parseInt(document.getElementById('hidden_pain')?.value) || 0;
+    window.onPrePainChange(initPain);
+  }, 100);
+
   // Ativar tags de dor
   document.querySelectorAll('.pain-tag').forEach(tag => {
     tag.addEventListener('click', () => {
@@ -729,12 +801,65 @@ export async function renderPostForm(sessionId) {
             ${preBf ? `<input type="hidden" name="preBiofeedbackId" value="${preBf.id}" />` : ''}
             <input type="hidden" name="trainerId" value="${student?.trainer_id||student?.trainerId||''}" />
 
-            <!-- PSE com descritores completos -->
+            <!-- 1. PSE com descritores completos -->
             ${scalePickerHTML('pse', PSE_SCALE, 5,
               'Qual a intensidade do seu treino de hoje? ⚡',
               'PSE — Percepção Subjetiva de Esforço (Borg CR10, adaptada por Foster 1996). Selecione o descritor que melhor representa como foi o treino.'
             )}
 
+            <!-- 2. Feeling / Humores pós-treino (emoji buttons) -->
+            <div class="q">
+              <div class="q-label">😊 Sensação pós-treino (Recuperação/Humor)</div>
+              <div class="portal-feeling-row">
+                <button type="button" class="portal-feeling-emoji-btn" data-val="1">
+                  <span>😩</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
+                </button>
+                <button type="button" class="portal-feeling-emoji-btn" data-val="2">
+                  <span>🥱</span><span class="portal-feeling-emoji-lbl">Cansado</span>
+                </button>
+                <button type="button" class="portal-feeling-emoji-btn active" data-val="3">
+                  <span>🙂</span><span class="portal-feeling-emoji-lbl">Ok</span>
+                </button>
+                <button type="button" class="portal-feeling-emoji-btn" data-val="4">
+                  <span>😁</span><span class="portal-feeling-emoji-lbl">Bem</span>
+                </button>
+                <button type="button" class="portal-feeling-emoji-btn" data-val="5">
+                  <span>🔥</span><span class="portal-feeling-emoji-lbl">Excelente</span>
+                </button>
+              </div>
+              <input type="hidden" name="feeling" id="hidden_feeling" value="3" />
+            </div>
+
+            <!-- 3. Articular Pain post-workout -->
+            ${scalePickerHTML('postPain', DOR_SCALE, 0, '🩹 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo articular pós-treino?')}
+
+            <!-- 4. Pain regions container -->
+            <div id="postPainGroup" style="display:none;margin-bottom:22px">
+              <div class="q-label" style="margin-bottom:10px">Selecione a região da dor</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; padding:6px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:12px">
+                ${[
+                  { id: 'joelho_e', label: 'Joelho Esq.' },
+                  { id: 'joelho_d', label: 'Joelho Dir.' },
+                  { id: 'ombro_e', label: 'Ombro Esq.' },
+                  { id: 'ombro_d', label: 'Ombro Dir.' },
+                  { id: 'lombar', label: 'Coluna Lombar' },
+                  { id: 'cervical', label: 'Coluna Cervical' },
+                  { id: 'quadril', label: 'Quadril' },
+                  { id: 'tornozelo', label: 'Tornozelo/Pé' },
+                  { id: 'cotovelo', label: 'Cotovelo/Punho' }
+                ].map(c => `
+                  <label class="portal-pain-chip-chk">
+                    <input type="checkbox" name="post_pain_regions" value="${c.id}" style="display:none">
+                    ${c.label}
+                  </label>
+                `).join('')}
+              </div>
+              <div style="margin-top: 10px;">
+                <input type="text" name="postPainDescription" placeholder="Descreva brevemente o incômodo (opcional)..." class="portal-textarea" style="padding: 8px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.05); text-align: left; width: 100%;">
+              </div>
+            </div>
+
+            <!-- 5. Notes -->
             <div class="q">
               <div class="q-label">Alguma observação a acrescentar?</div>
               <textarea name="notes" placeholder="Opcional — dificuldade em algum exercício, dor, algo diferente..."></textarea>
@@ -759,14 +884,39 @@ export async function renderPostForm(sessionId) {
 }
 
 export function initPostForm() {
-  document.querySelectorAll('.pain-tag').forEach(tag => {
-    tag.addEventListener('click', () => {
-      const cb = tag.querySelector('input[type=checkbox]');
-      if (!cb) return;
-      cb.checked = !cb.checked;
-      tag.classList.toggle('active', cb.checked);
+  // Bind global pain change handler
+  window.onPostPainChange = (val) => {
+    const painVal = parseInt(val) || 0;
+    const grp = document.getElementById('postPainGroup');
+    if (grp) grp.style.display = painVal >= 1 ? 'block' : 'none';
+  };
+
+  // Trigger initial state
+  setTimeout(() => {
+    const initPain = parseInt(document.getElementById('hidden_postPain')?.value) || 0;
+    window.onPostPainChange(initPain);
+
+    // Feeling buttons
+    document.querySelectorAll('#postStudentForm .portal-feeling-emoji-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#postStudentForm .portal-feeling-emoji-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const hiddenFeeling = document.getElementById('hidden_feeling');
+        if (hiddenFeeling) hiddenFeeling.value = btn.dataset.val;
+      });
     });
-  });
+
+    // Pain location chips
+    document.querySelectorAll('#postStudentForm .portal-pain-chip-chk').forEach(lbl => {
+      lbl.addEventListener('click', () => {
+        const input = lbl.querySelector('input');
+        if (input) {
+          input.checked = !input.checked;
+          lbl.classList.toggle('active', input.checked);
+        }
+      });
+    });
+  }, 100);
 
   document.getElementById('postStudentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -784,11 +934,20 @@ export function initPostForm() {
         const dur = session.totalDuration ? Math.round(session.totalDuration/60) : 60;
         const pse = parseInt(data.pse) || 7;
         const tqrPost = 7; // TQR pós removido do formulário — usar neutro
+        const postPain = parseInt(data.postPain) || 0;
+        const feeling = parseInt(data.feeling) || 3;
+        const satisfaction = feeling * 2; // Map 1-5 to 2-10
 
         session.postBiofeedback = {
-          pse, tqrPost, motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
-          postPain: parseInt(data.postPain)||1, painRegions: postPainRegions,
-          notes: data.notes||'', submittedByStudent: true,
+          pse,
+          tqrPost,
+          feeling,
+          satisfaction,
+          postPain,
+          painRegions: postPainRegions,
+          painDescription: data.postPainDescription || '',
+          notes: data.notes||'',
+          submittedByStudent: true,
           submittedAt: Calc.nowISO(),
         };
         await publicPut('sessions', session);
@@ -800,9 +959,12 @@ export function initPostForm() {
             await publicPut('biofeedback', {
               ...preBf, pse, tqrPost, duration: dur,
               trainingLoad: pse * dur,
-              postPain: parseInt(data.postPain)||1,
-              postPainRegions, satisfaction: parseInt(data.satisfaction)||8,
-              postNotes: data.notes||'', formType: 'complete',
+              postPain,
+              postPainRegions,
+              satisfaction,
+              postNotes: data.notes||'',
+              postPainDescription: data.postPainDescription || '',
+              formType: 'complete',
               sessionId: data.sessionId, completedAt: Calc.nowISO(),
             });
           }
@@ -811,9 +973,11 @@ export function initPostForm() {
             studentId: session.studentId, trainerId: data.trainerId||session.trainerId||'',
             date: session.date||Calc.nowISO(),
             pse, tqrPost, duration: dur, trainingLoad: pse*dur,
-            postPain: parseInt(data.postPain)||1, postPainRegions,
-            motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
-            notes: data.notes||'', formType:'post', sessionId: data.sessionId,
+            postPain, postPainRegions,
+            satisfaction,
+            notes: data.notes||'',
+            painDescription: data.postPainDescription || '',
+            formType:'post', sessionId: data.sessionId,
           });
         }
       }

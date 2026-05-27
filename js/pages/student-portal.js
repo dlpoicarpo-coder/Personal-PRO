@@ -1487,61 +1487,24 @@ function renderBio(biofeedbacks, sid, tid) {
         <div class="portal-card-label">Biofeedback Pré-treino</div>
         <form id="portalBioForm">
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Qualidade do Sono <span id="sleepVal">7</span>/10
-              <span id="sleepDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Bom (Sono contínuo e revigorante)</span>
-            </label>
-            <input type="range" name="sleep" min="1" max="10" value="7" class="portal-range" oninput="
-              document.getElementById('sleepVal').textContent=this.value;
-              var d={1:'Péssimo (Insônia / Noite em claro)',2:'Péssimo (Insônia / Noite em claro)',3:'Ruim (Acordei várias vezes / Agitado)',4:'Ruim (Acordei várias vezes / Agitado)',5:'Regular (Dormi o suficiente, mas cansado)',6:'Regular (Dormi o suficiente, mas cansado)',7:'Bom (Sono contínuo e revigorante)',8:'Bom (Sono contínuo e revigorante)',9:'Excelente (Sono profundo e muito reparador)',10:'Excelente (Sono profundo e muito reparador)'};
-              document.getElementById('sleepDesc').textContent=d[this.value]||'';
-            ">
+            <label class="portal-bio-label">😴 Qualidade do Sono</label>
+            ${renderInlineCardSelector('sleep', SONO_OPTIONS, 7)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Recuperação (TQR)</label>
-            <select name="tqr" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
-              <option value="0">0 - Não recuperado</option>
-              <option value="1">1 - Muito mal recuperado</option>
-              <option value="2">2 - Mal recuperado</option>
-              <option value="3">3 - Pouco recuperado</option>
-              <option value="4">4 - Recuperação abaixo da média</option>
-              <option value="5" selected>5 - Recuperação parcial</option>
-              <option value="6">6 - Razoavelmente recuperado</option>
-              <option value="7">7 - Bem recuperado</option>
-              <option value="8">8 - Muito bem recuperado</option>
-              <option value="9">9 - Excelente recuperação</option>
-              <option value="10">10 - Totalmente recuperado</option>
-            </select>
+            <label class="portal-bio-label">⚡ Recuperação (TQR)</label>
+            ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Alimentação nas últimas 24h</label>
-            <select name="food" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
-              <option value="5" selected>Excelente (Bati as metas / Saudável)</option>
-              <option value="4">Boa (Maioria saudável / Poucos furos)</option>
-              <option value="3">Regular (Na média / Algumas escapadas)</option>
-              <option value="2">Ruim (Pulei refeições / Comi mal)</option>
-              <option value="1">Péssima (Fast food / Quase não comi)</option>
-            </select>
+            <label class="portal-bio-label">🍎 Alimentação nas últimas 24h</label>
+            ${renderInlineCardSelector('food', ALIMENTACAO_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Estresse <span id="stressVal">5</span>/10
-              <span id="stressDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Moderado (Estresse sob controle)</span>
-            </label>
-            <input type="range" name="stress" min="1" max="10" value="5" class="portal-range" oninput="
-              document.getElementById('stressVal').textContent=this.value;
-              var d={1:'Muito Relaxado (Sem estresse)',2:'Muito Relaxado (Sem estresse)',3:'Pouco Estresse (Tranquilo)',4:'Pouco Estresse (Tranquilo)',5:'Moderado (Estresse sob controle)',6:'Moderado (Estresse sob controle)',7:'Estressado (Rotina pesada)',8:'Estressado (Rotina pesada)',9:'Muito Estressado (No limite / Esgotado)',10:'Muito Estressado (No limite / Esgotado)'};
-              document.getElementById('stressDesc').textContent=d[this.value]||'';
-            ">
+            <label class="portal-bio-label">🤯 Estresse</label>
+            ${renderInlineCardSelector('stress', ESTRESSE_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Dor/Desconforto <span id="painVal">1</span>/10
-              <span id="painDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Nenhuma (Sem qualquer dor)</span>
-            </label>
-            <input type="range" name="pain" min="1" max="10" value="1" class="portal-range" oninput="
-              document.getElementById('painVal').textContent=this.value;
-              document.getElementById('portalPainGrp').style.display=this.value>=3?'block':'none';
-              var d={1:'Nenhuma (Sem qualquer dor)',2:'Leve (Desconforto muscular leve)',3:'Moderada (Dor suportável, incomoda)',4:'Moderada (Dor suportável, incomoda)',5:'Incômoda (Dor persistente)',6:'Incômoda (Dor persistente)',7:'Forte (Dificulta alguns movimentos)',8:'Forte (Dificulta alguns movimentos)',9:'Intensa (Muito forte / Impede treinar)',10:'Intensa (Muito forte / Impede treinar)'};
-              document.getElementById('painDesc').textContent=d[this.value]||'';
-            ">
+            <label class="portal-bio-label">🩹 Dor ou Desconforto Articular</label>
+            ${renderInlineCardSelector('pain', DOR_OPTIONS, 1, 'window.onBioPainChange')}
           </div>
           <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
             <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
@@ -1560,14 +1523,8 @@ function renderBio(biofeedbacks, sid, tid) {
             </div>
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Motivação <span id="motivVal">7</span>/10
-              <span id="motivDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Alta (Focado e animado)</span>
-            </label>
-            <input type="range" name="motivation" min="1" max="10" value="7" class="portal-range" oninput="
-              document.getElementById('motivVal').textContent=this.value;
-              var d={1:'Muito Baixa (Sem vontade de treinar)',2:'Muito Baixa (Sem vontade de treinar)',3:'Baixa (Desanimado, mas vou)',4:'Baixa (Desanimado, mas vou)',5:'Moderada (Treino por disciplina)',6:'Moderada (Treino por disciplina)',7:'Alta (Focado e animado)',8:'Alta (Focado e animado)',9:'Muito Alta (Energia máxima / Sedento por treino)',10:'Muito Alta (Energia máxima / Sedento por treino)'};
-              document.getElementById('motivDesc').textContent=d[this.value]||'';
-            ">
+            <label class="portal-bio-label">🎯 Motivação para Treinar</label>
+            ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 7)}
           </div>
           
           ${isWomanUnder40 ? `
@@ -1637,7 +1594,16 @@ function renderBio(biofeedbacks, sid, tid) {
 }
 
 function initBio() {
+  window.onBioPainChange = (val) => {
+    const painVal = parseInt(val) || 1;
+    const grp = document.getElementById('portalPainGrp');
+    if (grp) grp.style.display = painVal >= 3 ? 'block' : 'none';
+  };
+
   setTimeout(() => {
+    const initialPain = parseInt(document.getElementById('portal_pain')?.value) || 1;
+    window.onBioPainChange(initialPain);
+
     document.querySelectorAll('.portal-pain-chip').forEach(tag => {
       tag.addEventListener('click', (e) => {
         if (e.target.tagName === 'INPUT') return;
@@ -2460,7 +2426,118 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
   }
 }
 
-// (end of student-portal.js)
+
+// ── PRE-DEFINED RATING OPTIONS FOR CHECK-IN AND CHECKOUT ──────
+const SONO_OPTIONS = [
+  { value: '1', label: '1 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '2', label: '2 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '3', label: '3 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '4', label: '4 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '5', label: '5 - Regular', desc: 'Dormi o suficiente, mas acordei cansado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Regular', desc: 'Dormi o suficiente, mas acordei cansado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '7', label: '7 - Bom', desc: 'Sono contínuo e revigorante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '8', label: '8 - Bom', desc: 'Sono contínuo e revigorante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '9', label: '9 - Excelente', desc: 'Sono profundo e muito reparador', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
+  { value: '10', label: '10 - Excelente', desc: 'Sono profundo e muito reparador', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
+];
+
+const TQR_OPTIONS = [
+  { value: '0', label: '0 - Não recuperado', desc: 'Sensação de fadiga extrema nas articulações/músculos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '1', label: '1 - Muito mal recuperado', desc: 'Músculos extremamente doloridos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '2', label: '2 - Mal recuperado', desc: 'Dores musculares e indisposição física', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '3', label: '3 - Pouco recuperado', desc: 'Cansaço muscular residual perceptível', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '4', label: '4 - Abaixo da média', desc: 'Ainda me sinto um pouco pesado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '5', label: '5 - Recuperação parcial', desc: 'Pronto para treinar, mas sem carga máxima', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Razoavelmente recuperado', desc: 'Bom estado de prontidão física', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '7', label: '7 - Bem recuperado', desc: 'Sensação de corpo leve e sem dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '8', label: '8 - Muito bem recuperado', desc: 'Energia alta e músculos totalmente prontos', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '9', label: '9 - Excelente recuperação', desc: 'Disposição física e mental no topo', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
+  { value: '10', label: '10 - Totalmente recuperado', desc: 'Estado físico ideal, sem nenhuma fadiga', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
+];
+
+const ALIMENTACAO_OPTIONS = [
+  { value: '5', label: '5 - Excelente', desc: 'Bati todas as metas nutricionais e hidratação', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '4', label: '4 - Boa', desc: 'Alimentação majoritariamente saudável / poucos furos', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Regular', desc: 'Alimentação na média / algumas escapadas ou furos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '2', label: '2 - Ruim', desc: 'Pulei refeições ou comi alimentos pouco nutritivos', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '1', label: '1 - Péssima', desc: 'Fast food excessivo ou quase sem comer nada', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+];
+
+const ESTRESSE_OPTIONS = [
+  { value: '1', label: '1 - Muito Relaxado', desc: 'Sem nenhum estresse mental, mente tranquila', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '2', label: '2 - Muito Relaxado', desc: 'Sem nenhum estresse mental, mente tranquila', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Tranquilo', desc: 'Pouco estresse na rotina diária', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '4', label: '4 - Tranquilo', desc: 'Pouco estresse na rotina diária', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '5', label: '5 - Moderado', desc: 'Estresse sob controle, rotina equilibrada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Moderado', desc: 'Estresse sob controle, rotina equilibrada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '7', label: '7 - Estressado', desc: 'Rotina de trabalho/estudos pesada e desgastante', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '8', label: '8 - Estressado', desc: 'Rotina de trabalho/estudos pesada e desgastante', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '9', label: '9 - Muito Estressado', desc: 'Mente no limite, exaustão mental e ansiedade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', label: '10 - Muito Estressado', desc: 'Mente no limite, exaustão mental e ansiedade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+];
+
+const DOR_OPTIONS = [
+  { value: '1', label: '1 - Nenhuma Dor', desc: 'Músculos e articulações 100% livres de dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '2', label: '2 - Leve', desc: 'Desconforto muscular leve residual pós-treino', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '4', label: '4 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '5', label: '5 - Incômoda', desc: 'Dor persistente nas articulações ou tendões', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '6', label: '6 - Incômoda', desc: 'Dor persistente nas articulações ou tendões', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '7', label: '7 - Forte', desc: 'Dificulta a execução de movimentos específicos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '8', label: '8 - Forte', desc: 'Dificulta a execução de movimentos específicos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '9', label: '9 - Intensa', desc: 'Dor muito forte, impede ou dificulta treinar', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', label: '10 - Intensa / Lesão', desc: 'Dor severa, risco de lesão ou incapacidade física', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+];
+
+const DOR_OPTIONS_0 = [
+  { value: '0', label: '0 - Sem Dor', desc: 'Articulações e tendões 100% confortáveis', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  ...DOR_OPTIONS
+];
+
+const MOTIVACAO_OPTIONS = [
+  { value: '1', label: '1 - Muito Baixa', desc: 'Sem nenhuma vontade de treinar hoje', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '2', label: '2 - Muito Baixa', desc: 'Sem nenhuma vontade de treinar hoje', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '3', label: '3 - Baixa', desc: 'Desanimado, vou treinar por pura obrigação', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '4', label: '4 - Baixa', desc: 'Desanimado, vou treinar por pura obrigação', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '5', label: '5 - Moderada', desc: 'Foco mediano, treino mantido por disciplina', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Moderada', desc: 'Foco mediano, treino mantido por disciplina', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '7', label: '7 - Alta', desc: 'Focado, animado e com boa energia mental', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '8', label: '8 - Alta', desc: 'Focado, animado e com boa energia mental', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '9', label: '9 - Muito Alta', desc: 'Energia máxima, sedento por treinar pesado', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
+  { value: '10', label: '10 - Muito Alta', desc: 'Energia máxima, sedento por treinar pesado', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
+];
+
+function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
+  return `
+    <input type="hidden" name="${name}" id="portal_${name}" value="${currentValue}" />
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px;" id="inline_scale_${name}">
+      ${options.map(opt => {
+        const isActive = String(currentValue) === String(opt.value);
+        return `
+          <div class="portal-sel-option-row ${isActive ? 'active' : ''}" 
+               style="--opt-color: ${opt.color}; --opt-bg: ${opt.bg};"
+               data-val="${opt.value}"
+               onclick="
+                 document.getElementById('portal_${name}').value = '${opt.value}';
+                 document.querySelectorAll('#inline_scale_${name} .portal-sel-option-row').forEach(el => el.classList.remove('active'));
+                 this.classList.add('active');
+                 ${onSelectJS ? `${onSelectJS}('${opt.value}');` : ''}
+               ">
+            <div class="portal-sel-badge-num" style="background: ${opt.bg}; color: ${opt.color}; border: 1px solid ${opt.color}33;">
+              ${opt.value}
+            </div>
+            <div style="flex: 1; min-width: 0; text-align: left;">
+              <div style="font-size: 0.85rem; font-weight: 700; color: var(--portal-text);">${opt.label}</div>
+              <div style="font-size: 0.72rem; color: var(--portal-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">
+                ${opt.desc}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
 
 // ── CUSTOM SELECTION SYSTEM FOR PSE & RIR ─────────────────────
 const PSE_OPTIONS = [
@@ -2864,19 +2941,28 @@ function showPortalCheckoutModal(session) {
             ${session.workoutName || 'Treino'} &middot; ${new Date(session.date).toLocaleDateString('pt-BR')}
           </div>
         </div>
+    <div id="portalCheckoutSheet">
+      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+        <div style="width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15);"></div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div>
+          <span style="font-size: 1.1rem; font-weight: 800; color: var(--portal-text, #f1f5f9);">Checkout do Treino</span>
+          <div style="font-size: 0.75rem; color: var(--portal-text-muted, #94a3b8); margin-top: 2px;">
+            ${session.workoutName || 'Treino'} &middot; ${new Date(session.date).toLocaleDateString('pt-BR')}
+          </div>
+        </div>
         <button id="closePortalCheckoutBtn" style="background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--portal-text, #fff);">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
       <div style="overflow-y: auto; flex: 1; padding-right: 4px;" id="portalCheckoutForm">
-        <!-- 1. PSE SLIDER -->
+        <!-- 1. PSE INLINE CARDS -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label">
-            🥵 Esforço Percebido (PSE) <span style="font-size:1.15rem; font-weight:800; color:var(--portal-primary, #6366f1)"><span id="chkModalPseVal">${currentPse}</span>/10</span>
-          </label>
-          <input type="range" id="chkModalPseRange" min="1" max="10" value="${currentPse}" class="portal-range" style="width:100%">
-          <span id="chkModalPseDesc" class="portal-checkout-desc">Moderado (Respiração acelerada mas controlada)</span>
+          <label class="portal-checkout-label">🥵 Intensidade do Esforço Percebido (PSE)</label>
+          ${renderInlineCardSelector('pse', PSE_OPTIONS, currentPse)}
         </div>
 
         <!-- 2. FEELING/SATISFACTION -->
@@ -2901,13 +2987,10 @@ function showPortalCheckoutModal(session) {
           </div>
         </div>
 
-        <!-- 3. ARTICULAR PAIN -->
+        <!-- 3. ARTICULAR PAIN INLINE CARDS -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label">
-            🩹 Dor Articular / Desconforto <span style="font-size:1.15rem; font-weight:800; color:#ef4444"><span id="chkModalPainVal">${currentPain}</span>/10</span>
-          </label>
-          <input type="range" id="chkModalPainRange" min="0" max="10" value="${currentPain}" class="portal-range" style="width:100%">
-          <span id="chkModalPainDesc" class="portal-checkout-desc">Nenhuma Dor (Articulações 100%)</span>
+          <label class="portal-checkout-label">🩹 Dor Articular ou Desconforto</label>
+          ${renderInlineCardSelector('pain', DOR_OPTIONS_0, currentPain, 'window.onCheckoutPainChange')}
         </div>
 
         <!-- 4. PAIN LOCATION CHIPS -->
@@ -2942,51 +3025,12 @@ function showPortalCheckoutModal(session) {
 
   container.appendChild(overlay);
 
-  const pseDescMap = {
-    1: 'Extremamente Leve (Sem esforço)',
-    2: 'Muito Leve (Sem esforço relevante)',
-    3: 'Leve (Confortável / Aquecimento)',
-    4: 'Moderado (Respiração acelerada mas controlada)',
-    5: 'Um Pouco Forte (Esforço nítido, exige foco)',
-    6: 'Forte (FC elevada, fala em frases curtas)',
-    7: 'Muito Forte (Esforço pesado, foco total)',
-    8: 'Muito Forte + (Queimação muscular intensa)',
-    9: 'Quase Máximo (Dificuldade extrema, pré-falha)',
-    10: 'Máximo / Falha (Esforço limite absoluto)'
+  // Global callback to toggle articular pain location chips dynamic displays
+  window.onCheckoutPainChange = (val) => {
+    const painVal = parseInt(val) || 0;
+    const grp = document.getElementById('chkModalPainGrp');
+    if (grp) grp.style.display = painVal >= 1 ? 'block' : 'none';
   };
-
-  const painDescMap = {
-    0: 'Nenhuma Dor (Articulações 100%)',
-    1: 'Leve (Desconforto muscular / articular leve)',
-    2: 'Leve (Desconforto muscular / articular leve)',
-    3: 'Moderada (Dor suportável, mas incomoda)',
-    4: 'Dor Moderada (Incomoda durante o movimento)',
-    5: 'Incômoda (Dor persistente pós-exercício)',
-    6: 'Incômoda (Dor persistente pós-exercício)',
-    7: 'Forte (Dificulta alguns movimentos do treino)',
-    8: 'Forte (Dificulta alguns movimentos do treino)',
-    9: 'Intensa (Muito forte / Impede treinar membros afetados)',
-    10: 'Intensa / Lesão (Muito forte / Impossível treinar)'
-  };
-
-  const updatePseDesc = (val) => {
-    document.getElementById('chkModalPseVal').textContent = val;
-    document.getElementById('chkModalPseDesc').textContent = pseDescMap[val] || '';
-  };
-
-  const updatePainDesc = (val) => {
-    document.getElementById('chkModalPainVal').textContent = val;
-    document.getElementById('chkModalPainDesc').textContent = painDescMap[val] || '';
-    document.getElementById('chkModalPainGrp').style.display = val >= 1 ? 'block' : 'none';
-  };
-
-  // Set initial descriptors
-  updatePseDesc(currentPse);
-  updatePainDesc(currentPain);
-
-  // Bind inputs
-  document.getElementById('chkModalPseRange').addEventListener('input', (e) => updatePseDesc(e.target.value));
-  document.getElementById('chkModalPainRange').addEventListener('input', (e) => updatePainDesc(e.target.value));
 
   // Feeling buttons
   let selectedFeeling = currentFeeling;
@@ -3024,8 +3068,8 @@ function showPortalCheckoutModal(session) {
 
   // Submit Handler
   document.getElementById('chkModalSubmitBtn').addEventListener('click', async () => {
-    const pse = parseInt(document.getElementById('chkModalPseRange').value) || 5;
-    const pain = parseInt(document.getElementById('chkModalPainRange').value) || 0;
+    const pse = parseInt(document.getElementById('portal_pse')?.value) || 5;
+    const pain = parseInt(document.getElementById('portal_pain')?.value) || 0;
     const notes = document.getElementById('chkModalNotes').value || '';
     const painDescription = document.getElementById('chkModalPainDescription')?.value || '';
 
