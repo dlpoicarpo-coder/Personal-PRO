@@ -31,15 +31,26 @@ export async function getUserRole() {
     const user = await getCurrentUser();
     if (!user) return 'guest';
 
-    // Se o usuário mudou, limpar cache
     if (_cachedUserId !== user.id) { _cachedRole = null; _cachedUserId = user.id; }
     if (_cachedRole) return _cachedRole;
 
-    // Verificar em app_metadata (definido pelo admin, não alterável pelo usuário)
-    const role = user.app_metadata?.role
-      || user.user_metadata?.role
-      || 'personal'; // padrão: personal trainer
+    // Tentar app_metadata primeiro (mais seguro)
+    let role = user.app_metadata?.role || user.user_metadata?.role;
 
+    // Se não tem role no token atual, tentar refresh para pegar app_metadata
+    if (!role) {
+      try {
+        const { getSupabase } = await import('./auth.js');
+        const sb = getSupabase?.();
+        if (sb) {
+          const { data } = await sb.auth.refreshSession();
+          role = data?.user?.app_metadata?.role
+              || data?.user?.user_metadata?.role;
+        }
+      } catch(_) {}
+    }
+
+    role = role || 'personal';
     _cachedRole = role;
     return role;
   } catch(_) {
@@ -82,14 +93,9 @@ export async function applyRoleUI() {
   // Badge de papel na sidebar
   const badge = document.getElementById('roleBadge');
   if (badge) {
-    badge.textContent  = admin ? 'Admin' : 'Personal Trainer';
-    badge.style.color  = admin ? 'var(--primary)' : 'var(--text-muted)';
-    badge.style.fontWeight = admin ? '700' : '400';
-    if (admin) {
-      badge.style.background = 'rgba(16, 185, 129, 0.1)';
-      badge.style.padding = '2px 6px';
-      badge.style.borderRadius = '4px';
-    }
+    badge.textContent  = admin ? 'Admin' : 'Personal';
+    badge.style.background = admin ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
+    badge.style.color  = admin ? 'var(--danger)' : 'var(--primary)';
   }
 
   return admin;
