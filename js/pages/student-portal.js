@@ -594,24 +594,34 @@ function initTreinosSection() {
 
 // ── SOLO TRAINING ──────────────────────────────────────────────
 function renderSolo(workouts) {
-  const sid = portalState.studentId;
   return `
     <div class="portal-section">
       <h2 class="portal-section-title">Treinar por Conta</h2>
       <div class="glass-card" style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-color:rgba(99,102,241,0.25);margin-bottom:16px">
         <div class="portal-card-label" style="color:#818cf8">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Sessão Autônoma
+          Sessão Autônoma — treino independente
         </div>
-        <p style="font-size:0.82rem;color:var(--portal-text-secondary);margin:0">Registre seu treino realizado de forma independente. Escolha um treino da sua lista ou registre livremente.</p>
+        <p style="font-size:0.82rem;color:var(--portal-text-secondary);margin:0">Escolha um treino como base ou registre livremente.</p>
       </div>
 
       <div class="portal-bio-field">
-        <label class="portal-bio-label">Treino de referência (opcional)</label>
-        <select id="soloWorkoutSel" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
-          <option value="">— Treino livre —</option>
-          ${workouts.map(w => `<option value="${w.id}">${w.name || 'Treino'}</option>`).join('')}
-        </select>
+        <label class="portal-bio-label" style="margin-bottom:10px">Treino de referência (opcional)</label>
+        <div class="portal-workout-picker" id="soloWorkoutPicker">
+          <div class="portal-workout-pick-item selected" data-wid="">
+            <div class="portal-workout-pick-icon">🎯</div>
+            <div class="portal-workout-pick-name">Livre</div>
+            <div class="portal-workout-pick-sub">Sem base</div>
+          </div>
+          ${workouts.slice(0,6).map(w => `
+            <div class="portal-workout-pick-item" data-wid="${w.id}">
+              <div class="portal-workout-pick-icon">💪</div>
+              <div class="portal-workout-pick-name">${(w.name||'Treino').substring(0,18)}${(w.name||'').length>18?'…':''}</div>
+              <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
+            </div>
+          `).join('')}
+        </div>
+        <input type="hidden" id="soloWorkoutSel" value="">
       </div>
 
       <div id="soloExercisesBlock"></div>
@@ -650,27 +660,33 @@ function initSolo(workouts) {
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
 
-  const sel = document.getElementById('soloWorkoutSel');
+  const selInput = document.getElementById('soloWorkoutSel');
   const exBlock = document.getElementById('soloExercisesBlock');
 
-  sel?.addEventListener('change', () => {
-    const wid = sel.value;
-    const w = workouts.find(w => w.id === wid);
-    if (w && w.exercises?.length) {
-      exBlock.innerHTML = `
-        <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do treino</div>
-        ${w.exercises.map((ex,i) => `
-          <div class="glass-card" style="padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
-            <div class="portal-ex-num">${i+1}</div>
-            <div>
-              <div class="portal-ex-name" style="font-size:0.85rem">${ex.name}</div>
-              <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}</div>
+  // Card picker
+  document.querySelectorAll('.portal-workout-pick-item').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.portal-workout-pick-item').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      const wid = card.dataset.wid;
+      selInput.value = wid;
+      const w = workouts.find(w => w.id === wid);
+      if (w && w.exercises?.length) {
+        exBlock.innerHTML = `
+          <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do treino</div>
+          ${w.exercises.map((ex,i) => `
+            <div class="glass-card" style="padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+              <div class="portal-ex-num">${i+1}</div>
+              <div>
+                <div class="portal-ex-name" style="font-size:0.85rem">${ex.name}</div>
+                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}</div>
+              </div>
             </div>
-          </div>
-        `).join('')}`;
-    } else {
-      exBlock.innerHTML = '';
-    }
+          `).join('')}`;
+      } else {
+        exBlock.innerHTML = '';
+      }
+    });
   });
 
   document.getElementById('soloStartBtn')?.addEventListener('click', () => {
@@ -678,10 +694,10 @@ function initSolo(workouts) {
     document.getElementById('soloActiveSession').style.display = 'block';
     document.getElementById('soloStartBtn').style.display = 'none';
     document.getElementById('soloExercisesBlock').style.display = 'none';
-    sel.disabled = true;
+    document.getElementById('soloWorkoutPicker').style.display = 'none';
 
     // Build exercise log
-    const wid = sel.value;
+    const wid = selInput.value;
     const w = workouts.find(w => w.id === wid);
     const exLogEl = document.getElementById('soloExerciseLog');
     if (w && w.exercises?.length) {
@@ -740,7 +756,7 @@ function initSolo(workouts) {
   document.getElementById('soloFinishBtn')?.addEventListener('click', async () => {
     clearInterval(soloTimerInterval);
     const durationMin = Math.round((new Date() - soloStartTime) / 60000);
-    const wid = sel.value;
+    const wid = selInput.value;
     const w = workouts.find(w => w.id === wid);
     const pse = parseInt(document.getElementById('soloPse').value);
     const notes = document.getElementById('soloNotes').value;
@@ -795,10 +811,10 @@ function renderSessoes(sessions, schedules) {
     .sort((a,b) => new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time))
     .slice(0,5);
 
-  const completed = sessions
-    .filter(s => s.status === 'completed')
-    .sort((a,b) => new Date(b.date)-new Date(a.date))
-    .slice(0,20);
+  const allCompleted = sessions.filter(s => s.status === 'completed');
+  const completed = allCompleted.sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,20);
+  // Sessions needing checkout (no postBiofeedback)
+  const needsCheckout = allCompleted.filter(s => !s.postBiofeedback).slice(0,3);
 
   return `
     <div class="portal-section">
@@ -815,6 +831,48 @@ function renderSessoes(sessions, schedules) {
         `).join('')}
       ` : ''}
 
+      <!-- CHECKOUT PENDENTE -->
+      ${needsCheckout.length ? `
+        <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)">⚡ Checkout pendente</div>
+        ${needsCheckout.map(s => `
+          <div class="glass-card portal-checkout-card" id="checkout_${s.id}">
+            <div class="portal-checkout-header">
+              <div>
+                <div class="portal-session-name">${s.workoutName||'Treino'}</div>
+                <div class="portal-session-meta">${s.date?new Date(s.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}):''}</div>
+              </div>
+              <span class="portal-checkout-badge">Checkout</span>
+            </div>
+            <div class="portal-checkout-form" id="chkform_${s.id}" style="display:none">
+              <div class="portal-bio-field" style="margin-top:12px">
+                <label class="portal-bio-label">PSE pós-treino <span id="chkpse_lbl_${s.id}">5</span>/10</label>
+                <input type="range" min="1" max="10" value="5" class="portal-range" id="chkpse_${s.id}" oninput="document.getElementById('chkpse_lbl_${s.id}').textContent=this.value">
+              </div>
+              <div class="portal-bio-field">
+                <label class="portal-bio-label">Sensação geral</label>
+                <div class="portal-feeling-row">
+                  ${['😩 Péssimo','😓 Ruim','😐 Ok','😊 Bom','🔥 Ótimo'].map((f,i)=>`
+                    <button type="button" class="portal-feeling-btn" data-val="${i+1}" data-sid="${s.id}" onclick="this.parentElement.querySelectorAll('.portal-feeling-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${f}</button>
+                  `).join('')}
+                </div>
+              </div>
+              <div class="portal-bio-field">
+                <label class="portal-bio-label">Notas do treino</label>
+                <textarea class="portal-textarea" id="chknotes_${s.id}" rows="2" placeholder="Como foi? Algo importante?"></textarea>
+              </div>
+              <button class="portal-submit-btn" id="chksubmit_${s.id}" data-sid="${s.id}" style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 12px rgba(245,158,11,0.3)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Confirmar Checkout
+              </button>
+            </div>
+            <button class="portal-expand-btn checkout-toggle" data-sid="${s.id}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              Fazer checkout
+            </button>
+          </div>
+        `).join('')}
+      ` : ''}
+
       <div class="portal-section-sub" style="margin-top:20px">Histórico</div>
       ${completed.length === 0 ? `<div class="portal-empty">Nenhuma sessão concluída ainda</div>` :
         completed.map(s => {
@@ -822,6 +880,7 @@ function renderSessoes(sessions, schedules) {
           const vol = setLog.reduce((t,x) => t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
           const pse = s.postBiofeedback?.pse;
           const isSolo = s.isSolo;
+          const hasCheckout = !!s.postBiofeedback;
           return `
             <div class="portal-session-card glass-card${isSolo ? ' portal-session-solo' : ''}">
               <div class="portal-session-header">
@@ -831,7 +890,8 @@ function renderSessoes(sessions, schedules) {
                 </div>
                 <div class="portal-session-stats-sm">
                   ${vol>0?`<span>${Math.round(vol)}kg</span>`:''}
-                  ${pse?`<span class="pse-badge ${getPseBadgeClass(pse)}">PSE ${pse}</span>`:''}
+                  ${pse?`<span class="pse-badge ${getPseBadgeClass(pse)}">PSE ${pse}</span>`:
+                    !hasCheckout?`<span class="portal-no-checkout">sem checkout</span>`:''}
                   ${s.durationMin ? `<span>${s.durationMin}min</span>` : ''}
                 </div>
               </div>
@@ -876,6 +936,46 @@ function initSessoesSection() {
       btn.innerHTML = isOpen
         ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg> Ver séries`
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> Fechar`;
+    });
+  });
+
+  // Checkout toggle
+  document.querySelectorAll('.checkout-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sid = btn.dataset.sid;
+      const form = document.getElementById(`chkform_${sid}`);
+      const isOpen = form.style.display !== 'none';
+      form.style.display = isOpen ? 'none' : 'block';
+      btn.innerHTML = isOpen
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg> Fazer checkout`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> Fechar`;
+    });
+  });
+
+  // Checkout submit
+  document.querySelectorAll('[id^="chksubmit_"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sid = btn.dataset.sid;
+      const pse = parseInt(document.getElementById(`chkpse_${sid}`)?.value) || 5;
+      const notes = document.getElementById(`chknotes_${sid}`)?.value || '';
+      const feeling = document.querySelector(`[data-sid="${sid}"].portal-feeling-btn.active`)?.dataset.val || null;
+
+      try {
+        // Update session in local DB
+        const session = await db.get('sessions', sid);
+        if (session) {
+          session.postBiofeedback = { pse, notes, feeling: feeling ? parseInt(feeling) : null, date: new Date().toISOString() };
+          await db.update('sessions', session);
+        }
+      } catch(e) { console.error(e); }
+
+      const card = document.getElementById(`checkout_${sid}`);
+      if (card) {
+        card.innerHTML = `<div class="portal-success" style="padding:16px">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <div>Checkout salvo! PSE ${pse}</div>
+        </div>`;
+      }
     });
   });
 }
@@ -1092,22 +1192,51 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
         const sorted = entries.sort((a,b) => new Date(a.date)-new Date(b.date));
         const first = sorted[0], last = sorted[sorted.length-1];
         const diff = last.load - first.load;
+        const sparkData = sorted.map(e => e.load);
         return `
           <div class="glass-card portal-ex-evol-card">
-            <div class="portal-ex-evol-name">${name}</div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div>
-                <div style="font-size:0.72rem;color:var(--portal-text-muted)">${new Date(first.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}: ${first.load}kg</div>
-                <div style="font-size:0.72rem;color:var(--portal-text-muted)">${new Date(last.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}: ${last.load}kg</div>
-              </div>
-              <div style="font-size:1.4rem;font-weight:800;color:${diff>=0?'var(--portal-success)':'var(--portal-danger)'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+              <div class="portal-ex-evol-name">${name}</div>
+              <div style="font-size:1.3rem;font-weight:800;color:${diff>=0?'var(--portal-success)':'var(--portal-danger)'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>
             </div>
-            <div class="portal-ex-evol-bar-track">
-              <div class="portal-ex-evol-bar-fill" style="width:${Math.min(100, (last.load/(first.load||1))*100)}%"></div>
+            ${svgSparkline(sparkData, diff>=0?'#10b981':'#ef4444')}
+            <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--portal-text-muted);margin-top:4px">
+              <span>${new Date(first.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}: ${first.load}kg</span>
+              <span>${new Date(last.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}: ${last.load}kg</span>
             </div>
           </div>`;
       }).join('')}`;
   }
+
+  // PSE trend chart
+  const pseData = completed.slice(0,12).reverse().map(s => s.postBiofeedback?.pse || 0).filter(v => v > 0);
+  const pseChart = pseData.length >= 2 ? `
+    <div class="glass-card">
+      <div class="portal-card-label">📈 Tendência PSE (últimas sessões)</div>
+      ${svgLineChart(pseData, '#f59e0b', 1, 10, ['1','5','10'])}
+    </div>` : '';
+
+  // Volume trend chart
+  const volData = completed.slice(0,10).reverse().map(s =>
+    Math.round((s.setLog||[]).reduce((t,x) => t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0)/100)*100
+  ).filter(v => v > 0);
+  const volChart = volData.length >= 2 ? `
+    <div class="glass-card">
+      <div class="portal-card-label">🏋️ Volume por Sessão (kg)</div>
+      ${svgBarChart(volData, '#6366f1')}
+    </div>` : '';
+
+  // Weight trend chart from assessments
+  const weightData = compAss.map(a => ({ date: a.date, v: parseFloat(a.peso)||0 })).filter(d => d.v > 0);
+  const weightChart = weightData.length >= 2 ? `
+    <div class="glass-card">
+      <div class="portal-card-label">⚖️ Evolução do Peso (kg)</div>
+      ${svgLineChart(weightData.map(d=>d.v), '#06b6d4', Math.min(...weightData.map(d=>d.v))-2, Math.max(...weightData.map(d=>d.v))+2)}
+      <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--portal-text-muted);margin-top:2px">
+        <span>${new Date(weightData[0].date).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})}</span>
+        <span>${new Date(weightData[weightData.length-1].date).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})}</span>
+      </div>
+    </div>` : '';
 
   // Motivational feed
   const feedMessages = [
@@ -1155,15 +1284,75 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
         </div>
       </div>
 
+      ${pseChart}
+      ${volChart}
       ${caloricCard}
+      ${weightChart}
       ${evolCard}
       ${exEvolCards}
       ${feed}
 
-      ${compAss.length === 0 ? `<div class="portal-empty">Peça ao seu treinador para registrar sua avaliação de composição para ver seus relatórios completos.</div>` : ''}
+      ${compAss.length === 0 && completed.length === 0 ? `<div class="portal-empty">Peça ao seu treinador para registrar suas avaliações e realize sessões para ver os gráficos de evolução.</div>` : ''}
     </div>`;
 }
 
-function initRelatorios() {
-  // Future: chart rendering with canvas if needed
+// ── SVG CHART HELPERS ──────────────────────────────────────────
+function svgLineChart(data, color = '#10b981', min = null, max = null, yLabels = []) {
+  if (!data || data.length < 2) return '';
+  const W = 300, H = 80, pad = 6;
+  const lo = min ?? Math.min(...data);
+  const hi = max ?? Math.max(...data);
+  const range = hi - lo || 1;
+  const xs = data.map((_, i) => pad + (i / (data.length - 1)) * (W - pad * 2));
+  const ys = data.map(v => H - pad - ((v - lo) / range) * (H - pad * 2));
+  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const area = `${path} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
+  return `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:80px;overflow:visible">
+      <defs>
+        <linearGradient id="lg_${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${area}" fill="url(#lg_${color.replace('#','')})" />
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${xs.map((x,i) => `<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="3" fill="${color}"/>`)}
+      ${[data[0], data[data.length-1]].map((v,i) => {
+        const xi = i === 0 ? xs[0] : xs[xs.length-1];
+        const yi = i === 0 ? ys[0] : ys[ys.length-1];
+        return `<text x="${xi.toFixed(1)}" y="${(yi-6).toFixed(1)}" text-anchor="middle" font-size="9" fill="${color}" font-weight="700">${v}</text>`;
+      }).join('')}
+    </svg>`;
 }
+
+function svgBarChart(data, color = '#6366f1') {
+  if (!data || data.length < 2) return '';
+  const W = 300, H = 70, pad = 4;
+  const max = Math.max(...data) || 1;
+  const barW = Math.max(4, (W - pad * 2) / data.length - 2);
+  return `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:70px">
+      ${data.map((v, i) => {
+        const bh = Math.max(2, ((v / max) * (H - pad * 2)));
+        const x = pad + i * ((W - pad * 2) / data.length) + 1;
+        const y = H - pad - bh;
+        return `
+          <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${color}" opacity="${0.5 + 0.5*(v/max)}"/>
+          ${v > 0 ? `<text x="${(x+barW/2).toFixed(1)}" y="${(y-2).toFixed(1)}" text-anchor="middle" font-size="8" fill="${color}" font-weight="700">${v>=1000?(v/1000).toFixed(1)+'k':v}</text>` : ''}`;
+      }).join('')}
+    </svg>`;
+}
+
+function svgSparkline(data, color = '#10b981') {
+  if (!data || data.length < 2) return '';
+  const W = 200, H = 36, pad = 4;
+  const lo = Math.min(...data), hi = Math.max(...data);
+  const range = hi - lo || 1;
+  const xs = data.map((_, i) => pad + (i / (data.length - 1)) * (W - pad * 2));
+  const ys = data.map(v => H - pad - ((v - lo) / range) * (H - pad * 2));
+  const path = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:36px"><path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>${xs.map((x,i) => `<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="2.5" fill="${color}"/>`)}</svg>`;
+}
+
+function initRelatorios() {}

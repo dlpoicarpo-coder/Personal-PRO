@@ -581,7 +581,59 @@
   font-size: 0.85rem; line-height: 1.6;
 }
 
-/* ── PWA Meta ─────────────────────────────────── */
+/* ── Workout card picker (replaces select) ────────── */
+.portal-workout-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.portal-workout-pick-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 8px; border-radius: 12px;
+  background: var(--portal-surface); border: 2px solid var(--portal-border);
+  cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.portal-workout-pick-item:hover { border-color: var(--portal-primary); background: var(--portal-primary-glow); }
+.portal-workout-pick-item.selected { border-color: var(--portal-primary); background: var(--portal-primary-glow); }
+.portal-workout-pick-icon { font-size: 1.3rem; }
+.portal-workout-pick-name { font-size: 0.72rem; font-weight: 700; color: var(--portal-text); line-height: 1.2; }
+.portal-workout-pick-sub { font-size: 0.62rem; color: var(--portal-text-muted); }
+
+/* ── Checkout card ────────────────────────────────── */
+.portal-checkout-card {
+  border-left: 3px solid var(--portal-warning);
+  border-color: rgba(245,158,11,0.25);
+  background: rgba(245,158,11,0.05);
+}
+.portal-checkout-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.portal-checkout-badge {
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  background: rgba(245,158,11,0.15); color: var(--portal-warning);
+  border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 2px 8px; white-space: nowrap;
+}
+
+/* ── Feeling buttons (Checkout) ───────────────────── */
+.portal-feeling-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.portal-feeling-btn {
+  flex: 1; min-width: 60px; padding: 8px 4px;
+  background: var(--portal-surface); border: 1px solid var(--portal-border);
+  border-radius: 10px; color: var(--portal-text-muted); font-size: 0.68rem; cursor: pointer;
+  transition: all 0.15s; text-align: center; line-height: 1.3;
+}
+.portal-feeling-btn:hover { border-color: var(--portal-primary); color: var(--portal-primary); }
+.portal-feeling-btn.active {
+  border-color: var(--portal-primary); color: var(--portal-primary);
+  background: var(--portal-primary-glow); font-weight: 700;
+}
+
+/* ── No-checkout badge ────────────────────────────── */
+.portal-no-checkout {
+  font-size: 0.62rem; color: var(--portal-warning); background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 1px 6px;
+}
+
+/* ── PWA Meta ─────────────────────────────────────── */
 @media (max-width: 480px) {
   .portal-root { max-width: 100vw; }
 }
