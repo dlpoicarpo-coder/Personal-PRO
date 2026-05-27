@@ -227,7 +227,10 @@ function renderLiveView(students) {
         <div class="card">
           <div class="card-header">
             <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
-            <div class="flex gap-xs">
+            <div class="flex gap-xs" style="align-items:center">
+              <button class="btn btn-ghost btn-sm" id="editActiveEx" title="Editar Exercício" style="color:var(--primary);display:inline-flex;align-items:center;padding:4px 6px">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
               <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
               <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
             </div>
@@ -261,25 +264,25 @@ function renderLiveView(students) {
                   color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
                   <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
-                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
                   <span style="font-size:0.55rem;color:var(--text-muted)">kg</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
-                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR — Reps in Reserve: quantas repetições ainda sobravam no tanque (0=falha, 1=1 rep sobrando...)">
                   <span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span>
-                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" />
                 </div>
                 ${done
                   ? `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px">
-                      ${done.pse ? `<span style="font-size:0.6rem;color:var(--warning)">PSE ${done.pse}</span>` : ''}
+                      <span class="pse-lbl" style="font-size:0.6rem;color:var(--warning)">${done.pse ? `PSE ${done.pse}` : ''}</span>
                       <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
-                      ${done.rir != null ? `<span style="font-size:0.6rem;color:var(--accent)">RIR ${done.rir}</span>` : ''}
+                      <span class="rir-lbl" style="font-size:0.6rem;color:var(--accent)">${done.rir != null ? `RIR ${done.rir}` : ''}</span>
                     </div>`
                   : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:36px;align-self:flex-end">✓</button>`}
               </div>`;
@@ -869,8 +872,20 @@ export function initTracker(navigateFn) {
 
       row.classList.add('set-done'); row.classList.remove('set-active');
       row.style.background = 'rgba(16,185,129,0.04)';
-      row.querySelectorAll('input').forEach(inp => inp.disabled = true);
-      btn.replaceWith(Object.assign(document.createElement('span'), { className: 'badge badge-success', textContent: '✓', style: 'min-width:32px;text-align:center' }));
+      
+      // Criar o container da badge done com labels de PSE e RIR
+      const doneContainer = document.createElement('div');
+      doneContainer.style.display = 'flex';
+      doneContainer.style.flexDirection = 'column';
+      doneContainer.style.alignItems = 'center';
+      doneContainer.style.gap = '1px';
+      doneContainer.style.minWidth = '38px';
+      doneContainer.innerHTML = `
+        <span class="pse-lbl" style="font-size:0.6rem;color:var(--warning)">${pse ? `PSE ${pse}` : ''}</span>
+        <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
+        <span class="rir-lbl" style="font-size:0.6rem;color:var(--accent)">${rir !== null ? `RIR ${rir}` : ''}</span>
+      `;
+      btn.replaceWith(doneContainer);
 
       const exSets = parseInt(curEx.sets) || 3;
       if (i + 1 < exSets) {
@@ -900,6 +915,47 @@ export function initTracker(navigateFn) {
     });
   });
 
+  // Atualizar série concluída dinamicamente ao editar inputs
+  const handleDoneSetChange = (row) => {
+    const si = parseInt(row.dataset.si);
+    const reps = parseInt(row.querySelector('.set-reps')?.value) || 0;
+    const load = parseFloat(row.querySelector('.set-load')?.value) || 0;
+    const pse = parseInt(row.querySelector('.set-pse')?.value) || 0;
+    const rirEl = row.querySelector('.set-rir');
+    const rir = rirEl?.value !== '' ? parseInt(rirEl.value) : null;
+
+    const idx = state.setLog.findIndex(l => l.exIdx === state.exIdx && l.setIdx === si);
+    if (idx >= 0) {
+      let rm1Estimated = null;
+      if (load > 0 && reps > 0 && reps <= 12) {
+        rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2;
+      }
+      state.setLog[idx] = { ...state.setLog[idx], reps, load, pse, rir, rm1Estimated };
+      
+      state.session.setLog = state.setLog;
+      db.put('sessions', state.session);
+
+      const volEl = document.getElementById('liveVol');
+      if (volEl) volEl.textContent = totalVolume() + ' kg';
+
+      const pseLbl = row.querySelector('.pse-lbl');
+      if (pseLbl) pseLbl.textContent = pse ? `PSE ${pse}` : '';
+      const rirLbl = row.querySelector('.rir-lbl');
+      if (rirLbl) rirLbl.textContent = rir !== null ? `RIR ${rir}` : '';
+    }
+  };
+
+  document.querySelectorAll('.set-row').forEach(row => {
+    const si = parseInt(row.dataset.si);
+    ['.set-reps', '.set-load', '.set-pse', '.set-rir'].forEach(selector => {
+      row.querySelector(selector)?.addEventListener('input', () => {
+        if (state.setLog.some(l => l.exIdx === state.exIdx && l.setIdx === si)) {
+          handleDoneSetChange(row);
+        }
+      });
+    });
+  });
+
   // Navegar exercícios
   const refreshLive = async () => {
     const students = await db.getAll('students');
@@ -909,6 +965,87 @@ export function initTracker(navigateFn) {
   document.getElementById('prevEx')?.addEventListener('click', () => { if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
   document.getElementById('nextEx')?.addEventListener('click', () => { if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
   document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
+
+  // Editar Exercício Atual
+  document.getElementById('editActiveEx')?.addEventListener('click', () => {
+    const ex = (state.session?.exercises || [])[state.exIdx];
+    if (!ex) return;
+
+    openModal({
+      title: 'Editar Exercício em Andamento',
+      size: 'md',
+      content: `
+        <form id="editActiveExForm" style="padding:4px">
+          <div class="form-group">
+            <label class="form-label">Nome do Exercício</label>
+            <input class="form-input" name="name" value="${ex.name || ''}" placeholder="Ex: Agachamento Livre" required />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div class="form-group">
+              <label class="form-label">Séries</label>
+              <input class="form-input" type="number" name="sets" value="${ex.sets || 3}" min="1" max="15" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reps Recomendadas</label>
+              <input class="form-input" name="reps" value="${ex.reps || '12'}" placeholder="Ex: 12 ou 4x8-10" />
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div class="form-group">
+              <label class="form-label">Carga Recomendada (kg)</label>
+              <input class="form-input" type="number" step="0.5" name="load" value="${ex.load || ''}" placeholder="Ex: 50" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Descanso (s)</label>
+              <input class="form-input" type="number" name="rest" value="${ex.rest || 60}" placeholder="Ex: 60" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Método</label>
+            <input class="form-input" name="method" value="${ex.method || ''}" placeholder="Ex: Bi-set, Drop-set, etc." />
+          </div>
+        </form>
+      `,
+      actions: [
+        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+        { label: 'Salvar', class: 'btn-primary', onClick: async () => {
+          const fd = new FormData(document.getElementById('editActiveExForm'));
+          const name = fd.get('name').trim();
+          const sets = parseInt(fd.get('sets')) || 3;
+          const reps = fd.get('reps').trim();
+          const load = fd.get('load') !== '' ? parseFloat(fd.get('load')) : '';
+          const rest = parseInt(fd.get('rest')) || 60;
+          const method = fd.get('method').trim();
+
+          if (!name) { notify.error('O nome do exercício é obrigatório'); return; }
+
+          const oldSets = parseInt(ex.sets) || 3;
+          ex.name = name;
+          ex.sets = sets;
+          ex.reps = reps;
+          ex.load = load;
+          ex.rest = rest;
+          ex.method = method;
+
+          if (state.setIdx >= sets) {
+            state.setIdx = sets - 1;
+          }
+
+          if (sets < oldSets) {
+            state.setLog = state.setLog.filter(l => !(l.exIdx === state.exIdx && l.setIdx >= sets));
+          }
+
+          state.session.exercises[state.exIdx] = ex;
+          state.session.setLog = state.setLog;
+          await db.put('sessions', state.session);
+
+          notify.success('Exercício atualizado!');
+          closeModal();
+          refreshLive();
+        }}
+      ]
+    });
+  });
 
   // Finalizar
   document.getElementById('endBtn')?.addEventListener('click', async () => {
