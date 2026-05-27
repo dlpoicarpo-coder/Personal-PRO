@@ -52,16 +52,20 @@ class Database {
   // ── GET SINGLE RECORD ──
   async get(storeName, id) {
     const trainerId = await this._getTrainerId();
-    const local = this._getLocal(storeName, trainerId).find(i => i.id === id) || null;
+    const local = (this._getLocal(storeName, trainerId) || []).find(i => i.id === id) || null;
     if (!this.supabase) return local;
 
     try {
       let q = this.supabase.from(storeName).select('*').eq('id', id);
-      if (trainerId) q = q.eq('trainer_id', trainerId);
-      const { data, error } = await q.single();
-      if (error && error.code !== 'PGRST116') return local;
-      return data ? (data.data || data) : local;
-    } catch { return local; }
+      // exercises e methods: não filtrar por trainer_id (is_default=true tem trainer_id=null)
+      if (trainerId && storeName !== 'exercises' && storeName !== 'methods') {
+        q = q.eq('trainer_id', trainerId);
+      }
+      const { data, error } = await q.maybeSingle();
+      if (error) { console.warn(`get(${storeName}) error:`, error.message); return local; }
+      if (!data) return local;
+      return data.data && typeof data.data === 'object' ? { ...data.data, id: data.id } : data;
+    } catch(e) { console.warn(`get(${storeName}) exception:`, e?.message); return local; }
   }
 
   // Tabelas que existem no Supabase (as demais ficam só em localStorage)
