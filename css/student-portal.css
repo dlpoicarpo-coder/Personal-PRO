@@ -427,6 +427,17 @@
   border-radius: 4px; padding: 1px 5px; font-size: 0.65rem; font-weight: 700;
 }
 
+/* ── Exercise group inside session ────────────────── */
+.portal-ex-group { margin-bottom: 10px; }
+.portal-ex-group:last-child { margin-bottom: 0; }
+.portal-ex-group-name {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--portal-primary);
+  padding: 5px 6px 4px;
+  border-bottom: 1px solid var(--portal-primary-glow);
+  margin-bottom: 4px;
+}
+
 .portal-session-sets { padding-top: 10px; }
 .portal-set-row {
   display: flex; gap: 8px; font-size: 0.75rem; padding: 5px 6px; color: var(--portal-text-secondary);

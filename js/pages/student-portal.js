@@ -896,22 +896,37 @@ function renderSessoes(sessions, schedules) {
                 </div>
               </div>
               <div class="portal-session-sets" id="sets_${s.id}" style="display:none">
-                ${setLog.map(x => {
-                  const pseClass = getPseBadgeClass(x.pse);
-                  const rirColor = x.rir == null || x.rir === '' ? '' : x.rir <= 1 ? 'color:#ef4444' : x.rir <= 2 ? 'color:#f59e0b' : 'color:#10b981';
-                  return `
-                    <div class="portal-set-row set-colored">
-                      <span class="portal-set-num">S${x.setIdx+1}</span>
-                      <span>${x.reps} reps</span>
-                      <span>${x.load}kg</span>
-                      ${x.pse?`<span class="pse-mini ${pseClass}">PSE ${x.pse}</span>`:''}
-                      ${x.rir!=null&&x.rir!==''?`<span style="${rirColor};font-size:0.68rem;font-weight:600">RIR ${x.rir}</span>`:''}
-                    </div>`;
-                }).join('') || '<div class="text-muted" style="font-size:0.75rem">Sem dados de série</div>'}
+                ${(() => {
+                  if (!setLog.length) return '<div class="text-muted" style="font-size:0.75rem;padding:8px 0">Sem dados de série</div>';
+                  // Group sets by exerciseName
+                  const groups = [];
+                  const seen = {};
+                  setLog.forEach(x => {
+                    const key = x.exerciseName || `ex_${x.exerciseIdx ?? 0}`;
+                    if (!seen[key]) { seen[key] = groups.length; groups.push({ name: x.exerciseName || 'Exercício', sets: [] }); }
+                    groups[seen[key]].sets.push(x);
+                  });
+                  return groups.map(g => `
+                    <div class="portal-ex-group">
+                      <div class="portal-ex-group-name">${g.name}</div>
+                      ${g.sets.map(x => {
+                        const pseClass = getPseBadgeClass(x.pse);
+                        const rirColor = x.rir == null || x.rir === '' ? '' : x.rir <= 1 ? 'color:#ef4444' : x.rir <= 2 ? 'color:#f59e0b' : 'color:#10b981';
+                        return `
+                          <div class="portal-set-row set-colored">
+                            <span class="portal-set-num">S${x.setIdx+1}</span>
+                            <span>${x.reps} reps</span>
+                            <span>${x.load}kg</span>
+                            ${x.pse?`<span class="pse-mini ${pseClass}">PSE ${x.pse}</span>`:''}
+                            ${x.rir!=null&&x.rir!==''?`<span style="${rirColor};font-size:0.68rem;font-weight:600">RIR ${x.rir}</span>`:''}
+                          </div>`;
+                      }).join('')}
+                    </div>`).join('');
+                })()}
               </div>
               ${setLog.length?`<button class="portal-expand-btn session-expand" data-id="${s.id}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                Ver séries
+                Ver exercícios
               </button>`:''}
             </div>`;
         }).join('')}
