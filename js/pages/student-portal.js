@@ -385,10 +385,10 @@ function checkSessionReminders(schedules, sessions) {
     showToast(`📅 Você tem treino hoje${s.time ? ' às ' + s.time : ''}! Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
   }
 
-  // 2. Checkout reminder: sessions without checkout (postBiofeedback missing)
+  // 2. Checkout reminder: sessions without student checkout
   const needsCheckout = sessions.filter(s => {
     if (s.status !== 'completed') return false;
-    if (s.postBiofeedback) return false;
+    if (s.postBiofeedback && s.postBiofeedback.submittedByStudent) return false;
     if (!s.date) return false;
     const daysAgo = (now - new Date(s.date + 'T12:00')) / 86400000;
     return daysAgo <= 3; // only recent ones
@@ -487,7 +487,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
   }
 
   // Checkout reminder
-  const needsCheckout = sessions.filter(s => s.status === 'completed' && !s.postBiofeedback);
+  const needsCheckout = sessions.filter(s => s.status === 'completed' && (!s.postBiofeedback || !s.postBiofeedback.submittedByStudent));
   let checkoutBanner = '';
   if (needsCheckout.length > 0) {
     const s = needsCheckout[0];
@@ -1317,8 +1317,8 @@ function renderSessoes(sessions, schedules) {
 
   const allCompleted = sessions.filter(s => s.status === 'completed');
   const completed = allCompleted.sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,20);
-  // Sessions needing checkout (no postBiofeedback)
-  const needsCheckout = allCompleted.filter(s => !s.postBiofeedback).slice(0,3);
+  // Sessions needing checkout (no student checkout)
+  const needsCheckout = allCompleted.filter(s => !s.postBiofeedback || !s.postBiofeedback.submittedByStudent).slice(0,3);
 
   return `
     <div class="portal-section">
@@ -1356,7 +1356,7 @@ function renderSessoes(sessions, schedules) {
           const vol = setLog.reduce((t,x) => t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
           const pse = s.postBiofeedback?.pse;
           const isSolo = s.isSolo;
-          const hasCheckout = !!s.postBiofeedback;
+          const hasCheckout = !!(s.postBiofeedback && s.postBiofeedback.submittedByStudent);
           return `
             <div class="portal-session-card glass-card${isSolo ? ' portal-session-solo' : ''}">
               <div class="portal-session-header">
@@ -1455,8 +1455,64 @@ function initSessoesSection() {
         // Update session in local DB
         const session = await db.get('sessions', sid);
         if (session) {
-          session.postBiofeedback = { pse, notes, feeling: feeling ? parseInt(feeling) : null, date: new Date().toISOString() };
+          const selectedFeelingVal = feeling ? parseInt(feeling) : 4;
+          const postBiofeedback = {
+            pse,
+            feeling: selectedFeelingVal,
+            satisfaction: selectedFeelingVal * 2,
+            notes,
+            date: new Date().toISOString(),
+            submittedAt: new Date().toISOString(),
+            submittedByStudent: true
+          };
+          session.postBiofeedback = postBiofeedback;
           await db.update('sessions', session);
+
+          // Sincronizar com tabela biofeedback
+          try {
+            const allBf = await db.getAll('biofeedback');
+            let bfEntry = allBf.find(b => b.sessionId === session.id);
+            if (!bfEntry && session.date) {
+              const sessDateStr = session.date.slice(0, 10);
+              bfEntry = allBf.find(b => 
+                b.studentId === session.studentId && 
+                b.formType === 'complete' && 
+                (b.date || '').slice(0, 10) === sessDateStr
+              );
+            }
+            
+            const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
+            const trainingLoad = Calc.cargaTreino ? Calc.cargaTreino(pse, durMin) : (pse * durMin);
+            
+            const newBfData = {
+              studentId: session.studentId,
+              date: session.date || new Date().toISOString(),
+              sleep: session.preBiofeedback?.sleep || 7,
+              tqr: (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
+              energy: (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
+              stress: session.preBiofeedback?.stress || 5,
+              pain: session.preBiofeedback?.pain || 0,
+              painRegions: session.preBiofeedback?.painRegions || [],
+              pse,
+              feeling: selectedFeelingVal,
+              satisfaction: selectedFeelingVal * 2,
+              duration: durMin,
+              trainingLoad,
+              notes,
+              sessionId: session.id,
+              formType: 'complete',
+              submittedAt: new Date().toISOString(),
+              submittedByStudent: true
+            };
+            
+            if (bfEntry) {
+              await db.put('biofeedback', { ...bfEntry, ...newBfData });
+            } else {
+              await db.add('biofeedback', newBfData);
+            }
+          } catch (bfErr) {
+            console.error('Erro ao sincronizar biofeedback:', bfErr);
+          }
         }
       } catch(e) { console.error(e); }
 
@@ -3087,12 +3143,60 @@ function showPortalCheckoutModal(session) {
       painDescription,
       notes,
       date: new Date().toISOString(),
-      submittedAt: new Date().toISOString()
+      submittedAt: new Date().toISOString(),
+      submittedByStudent: true
     };
 
     try {
       session.postBiofeedback = postBiofeedback;
       await db.update('sessions', session);
+
+      // Sincronizar com tabela biofeedback
+      try {
+        const allBf = await db.getAll('biofeedback');
+        let bfEntry = allBf.find(b => b.sessionId === session.id);
+        if (!bfEntry && session.date) {
+          const sessDateStr = session.date.slice(0, 10);
+          bfEntry = allBf.find(b => 
+            b.studentId === session.studentId && 
+            b.formType === 'complete' && 
+            (b.date || '').slice(0, 10) === sessDateStr
+          );
+        }
+        
+        const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
+        const trainingLoad = Calc.cargaTreino ? Calc.cargaTreino(pse, durMin) : (pse * durMin);
+        
+        const newBfData = {
+          studentId: session.studentId,
+          date: session.date || new Date().toISOString(),
+          sleep: session.preBiofeedback?.sleep || 7,
+          tqr: (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
+          energy: (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
+          stress: session.preBiofeedback?.stress || 5,
+          pain,
+          painRegions,
+          painDescription,
+          pse,
+          feeling: selectedFeeling,
+          satisfaction: selectedFeeling * 2,
+          duration: durMin,
+          trainingLoad,
+          notes,
+          sessionId: session.id,
+          formType: 'complete',
+          submittedAt: new Date().toISOString(),
+          submittedByStudent: true
+        };
+        
+        if (bfEntry) {
+          await db.put('biofeedback', { ...bfEntry, ...newBfData });
+        } else {
+          await db.add('biofeedback', newBfData);
+        }
+      } catch (bfErr) {
+        console.error('Erro ao sincronizar biofeedback:', bfErr);
+      }
     } catch (e) {
       console.error('Erro ao atualizar sessão:', e);
     }
