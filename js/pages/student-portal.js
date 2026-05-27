@@ -768,8 +768,8 @@ function initTreinar(workouts, schedules, student) {
           ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => `
             <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
               <span class="portal-set-num">S${si+1}</span>
-              <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0">
-              <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5">
+              <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${parseInt(ex.reps)||''}">
+              <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${ex.load||''}">
               <input type="number" placeholder="PSE" class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" min="1" max="10">
               <input type="number" placeholder="RIR" class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" min="0" max="10">
               <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${ex.rest||60}">&#10003;</button>
@@ -871,13 +871,12 @@ function initTreinar(workouts, schedules, student) {
           const psei = document.getElementById(`sr_${ei}_${si}_pse`)?.value;
           const rir = document.getElementById(`sr_${ei}_${si}_rir`)?.value;
           const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
-          if (reps || load) {
-            setLog.push({ exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
-              reps: parseInt(reps)||0, load: parseFloat(load)||0,
-              pse: psei ? parseInt(psei) : null,
-              rir: rir !== '' && rir != null ? parseInt(rir) : null,
-              notes: exNotes });
-          }
+          // Save even if empty so we don't lose the exercise grouping
+          setLog.push({ exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
+            reps: parseInt(reps)||0, load: parseFloat(load)||0,
+            pse: psei ? parseInt(psei) : null,
+            rir: rir !== '' && rir != null ? parseInt(rir) : null,
+            notes: exNotes });
         }
       });
     }
@@ -909,6 +908,19 @@ function initTreinar(workouts, schedules, student) {
 }
 
 // ── SESSÕES ────────────────────────────────────────────────────
+function safeFormatDate(dStr, timeStr = '') {
+  if (!dStr) return '';
+  try {
+    if (dStr.includes('/')) {
+      const [d, m, y] = dStr.split('/');
+      return new Date(y, m-1, d, 12).toLocaleDateString('pt-BR', {weekday:'short',day:'numeric',month:'short'});
+    }
+    const d = new Date(dStr + (dStr.includes('T') ? '' : (timeStr ? 'T'+timeStr : 'T12:00')));
+    if (isNaN(d.getTime())) return dStr;
+    return d.toLocaleDateString('pt-BR', {weekday:'short',day:'numeric',month:'short'});
+  } catch { return dStr; }
+}
+
 function renderSessoes(sessions, schedules) {
   const now = new Date();
   const upcoming = schedules
@@ -929,7 +941,7 @@ function renderSessoes(sessions, schedules) {
         <div class="portal-section-sub">Próximas sessões</div>
         ${upcoming.map(s => `
           <div class="glass-card portal-session-upcoming">
-            <div class="portal-session-date">${new Date(s.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}</div>
+            <div class="portal-session-date">${safeFormatDate(s.date)}</div>
             <div class="portal-session-time">${s.time || 'Horário a confirmar'}</div>
             <div class="portal-session-name">${s.workoutName || 'Treino'}</div>
           </div>
@@ -944,7 +956,7 @@ function renderSessoes(sessions, schedules) {
             <div class="portal-checkout-header">
               <div>
                 <div class="portal-session-name">${s.workoutName||'Treino'}</div>
-                <div class="portal-session-meta">${s.date?new Date(s.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}):''}</div>
+                <div class="portal-session-meta">${safeFormatDate(s.date)}</div>
               </div>
               <span class="portal-checkout-badge">Checkout</span>
             </div>
@@ -991,7 +1003,7 @@ function renderSessoes(sessions, schedules) {
               <div class="portal-session-header">
                 <div>
                   <div class="portal-session-name">${s.workoutName||'Treino'}${isSolo ? ' <span class="portal-solo-badge">autônomo</span>' : ''}</div>
-                  <div class="portal-session-meta">${s.date?new Date(s.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}):''}</div>
+                  <div class="portal-session-meta">${safeFormatDate(s.date)}</div>
                 </div>
                 <div class="portal-session-stats-sm">
                   ${vol>0?`<span>${Math.round(vol)}kg</span>`:''}
@@ -1007,13 +1019,13 @@ function renderSessoes(sessions, schedules) {
                   const groups = [];
                   const seen = {};
                   setLog.forEach(x => {
-                    const key = x.exerciseName || `ex_${x.exerciseIdx ?? 0}`;
-                    if (!seen[key]) { seen[key] = groups.length; groups.push({ name: x.exerciseName || 'Exercício', sets: [] }); }
+                    const key = x.exerciseName || ('Exercício ' + ((x.exerciseIdx||0)+1));
+                    if (!seen[key]) { seen[key] = groups.length; groups.push({ name: key, sets: [] }); }
                     groups[seen[key]].sets.push(x);
                   });
                   return groups.map(g => `
                     <div class="portal-ex-group">
-                      <div class="portal-ex-group-name">${g.name}</div>
+                      <div class="portal-ex-group-name" style="color:var(--portal-primary);font-size:0.8rem;margin-bottom:4px;font-weight:700">${g.name}</div>
                       ${g.sets.map(x => {
                         const pseClass = getPseBadgeClass(x.pse);
                         const rirColor = x.rir == null || x.rir === '' ? '' : x.rir <= 1 ? 'color:#ef4444' : x.rir <= 2 ? 'color:#f59e0b' : 'color:#10b981';
