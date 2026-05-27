@@ -1,447 +1,808 @@
-// ========================================
-// PERSONAL PRO — student Form Pages (v2)
-// Pre-workout and Post-workout forms via link
-// ========================================
+// ============================================================
+// PERSONAL PRO — Student Forms v2
+// Formulários públicos (sem login) para alunos
+// Acessa Supabase direto via anon key com policy pública por ID
+// Pré-treino: simplificado + TQR
+// Pós-treino: PSE, satisfação, dor, TQR pós
+// ============================================================
 import db from '../db.js';
+import { Calc } from '../utils/calculations.js';
 import { notify } from '../components/toast.js';
-import { PAIN_REGIONS, painRegionSelector } from '../utils/alerts.js';
 
-// ======================== HELPER FORMS ========================
-function setupFormDraft(formId) {
-  const form = document.getElementById(formId);
-  if (!form) return;
-  
-  // Prevent Enter key submission
-  form.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
-  });
+// ── Supabase direto (sem auth) ─────────────────────────────
+// Usa a chave pública (anon) + policies abertas para leitura por ID
+const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
 
-  // Load draft
+async function publicGet(table, id) {
+  // 1. Tentar via db normal (se o personal estiver logado no mesmo device)
   try {
-    const draft = JSON.parse(localStorage.getItem('draft_' + formId));
-    if (draft) {
-      Object.entries(draft).forEach(([k, v]) => {
-        const input = form.elements[k];
-        if (input) {
-          if (input.type === 'radio' || input.type === 'checkbox') {
-             if(input.length) Array.from(input).forEach(i => { if(i.value == v) i.checked = true; });
-             else if(input.value == v) input.checked = true;
-          } else {
-            input.value = v;
-          }
-        }
-      });
-      // trigger events
-      Array.from(form.elements).forEach(el => el.dispatchEvent(new Event('change', { bubbles: true })));
-    }
-  } catch(e){}
+    const item = await db.get(table, id);
+    if (item) return item;
+  } catch(_) {}
 
-  // Save on change
-  form.addEventListener('input', () => {
-    const fd = new FormData(form);
-    localStorage.setItem('draft_' + formId, JSON.stringify(Object.fromEntries(fd)));
-  });
+  // 2. Supabase anon — select=* para ter o id da row mesmo se data é null
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
+    const res = await fetch(url, {
+      headers: {
+        'apikey':        SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Accept':        'application/json',
+      }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows?.length) {
+        const row = rows[0];
+        // row.data tem os campos do objeto; garantir que id está presente
+        const obj = row.data ? { ...row.data, id: row.id } : { ...row };
+        return obj;
+      }
+    }
+  } catch(_) {}
+
+  // 3. Fallback localStorage
+  try {
+    for (let i=0;i<localStorage.length;i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.includes(`_${table}`)) continue;
+      const items = JSON.parse(localStorage.getItem(key)||'[]');
+      const found = items.find ? items.find(x => x?.id === id) : null;
+      if (found) return found;
+    }
+  } catch(_) {}
+
+  return null;
 }
 
+async function publicAdd(table, data) {
+  const id = data.id || crypto.randomUUID();
+  // trainer_id deve ser UUID válido ou null — string vazia quebra a FK
+  const isUUID = v => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+  const trainerId = isUUID(data.trainerId) ? data.trainerId
+                  : isUUID(data.trainer_id) ? data.trainer_id
+                  : null;
 
-// ======================== PRE-WORKOUT FORM ========================
+  const row = {
+    id,
+    trainer_id: trainerId,
+    data: { ...data, id },
+  };
 
-export async function renderPreForm(studentIdRaw) {
-  const [studentId, query] = studentIdRaw.split('?');
-  const params = new URLSearchParams(query || '');
-  const tId = params.get('t') || '';
-  const sName = params.get('n') ? decodeURIComponent(params.get('n')) : '';
+  // Incluir colunas diretas para biofeedback
+  if (table === 'biofeedback') {
+    Object.assign(row, {
+      studentId:    data.studentId    || null,
+      sleep:        parseFloat(data.sleep)     || null,
+      mood:         parseFloat(data.mood)      || null,
+      energy:       parseFloat(data.energy)    || null,
+      stress:       parseFloat(data.stress)    || null,
+      pain:         parseFloat(data.pain)      || null,
+      pse:          parseFloat(data.pse)       || null,
+      duration:     parseFloat(data.duration)  || null,
+      trainingLoad: parseFloat(data.trainingLoad) || null,
+    });
+  }
 
-  let student = await db.get('students', studentId).catch(() => null);
-  if (!student && !sName) return `<div class="student-form-page"><div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Aluno não encontrado</h3></div></div>`;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: {
+        'apikey':        SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify(row),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`publicAdd(${table}) error:`, err);
+    }
+  } catch(e) { console.error('publicAdd fetch error:', e); }
 
-  const displayName = student ? student.name : sName;
-  const displayInitial = displayName ? displayName[0] : '?';
-  const birth = student?.birthDate ? new Date(student.birthDate) : null;
-  const age = birth ? new Date().getFullYear() - birth.getFullYear() : parseInt(student?.age) || null;
-  const isWomanUnder40 = student && (student.gender === 'F' || student.gender === 'Feminino') && age !== null && age < 40;
+  return { ...data, id };
+}
+
+async function publicPut(table, data) {
+  try {
+    const now = new Date().toISOString();
+
+    // Corpo: atualiza a coluna JSONB 'data' + 'updatedAt'
+    const body = { data, updatedAt: now };
+
+    // Para biofeedback: atualizar também colunas diretas
+    if (table === 'biofeedback') {
+      Object.assign(body, {
+        studentId:    data.studentId    || null,
+        sleep:        parseFloat(data.sleep)        || null,
+        mood:         parseFloat(data.mood)         || null,
+        energy:       parseFloat(data.energy)       || null,
+        stress:       parseFloat(data.stress)       || null,
+        pain:         parseFloat(data.pain)         || null,
+        pse:          parseFloat(data.pse)          || null,
+        duration:     parseFloat(data.duration)     || null,
+        trainingLoad: parseFloat(data.trainingLoad) || null,
+      });
+    }
+
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(data.id)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey':        SUPABASE_ANON,
+          'Authorization': `Bearer ${SUPABASE_ANON}`,
+          'Content-Type':  'application/json',
+          'Prefer':        'return=minimal',
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) {
+      const txt = await res.text();
+      console.warn(`publicPut(${table}) ${res.status}:`, txt);
+    } else {
+      console.log(`publicPut(${table}) OK`);
+    }
+  } catch(e) {
+    console.warn('publicPut error:', e);
+  }
+}
+
+// ── Regiões de dor ─────────────────────────────────────────
+const PAIN_REGIONS = [
+  { id:'cabeca',      label:'Cabeça' },       { id:'pescoco',    label:'Pescoço' },
+  { id:'ombro_d',     label:'Ombro Dir.' },   { id:'ombro_e',    label:'Ombro Esq.' },
+  { id:'costas_sup',  label:'Costas Sup.' },  { id:'lombar',     label:'Lombar' },
+  { id:'quadril',     label:'Quadril' },      { id:'joelho_d',   label:'Joelho Dir.' },
+  { id:'joelho_e',    label:'Joelho Esq.' },  { id:'tornozelo_d',label:'Tornozelo Dir.' },
+  { id:'panturrilha', label:'Panturrilha' },  { id:'abdomen',    label:'Abdômen' },
+];
+
+function painTagsHTML(prefix) {
+  return `
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px" id="${prefix}_regions_wrap">
+      ${PAIN_REGIONS.map(r=>`
+        <label class="pain-tag" style="display:flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid var(--border-color);border-radius:20px;cursor:pointer;font-size:0.8rem;user-select:none">
+          <input type="checkbox" name="${prefix}_regions" value="${r.id}" style="display:none" />
+          ${r.label}
+        </label>`).join('')}
+    </div>`;
+}
+
+// ── CSS injetado uma vez ───────────────────────────────────
+const FORM_CSS = `
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{margin:0;font-family:-apple-system,'Segoe UI',sans-serif}
+
+  .student-form-page{
+    min-height:100vh;
+    display:flex;align-items:flex-start;justify-content:center;
+    background:#080c12;
+    padding:0 0 60px;
+  }
+
+  .form-card{
+    background:#0f1420;
+    width:100%;max-width:460px;
+    min-height:100vh;
+  }
+
+  /* Header com acento verde */
+  .form-card-header{
+    padding:28px 24px 22px;
+    text-align:center;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    position:relative;
+    overflow:hidden;
+  }
+  .form-card-header::before{
+    content:'';
+    position:absolute;
+    top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,#059669,#10b981,#34d399);
+  }
+  .form-card-header .logo{
+    font-size:1.15rem;font-weight:800;color:#f1f5f9;
+    letter-spacing:-0.02em;margin:0 0 3px;
+  }
+  .form-card-header .logo strong{color:#10b981}
+  .form-card-header .subtitle{
+    margin:0;font-size:0.78rem;color:#475569;
+    font-weight:500;letter-spacing:0.03em;text-transform:uppercase;
+  }
+
+  .form-card-body{padding:22px 20px 32px}
+
+  /* Info aluno */
+  .student-info{
+    display:flex;align-items:center;gap:12px;
+    margin-bottom:24px;
+    padding:13px 15px;
+    background:rgba(16,185,129,0.05);
+    border:1px solid rgba(16,185,129,0.12);
+    border-radius:12px;
+  }
+  .student-info .av{
+    width:42px;height:42px;border-radius:50%;
+    background:#10b981;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:0.9rem;flex-shrink:0;
+    box-shadow:0 0 0 3px rgba(16,185,129,0.15);
+  }
+  .student-info .name{font-weight:700;font-size:0.95rem;color:#e2e8f0}
+  .student-info .date{font-size:0.72rem;color:#64748b;margin-top:2px;text-transform:capitalize}
+
+  /* Perguntas */
+  .q{margin-bottom:26px}
+  .q-label{
+    font-size:0.75rem;font-weight:700;color:#64748b;
+    text-transform:uppercase;letter-spacing:0.07em;
+    margin-bottom:10px;display:flex;align-items:center;gap:6px;
+  }
+
+  /* Opções de seleção */
+  .opt-group{display:flex;flex-direction:column;gap:7px}
+  .opt-label{
+    display:flex;align-items:center;gap:11px;
+    padding:12px 14px;
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:10px;
+    cursor:pointer;
+    transition:all 0.15s;
+    user-select:none;
+    color:#94a3b8;
+    font-size:0.88rem;
+    line-height:1.3;
+    background:rgba(255,255,255,0.02);
+  }
+  .opt-label:hover{border-color:rgba(16,185,129,0.25);background:rgba(16,185,129,0.04)}
+  .opt-label:has(input:checked){
+    background:rgba(16,185,129,0.1);
+    border-color:rgba(16,185,129,0.45);
+    color:#e2e8f0;font-weight:600;
+  }
+  .opt-label input[type=radio],
+  .opt-label input[type=checkbox]{
+    accent-color:#10b981;
+    width:17px;height:17px;flex-shrink:0;cursor:pointer;
+  }
+
+  /* Scale picker (TQR/PSE) */
+  .scale-opt{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:9px;
+    cursor:pointer;
+    transition:all 0.12s;
+    user-select:none;
+    margin-bottom:5px;
+    background:rgba(255,255,255,0.015);
+  }
+  .scale-opt:hover{border-color:rgba(16,185,129,0.2);background:rgba(16,185,129,0.04)}
+  .scale-opt.selected{
+    background:rgba(16,185,129,0.1)!important;
+    border-color:rgba(16,185,129,0.5)!important;
+  }
+
+  /* Slider range */
+  input[type=range]{width:100%;height:4px;accent-color:#10b981;cursor:pointer;border-radius:2px}
+
+  /* Tags de dor */
+  .pain-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .pain-tag{
+    padding:6px 13px;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;cursor:pointer;
+    font-size:0.78rem;color:#64748b;
+    background:rgba(255,255,255,0.02);
+    transition:all 0.15s;user-select:none;
+  }
+  .pain-tag:hover{border-color:rgba(16,185,129,0.3);color:#94a3b8}
+  .pain-tag.active{border-color:#10b981;background:rgba(16,185,129,0.12);color:#10b981;font-weight:600}
+
+  /* Textarea */
+  textarea{
+    width:100%;padding:12px 14px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;color:#e2e8f0;
+    font-size:0.87rem;resize:vertical;min-height:68px;
+    font-family:inherit;transition:border-color 0.15s;
+  }
+  textarea::placeholder{color:#334155}
+  textarea:focus{outline:none;border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.03)}
+
+  /* Botão enviar */
+  .submit-btn{
+    width:100%;padding:16px;
+    background:#10b981;color:#fff;border:none;
+    border-radius:12px;font-size:0.95rem;font-weight:700;
+    cursor:pointer;margin-top:10px;
+    letter-spacing:0.02em;
+    transition:all 0.2s;
+    box-shadow:0 4px 14px rgba(16,185,129,0.25);
+  }
+  .submit-btn:hover{background:#0ea472;box-shadow:0 6px 20px rgba(16,185,129,0.35);transform:translateY(-1px)}
+  .submit-btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(16,185,129,0.2)}
+  .submit-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+  /* Sucesso */
+  .form-success{text-align:center;padding:56px 24px}
+  .form-success .check{
+    width:64px;height:64px;border-radius:50%;
+    background:rgba(16,185,129,0.15);
+    border:2px solid rgba(16,185,129,0.3);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+  }
+  .form-success h2{color:#f1f5f9;margin:0 0 8px;font-size:1.35rem;font-weight:700}
+  .form-success p{color:#64748b;margin:0;font-size:0.9rem}
+
+  /* Cards de contexto */
+  .pre-card{
+    background:rgba(16,185,129,0.05);
+    border:1px solid rgba(16,185,129,0.15);
+    border-radius:10px;padding:12px 14px;margin-bottom:20px;
+  }
+  .pre-card-title{font-size:0.65rem;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+  .pre-card-vals{display:flex;gap:12px;flex-wrap:wrap;font-size:0.82rem;color:#64748b}
+  .pre-card-vals strong{color:#e2e8f0}
+
+  /* Intro box */
+  .form-intro{
+    background:rgba(255,255,255,0.03);
+    border-left:3px solid #10b981;
+    border-radius:0 8px 8px 0;
+    padding:12px 14px;
+    margin-bottom:22px;
+    font-size:0.83rem;color:#64748b;line-height:1.6;
+  }
+
+  /* Info DOMS */
+  .doms-info{
+    background:rgba(245,158,11,0.06);
+    border:1px solid rgba(245,158,11,0.15);
+    border-radius:8px;padding:9px 12px;margin-bottom:10px;
+    font-size:0.74rem;color:#d97706;line-height:1.5;
+  }
+
+  .hidden{display:none!important}
+  q-hint{font-size:0.75rem;color:#10b981;text-align:center;margin-top:6px;min-height:16px;font-weight:500}
+`;
+
+
+// ── Escala TQR — Kenttä & Hassmén (1998) ──────────────────
+const TQR_SCALE = [
+  { v:1,  color:'#ef4444', label:'Muito, muito mal recuperado',  desc:'Dor muscular intensa, exaustão total' },
+  { v:2,  color:'#ef4444', label:'Muito mal recuperado',         desc:'Cansaço extremo, sem disposição' },
+  { v:3,  color:'#f97316', label:'Mal recuperado',               desc:'Pernas pesadas, sono excessivo' },
+  { v:4,  color:'#f97316', label:'Razoavelmente mal recuperado', desc:'Cansado, motivação baixa' },
+  { v:5,  color:'#f59e0b', label:'Nem bem nem mal',              desc:'Neutro, energia moderada' },
+  { v:6,  color:'#f59e0b', label:'Razoavelmente bem recuperado', desc:'Descansado, sem dores relevantes' },
+  { v:7,  color:'#84cc16', label:'Bem recuperado',               desc:'Disposto, animado para treinar' },
+  { v:8,  color:'#22c55e', label:'Muito bem recuperado',         desc:'Leve, energético, foco alto' },
+  { v:9,  color:'#10b981', label:'Muito, muito bem recuperado',  desc:'Descansado ao máximo' },
+  { v:10, color:'#10b981', label:'Completamente recuperado',     desc:'100% — Pronto para superar limites' },
+];
+
+// ── Escala PSE — Borg CR10 adaptada por Foster (1996) ──────
+const PSE_SCALE = [
+  { v:0,  color:'#64748b', label:'Repouso',                      desc:'Sem esforço algum' },
+  { v:1,  color:'#22c55e', label:'Muito, muito leve',            desc:'Mal percebe o esforço' },
+  { v:2,  color:'#84cc16', label:'Leve',                         desc:'Fácil, poderia continuar por horas' },
+  { v:3,  color:'#84cc16', label:'Moderado',                     desc:'Confortável, respiração levemente aumentada' },
+  { v:4,  color:'#f59e0b', label:'Um pouco intenso',             desc:'Começa a sentir o esforço' },
+  { v:5,  color:'#f59e0b', label:'Intenso',                      desc:'Difícil manter conversa' },
+  { v:6,  color:'#f97316', label:'Intenso +',                    desc:'Fôlego reduzido, exige concentração' },
+  { v:7,  color:'#f97316', label:'Muito intenso',                desc:'Muito difícil, perto do limite' },
+  { v:8,  color:'#ef4444', label:'Muito intenso +',              desc:'Quase máximo, sustentável por pouco tempo' },
+  { v:9,  color:'#ef4444', label:'Extremamente intenso',         desc:'Quase impossível de manter' },
+  { v:10, color:'#dc2626', label:'Máximo absoluto',              desc:'Esforço total — 100% do limite' },
+];
+
+function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
+  return `
+    <div class="q">
+      <div class="q-label">${label}</div>
+      ${sublabel?`<div style="font-size:0.72rem;color:#475569;margin:-6px 0 10px;line-height:1.4">${sublabel}</div>`:''}
+      <input type="hidden" name="${id}" id="hidden_${id}" value="${defaultVal}" />
+      <div style="display:flex;flex-direction:column;gap:5px" id="scale_${id}">
+        ${scale.map(s=>`
+          <label onclick="
+            document.getElementById('hidden_${id}').value='${s.v}';
+            document.querySelectorAll('#scale_${id} .scale-opt').forEach(el=>el.classList.remove('selected'));
+            this.classList.add('selected');
+          " class="scale-opt${s.v===defaultVal?' selected':''}" data-val="${s.v}" style="
+            display:flex;align-items:center;gap:10px;padding:9px 12px;
+            border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+            cursor:pointer;transition:all 0.12s;user-select:none;
+            ${s.v===defaultVal?`background:${s.color}18;border-color:${s.color}60;`:''}
+          ">
+            <span style="width:26px;height:26px;border-radius:50%;background:${s.color};
+              display:flex;align-items:center;justify-content:center;
+              font-size:0.8rem;font-weight:800;color:white;flex-shrink:0">${s.v}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.82rem;font-weight:600;color:#e2e8f0">${s.label}</div>
+              <div style="font-size:0.7rem;color:#64748b;margin-top:1px">${s.desc}</div>
+            </div>
+          </label>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  PRÉ-TREINO
+// ══════════════════════════════════════════════════════════
+
+export async function renderPreForm(studentId) {
+  const student = await publicGet('students', studentId);
+
+  if (!student) {
+    return `
+      <style>${FORM_CSS}</style>
+      <div class="student-form-page">
+        <div class="form-card">
+          <div class="form-card-header"><h2>Personal<strong class="logo-pro">PRO</strong></h2></div>
+          <div class="form-card-body" style="text-align:center;padding:48px 24px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" style="margin-bottom:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <h3>Aluno não encontrado</h3>
+            <p style="color:var(--text-muted);margin-top:8px;font-size:0.9rem">
+              O link pode estar desatualizado. Peça um novo link ao seu personal.
+            </p>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const firstName = student.name?.split(' ')[0] || student.name;
+  const ini = student.name?.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() || '?';
+  const dateStr = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
 
   return `
+    <style>
+      ${FORM_CSS}
+      .opt-group{display:flex;flex-direction:column;gap:6px}
+      .opt-label{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid rgba(255,255,255,0.07);border-radius:8px;cursor:pointer;transition:all 0.12s;user-select:none;color:#cbd5e1;font-size:0.88rem}
+      .opt-label:has(input:checked){background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.5);color:#e2e8f0;font-weight:600}
+      .scale-opt.selected{background:rgba(16,185,129,0.12)!important;border-color:rgba(16,185,129,0.6)!important}
+      .form-intro{background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.15);border-radius:10px;padding:14px 16px;margin-bottom:22px;font-size:0.82rem;color:#94a3b8;line-height:1.6}
+      .doms-info{background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:0.74rem;color:#f59e0b;line-height:1.5}
+    </style>
     <div class="student-form-page">
       <div class="form-card">
         <div class="form-card-header">
-          <h1 style="margin:8px 0 4px">Personal<strong class="logo-pro">PRO</strong></h1>
-          <p class="text-muted text-sm">Formulário Pré-Treino</p>
+          <div class="logo">Personal<strong>PRO</strong></div>
+          <p class="subtitle">Check-in Pré-Treino</p>
         </div>
         <div class="form-card-body">
-          <div class="flex items-center gap-md mb-lg">
-            <div class="avatar avatar-lg">${displayInitial}</div>
-            <div><h3 style="margin:0">${displayName}</h3><div class="text-muted text-sm">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+          <div class="form-intro">
+            Olá, <strong style="color:#e2e8f0">${firstName}</strong>! Este check-in avalia sua recuperação para ajustar a intensidade do treino de hoje. <strong style="color:#10b981">Responda com sinceridade.</strong>
+          </div>
+          <div class="student-info">
+            <div class="av">${ini}</div>
+            <div><div class="name">${student.name}</div><div class="date">${dateStr}</div></div>
           </div>
 
-
-
-          <form id="preStudentForm">
+          <form id="preStudentForm" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();}">
             <input type="hidden" name="studentId" value="${studentId}" />
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Qualidade do Sono <span id="sleepVal">7</span>/10
-                <span id="sleepDesc" style="font-size:0.78rem;color:var(--text-muted);margin-left:8px;display:block;margin-top:4px">Bom (Sono contínuo e revigorante)</span>
-              </label>
-              <input type="range" name="sleep" min="1" max="10" value="7" style="width:100%;accent-color:var(--primary)" oninput="
-                document.getElementById('sleepVal').textContent=this.value;
-                var d={1:'Péssimo (Insônia / Noite em claro)',2:'Péssimo (Insônia / Noite em claro)',3:'Ruim (Acordei várias vezes / Agitado)',4:'Ruim (Acordei várias vezes / Agitado)',5:'Regular (Dormi o suficiente, mas cansado)',6:'Regular (Dormi o suficiente, mas cansado)',7:'Bom (Sono contínuo e revigorante)',8:'Bom (Sono contínuo e revigorante)',9:'Excelente (Sono profundo e muito reparador)',10:'Excelente (Sono profundo e muito reparador)'};
-                document.getElementById('sleepDesc').textContent=d[this.value]||'';
-              " />
-            </div>
+            <input type="hidden" name="trainerId" value="${student.trainer_id||student.trainerId||''}" />
+            <input type="hidden" name="sleep" value="5" />
+            <input type="hidden" name="nutrition" value="5" />
+            <input type="hidden" name="pain" value="0" />
 
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Nível de Recuperação (TQR)</label>
-              <select class="form-select" name="tqr" style="font-size:0.95rem">
-                <option value="0">0 - Não recuperado</option>
-                <option value="1">1 - Muito mal recuperado</option>
-                <option value="2">2 - Mal recuperado</option>
-                <option value="3">3 - Pouco recuperado</option>
-                <option value="4">4 - Recuperação abaixo da média</option>
-                <option value="5" selected>5 - Recuperação parcial</option>
-                <option value="6">6 - Razoavelmente recuperado</option>
-                <option value="7">7 - Bem recuperado</option>
-                <option value="8">8 - Muito bem recuperado</option>
-                <option value="9">9 - Excelente recuperação</option>
-                <option value="10">10 - Totalmente recuperado</option>
-              </select>
-            </div>
-
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Alimentação nas últimas 24h</label>
-              <select class="form-select" name="food" style="font-size:0.95rem">
-                <option value="5" selected>Excelente (Bati as metas / Saudável)</option>
-                <option value="4">Boa (Maioria saudável / Poucos furos)</option>
-                <option value="3">Regular (Na média / Algumas escapadas)</option>
-                <option value="2">Ruim (Pulei refeições / Comi mal)</option>
-                <option value="1">Péssima (Fast food / Quase não comi)</option>
-              </select>
-            </div>
-
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Nível de Estresse <span id="stressVal">5</span>/10
-                <span id="stressDesc" style="font-size:0.78rem;color:var(--text-muted);margin-left:8px;display:block;margin-top:4px">Moderado (Estresse sob controle)</span>
-              </label>
-              <input type="range" name="stress" min="1" max="10" value="5" style="width:100%;accent-color:var(--primary)" oninput="
-                document.getElementById('stressVal').textContent=this.value;
-                var d={1:'Muito Relaxado (Sem estresse)',2:'Muito Relaxado (Sem estresse)',3:'Pouco Estresse (Tranquilo)',4:'Pouco Estresse (Tranquilo)',5:'Moderado (Estresse sob controle)',6:'Moderado (Estresse sob controle)',7:'Estressado (Rotina pesada)',8:'Estressado (Rotina pesada)',9:'Muito Estressado (No limite / Esgotado)',10:'Muito Estressado (No limite / Esgotado)'};
-                document.getElementById('stressDesc').textContent=d[this.value]||'';
-              " />
-            </div>
-
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Dor / Desconforto <span id="painVal">1</span>/10
-                <span id="painDesc" style="font-size:0.78rem;color:var(--text-muted);margin-left:8px;display:block;margin-top:4px">Nenhuma (Sem qualquer dor)</span>
-              </label>
-              <input type="range" name="pain" min="1" max="10" value="1" style="width:100%;accent-color:var(--primary)" oninput="
-                document.getElementById('painVal').textContent=this.value;
-                document.getElementById('painGroup').style.display=this.value>=3?'block':'none';
-                var d={1:'Nenhuma (Sem qualquer dor)',2:'Leve (Desconforto muscular leve)',3:'Moderada (Dor suportável, incomoda)',4:'Moderada (Dor suportável, incomoda)',5:'Incômoda (Dor persistente)',6:'Incômoda (Dor persistente)',7:'Forte (Dificulta alguns movimentos)',8:'Forte (Dificulta alguns movimentos)',9:'Intensa (Muito forte / Impede treinar)',10:'Intensa (Muito forte / Impede treinar)'};
-                document.getElementById('painDesc').textContent=d[this.value]||'';
-              " />
-            </div>
-
-            <div class="form-group" id="painGroup" style="display:none; margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:150px;overflow-y:auto;padding:6px;background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:10px">
-                ${PAIN_REGIONS.map(r=>`
-                  <label class="portal-pain-chip" style="
-                    display:flex;align-items:center;gap:4px;padding:4px 10px;
-                    border:1px solid var(--border-color);border-radius:20px;
-                    cursor:pointer;font-size:0.78rem;transition:all 0.15s">
-                    <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
-                    ${r.label}
-                  </label>`).join('')}
-              </div>
-              <div class="form-group mt-sm" style="margin-top:12px">
-                <label class="form-label text-sm">Descreva a dor (opcional)</label>
-                <textarea class="form-textarea" name="painDescription" rows="2" placeholder="Ex: Dor aguda no ombro direito ao levantar o braço"></textarea>
+            <div class="q">
+              <div class="q-label">Como foi sua última noite de sono? <span style="color:#ef4444">*</span></div>
+              <div class="opt-group">
+                <label class="opt-label"><input type="radio" name="sleepQual" value="boa" onchange="document.querySelector('[name=sleep]').value='7'" required /> Boa</label>
+                <label class="opt-label"><input type="radio" name="sleepQual" value="regular" onchange="document.querySelector('[name=sleep]').value='5'" /> Regular</label>
+                <label class="opt-label"><input type="radio" name="sleepQual" value="ruim" onchange="document.querySelector('[name=sleep]').value='3'" /> Ruim</label>
               </div>
             </div>
 
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Motivação <span id="motivVal">7</span>/10
-                <span id="motivDesc" style="font-size:0.78rem;color:var(--text-muted);margin-left:8px;display:block;margin-top:4px">Alta (Focado e animado)</span>
-              </label>
-              <input type="range" name="motivation" min="1" max="10" value="7" style="width:100%;accent-color:var(--primary)" oninput="
-                document.getElementById('motivVal').textContent=this.value;
-                var d={1:'Muito Baixa (Sem vontade de treinar)',2:'Muito Baixa (Sem vontade de treinar)',3:'Baixa (Desanimado, mas vou)',4:'Baixa (Desanimado, mas vou)',5:'Moderada (Treino por disciplina)',6:'Moderada (Treino por disciplina)',7:'Alta (Focado e animado)',8:'Alta (Focado e animado)',9:'Muito Alta (Energia máxima / Sedento por treino)',10:'Muito Alta (Energia máxima / Sedento por treino)'};
-                document.getElementById('motivDesc').textContent=d[this.value]||'';
-              " />
+            <div class="q">
+              <div class="q-label">Como foi sua alimentação nas últimas 24h? <span style="color:#ef4444">*</span></div>
+              <div class="opt-group">
+                <label class="opt-label"><input type="radio" name="nutritionQual" value="8" onchange="document.querySelector('[name=nutrition]').value='8'" required /> Adequada — me alimentei bem</label>
+                <label class="opt-label"><input type="radio" name="nutritionQual" value="5" onchange="document.querySelector('[name=nutrition]').value='5'" /> Parcial — comi pouco ou de forma irregular</label>
+                <label class="opt-label"><input type="radio" name="nutritionQual" value="3" onchange="document.querySelector('[name=nutrition]').value='3'" /> Inadequada — não me alimentei bem</label>
+              </div>
             </div>
 
-            ${isWomanUnder40 ? `
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Ciclo Menstrual (Se aplicável)</label>
-              <select class="form-select" name="menstrualCycle" style="font-size:0.95rem">
-                <option value="" selected>Não se aplica / Prefiro não informar</option>
-                <option value="Menstruacao">Menstruação</option>
-                <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
-                <option value="Ovulatoria">Fase Ovulatória</option>
-                <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
-              </select>
+            <div class="q">
+              <div class="q-label">Qual a sua disposição para o treino hoje? <span style="color:#ef4444">*</span></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+                <span style="font-size:0.72rem;color:#64748b;width:40px">Baixa</span>
+                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="9" style="accent-color:#10b981;width:20px;height:20px" required /><span style="font-size:0.78rem;color:#64748b">1</span></label>
+                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="7" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">2</span></label>
+                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="5" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">3</span></label>
+                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="3" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">4</span></label>
+                <label style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer"><input type="radio" name="stress" value="1" style="accent-color:#10b981;width:20px;height:20px" /><span style="font-size:0.78rem;color:#64748b">5</span></label>
+                <span style="font-size:0.72rem;color:#64748b;width:40px;text-align:right">Alta</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#475569;margin-top:6px;padding:0 40px">
+                <span>Estresse alto</span><span>Estresse baixo</span>
+              </div>
             </div>
-            ` : ''}
 
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Alguma observação?</label>
-              <textarea class="form-textarea" name="notes" rows="2" placeholder="Como você está se sentindo hoje? Dormiu bem? Comeu bem?"></textarea>
+            ${scalePickerHTML('tqr', TQR_SCALE, 6,
+              'TQR — Nível de Recuperação ⚡',
+              'Escala de Estado de Recuperação (Kenttä & Hassmén, 1998). Selecione o descritor que melhor representa como você se sente agora.'
+            )}
+
+            <div class="q">
+              <div class="q-label">Ainda sente alguma dor do último treino? <span style="color:#ef4444">*</span></div>
+              <div class="doms-info"><strong>DOMS</strong> (Dor Muscular de Início Tardio) é comum após treinos intensos — surge em 12-24h e pode durar até 72h.</div>
+              <div class="opt-group">
+                <label class="opt-label"><input type="radio" name="painLevel" value="0" onchange="document.querySelector('[name=pain]').value='0';document.getElementById('painGroup').style.display='none'" required /> Sem dor</label>
+                <label class="opt-label"><input type="radio" name="painLevel" value="3" onchange="document.querySelector('[name=pain]').value='3';document.getElementById('painGroup').style.display='block'" /> Dor leve</label>
+                <label class="opt-label"><input type="radio" name="painLevel" value="6" onchange="document.querySelector('[name=pain]').value='6';document.getElementById('painGroup').style.display='block'" /> Dor moderada</label>
+                <label class="opt-label"><input type="radio" name="painLevel" value="9" onchange="document.querySelector('[name=pain]').value='9';document.getElementById('painGroup').style.display='block'" /> Dor intensa</label>
+              </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;padding:16px;font-size:1rem;margin-top:12px">Enviar Pré-Treino</button>
+            <div id="painGroup" style="display:none;margin-bottom:22px">
+              <div class="q-label" style="margin-bottom:10px">Selecione a região</div>
+              <div class="pain-tags" id="pre_pain_regions_wrap">
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="pernas" style="display:none"/>Pernas</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="bracos" style="display:none"/>Braços</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="costas" style="display:none"/>Costas</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="ombros" style="display:none"/>Ombros</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="peito" style="display:none"/>Peito</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="abdomen" style="display:none"/>Abdômen</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="lombar" style="display:none"/>Lombar</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="tornozelo" style="display:none"/>Tornozelo</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="gluteos" style="display:none"/>Glúteos</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="coxas" style="display:none"/>Coxas</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="joelhos" style="display:none"/>Joelhos</label>
+              </div>
+            </div>
+
+            ${student.gender==='F'||student.gender==='Feminino'?`
+            <div class="q">
+              <div class="q-label">Está no período do ciclo menstrual? <span style="color:#ef4444">*</span></div>
+              <div class="opt-group">
+                <label class="opt-label"><input type="radio" name="menstrual" value="sim" />Sim</label>
+                <label class="opt-label"><input type="radio" name="menstrual" value="nao" checked />Não</label>
+              </div>
+            </div>`:'<input type="hidden" name="menstrual" value="nao" />'}
+
+            <div class="q">
+              <div class="q-label">Alguma observação a acrescentar?</div>
+              <textarea name="notes" rows="2" placeholder="Opcional"></textarea>
+            </div>
+
+            <button type="submit" id="preSubmitBtn" class="submit-btn">Enviar check-in</button>
           </form>
-          <div id="preSuccess" class="hidden" style="text-align:center;padding:40px 0">
-            <div style="font-size:3rem;margin-bottom:16px">✓</div>
-            <h2>Enviado com sucesso!</h2>
-            <p class="text-muted">Seus dados foram registrados. Bom treino!</p>
+
+          <div id="preSuccess" class="hidden">
+            <div class="form-success">
+              <div class="check"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <h2>Enviado, ${firstName}!</h2>
+              <p>Seu personal já recebeu. Bom treino! 💪</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-export function initPreForm() {
-  setupFormDraft('preStudentForm');
 
-  // Tag toggle listener for pain chips
-  setTimeout(() => {
-    document.querySelectorAll('.portal-pain-chip').forEach(tag => {
-      tag.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        const cb = tag.querySelector('input');
-        if (!cb) return;
-        cb.checked = !cb.checked;
-        cb.dispatchEvent(new Event('change', { bubbles: true }));
-        tag.style.borderColor = cb.checked ? 'var(--primary)' : '';
-        tag.style.background  = cb.checked ? 'rgba(16, 185, 129, 0.12)' : '';
-        tag.style.color       = cb.checked ? 'var(--primary)' : '';
-      });
+export function initPreForm() {
+  // Ativar tags de dor
+  document.querySelectorAll('.pain-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const cb = tag.querySelector('input[type=checkbox]');
+      if (!cb) return;
+      cb.checked = !cb.checked;
+      tag.classList.toggle('active', cb.checked);
     });
-  }, 100);
+  });
 
   document.getElementById('preStudentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fd = new FormData(e.target);
-    const painVal = parseInt(fd.get('pain')) || 1;
-    const data = {
-      studentId: fd.get('studentId'),
-      formType: 'pre',
-      date: new Date().toISOString(),
-      sleep: parseInt(fd.get('sleep')) || 7,
-      tqr: parseInt(fd.get('tqr')) || 5,
-      stress: parseInt(fd.get('stress')) || 5,
-      pain: painVal,
-      painRegions: painVal >= 3 ? fd.getAll('painRegions') : [],
-      painDescription: painVal >= 3 ? fd.get('painDescription') : '',
-      food: parseInt(fd.get('food')) || 5,
-      motivation: parseInt(fd.get('motivation')) || 7,
-      menstrualCycle: fd.get('menstrualCycle') || '',
-      notes: fd.get('notes') || '',
-    };
-    
-    // Mapeamento para retrocompatibilidade
-    data.mood = data.tqr;
-    data.energy = data.tqr;
-
-    const studentIdRaw = window.location.hash.split('/form/pre/')[1] || '';
-    const query = studentIdRaw.split('?')[1] || '';
-    const params = new URLSearchParams(query);
-    const tIdUrl = params.get('t');
-
-    // Busca o aluno para obter o trainer_id se não estiver na URL
-    const student = await db.get('students', data.studentId).catch(()=>null);
-    const tId = tIdUrl || (student ? (student.trainerId || student.trainer_id) : null);
-    
-    if (tId) {
-      data.trainerId = tId;
-      data.trainer_id = tId;
-    }
-
-    const isPublic = !!tIdUrl;
+    const btn = document.getElementById('preSubmitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
     try {
-      if (tId) {
-        const { getSupabase } = await import('../utils/auth.js');
-        const sb = getSupabase?.();
-        if (sb) {
-          const { error } = await sb.from('biofeedback').insert([data]);
-          if (error) throw error;
-        } else if (!isPublic) {
-          await db.add('biofeedback', data);
-        } else {
-          throw new Error('Supabase indisponível para envio público.');
-        }
-      } else {
-        await db.add('biofeedback', data);
-      }
-      localStorage.removeItem('draft_preStudentForm');
+      const fd   = new FormData(e.target);
+      const data = Object.fromEntries(fd);
+      data.painRegions = fd.getAll('pre_pain_regions');
+      data.formType    = 'pre';
+      data.date        = Calc.nowISO();
+
+      // Normalizar numéricos
+      ['sleep','tqr','stress','pain','nutrition'].forEach(k => {
+        data[k] = parseInt(data[k]) || (k==='pain'?1:5);
+      });
+      data.energy    = data.tqr;
+      data.mood      = Math.round((data.sleep + data.tqr) / 2);
+      data.menstrual = data.menstrual === 'sim';
+      data.submittedByStudent = true;
+      data.submittedAt = Calc.nowISO();
+      // Garantir trainerId
+      if (!data.trainerId && student) data.trainerId = student.trainer_id || student.trainerId || '';
+
+      await publicAdd('biofeedback', data);
+      e.target.classList.add('hidden');
+      document.getElementById('preSuccess')?.classList.remove('hidden');
     } catch(err) {
-      console.warn('Erro ao salvar form pre:', err);
-      // fallback local só se não for público
-      if (!isPublic) await db.add('biofeedback', data);
+      console.error('Erro pré submit:', err?.message || err);
+      if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+      // Mostrar erro real para debug
+      const msg = err?.message || String(err) || 'Erro desconhecido';
+      alert('Erro ao enviar:\n' + msg.slice(0, 200));
     }
-    
-    e.target.classList.add('hidden');
-    document.getElementById('preSuccess')?.classList.remove('hidden');
   });
 }
 
-// ======================== POST-WORKOUT FORM ========================
+// ══════════════════════════════════════════════════════════
+//  PÓS-TREINO
+// ══════════════════════════════════════════════════════════
 
-export async function renderPostForm(sessionIdRaw) {
-  const [sessionId, query] = sessionIdRaw.split('?');
-  const params = new URLSearchParams(query || '');
-  const tId = params.get('t') || '';
-  const sName = params.get('n') ? decodeURIComponent(params.get('n')) : '';
+export async function renderPostForm(sessionId) {
+  const session = await publicGet('sessions', sessionId);
 
-  const session = await db.get('sessions', sessionId).catch(()=>null);
-  if (!session && !sName) return `<div class="student-form-page"><div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Sessão não encontrada</h3></div></div>`;
-  const student = session ? await db.get('students', session.studentId).catch(()=>null) : null;
-  
-  const displayName = student ? student.name : sName;
-  const displayInitial = displayName ? displayName[0] : '?';
+  if (!session) {
+    return `
+      <style>${FORM_CSS}</style>
+      <div class="student-form-page">
+        <div class="form-card">
+          <div class="form-card-header"><h2>Personal<strong class="logo-pro">PRO</strong></h2></div>
+          <div class="form-card-body" style="text-align:center;padding:48px 24px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" style="margin-bottom:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <h3>Sessão não encontrada</h3>
+            <p style="color:var(--text-muted);margin-top:8px;font-size:0.9rem">
+              O link pode estar expirado. Peça um novo link ao seu personal.
+            </p>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const student    = await publicGet('students', session.studentId);
+  const firstName  = student?.name?.split(' ')[0] || 'Aluno';
+  const ini        = student?.name?.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() || '?';
+
+  // Buscar pré-treino do mesmo dia
+  let preBf = null;
+  try {
+    const allBf  = await db.getAll('biofeedback');
+    const dayStr = new Date(session.date||Date.now()).toDateString();
+    preBf = allBf.find(b => b.studentId===session.studentId && b.formType==='pre' && new Date(b.date).toDateString()===dayStr);
+  } catch(_) {}
 
   return `
+    <style>${FORM_CSS}</style>
     <div class="student-form-page">
       <div class="form-card">
         <div class="form-card-header">
-          <h1 style="margin:8px 0 4px">Personal<strong class="logo-pro">PRO</strong></h1>
-          <p class="text-muted text-sm">Formulário Pós-Treino</p>
+          <div class="logo">Personal<strong>PRO</strong></div>
+          <p class="subtitle">Check-in Pós-Treino</p>
         </div>
         <div class="form-card-body">
-          <div class="flex items-center gap-md mb-lg">
-            <div class="avatar avatar-lg">${displayInitial}</div>
+
+          <div class="student-info">
+            <div class="av">${ini}</div>
             <div>
-              <h3 style="margin:0">${displayName}</h3>
-              <div class="text-muted text-sm">${session?.workoutName || 'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
+              <div class="name">${student?.name||'Aluno'}</div>
+              <div class="date">${session.workoutName||'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
             </div>
           </div>
 
-
+          ${preBf ? `
+          <div class="pre-card">
+            <div class="pre-card-title">Check-in de entrada</div>
+            <div class="pre-card-vals">
+              <span>Sono <strong>${preBf.sleep}/10</strong></span>
+              <span>TQR <strong>${preBf.tqr||preBf.energy||'—'}/10</strong></span>
+              <span>Est. Mental <strong>${preBf.stress}/10</strong></span>
+              ${preBf.pain>2?`<span>Dor <strong>${preBf.pain}/10</strong></span>`:''}
+            </div>
+          </div>` : ''}
 
           <form id="postStudentForm">
             <input type="hidden" name="sessionId" value="${sessionId}" />
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">PSE — Quão difícil foi o treino?</label>
-              <select class="form-select" name="pse" style="font-size:0.95rem">
-                <option value="0">0 - Repouso / Nenhum esforço</option>
-                <option value="1">1 - Muito fraco</option>
-                <option value="2">2 - Fraco</option>
-                <option value="3">3 - Moderado</option>
-                <option value="4">4 - Um pouco forte</option>
-                <option value="5">5 - Forte</option>
-                <option value="6">6 - Forte +</option>
-                <option value="7" selected>7 - Muito forte</option>
-                <option value="8">8 - Muito forte +</option>
-                <option value="9">9 - Quase máximo</option>
-                <option value="10">10 - Esforço Máximo</option>
-              </select>
+            ${preBf ? `<input type="hidden" name="preBiofeedbackId" value="${preBf.id}" />` : ''}
+            <input type="hidden" name="trainerId" value="${student?.trainer_id||student?.trainerId||''}" />
+
+            <!-- PSE com descritores completos -->
+            ${scalePickerHTML('pse', PSE_SCALE, 5,
+              'Qual a intensidade do seu treino de hoje? ⚡',
+              'PSE — Percepção Subjetiva de Esforço (Borg CR10, adaptada por Foster 1996). Selecione o descritor que melhor representa como foi o treino.'
+            )}
+
+            <div class="q">
+              <div class="q-label">Alguma observação a acrescentar?</div>
+              <textarea name="notes" placeholder="Opcional — dificuldade em algum exercício, dor, algo diferente..."></textarea>
             </div>
-            
-            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Satisfação com o treino</label>
-              <div class="form-hint" style="margin-bottom:16px">1 = Péssimo · 10 = Excelente</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="satisfaction" value="${val}" ${val === 8 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary);cursor:pointer" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
-              </div>
-            </div>
-            <div class="form-group" style="margin-bottom:20px">
-              <label class="form-label">Sentiu dor durante o treino?</label>
-              <select name="postPain" class="form-select" onchange="document.getElementById('postPainGroup').style.display=this.value>=3?'block':'none'">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<option value="${val}">${val} ${val==1?'(Sem dor)':val==10?'(Muita dor)':''}</option>`).join('')}
-              </select>
-            </div>
-            <div class="form-group" id="postPainGroup" style="display:none">
-              <label class="form-label">Onde sentiu dor?</label>
-              ${painRegionSelector('painRegion')}
-            </div>
-            <div class="form-group">
-              <label class="form-label">Observações</label>
-              <textarea class="form-textarea" name="notes" rows="3" placeholder="Como se sentiu durante o treino? Algum exercício causou desconforto?">${session.notes || ''}</textarea>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;padding:16px;font-size:1rem;margin-top:12px">Enviar Pós-Treino</button>
+
+            <button type="submit" id="postSubmitBtn" class="submit-btn">Enviar avaliação</button>
           </form>
-          <div id="postSuccess" class="hidden" style="text-align:center;padding:40px 0">
-            <div style="font-size:3rem;margin-bottom:16px">✓</div>
-            <h2>Treino registrado!</h2>
-            <p class="text-muted">Parabéns pelo treino! Seus dados foram salvos.</p>
+
+          <div id="postSuccess" class="hidden">
+            <div class="form-success">
+              <div class="check">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h2>Parabéns, ${firstName}!</h2>
+              <p>Treino registrado. Continue evoluindo.</p>
+            </div>
           </div>
+
         </div>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 export function initPostForm() {
-  setupFormDraft('postStudentForm');
+  document.querySelectorAll('.pain-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const cb = tag.querySelector('input[type=checkbox]');
+      if (!cb) return;
+      cb.checked = !cb.checked;
+      tag.classList.toggle('active', cb.checked);
+    });
+  });
+
   document.getElementById('postStudentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fd = new FormData(e.target);
-    const data = Object.fromEntries(fd);
-    
-    const sessionId = data.sessionId;
-    const session = await db.get('sessions', sessionId).catch(()=>null);
-    if (!session) return;
+    const btn = document.getElementById('postSubmitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
-    session.postBiofeedback = {
-      pse: parseInt(data.pse) || 7,
-      satisfaction: parseInt(data.satisfaction) || 8,
-      postPain: parseInt(data.postPain) || 1,
-      painRegion: data.painRegion || '',
-      painDescription: data.painDescription || '',
-      notes: data.notes || '',
-    };
-    session.notes = data.notes || session.notes;
-    session.status = 'completed';
-
-    await db.put('sessions', session);
-
-    // Salvar também no biofeedback history
-    const bfData = {
-      studentId: session.studentId,
-      date: new Date().toISOString(),
-      formType: 'post',
-      sessionId: sessionId,
-      pse: parseInt(data.pse) || 7,
-      satisfaction: parseInt(data.satisfaction) || 8,
-      postPain: parseInt(data.postPain) || 1,
-      painRegion: data.painRegion || '',
-      painDescription: data.painDescription || '',
-      notes: data.notes || '',
-    };
-
-    const studentIdRaw = window.location.hash.split('/form/post/')[1] || '';
-    const query = studentIdRaw.split('?')[1] || '';
-    const params = new URLSearchParams(query);
-    const tIdUrl = params.get('t');
-
-    const student = await db.get('students', session.studentId).catch(()=>null);
-    const tId = tIdUrl || (student ? (student.trainerId || student.trainer_id) : null);
-    
-    if (tId) {
-      bfData.trainerId = tId;
-      bfData.trainer_id = tId;
-    }
-
-    const isPublic = !!tIdUrl;
     try {
-      if (tId) {
-        const { getSupabase } = await import('../utils/auth.js');
-        const sb = getSupabase?.();
-        if (sb) {
-          await sb.from('biofeedback').insert([bfData]);
-        } else if (!isPublic) {
-          await db.add('biofeedback', bfData);
-        }
-      } else {
-        await db.add('biofeedback', bfData);
-      }
-      localStorage.removeItem('draft_postStudentForm');
-    } catch(err) {
-      console.warn('Erro pós form supabase:', err);
-      if (!isPublic) await db.add('biofeedback', bfData);
-    }
+      const fd      = new FormData(e.target);
+      const data    = Object.fromEntries(fd);
+      const postPainRegions = fd.getAll('post_pain_regions');
+      const session = await publicGet('sessions', data.sessionId);
 
-    e.target.classList.add('hidden');
-    document.getElementById('postSuccess')?.classList.remove('hidden');
+      if (!session) throw new Error('Sessão não encontrada. O link pode ter expirado.');
+      {
+        const dur = session.totalDuration ? Math.round(session.totalDuration/60) : 60;
+        const pse = parseInt(data.pse) || 7;
+        const tqrPost = 7; // TQR pós removido do formulário — usar neutro
+
+        session.postBiofeedback = {
+          pse, tqrPost, motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
+          postPain: parseInt(data.postPain)||1, painRegions: postPainRegions,
+          notes: data.notes||'', submittedByStudent: true,
+          submittedAt: Calc.nowISO(),
+        };
+        await publicPut('sessions', session);
+
+        // Atualizar ou criar registro biofeedback
+        if (data.preBiofeedbackId) {
+          const preBf = await publicGet('biofeedback', data.preBiofeedbackId);
+          if (preBf) {
+            await publicPut('biofeedback', {
+              ...preBf, pse, tqrPost, duration: dur,
+              trainingLoad: pse * dur,
+              postPain: parseInt(data.postPain)||1,
+              postPainRegions, satisfaction: parseInt(data.satisfaction)||8,
+              postNotes: data.notes||'', formType: 'complete',
+              sessionId: data.sessionId, completedAt: Calc.nowISO(),
+            });
+          }
+        } else {
+          await publicAdd('biofeedback', {
+            studentId: session.studentId, trainerId: data.trainerId||session.trainerId||'',
+            date: session.date||Calc.nowISO(),
+            pse, tqrPost, duration: dur, trainingLoad: pse*dur,
+            postPain: parseInt(data.postPain)||1, postPainRegions,
+            motivation: parseInt(data.motivation)||8, satisfaction: parseInt(data.motivation)||8,
+            notes: data.notes||'', formType:'post', sessionId: data.sessionId,
+          });
+        }
+      }
+
+      e.target.classList.add('hidden');
+      document.getElementById('postSuccess')?.classList.remove('hidden');
+    } catch(err) {
+      console.error('Erro pós submit:', err?.message || err);
+      if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+      const msg = err?.message || String(err) || 'Erro desconhecido';
+      alert('Erro ao enviar:\n' + msg.slice(0, 200));
+    }
   });
 }
