@@ -701,7 +701,20 @@
   outline: none; transition: border-color 0.2s;
 }
 .portal-solo-input:focus { border-color: var(--portal-primary); }
-.portal-solo-pse { flex: 0.8; }
+.portal-solo-pse {
+  flex: 1.25;
+}
+select.portal-solo-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: none;
+  text-align-last: center;
+  cursor: pointer;
+}
+select.portal-solo-input option {
+  background: #1e293b;
+  color: #f1f5f9;
+}
 .portal-solo-done-btn {
   width: 36px; height: 36px; flex-shrink: 0; background: var(--portal-surface); border: 2px solid var(--portal-border);
   border-radius: 10px; color: var(--portal-border); font-size: 1rem; cursor: pointer; transition: all 0.2s;

@@ -659,17 +659,25 @@ function renderTreinar(workouts, schedules) {
         </div>
 
         <div class="portal-bio-field" style="margin-top:12px">
-          <label class="portal-bio-label">PSE geral (1-10) <span id="soloPseVal">5</span>
-            <span id="soloPseDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Moderado</span>
+          <label class="portal-bio-label">PSE geral (Borg CR10) <span id="soloPseVal">5</span>
+            <span id="soloPseDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Algo Pesado</span>
           </label>
-          <input type="range" id="soloPse" min="1" max="10" value="5" class="portal-range" oninput="
+          <select id="soloPse" class="portal-textarea" style="margin-top:4px;padding:10px" onchange="
             document.getElementById('soloPseVal').textContent=this.value;
-            var d=['','Muito leve','Leve','Leve+','Moderado','Moderado+','Um pouco difícil','Difícil','Muito difícil','Muito difícil+','Exaustão máxima'];
+            var d=['','Extremamente Leve','Muito Leve','Leve','Moderado','Algo Pesado','Pesado / Forte','Muito Forte','Muito Forte+','Extremamente Forte','Esforço Máximo'];
             document.getElementById('soloPseDesc').textContent=d[this.value]||'';
           ">
-          <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--portal-text-muted);margin-top:4px">
-            <span>1 — Muito leve</span><span style="color:#f59e0b">5-6 — Moderado</span><span style="color:#ef4444">10 — Exaustão</span>
-          </div>
+            <option value="1">1 - Extremamente Leve (Repouso)</option>
+            <option value="2">2 - Muito Leve</option>
+            <option value="3">3 - Leve (Fácil)</option>
+            <option value="4">4 - Moderado (Confortável)</option>
+            <option value="5" selected>5 - Algo Pesado</option>
+            <option value="6">6 - Pesado / Forte</option>
+            <option value="7">7 - Muito Forte</option>
+            <option value="8">8 - Muito Forte+</option>
+            <option value="9">9 - Extremamente Forte (Quase Máximo)</option>
+            <option value="10">10 - Esforço Máximo (Exaustão)</option>
+          </select>
         </div>
 
         <button id="soloFinishBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:8px">
@@ -833,8 +841,33 @@ function initTreinar(workouts, schedules, student) {
               <span class="portal-set-num">S${si+1}</span>
               <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${parseInt(ex.reps)||''}">
               <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${ex.load||''}">
-              <input type="number" placeholder="PSE" class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" min="1" max="10">
-              <input type="number" placeholder="RIR" class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" min="0" max="10">
+              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="padding: 8px 2px;">
+                <option value="" disabled selected>PSE</option>
+                <option value="1">1 - M. Leve</option>
+                <option value="2">2 - Leve</option>
+                <option value="3">3 - Moderado</option>
+                <option value="4">4 - A. Pesado</option>
+                <option value="5">5 - Forte</option>
+                <option value="6">6 - Forte+</option>
+                <option value="7">7 - M. Forte</option>
+                <option value="8">8 - M. Forte+</option>
+                <option value="9">9 - Extr. Forte</option>
+                <option value="10">10 - Máximo</option>
+              </select>
+              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="padding: 8px 2px;">
+                <option value="" disabled selected>RIR</option>
+                <option value="0">0 RIR (Falha)</option>
+                <option value="1">1 RIR</option>
+                <option value="2">2 RIR</option>
+                <option value="3">3 RIR</option>
+                <option value="4">4 RIR</option>
+                <option value="5">5 RIR</option>
+                <option value="6">6 RIR</option>
+                <option value="7">7 RIR</option>
+                <option value="8">8 RIR</option>
+                <option value="9">9 RIR</option>
+                <option value="10">10+ RIR</option>
+              </select>
               <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${ex.rest||60}">&#10003;</button>
             </div>
           `).join('')}
@@ -862,8 +895,33 @@ function initTreinar(workouts, schedules, student) {
             <span class="portal-set-num">S1</span>
             <input type="number" placeholder="Reps" class="portal-solo-input" id="fex_${ei}_reps">
             <input type="number" placeholder="kg" class="portal-solo-input" id="fex_${ei}_load" step="0.5">
-            <input type="number" placeholder="PSE" class="portal-solo-input portal-solo-pse" id="fex_${ei}_pse" min="1" max="10">
-            <input type="number" placeholder="RIR" class="portal-solo-input portal-solo-pse" id="fex_${ei}_rir" min="0" max="10">
+            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_pse" style="padding: 8px 2px;">
+              <option value="" disabled selected>PSE</option>
+              <option value="1">1 - M. Leve</option>
+              <option value="2">2 - Leve</option>
+              <option value="3">3 - Moderado</option>
+              <option value="4">4 - A. Pesado</option>
+              <option value="5">5 - Forte</option>
+              <option value="6">6 - Forte+</option>
+              <option value="7">7 - M. Forte</option>
+              <option value="8">8 - M. Forte+</option>
+              <option value="9">9 - Extr. Forte</option>
+              <option value="10">10 - Máximo</option>
+            </select>
+            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_rir" style="padding: 8px 2px;">
+              <option value="" disabled selected>RIR</option>
+              <option value="0">0 RIR (Falha)</option>
+              <option value="1">1 RIR</option>
+              <option value="2">2 RIR</option>
+              <option value="3">3 RIR</option>
+              <option value="4">4 RIR</option>
+              <option value="5">5 RIR</option>
+              <option value="6">6 RIR</option>
+              <option value="7">7 RIR</option>
+              <option value="8">8 RIR</option>
+              <option value="9">9 RIR</option>
+              <option value="10">10+ RIR</option>
+            </select>
           </div>`;
         document.getElementById('soloFreeExercises').appendChild(div);
       });
@@ -955,6 +1013,27 @@ function initTreinar(workouts, schedules, student) {
             rir: rir !== '' && rir != null ? parseInt(rir) : null,
             notes: exNotes });
         }
+      });
+    } else {
+      // Collect from free exercises
+      const freeCards = document.getElementById('soloFreeExercises')?.children || [];
+      Array.from(freeCards).forEach((card, ei) => {
+        const name = document.getElementById(`fex_${ei}_name`)?.value || `Exercício ${ei+1}`;
+        const reps = document.getElementById(`fex_${ei}_reps`)?.value;
+        const load = document.getElementById(`fex_${ei}_load`)?.value;
+        const psei = document.getElementById(`fex_${ei}_pse`)?.value;
+        const rir = document.getElementById(`fex_${ei}_rir`)?.value;
+        
+        setLog.push({
+          exerciseIdx: ei,
+          exerciseName: name,
+          setIdx: 0,
+          reps: parseInt(reps)||0,
+          load: parseFloat(load)||0,
+          pse: psei ? parseInt(psei) : null,
+          rir: rir !== '' && rir != null ? parseInt(rir) : null,
+          notes: ''
+        });
       });
     }
 
@@ -1162,8 +1241,25 @@ function renderSessoes(sessions, schedules) {
             </div>
             <div class="portal-checkout-form" id="chkform_${s.id}" style="display:none">
               <div class="portal-bio-field" style="margin-top:12px">
-                <label class="portal-bio-label">PSE pós-treino <span id="chkpse_lbl_${s.id}">5</span>/10</label>
-                <input type="range" min="1" max="10" value="5" class="portal-range" id="chkpse_${s.id}" oninput="document.getElementById('chkpse_lbl_${s.id}').textContent=this.value">
+                <label class="portal-bio-label">PSE pós-treino <span id="chkpse_lbl_${s.id}">5</span>/10
+                  <span id="chkpse_desc_${s.id}" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Algo Pesado</span>
+                </label>
+                <select id="chkpse_${s.id}" class="portal-textarea" style="margin-top:4px;padding:10px" onchange="
+                  document.getElementById('chkpse_lbl_${s.id}').textContent=this.value;
+                  var d=['','Extremamente Leve','Muito Leve','Leve','Moderado','Algo Pesado','Pesado / Forte','Muito Forte','Muito Forte+','Extremamente Forte','Esforço Máximo'];
+                  document.getElementById('chkpse_desc_${s.id}').textContent=d[this.value]||'';
+                ">
+                  <option value="1">1 - Extremamente Leve (Repouso)</option>
+                  <option value="2">2 - Muito Leve</option>
+                  <option value="3">3 - Leve (Fácil)</option>
+                  <option value="4">4 - Moderado (Confortável)</option>
+                  <option value="5" selected>5 - Algo Pesado</option>
+                  <option value="6">6 - Pesado / Forte</option>
+                  <option value="7">7 - Muito Forte</option>
+                  <option value="8">8 - Muito Forte+</option>
+                  <option value="9">9 - Extremamente Forte (Quase Máximo)</option>
+                  <option value="10">10 - Esforço Máximo (Exaustão)</option>
+                </select>
               </div>
               <div class="portal-bio-field">
                 <label class="portal-bio-label">Sensação geral</label>
