@@ -427,27 +427,40 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     paymentLabel = diff < 0 ? `Venceu há ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
   }
 
+  // Backfill macrocycle endDate dynamically if not present in DB
+  if (currentMacro && !currentMacro.endDate && currentMacro.startDate) {
+    const totalW = parseInt(currentMacro.totalWeeks) || 12;
+    const endD = new Date(currentMacro.startDate + 'T12:00');
+    endD.setDate(endD.getDate() + (totalW * 7));
+    currentMacro.endDate = endD.toISOString().slice(0, 10);
+  }
+
   // Macrociclo progress — based on session count within macro period
   let macroProgress = 0;
   let macroSessionsCount = 0;
   if (currentMacro?.startDate && currentMacro?.endDate) {
-    const ms = new Date(currentMacro.startDate);
-    const me = new Date(currentMacro.endDate);
+    const ms = new Date(currentMacro.startDate + 'T12:00');
+    const me = new Date(currentMacro.endDate + 'T12:00');
     const total = me - ms;
     const elapsed = now - ms;
     // Date-based progress
     const datePct = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
     // Session-based: sessions within macro date range
     macroSessionsCount = completedSessions.filter(s => {
-      const d = new Date(s.date.includes('T')?s.date:s.date+'T12:00');
-      return d >= ms && d <= me;
+      if (!s.date) return false;
+      const sDateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date;
+      return sDateStr >= currentMacro.startDate && sDateStr <= currentMacro.endDate;
     }).length;
     // Planned sessions (approx: macrocycle weeks * sessions/week from schedules)
     const macroWeeks = Math.max(1, Math.ceil(total / (7*86400000)));
-    const schedInMacro = schedules.filter(s => s.date >= currentMacro.startDate && s.date <= currentMacro.endDate).length;
+    const schedInMacro = schedules.filter(s => {
+      if (!s.date) return false;
+      const sDateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date;
+      return sDateStr >= currentMacro.startDate && sDateStr <= currentMacro.endDate;
+    }).length;
     const plannedSessions = schedInMacro || (macroWeeks * 3);
-    const sesssPct = Math.min(100, Math.round((macroSessionsCount / plannedSessions) * 100));
-    macroProgress = datePct > 0 ? datePct : sesssPct;
+    const sesssPct = plannedSessions > 0 ? Math.min(100, Math.round((macroSessionsCount / plannedSessions) * 100)) : 0;
+    macroProgress = sesssPct;
   }
 
   // Today check-in banner
@@ -1470,14 +1483,38 @@ function renderBio(biofeedbacks, sid, tid) {
         ${last7.map(b => `
           <div class="glass-card portal-bio-history">
             <div class="portal-bio-date">${new Date(b.date).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}</div>
-            <div class="portal-bio-row">
-              ${b.sleep!=null?`<span>💤 Sono: ${b.sleep}</span>`:''}
-              ${b.tqr!=null?`<span>⚡ TQR: ${b.tqr}</span>`:''}
-              ${b.food!=null?`<span>🍎 Alim: ${b.food}/5</span>`:''}
-              ${b.stress!=null?`<span>😰 Stress: ${b.stress}</span>`:''}
-              ${b.pain!=null?`<span>🩹 Dor: ${b.pain}</span>`:''}
-              ${b.motivation!=null?`<span>🔥 Mot: ${b.motivation}</span>`:''}
-              ${b.pse!=null?`<span class="pse-badge">PSE ${b.pse}</span>`:''}
+            <div class="portal-bio-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+              ${b.sleep!=null?`
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.2);color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                  Sono: ${b.sleep}
+                </span>`:''}
+              ${b.tqr!=null?`
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.2);color:#6ee7b7;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  TQR: ${b.tqr}
+                </span>`:''}
+              ${b.food!=null?`
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.2);color:#fda4af;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/></svg>
+                  Alim: ${b.food}/5
+                </span>`:''}
+              ${b.stress!=null?`
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde047;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  Stress: ${b.stress}
+                </span>`:''}
+              ${b.pain!=null?`
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.2);color:#fca5a5;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><path d="M12 2v20M2 12h20"/></svg>
+                  Dor: ${b.pain}
+                </span>`:''}
+              ${b.motivation!=null?`
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.2);color:#ffedd5;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Mot: ${b.motivation}
+                </span>`:''}
+              ${b.pse!=null?`<span class="pse-badge ${getPseBadgeClass(b.pse)}">PSE ${b.pse}</span>`:''}
             </div>
             ${b.notes?`<div class="portal-bio-notes">${b.notes}</div>`:''}
           </div>

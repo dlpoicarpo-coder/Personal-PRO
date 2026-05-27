@@ -649,6 +649,12 @@ export function initPeriodization(navigateFn) {
             d.status    = 'active';
             d.createdAt = new Date().toISOString();
 
+            if (d.startDate) {
+              const endD = new Date(d.startDate + 'T12:00');
+              endD.setDate(endD.getDate() + (d.totalWeeks * 7));
+              d.endDate = endD.toISOString().slice(0, 10);
+            }
+
             let sessions = [];
             const exerciseLoads = {};
 
