@@ -1324,7 +1324,6 @@ function renderSessoes(sessions, schedules) {
           </div>
         `).join('')}
       ` : ''}
-      ` : ''}
 
       <div class="portal-section-sub" style="margin-top:20px">Histórico</div>
       ${completed.length === 0 ? `<div class="portal-empty">Nenhuma sessão concluída ainda</div>` :
