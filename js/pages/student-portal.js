@@ -65,6 +65,7 @@ const portalState = {
   trainerId: null,
   student: null,
   section: 'home',
+  selectedReportMacroId: 'all',
 };
 
 // ── RENDER ENTRY ───────────────────────────────────────────────
@@ -354,7 +355,7 @@ async function loadSection(section) {
     case 'treinar': content.innerHTML = renderTreinar(workouts, schedules); initTreinar(workouts, schedules, student); break;
     case 'sessoes': content.innerHTML = renderSessoes(sessions, schedules); break;
     case 'bio': content.innerHTML = renderBio(biofeedbacks, sid, tid); initBio(); break;
-    case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks); initRelatorios(student, sessions, assessments, biofeedbacks); break;
+    case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); initRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); break;
     default: content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks);
   }
 
@@ -1562,10 +1563,19 @@ function initBio() {
 }
 
 // -- RELATORIOS -------------------------------------------------
-async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
-  const completed = sessions.filter(s => s.status === 'completed').sort((a,b) => new Date(a.date)-new Date(b.date));
+async function renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles = []) {
+  const selectedMacroId = portalState.selectedReportMacroId || 'all';
+  let completed = sessions.filter(s => s.status === 'completed').sort((a,b) => new Date(a.date)-new Date(b.date));
   const compAss = assessments.filter(a => a.type === 'composicao').sort((a,b) => new Date(a.date)-new Date(b.date));
-  const bf = [...biofeedbacks].sort((a,b) => new Date(a.date)-new Date(b.date));
+  let bf = [...biofeedbacks].sort((a,b) => new Date(a.date)-new Date(b.date));
+
+  if (selectedMacroId !== 'all') {
+    const macro = macrocycles.find(m => m.id === selectedMacroId);
+    if (macro) {
+      completed = completed.filter(s => s.macrocycleId === macro.id || (s.date >= macro.startDate && s.date <= macro.endDate));
+      bf = bf.filter(b => b.date >= macro.startDate && b.date <= macro.endDate);
+    }
+  }
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -1668,8 +1678,45 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
     }).join('')}
   </div>` : '';
 
+  // Group workouts by base name for comparative chart
+  const getBaseWorkoutName = name => {
+    if (!name) return 'Treino Avulso';
+    return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+  };
+
+  const workoutsByName = {};
+  completed.forEach(s => {
+    if (!s.workoutName) return;
+    const base = getBaseWorkoutName(s.workoutName);
+    if (!workoutsByName[base]) workoutsByName[base] = [];
+    workoutsByName[base].push(s);
+  });
+  const comparableBases = Object.keys(workoutsByName).filter(base => workoutsByName[base].length >= 2);
+
+  let compareSessionsHtml = '';
+  if (comparableBases.length > 0) {
+    compareSessionsHtml = `
+      <div class="glass-card" style="margin-bottom:12px">
+        <div class="portal-card-label">📈 Comparativo de Sessões Idênticas</div>
+        <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
+        <select id="portalCompareWorkoutSel" class="portal-textarea" style="margin-bottom:12px;padding:8px">
+          ${comparableBases.map((base, idx) => `<option value="${base}" ${idx===0?'selected':''}>${base}</option>`).join('')}
+        </select>
+        <div style="height:200px;position:relative"><canvas id="portalCompareChart"></canvas></div>
+      </div>
+    `;
+  }
+
   return `<div class="portal-section" id="portalRelatoriosSection">
     <h2 class="portal-section-title">Relatorios</h2>
+
+    <div class="glass-card" style="margin-bottom:12px;padding:12px">
+      <div class="portal-card-label" style="margin-bottom:6px">Filtro de Macrociclo</div>
+      <select id="portalReportMacroFilter" class="portal-textarea" style="padding:8px;font-size:0.85rem">
+        <option value="all" ${selectedMacroId==='all'?'selected':''}>Todos os macrociclos</option>
+        ${macrocycles.map(m => `<option value="${m.id}" ${selectedMacroId===m.id?'selected':''}>${m.name}</option>`).join('')}
+      </select>
+    </div>
 
     <div class="portal-stats-row" style="grid-template-columns:repeat(2,1fr)">
       <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:var(--portal-primary)">${completed.length}</div><div class="portal-stat-lbl">Sessoes</div></div>
@@ -1737,6 +1784,8 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
       <div style="height:220px;position:relative"><canvas id="portalRadarChart"></canvas></div>
     </div>
 
+    ${compareSessionsHtml}
+
     ${compAss.length>=2?`<div class="glass-card" style="margin-bottom:12px">
       <div class="portal-card-label">Evolucao da Composicao Corporal</div>
       <div style="height:200px;position:relative"><canvas id="portalMeasuresChart"></canvas></div>
@@ -1749,10 +1798,19 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
 }
 
 // -- INIT RELATORIOS (Chart.js) --------------------------------
-function initRelatorios(student, sessions, assessments, biofeedbacks) {
-  const completed = sessions.filter(s => s.status === 'completed').sort((a,b) => new Date(a.date)-new Date(b.date));
+function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycles = []) {
+  const selectedMacroId = portalState.selectedReportMacroId || 'all';
+  let completed = sessions.filter(s => s.status === 'completed').sort((a,b) => new Date(a.date)-new Date(b.date));
   const compAss = assessments.filter(a => a.type === 'composicao').sort((a,b) => new Date(a.date)-new Date(b.date));
-  const bf = [...biofeedbacks].sort((a,b) => new Date(a.date)-new Date(b.date));
+  let bf = [...biofeedbacks].sort((a,b) => new Date(a.date)-new Date(b.date));
+
+  if (selectedMacroId !== 'all') {
+    const macro = macrocycles.find(m => m.id === selectedMacroId);
+    if (macro) {
+      completed = completed.filter(s => s.macrocycleId === macro.id || (s.date >= macro.startDate && s.date <= macro.endDate));
+      bf = bf.filter(b => b.date >= macro.startDate && b.date <= macro.endDate);
+    }
+  }
 
   const fmtDate = d => {
     try { return new Date(d.includes('T')?d:d+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }
@@ -1767,6 +1825,21 @@ function initRelatorios(student, sessions, assessments, biofeedbacks) {
       y:{ ticks:{color:'#94a3b8',font:{size:9}}, grid:{color:'rgba(255,255,255,0.04)'} }
     }
   };
+
+  // Group workouts by base name for comparative chart
+  const getBaseWorkoutName = name => {
+    if (!name) return 'Treino Avulso';
+    return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+  };
+
+  const workoutsByName = {};
+  completed.forEach(s => {
+    if (!s.workoutName) return;
+    const base = getBaseWorkoutName(s.workoutName);
+    if (!workoutsByName[base]) workoutsByName[base] = [];
+    workoutsByName[base].push(s);
+  });
+  const comparableBases = Object.keys(workoutsByName).filter(base => workoutsByName[base].length >= 2);
 
   const drawAll = () => {
     // Wellness
@@ -1869,6 +1942,76 @@ function initRelatorios(student, sessions, assessments, biofeedbacks) {
       }});
     }
 
+    // Identical Sessions comparison
+    const compSel = document.getElementById('portalCompareWorkoutSel');
+    const compCtx = document.getElementById('portalCompareChart');
+    let compareChart = null;
+
+    const drawCompareChart = () => {
+      if (!compCtx || !compSel) return;
+      const base = compSel.value;
+      const sessList = (workoutsByName[base] || []).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+      if (compareChart) compareChart.destroy();
+      
+      const labels = sessList.map(s => {
+        const dStr = fmtDate(s.date);
+        const wkMatch = s.workoutName?.match(/Sem\s*(\d+)/i);
+        return wkMatch ? `Sem ${wkMatch[1]} (${dStr})` : dStr;
+      });
+
+      compareChart = new Chart(compCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Volume Total (kg)',
+              data: sessList.map(s => (s.setLog||[]).reduce((t,x)=>t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0)),
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99,102,241,0.05)',
+              tension: 0.3,
+              yAxisID: 'y',
+              fill: true,
+              pointRadius: 4
+            },
+            {
+              label: 'PSE (Borg)',
+              data: sessList.map(s => s.postBiofeedback?.pse || null),
+              borderColor: '#ef4444',
+              tension: 0.3,
+              yAxisID: 'y1',
+              borderDash: [5, 3],
+              pointRadius: 4
+            }
+          ]
+        },
+        options: {
+          ...co,
+          scales: {
+            x: co.scales.x,
+            y: {
+              position: 'left',
+              title: { display: true, text: 'Volume (kg)', color: '#94a3b8', font: {size: 9} },
+              ticks: { color: '#6366f1', font: {size: 9} },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: 'PSE', color: '#94a3b8', font: {size: 9} },
+              ticks: { color: '#ef4444', font: {size: 9}, min: 0, max: 10 },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    };
+
+    if (compSel) {
+      compSel.addEventListener('change', drawCompareChart);
+      drawCompareChart();
+    }
+
     // Body composition
     const measCtx = document.getElementById('portalMeasuresChart');
     if (measCtx && compAss.length>=2) {
@@ -1882,6 +2025,12 @@ function initRelatorios(student, sessions, assessments, biofeedbacks) {
         }});
     }
   };
+
+  // Bind change on macro filter to reload section
+  document.getElementById('portalReportMacroFilter')?.addEventListener('change', async (e) => {
+    portalState.selectedReportMacroId = e.target.value;
+    await loadSection('relatorios');
+  });
 
   if (window.Chart) {
     drawAll();

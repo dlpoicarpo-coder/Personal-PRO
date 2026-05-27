@@ -6,6 +6,7 @@
 /* ── CSS Variables — Dark (default) ──────────────── */
 :root,
 .portal-root[data-theme="dark"] {
+  color-scheme: dark;
   --portal-bg-1: #0a0e1a;
   --portal-bg-2: #0d1526;
   --portal-bg-3: #0a1220;
@@ -29,6 +30,7 @@
 
 /* ── CSS Variables — Light ───────────────────────── */
 .portal-root[data-theme="light"] {
+  color-scheme: light;
   --portal-bg-1: #f0f4f8;
   --portal-bg-2: #e8eff7;
   --portal-bg-3: #f5f8fc;
@@ -711,9 +713,21 @@ select.portal-solo-input {
   text-align-last: center;
   cursor: pointer;
 }
-select.portal-solo-input option {
-  background: #1e293b;
-  color: #f1f5f9;
+.portal-root select {
+  background-color: var(--portal-surface, #1e293b) !important;
+  color: var(--portal-text, #f1f5f9) !important;
+}
+.portal-root select option {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+.portal-root[data-theme="light"] select {
+  background-color: var(--portal-surface, #ffffff) !important;
+  color: var(--portal-text, #1e293b) !important;
+}
+.portal-root[data-theme="light"] select option {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
 }
 .portal-solo-done-btn {
   width: 36px; height: 36px; flex-shrink: 0; background: var(--portal-surface); border: 2px solid var(--portal-border);

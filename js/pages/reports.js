@@ -156,6 +156,40 @@ async function renderStudentReport(studentId, cycleFilter = '') {
 
   const workoutSummary = ''; // mantido por compatibilidade
 
+  // Group workouts by base name for comparative chart (trainer side)
+  const getBaseWorkoutName = name => {
+    if (!name) return 'Treino Avulso';
+    return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+  };
+
+  const workoutsByName = {};
+  completed.forEach(s => {
+    if (!s.workoutName) return;
+    const base = getBaseWorkoutName(s.workoutName);
+    if (!workoutsByName[base]) workoutsByName[base] = [];
+    workoutsByName[base].push(s);
+  });
+  const comparableBases = Object.keys(workoutsByName).filter(base => workoutsByName[base].length >= 2);
+
+  let compareSessionsHtml = '';
+  if (comparableBases.length > 0) {
+    compareSessionsHtml = `
+    <div class="card mb-lg">
+      <div class="card-header">
+        <span class="card-title">📈 Comparativo de Sessões Idênticas</span>
+      </div>
+      <p class="text-xs text-muted mb-md">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
+      <div class="form-group" style="max-width:300px">
+        <select id="compareWorkoutSel" class="form-select" style="margin-bottom:12px;padding:8px;font-size:0.85rem">
+          ${comparableBases.map((base, idx) => `<option value="${base}" ${idx===0?'selected':''}>${base}</option>`).join('')}
+        </select>
+      </div>
+      <div style="height:250px;position:relative">
+        <canvas id="compareWorkoutChart"></canvas>
+      </div>
+    </div>`;
+  }
+
   return `
     <div id="pdfArea">
     <div class="flex items-center gap-lg mb-lg">
@@ -322,6 +356,8 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <p class="text-muted text-sm" style="padding:16px 0">Sem sessões registradas com setLog suficiente para análise de progressão. Registre sessões via Treino ao Vivo para ver a evolução.</p>
     </div>`}
 
+    ${compareSessionsHtml}
+
     <div class="card mb-lg" style="border-left:3px solid var(--accent)">
       <div class="card-header"><span class="card-title">Periodização Atual</span></div>
       <p class="text-xs text-muted mb-sm">Macrociclo ativo com distribuição de volume e intensidade.</p>
@@ -431,7 +467,7 @@ export async function initReports(navigateFn) {
 
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
     content.innerHTML = await renderStudentReport(sid);
-    initReportCharts(sid);
+    initReportCharts(sid, '');
     loadPeriodizationForReport(sid);
   });
 
@@ -442,7 +478,7 @@ export async function initReports(navigateFn) {
     const content = document.getElementById('reportContent');
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
     content.innerHTML = await renderStudentReport(sid, cycleSel.value);
-    initReportCharts(sid);
+    initReportCharts(sid, cycleSel.value);
   });
 
   // WhatsApp — enviar resumo ao aluno
@@ -834,11 +870,32 @@ export async function initReports(navigateFn) {
   });
 }
 
-async function initReportCharts(studentId) {
+async function initReportCharts(studentId, cycleFilter = '') {
   if (typeof Chart === 'undefined') return;
-  const bf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const sessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
-  const assessments = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
+
+  let startDate = null, endDate = null;
+  if (cycleFilter) {
+    const macro = await db.get('macrocycles', cycleFilter);
+    if (macro) {
+      startDate = new Date(macro.startDate);
+      endDate = new Date(macro.endDate);
+      endDate.setHours(23,59,59,999);
+    }
+  }
+
+  const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
+  const workouts = cycleFilter ? allWorkouts.filter(w => w.macrocycleId === cycleFilter || w.cycle === cycleFilter) : allWorkouts;
+  const workoutIds = new Set(workouts.map(w => w.id));
+
+  const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(s.workoutId)) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
+
+  const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const bf = cycleFilter ? allBf.filter(b => sessions.some(s => new Date(s.date).toDateString() === new Date(b.date).toDateString())) : (startDate ? allBf.filter(b => new Date(b.date) >= startDate && new Date(b.date) <= endDate) : allBf);
+
+  const allAss = (await db.getAll('assessments')).filter(a => a.studentId === studentId);
+  const assessments = startDate ? allAss.filter(a => new Date(a.date) >= startDate && new Date(a.date) <= endDate) : allAss;
+
   const sortedSes = [...sessions].filter(s => s.status === 'completed').sort((a,b) => new Date(a.date) - new Date(b.date));
   const student = await db.get('students', studentId);
   const co = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: { y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } };
@@ -1045,6 +1102,88 @@ async function initReportCharts(studentId) {
         }
       }
     });
+  }
+
+  // Identical Sessions comparison (trainer side)
+  const compSel = document.getElementById('compareWorkoutSel');
+  const compCtx = document.getElementById('compareWorkoutChart');
+  let compareChart = null;
+
+  if (compSel && compCtx && sortedSes.length > 0) {
+    const getBaseWorkoutName = name => {
+      if (!name) return 'Treino Avulso';
+      return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+    };
+
+    const workoutsByName = {};
+    sortedSes.forEach(s => {
+      if (!s.workoutName) return;
+      const base = getBaseWorkoutName(s.workoutName);
+      if (!workoutsByName[base]) workoutsByName[base] = [];
+      workoutsByName[base].push(s);
+    });
+
+    const drawCompareChart = () => {
+      const base = compSel.value;
+      const sessList = (workoutsByName[base] || []).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+      if (compareChart) compareChart.destroy();
+      
+      const labels = sessList.map(s => {
+        const dStr = Calc.formatDate(s.date).slice(0,5);
+        const wkMatch = s.workoutName?.match(/Sem\s*(\d+)/i);
+        return wkMatch ? `Sem ${wkMatch[1]} (${dStr})` : dStr;
+      });
+
+      compareChart = new Chart(compCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Volume Total (kg)',
+              data: sessList.map(s => (s.setLog||[]).reduce((t,x)=>t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0)),
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99,102,241,0.05)',
+              tension: 0.3,
+              yAxisID: 'y',
+              fill: true,
+              pointRadius: 4
+            },
+            {
+              label: 'PSE (Borg)',
+              data: sessList.map(s => s.postBiofeedback?.pse || s.pse || null),
+              borderColor: '#ef4444',
+              tension: 0.3,
+              yAxisID: 'y1',
+              borderDash: [5, 3],
+              pointRadius: 4
+            }
+          ]
+        },
+        options: {
+          ...co,
+          scales: {
+            x: co.scales.x,
+            y: {
+              position: 'left',
+              title: { display: true, text: 'Volume (kg)', color: '#94a3b8', font: {size: 10} },
+              ticks: { color: '#6366f1', font: {size: 10} },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: 'PSE', color: '#94a3b8', font: {size: 10} },
+              ticks: { color: '#ef4444', font: {size: 10}, min: 0, max: 10 },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    };
+
+    compSel.addEventListener('change', drawCompareChart);
+    drawCompareChart();
   }
 }
 
