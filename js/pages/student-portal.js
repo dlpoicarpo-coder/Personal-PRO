@@ -1426,6 +1426,11 @@ function initSessoesSection() {
 // ── BIOFEEDBACK ────────────────────────────────────────────────
 function renderBio(biofeedbacks, sid, tid) {
   const last7 = biofeedbacks.slice(0, 7);
+  const student = portalState.student;
+  const birth = student?.birthDate ? new Date(student.birthDate) : null;
+  const age = birth ? new Date().getFullYear() - birth.getFullYear() : parseInt(student?.age) || null;
+  const isWomanUnder40 = student && (student.gender === 'F' || student.gender === 'Feminino') && age !== null && age < 40;
+
   return `
     <div class="portal-section">
       <h2 class="portal-section-title">Check-in</h2>
@@ -1434,8 +1439,14 @@ function renderBio(biofeedbacks, sid, tid) {
         <div class="portal-card-label">Biofeedback Pré-treino</div>
         <form id="portalBioForm">
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Qualidade do Sono <span id="sleepVal">7</span>/10</label>
-            <input type="range" name="sleep" min="1" max="10" value="7" class="portal-range" oninput="document.getElementById('sleepVal').textContent=this.value">
+            <label class="portal-bio-label">Qualidade do Sono <span id="sleepVal">7</span>/10
+              <span id="sleepDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Bom (Sono contínuo e revigorante)</span>
+            </label>
+            <input type="range" name="sleep" min="1" max="10" value="7" class="portal-range" oninput="
+              document.getElementById('sleepVal').textContent=this.value;
+              var d={1:'Péssimo (Insônia / Noite em claro)',2:'Péssimo (Insônia / Noite em claro)',3:'Ruim (Acordei várias vezes / Agitado)',4:'Ruim (Acordei várias vezes / Agitado)',5:'Regular (Dormi o suficiente, mas cansado)',6:'Regular (Dormi o suficiente, mas cansado)',7:'Bom (Sono contínuo e revigorante)',8:'Bom (Sono contínuo e revigorante)',9:'Excelente (Sono profundo e muito reparador)',10:'Excelente (Sono profundo e muito reparador)'};
+              document.getElementById('sleepDesc').textContent=d[this.value]||'';
+            ">
           </div>
           <div class="portal-bio-field">
             <label class="portal-bio-label">Recuperação (TQR)</label>
@@ -1464,24 +1475,24 @@ function renderBio(biofeedbacks, sid, tid) {
             </select>
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Ciclo Menstrual (Se aplicável)</label>
-            <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
-              <option value="" selected>Não se aplica / Prefiro não informar</option>
-              <option value="Menstruacao">Menstruação</option>
-              <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
-              <option value="Ovulatoria">Fase Ovulatória</option>
-              <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
-            </select>
+            <label class="portal-bio-label">Estresse <span id="stressVal">5</span>/10
+              <span id="stressDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Moderado (Estresse sob controle)</span>
+            </label>
+            <input type="range" name="stress" min="1" max="10" value="5" class="portal-range" oninput="
+              document.getElementById('stressVal').textContent=this.value;
+              var d={1:'Muito Relaxado (Sem estresse)',2:'Muito Relaxado (Sem estresse)',3:'Pouco Estresse (Tranquilo)',4:'Pouco Estresse (Tranquilo)',5:'Moderado (Estresse sob controle)',6:'Moderado (Estresse sob controle)',7:'Estressado (Rotina pesada)',8:'Estressado (Rotina pesada)',9:'Muito Estressado (No limite / Esgotado)',10:'Muito Estressado (No limite / Esgotado)'};
+              document.getElementById('stressDesc').textContent=d[this.value]||'';
+            ">
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Estresse <span id="stressVal">5</span>/10</label>
-            <input type="range" name="stress" min="1" max="10" value="5" class="portal-range" oninput="document.getElementById('stressVal').textContent=this.value">
-          </div>
-          <div class="portal-bio-field">
-            <label class="portal-bio-label">Dor/Desconforto <span id="painVal">1</span>/10</label>
+            <label class="portal-bio-label">Dor/Desconforto <span id="painVal">1</span>/10
+              <span id="painDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Nenhuma (Sem qualquer dor)</span>
+            </label>
             <input type="range" name="pain" min="1" max="10" value="1" class="portal-range" oninput="
               document.getElementById('painVal').textContent=this.value;
               document.getElementById('portalPainGrp').style.display=this.value>=3?'block':'none';
+              var d={1:'Nenhuma (Sem qualquer dor)',2:'Leve (Desconforto muscular leve)',3:'Moderada (Dor suportável, incomoda)',4:'Moderada (Dor suportável, incomoda)',5:'Incômoda (Dor persistente)',6:'Incômoda (Dor persistente)',7:'Forte (Dificulta alguns movimentos)',8:'Forte (Dificulta alguns movimentos)',9:'Intensa (Muito forte / Impede treinar)',10:'Intensa (Muito forte / Impede treinar)'};
+              document.getElementById('painDesc').textContent=d[this.value]||'';
             ">
           </div>
           <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
@@ -1501,9 +1512,29 @@ function renderBio(biofeedbacks, sid, tid) {
             </div>
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Motivação <span id="motivVal">7</span>/10</label>
-            <input type="range" name="motivation" min="1" max="10" value="7" class="portal-range" oninput="document.getElementById('motivVal').textContent=this.value">
+            <label class="portal-bio-label">Motivação <span id="motivVal">7</span>/10
+              <span id="motivDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px;display:block;margin-top:2px">Alta (Focado e animado)</span>
+            </label>
+            <input type="range" name="motivation" min="1" max="10" value="7" class="portal-range" oninput="
+              document.getElementById('motivVal').textContent=this.value;
+              var d={1:'Muito Baixa (Sem vontade de treinar)',2:'Muito Baixa (Sem vontade de treinar)',3:'Baixa (Desanimado, mas vou)',4:'Baixa (Desanimado, mas vou)',5:'Moderada (Treino por disciplina)',6:'Moderada (Treino por disciplina)',7:'Alta (Focado e animado)',8:'Alta (Focado e animado)',9:'Muito Alta (Energia máxima / Sedento por treino)',10:'Muito Alta (Energia máxima / Sedento por treino)'};
+              document.getElementById('motivDesc').textContent=d[this.value]||'';
+            ">
           </div>
+          
+          ${isWomanUnder40 ? `
+          <div class="portal-bio-field">
+            <label class="portal-bio-label">Ciclo Menstrual (Se aplicável)</label>
+            <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
+              <option value="" selected>Não se aplica / Prefiro não informar</option>
+              <option value="Menstruacao">Menstruação</option>
+              <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
+              <option value="Ovulatoria">Fase Ovulatória</option>
+              <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
+            </select>
+          </div>
+          ` : ''}
+
           <div class="portal-bio-field">
             <label class="portal-bio-label">Notas</label>
             <textarea name="notes" class="portal-textarea" rows="2" placeholder="Como está se sentindo hoje?"></textarea>
