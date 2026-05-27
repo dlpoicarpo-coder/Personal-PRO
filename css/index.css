@@ -1025,56 +1025,11 @@ h4 {
 }
 
 /* ── BOTTOM NAV MOBILE ──────────────────────────────────────── */
-#mobileBottomNav {
-  display: none;
-}
+.mobile-topbar { display: none; }
+#mobileBottomNav { display: none; }
 
 @media (max-width: 768px) {
-  #mobileBottomNav {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border-color);
-    z-index: 200;
-    align-items: stretch;
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
-  }
-
-  .mobile-nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    text-decoration: none;
-    color: var(--text-muted);
-    font-size: 0.6rem;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    background: none;
-    transition: color 0.15s;
-    padding: 6px 4px;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mobile-nav-item.active,
-  .mobile-nav-item:active {
-    color: var(--primary);
-  }
-
-  .mobile-nav-item svg {
-    width: 22px;
-    height: 22px;
-    flex-shrink: 0;
-  }
-
-  /* Topbar mobile */
+  /* Topbar */
   .mobile-topbar {
     display: flex;
     position: fixed;
@@ -1086,21 +1041,107 @@ h4 {
     border-bottom: 1px solid var(--border-color);
     z-index: 150;
     align-items: center;
-    padding: 0 16px;
-    gap: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 0 12px;
+    gap: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
-  /* Esconder sidebar em mobile */
+  /* Safe area for notch */
+  .main-content {
+    padding-top: calc(56px + env(safe-area-inset-top, 0px) + 16px) !important;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px) !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Sidebar hidden off-screen on mobile */
   #sidebar {
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
     z-index: 300;
+    top: 0 !important;
   }
-
   #sidebar.mobile-open {
     transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
   }
+
+  /* Bottom nav bar */
+  #mobileBottomNav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    z-index: 200;
+    align-items: stretch;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--text-muted);
+    font-size: 0.62rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: color 0.15s;
+    padding: 4px 2px;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .mobile-nav-item.active { color: var(--primary); }
+  .mobile-nav-item.active svg { stroke: var(--primary); }
+  .mobile-nav-item svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    transition: stroke 0.15s;
+  }
+
+  /* FAB center button (Live Tracker) */
+  .mobile-nav-center {
+    position: relative;
+  }
+  .mobile-nav-fab {
+    width: 48px;
+    height: 48px;
+    background: var(--gradient-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+    margin-bottom: 2px;
+    margin-top: -18px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .mobile-nav-center:active .mobile-nav-fab,
+  .mobile-nav-center.active .mobile-nav-fab {
+    transform: scale(0.94);
+    box-shadow: 0 2px 8px rgba(16,185,129,0.3);
+  }
+  .mobile-nav-fab svg {
+    stroke: #fff;
+    width: 22px;
+    height: 22px;
+  }
+  .mobile-nav-center span { color: var(--text-muted); font-size: 0.58rem; }
+  .mobile-nav-center.active span { color: var(--primary); }
 }
 
 

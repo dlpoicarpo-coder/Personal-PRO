@@ -1,18 +1,43 @@
 {
-  "name": "Personal PRO",
-  "short_name": "PersonalPRO",
-  "description": "Plataforma de Alta Performance para Personal Trainers e Alunos",
-  "start_url": "/index.html",
+  "name": "Personal PRO — Trainer",
+  "short_name": "PRO Trainer",
+  "description": "Painel do Personal Trainer — Gestão de alunos, treinos, avaliações e biofeedback",
+  "start_url": "/index.html#/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#6366f1",
+  "background_color": "#0a0e17",
+  "theme_color": "#10b981",
   "orientation": "portrait-primary",
+  "categories": ["fitness", "health", "sports"],
+  "lang": "pt-BR",
   "icons": [
     {
       "src": "assets/icon.svg",
-      "sizes": "192x192 512x512",
+      "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-trainer-512.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Treino ao Vivo",
+      "short_name": "Live Tracker",
+      "description": "Iniciar sessão de treino ao vivo",
+      "url": "/index.html#/tracker",
+      "icons": [{ "src": "assets/icon-trainer-512.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Alunos",
+      "short_name": "Alunos",
+      "description": "Gerenciar alunos",
+      "url": "/index.html#/alunos",
+      "icons": [{ "src": "assets/icon-trainer-512.png", "sizes": "512x512" }]
     }
   ]
 }

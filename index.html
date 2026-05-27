@@ -2,10 +2,21 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Personal PRO — Sistema Profissional de Personal Trainer. Gestão de alunos, prescrição de treinos, avaliações físicas e monitoramento de biofeedback.">
   <meta name="theme-color" content="#0a0e17">
-  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Personal PRO">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Default trainer manifest; portal route swaps this to portal-manifest.json -->
+  <link rel="manifest" id="appManifest" href="manifest.json">
+
+  <!-- Apple touch icons -->
+  <link rel="apple-touch-icon" href="assets/icon-trainer-512.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-trainer-512.png">
+
   <title>Personal PRO — Sistema Profissional de Personal Trainer</title>
 
   <!-- Fonts -->
@@ -13,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Supabase (single instance) -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Chart.js -->
@@ -26,7 +37,7 @@
   <link rel="stylesheet" href="css/index.css">
   <link rel="stylesheet" href="css/components.css">
 
-  <!-- Favicon (inline SVG) -->
+  <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2310b981'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-weight='900' font-size='50' fill='%230a0e17'>P</text></svg>">
 </head>
 <body>
@@ -40,14 +51,39 @@
 
   <!-- App Module -->
   <script type="module" src="js/app.js"></script>
-  
-  <!-- Register PWA Service Worker -->
+
+  <!-- Register PWA Service Worker + dynamic manifest switcher -->
   <script>
+    // Switch manifest for portal routes (student PWA)
+    function switchManifest(isPortal) {
+      const link = document.getElementById('appManifest');
+      const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+      if (isPortal) {
+        link.href = 'portal-manifest.json';
+        if (appleIcon) appleIcon.href = 'assets/icon-portal-512.png';
+        document.title = 'Meu Treino — Personal PRO';
+        document.querySelector('meta[name="theme-color"]').content = '#0f172a';
+      } else {
+        link.href = 'manifest.json';
+        if (appleIcon) appleIcon.href = 'assets/icon-trainer-512.png';
+        document.querySelector('meta[name="theme-color"]').content = '#0a0e17';
+      }
+    }
+
+    // Watch hash to auto-switch manifest
+    function checkRoute() {
+      const path = window.location.hash.slice(1) || '/';
+      switchManifest(path.startsWith('/portal/'));
+    }
+    window.addEventListener('hashchange', checkRoute);
+    checkRoute();
+
+    // Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('Service Worker registered successfully:', reg.scope))
-          .catch(err => console.log('Service Worker registration failed:', err));
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW failed:', err));
       });
     }
   </script>

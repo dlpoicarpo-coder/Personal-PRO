@@ -1,0 +1,30 @@
+{
+  "name": "Personal PRO — Portal do Aluno",
+  "short_name": "Meu Treino",
+  "description": "Seu espaço pessoal de treino — check-in, histórico, biofeedback e progresso",
+  "start_url": "/index.html#/portal/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "categories": ["fitness", "health", "sports"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "assets/icon-portal-512.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Meus Treinos",
+      "short_name": "Treinos",
+      "description": "Ver histórico de treinos",
+      "url": "/index.html#/portal/",
+      "icons": [{ "src": "assets/icon-portal-512.png", "sizes": "512x512" }]
+    }
+  ]
+}
