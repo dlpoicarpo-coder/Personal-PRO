@@ -856,7 +856,7 @@ function initTreinar(workouts, schedules, student) {
               <span class="portal-set-num">S${si+1}</span>
               <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${parseInt(ex.reps)||''}">
               <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${ex.load||''}">
-              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="padding: 8px 2px;">
+              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
                 <option value="" disabled selected>PSE</option>
                 <option value="1">1 - M. Leve</option>
                 <option value="2">2 - Leve</option>
@@ -869,7 +869,8 @@ function initTreinar(workouts, schedules, student) {
                 <option value="9">9 - Extr. Forte</option>
                 <option value="10">10 - Máximo</option>
               </select>
-              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="padding: 8px 2px;">
+              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
                 <option value="" disabled selected>RIR</option>
                 <option value="0">0 RIR (Falha)</option>
                 <option value="1">1 RIR</option>
@@ -883,6 +884,7 @@ function initTreinar(workouts, schedules, student) {
                 <option value="9">9 RIR</option>
                 <option value="10">10+ RIR</option>
               </select>
+              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
               <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${ex.rest||60}">&#10003;</button>
             </div>
           `).join('')}
@@ -910,7 +912,7 @@ function initTreinar(workouts, schedules, student) {
             <span class="portal-set-num">S1</span>
             <input type="number" placeholder="Reps" class="portal-solo-input" id="fex_${ei}_reps">
             <input type="number" placeholder="kg" class="portal-solo-input" id="fex_${ei}_load" step="0.5">
-            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_pse" style="padding: 8px 2px;">
+            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_pse" style="display: none;">
               <option value="" disabled selected>PSE</option>
               <option value="1">1 - M. Leve</option>
               <option value="2">2 - Leve</option>
@@ -923,7 +925,8 @@ function initTreinar(workouts, schedules, student) {
               <option value="9">9 - Extr. Forte</option>
               <option value="10">10 - Máximo</option>
             </select>
-            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_rir" style="padding: 8px 2px;">
+            <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="fex_psebtn_${ei}">PSE</button>
+            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_rir" style="display: none;">
               <option value="" disabled selected>RIR</option>
               <option value="0">0 RIR (Falha)</option>
               <option value="1">1 RIR</option>
@@ -937,8 +940,34 @@ function initTreinar(workouts, schedules, student) {
               <option value="9">9 RIR</option>
               <option value="10">10+ RIR</option>
             </select>
+            <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="fex_rirbtn_${ei}">RIR</button>
           </div>`;
         document.getElementById('soloFreeExercises').appendChild(div);
+
+        // Bind custom PSE/RIR buttons for the dynamically added free exercise row
+        const pseBtn = div.querySelector('.portal-solo-pse-btn');
+        const rirBtn = div.querySelector('.portal-solo-rir-btn');
+        const pseSelect = div.querySelector(`#fex_${ei}_pse`);
+        const rirSelect = div.querySelector(`#fex_${ei}_rir`);
+
+        if (pseBtn && pseSelect) {
+          pseBtn.addEventListener('click', () => {
+            openCustomSelector('Selecionar PSE', PSE_OPTIONS, pseSelect.value, (val) => {
+              pseSelect.value = val;
+              pseSelect.dispatchEvent(new Event('change'));
+              updatePseButton(pseBtn, val);
+            });
+          });
+        }
+        if (rirBtn && rirSelect) {
+          rirBtn.addEventListener('click', () => {
+            openCustomSelector('Selecionar RIR', RIR_OPTIONS, rirSelect.value, (val) => {
+              rirSelect.value = val;
+              rirSelect.dispatchEvent(new Event('change'));
+              updateRirButton(rirBtn, val);
+            });
+          });
+        }
       });
     }
 
@@ -967,6 +996,41 @@ function initTreinar(workouts, schedules, student) {
         });
       });
     }
+
+    // Bind custom PSE/RIR buttons for preset exercises
+    exLogEl.querySelectorAll('.portal-solo-pse-btn').forEach(btn => {
+      const selectId = btn.id.replace('psebtn_', 'sr_') + '_pse';
+      const selectEl = document.getElementById(selectId);
+      if (!selectEl) return;
+      
+      // Initialize state
+      updatePseButton(btn, selectEl.value);
+
+      btn.addEventListener('click', () => {
+        openCustomSelector('Selecionar PSE', PSE_OPTIONS, selectEl.value, (val) => {
+          selectEl.value = val;
+          selectEl.dispatchEvent(new Event('change'));
+          updatePseButton(btn, val);
+        });
+      });
+    });
+
+    exLogEl.querySelectorAll('.portal-solo-rir-btn').forEach(btn => {
+      const selectId = btn.id.replace('rirbtn_', 'sr_') + '_rir';
+      const selectEl = document.getElementById(selectId);
+      if (!selectEl) return;
+
+      // Initialize state
+      updateRirButton(btn, selectEl.value);
+
+      btn.addEventListener('click', () => {
+        openCustomSelector('Selecionar RIR', RIR_OPTIONS, selectEl.value, (val) => {
+          selectEl.value = val;
+          selectEl.dispatchEvent(new Event('change'));
+          updateRirButton(btn, val);
+        });
+      });
+    });
   }
 
 
@@ -2130,3 +2194,229 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
 }
 
 // (end of student-portal.js)
+
+// ── CUSTOM SELECTION SYSTEM FOR PSE & RIR ─────────────────────
+const PSE_OPTIONS = [
+  { value: '1', label: '1 - Extremamente Leve', desc: 'Esforço mínimo, respiração totalmente normal', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '2', label: '2 - Muito Leve', desc: 'Fácil de manter, conversa fluida sem pausas', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Leve', desc: 'Esforço confortável, início de aquecimento corporal', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '4', label: '4 - Moderado', desc: 'Respiração acelerada mas controlada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '5', label: '5 - Um Pouco Forte', desc: 'Esforço nítido, começa a exigir foco mental', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Forte', desc: 'Frequência cardíaca elevada, fala em frases curtas', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '7', label: '7 - Muito Forte', desc: 'Esforço pesado, exige foco total na execução', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '8', label: '8 - Muito Forte +', desc: 'Sensação de queimação muscular intensa', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '9', label: '9 - Quase Máximo', desc: 'Extrema dificuldade, limite antes da falha', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', label: '10 - Máximo (Falha)', desc: 'Esforço total, impossível realizar mais uma repetição', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+];
+
+const RIR_OPTIONS = [
+  { value: '0', label: '0 RIR (Falha Muscular)', desc: 'Nenhuma repetição extra possível com técnica perfeita', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '1', label: '1 RIR', desc: 'Conseguiria fazer apenas mais 1 repetição máxima', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '2', label: '2 RIR', desc: 'Conseguiria fazer mais 2 repetições máximas', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '3', label: '3 RIR', desc: 'Velocidade da barra reduzida, mas com controle', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '4', label: '4 RIR', desc: 'Esforço moderado, velocidade de barra preservada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '5', label: '5 RIR', desc: 'Reserva confortável, aquecimento pesado ou técnico', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '6', label: '6 RIR', desc: 'Carga leve, foco em velocidade/técnica', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '7', label: '7 RIR', desc: 'Carga muito leve', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '8', label: '8 RIR', desc: 'Esforço insignificante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '9', label: '9 RIR', desc: 'Praticamente sem carga', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '10', label: '10+ RIR', desc: 'Esforço irrelevante, carga de recuperação', color: '#10b981', bg: 'rgba(16,185,129,0.1)' }
+];
+
+function openCustomSelector(title, options, currentValue, onSelect) {
+  document.getElementById('portalCustomSelector')?.remove();
+
+  const container = document.querySelector('.portal-root') || document.body;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'portalCustomSelector';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    animation: portalFadeIn 0.2s ease-out;
+  `;
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes portalSlideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
+      @keyframes portalFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      #portalCustomSheet {
+        animation: portalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        background: var(--portal-surface, #1e293b);
+        border-radius: 24px 24px 0 0;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        padding: 16px 16px env(safe-area-inset-bottom, 24px);
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .portal-sel-option-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 8px;
+        text-align: left;
+        width: 100%;
+        color: var(--portal-text, #f1f5f9);
+        box-sizing: border-box;
+      }
+      .portal-root[data-theme="light"] .portal-sel-option-row {
+        background: rgba(0,0,0,0.02);
+        border-color: rgba(0,0,0,0.05);
+      }
+      .portal-sel-option-row:hover {
+        background: rgba(255,255,255,0.06);
+        transform: translateY(-1px);
+      }
+      .portal-root[data-theme="light"] .portal-sel-option-row:hover {
+        background: rgba(0,0,0,0.04);
+      }
+      .portal-sel-option-row.active {
+        border-color: var(--portal-primary, #6366f1);
+        background: rgba(99,102,241,0.08);
+      }
+      .portal-sel-badge-num {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+    </style>
+    <div id="portalCustomSheet">
+      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+        <div style="width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15);"></div>
+      </div>
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <span style="font-size: 1.1rem; font-weight: 800; color: var(--portal-text, #f1f5f9);">${title}</span>
+        <button id="closePortalSelBtn" style="background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--portal-text, #fff);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div style="overflow-y: auto; flex: 1; padding-right: 4px;">
+        ${options.map(opt => {
+          const isActive = String(currentValue) === String(opt.value);
+          return `
+            <div class="portal-sel-option-row ${isActive ? 'active' : ''}" data-val="${opt.value}">
+              <div class="portal-sel-badge-num" style="background: ${opt.bg}; color: ${opt.color}; border: 1px solid ${opt.color}33">
+                ${opt.value}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--portal-text);">${opt.label}</div>
+                <div style="font-size: 0.75rem; color: var(--portal-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">
+                  ${opt.desc}
+                </div>
+              </div>
+              ${isActive ? `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--portal-primary)" stroke-width="3" style="flex-shrink: 0;">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  container.appendChild(overlay);
+
+  const closeSheet = () => {
+    overlay.style.animation = 'portalFadeIn 0.2s ease-in reverse';
+    const sheet = document.getElementById('portalCustomSheet');
+    if (sheet) sheet.style.animation = 'portalSlideUp 0.2s cubic-bezier(0.3, 0, 1, 1) reverse';
+    setTimeout(() => overlay.remove(), 180);
+  };
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeSheet();
+  });
+  document.getElementById('closePortalSelBtn')?.addEventListener('click', closeSheet);
+
+  overlay.querySelectorAll('.portal-sel-option-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const val = row.dataset.val;
+      onSelect(val);
+      closeSheet();
+    });
+  });
+}
+
+function updatePseButton(btn, val) {
+  if (!btn) return;
+  if (!val) {
+    btn.textContent = 'PSE';
+    btn.style.background = 'var(--portal-surface, #1e293b)';
+    btn.style.color = 'var(--portal-text-muted, #94a3b8)';
+    btn.style.borderColor = 'var(--portal-border, #334155)';
+    return;
+  }
+  
+  btn.textContent = val + ' PSE';
+  const numericVal = parseInt(val);
+  let bg, color;
+  
+  if (numericVal >= 9) {
+    bg = 'rgba(239,68,68,0.15)'; color = '#ef4444';
+  } else if (numericVal >= 6) {
+    bg = 'rgba(251,146,60,0.15)'; color = '#fb923c';
+  } else if (numericVal >= 4) {
+    bg = 'rgba(245,158,11,0.15)'; color = '#f59e0b';
+  } else {
+    bg = 'rgba(16,185,129,0.15)'; color = '#10b981';
+  }
+  
+  btn.style.background = bg;
+  btn.style.color = color;
+  btn.style.borderColor = color;
+}
+
+function updateRirButton(btn, val) {
+  if (!btn) return;
+  if (val === '' || val == null) {
+    btn.textContent = 'RIR';
+    btn.style.background = 'var(--portal-surface, #1e293b)';
+    btn.style.color = 'var(--portal-text-muted, #94a3b8)';
+    btn.style.borderColor = 'var(--portal-border, #334155)';
+    return;
+  }
+  
+  btn.textContent = val + ' RIR';
+  const numericVal = parseInt(val);
+  let bg, color;
+  
+  if (numericVal === 0) {
+    bg = 'rgba(239,68,68,0.15)'; color = '#ef4444';
+  } else if (numericVal <= 2) {
+    bg = 'rgba(251,146,60,0.15)'; color = '#fb923c';
+  } else if (numericVal <= 4) {
+    bg = 'rgba(245,158,11,0.15)'; color = '#f59e0b';
+  } else {
+    bg = 'rgba(16,185,129,0.15)'; color = '#10b981';
+  }
+  
+  btn.style.background = bg;
+  btn.style.color = color;
+  btn.style.borderColor = color;
+}

@@ -740,6 +740,27 @@ select.portal-solo-input {
 .portal-live-ex-notes-wrap { margin-top: 10px; }
 .portal-live-ex-notes-wrap textarea { font-size: 0.75rem; padding: 8px; }
 
+.portal-solo-pse-btn, .portal-solo-rir-btn {
+  font-weight: 700;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 8px 2px !important;
+}
+.portal-solo-pse-btn:active, .portal-solo-rir-btn:active {
+  transform: scale(0.95);
+  opacity: 0.85;
+}
+
 /* ── PWA Meta ─────────────────────────────────────── */
 @media (max-width: 480px) {
   .portal-root { max-width: 100vw; }
