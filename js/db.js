@@ -4,7 +4,7 @@
 
 const supabaseUrl = 'https://vbxedlloesvjpqzunqyv.supabase.co'; 
 const supabaseKey = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
-const SUPABASE_TABLES = ['students', 'workouts', 'sessions', 'biofeedback', 'macrocycles', 'assessments', 'anamneses', 'finances', 'workout_templates', 'exercises', 'cycles', 'schedules', 'settings'];
+const SUPABASE_TABLES = ['students', 'workouts', 'sessions', 'biofeedback', 'macrocycles', 'assessments', 'anamneses', 'finances', 'financial', 'workout_templates', 'exercises', 'cycles', 'schedules', 'settings'];
 
 class Database {
   constructor() {
@@ -27,6 +27,7 @@ class Database {
 
   _getTableName(storeName) {
     if (storeName === 'anamnesis') return 'anamneses';
+    if (storeName === 'finances') return 'financial';
     return storeName;
   }
 

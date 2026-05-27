@@ -251,6 +251,36 @@ CREATE POLICY "notif_dismissed_insert" ON notification_dismissed FOR INSERT WITH
 CREATE POLICY "notif_dismissed_delete" ON notification_dismissed FOR DELETE USING (auth.uid() = trainer_id);
 
 -- ============================================================
+-- POLÍTICAS ADICIONAIS — PORTAL DO ALUNO (ACESSO ANÔNIMO/PÚBLICO)
+-- Permite que alunos não-autenticados via Supabase Auth acessem seus
+-- próprios dados (filtrados no cliente por ID) e registrem check-in/sessões.
+-- ============================================================
+
+-- 1. Alunos: permitir leitura anônima dos perfis
+CREATE POLICY "students_select_anonymous" ON students FOR SELECT TO anon USING (true);
+
+-- 2. Treinos Prescritos: permitir leitura anônima
+CREATE POLICY "workouts_select_anonymous" ON workouts FOR SELECT TO anon USING (true);
+
+-- 3. Avaliações Físicas: permitir leitura anônima
+CREATE POLICY "assessments_select_anonymous" ON assessments FOR SELECT TO anon USING (true);
+
+-- 4. Macrociclos de Periodização: permitir leitura anônima
+CREATE POLICY "macrocycles_select_anonymous" ON macrocycles FOR SELECT TO anon USING (true);
+
+-- 5. Sessões de Treino: permitir leitura, gravação e atualização anônima (necessário para upsert)
+CREATE POLICY "sessions_select_anonymous" ON sessions FOR SELECT TO anon USING (true);
+CREATE POLICY "sessions_insert_anonymous" ON sessions FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "sessions_update_anonymous" ON sessions FOR UPDATE TO anon USING (true) WITH CHECK (true);
+
+-- 6. Biofeedback: permitir leitura, gravação e atualização anônima (necessário para upsert de check-in)
+CREATE POLICY "biofeedback_select_anonymous" ON biofeedback FOR SELECT TO anon USING (true);
+CREATE POLICY "biofeedback_update_anonymous" ON biofeedback FOR UPDATE TO anon USING (true) WITH CHECK (true);
+
+-- 7. Financeiro: permitir leitura anônima de faturas (exibição de status de pagamento)
+CREATE POLICY "financial_select_anonymous" ON financial FOR SELECT TO anon USING (true);
+
+-- ============================================================
 -- TRIGGER: atualizar updated_at automaticamente
 -- ============================================================
 CREATE OR REPLACE FUNCTION update_updated_at()
