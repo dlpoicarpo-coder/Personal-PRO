@@ -32,7 +32,12 @@ function resetState() {
 }
 
 function totalVolume() {
-  return state.setLog.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
+  return state.setLog.reduce((t, s) => {
+    const reps = parseInt(s.reps) || 0;
+    const load = parseFloat(s.load) || 0;
+    if (isNaN(reps) || isNaN(load)) return t;
+    return t + (reps * load);
+  }, 0);
 }
 
 // ── RENDER SETUP ─────────────────────────────────────────────
@@ -53,10 +58,14 @@ export async function renderTracker() {
 
   if (state.session) return renderLiveView(students);
 
-  const completed = sessions
+  let completed = sessions
     .filter(s => s.status === 'completed')
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 10);
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if (state.sessionsStudentFilter) {
+    completed = completed.filter(s => s.studentId === state.sessionsStudentFilter);
+  }
+  completed = completed.slice(0, 10);
 
   return `
     <div class="page-header">
@@ -112,9 +121,15 @@ export async function renderTracker() {
       </div>
     </div>
 
-    ${completed.length ? `
+    ${(completed.length || state.sessionsStudentFilter) ? `
     <div class="card mt-lg">
-      <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <span class="card-title">Sessões Recentes</span>
+        <select class="form-select" id="trkSessionsStudentFilter" style="max-width:220px;padding:4px 8px;font-size:0.8rem;height:32px">
+          <option value="">Filtrar Aluno (Todos)</option>
+          ${active.map(s => `<option value="${s.id}" ${state.sessionsStudentFilter === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+        </select>
+      </div>
       <div class="table-container">
         <table class="data-table">
           <thead><tr>
@@ -128,7 +143,7 @@ export async function renderTracker() {
             <th style="text-align:center;white-space:nowrap">Carga</th>
             <th style="text-align:right;min-width:100px">Ações</th>
           </tr></thead>
-          <tbody>${completed.map(s => {
+          <tbody>${completed.length ? completed.map(s => {
             const st = students.find(x => x.id === s.studentId);
             const pse = s.postBiofeedback?.pse || 0;
             return `<tr>
@@ -152,7 +167,7 @@ export async function renderTracker() {
                 </button>
               </td>
             </tr>`;
-          }).join('')}</tbody>
+          }).join('') : `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);font-style:italic">Nenhuma sessão de treino concluída encontrada para o filtro selecionado.</td></tr>`}</tbody>
         </table>
       </div>
     </div>` : ''}
@@ -203,7 +218,8 @@ function renderLiveView(students) {
         <div class="card">
           <div class="card-header">
             <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
-            <div class="flex gap-xs">
+            <div class="flex gap-xs" style="align-items:center">
+              <button class="btn btn-ghost btn-sm" id="editExBtn" style="padding:4px 6px;color:var(--accent);display:flex;align-items:center;gap:3px;font-size:0.75rem" title="Editar Exercício">✏️ Editar</button>
               <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
               <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
             </div>
@@ -261,6 +277,9 @@ function renderLiveView(students) {
                   : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:36px;align-self:flex-end">✓</button>`}
               </div>`;
             }).join('')}
+          </div>
+          <div style="margin-top:10px">
+            <button class="btn btn-ghost btn-sm" id="addSetBtn" style="width:100%;border:1px dashed var(--border-color);padding:6px;font-size:0.8rem">+ Adicionar Série</button>
           </div>
 
           <div style="border-top:1px solid var(--border-color);margin-top:12px;padding-top:10px">
@@ -336,6 +355,19 @@ export function initTracker(navigateFn) {
   const sSel = document.getElementById('trkStudent');
   const wSel = document.getElementById('trkWorkout');
   const sBtn = document.getElementById('startBtn');
+
+  const filterSel = document.getElementById('trkSessionsStudentFilter');
+  if (filterSel) {
+    filterSel.addEventListener('change', async () => {
+      state.sessionsStudentFilter = filterSel.value;
+      const students = await db.getAll('students');
+      const content  = document.getElementById('pageContent');
+      if (content) {
+        content.innerHTML = await renderTracker();
+        initTracker(navigateFn);
+      }
+    });
+  }
 
   // Excluir sessão
   document.querySelectorAll('.delete-session').forEach(btn => {
@@ -807,6 +839,79 @@ export function initTracker(navigateFn) {
   document.getElementById('prevEx')?.addEventListener('click', () => { if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
   document.getElementById('nextEx')?.addEventListener('click', () => { if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
   document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
+
+  // Edit current exercise active Targets
+  document.getElementById('editExBtn')?.addEventListener('click', () => {
+    if (!state.session) return;
+    const curEx = state.session.exercises[state.exIdx];
+    openModal({
+      title: 'Editar Exercício ao Vivo',
+      size: 'sm',
+      content: `
+        <div class="form-group" style="margin-bottom:12px">
+          <label class="form-label">Nome do Exercício</label>
+          <input type="text" id="editExName" class="form-input" value="${curEx.name || ''}" />
+        </div>
+        <div class="form-row" style="display:flex;gap:12px;margin-bottom:12px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Séries Alvo</label>
+            <input type="number" id="editExSets" class="form-input" min="1" value="${parseInt(curEx.sets) || 3}" />
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Descanso (s)</label>
+            <input type="number" id="editExRest" class="form-input" min="0" value="${parseInt(curEx.rest) || 60}" />
+          </div>
+        </div>
+        <div class="form-row" style="display:flex;gap:12px;margin-bottom:12px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Reps Alvo</label>
+            <input type="text" id="editExReps" class="form-input" value="${curEx.reps || '12'}" />
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Carga Alvo (kg)</label>
+            <input type="number" id="editExLoad" class="form-input" step="0.5" value="${parseFloat(curEx.load) || ''}" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label class="form-label">Método</label>
+          <input type="text" id="editExMethod" class="form-input" value="${curEx.method || ''}" placeholder="Ex: Pirâmide, Bi-set, Drop-set" />
+        </div>
+      `,
+      actions: [
+        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+        { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
+          const newName = document.getElementById('editExName').value || curEx.name;
+          const newSets = parseInt(document.getElementById('editExSets').value) || parseInt(curEx.sets) || 3;
+          const newRest = parseInt(document.getElementById('editExRest').value) || 60;
+          const newReps = document.getElementById('editExReps').value || curEx.reps;
+          const newLoad = parseFloat(document.getElementById('editExLoad').value) || curEx.load;
+          const newMethod = document.getElementById('editExMethod').value;
+          
+          curEx.name = newName;
+          curEx.sets = newSets;
+          curEx.rest = newRest;
+          curEx.reps = newReps;
+          curEx.load = newLoad;
+          curEx.method = newMethod;
+          
+          await db.put('sessions', state.session);
+          closeModal();
+          notify.success('Exercício atualizado com sucesso!');
+          refreshLive();
+        }}
+      ]
+    });
+  });
+
+  // Add custom set to the active exercise
+  document.getElementById('addSetBtn')?.addEventListener('click', async () => {
+    if (!state.session) return;
+    const curEx = state.session.exercises[state.exIdx];
+    curEx.sets = (parseInt(curEx.sets) || 3) + 1;
+    await db.put('sessions', state.session);
+    notify.success('Nova série adicionada para este exercício!');
+    refreshLive();
+  });
 
   // Finalizar
   document.getElementById('endBtn')?.addEventListener('click', async () => {

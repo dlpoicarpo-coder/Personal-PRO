@@ -1,20 +1,18 @@
 {
   "name": "Personal PRO",
   "short_name": "PersonalPRO",
-  "description": "Sistema Profissional de Personal Trainer",
-  "start_url": "/",
+  "description": "Plataforma de Alta Performance para Personal Trainers e Alunos",
+  "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#0a0e17",
-  "theme_color": "#10b981",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2310b981'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-weight='900' font-size='50' fill='%230a0e17'>P</text></svg>",
-      "sizes": "any",
+      "src": "assets/icon.svg",
+      "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["health", "fitness", "productivity"],
-  "lang": "pt-BR"
+  ]
 }

@@ -233,6 +233,10 @@ function renderPortalShell(student) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span>Check-in</span>
         </button>
+        <button class="portal-nav-btn" data-section="avaliacoes">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Avaliações</span>
+        </button>
         <button class="portal-nav-btn" data-section="relatorios">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span>Relatórios</span>
@@ -356,6 +360,7 @@ async function loadSection(section) {
     case 'treinar': content.innerHTML = renderTreinar(workouts, schedules); initTreinar(workouts, schedules, student); break;
     case 'sessoes': content.innerHTML = renderSessoes(sessions, schedules); break;
     case 'bio': content.innerHTML = renderBio(biofeedbacks, sid, tid); initBio(); break;
+    case 'avaliacoes': content.innerHTML = renderAvaliacoes(assessments); break;
     case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); initRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); break;
     default: content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks);
   }
@@ -489,7 +494,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     checkoutBanner = `<div class="portal-reminder portal-reminder-warning">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       ${needsCheckout.length} treino(s) aguardando checkout!
-      <a href="#/form/post/${s.id}?t=${portalState.trainerId}" class="portal-reminder-btn">Fazer agora</a>
+      <button onclick="window.showPortalCheckoutById('${s.id}')" class="portal-reminder-btn" style="background:var(--portal-warning);color:#0f172a;border:none;border-radius:6px;padding:4px 8px;font-size:0.75rem;font-weight:700;cursor:pointer;margin-left:8px">Fazer agora</button>
     </div>`;
   }
 
@@ -1310,59 +1315,15 @@ function renderSessoes(sessions, schedules) {
       ${needsCheckout.length ? `
         <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)">⚡ Checkout pendente</div>
         ${needsCheckout.map(s => `
-          <div class="glass-card portal-checkout-card" id="checkout_${s.id}">
-            <div class="portal-checkout-header">
-              <div>
-                <div class="portal-session-name">${s.workoutName||'Treino'}</div>
-                <div class="portal-session-meta">${safeFormatDate(s.date)}</div>
-              </div>
-              <span class="portal-checkout-badge">Checkout</span>
+          <div class="glass-card portal-checkout-card" id="checkout_${s.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+            <div>
+              <div class="portal-session-name" style="font-weight:700;font-size:0.95rem">${s.workoutName||'Treino'}</div>
+              <div class="portal-session-meta" style="font-size:0.75rem;color:var(--portal-text-muted);margin-top:2px">${safeFormatDate(s.date)}</div>
             </div>
-            <div class="portal-checkout-form" id="chkform_${s.id}" style="display:none">
-              <div class="portal-bio-field" style="margin-top:12px">
-                <label class="portal-bio-label">PSE pós-treino <span id="chkpse_lbl_${s.id}">5</span>/10
-                  <span id="chkpse_desc_${s.id}" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Algo Pesado</span>
-                </label>
-                <select id="chkpse_${s.id}" class="portal-textarea" style="margin-top:4px;padding:10px" onchange="
-                  document.getElementById('chkpse_lbl_${s.id}').textContent=this.value;
-                  var d=['','Extremamente Leve','Muito Leve','Leve','Moderado','Algo Pesado','Pesado / Forte','Muito Forte','Muito Forte+','Extremamente Forte','Esforço Máximo'];
-                  document.getElementById('chkpse_desc_${s.id}').textContent=d[this.value]||'';
-                ">
-                  <option value="1">1 - Extremamente Leve (Repouso)</option>
-                  <option value="2">2 - Muito Leve</option>
-                  <option value="3">3 - Leve (Fácil)</option>
-                  <option value="4">4 - Moderado (Confortável)</option>
-                  <option value="5" selected>5 - Algo Pesado</option>
-                  <option value="6">6 - Pesado / Forte</option>
-                  <option value="7">7 - Muito Forte</option>
-                  <option value="8">8 - Muito Forte+</option>
-                  <option value="9">9 - Extremamente Forte (Quase Máximo)</option>
-                  <option value="10">10 - Esforço Máximo (Exaustão)</option>
-                </select>
-              </div>
-              <div class="portal-bio-field">
-                <label class="portal-bio-label">Sensação geral</label>
-                <div class="portal-feeling-row">
-                  ${['😩 Péssimo','😓 Ruim','😐 Ok','😊 Bom','🔥 Ótimo'].map((f,i)=>`
-                    <button type="button" class="portal-feeling-btn" data-val="${i+1}" data-sid="${s.id}" onclick="this.parentElement.querySelectorAll('.portal-feeling-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">${f}</button>
-                  `).join('')}
-                </div>
-              </div>
-              <div class="portal-bio-field">
-                <label class="portal-bio-label">Notas do treino</label>
-                <textarea class="portal-textarea" id="chknotes_${s.id}" rows="2" placeholder="Como foi? Algo importante?"></textarea>
-              </div>
-              <button class="portal-submit-btn" id="chksubmit_${s.id}" data-sid="${s.id}" style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 12px rgba(245,158,11,0.3)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Confirmar Checkout
-              </button>
-            </div>
-            <button class="portal-expand-btn checkout-toggle" data-sid="${s.id}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              Fazer checkout
-            </button>
+            <button onclick="window.showPortalCheckoutById('${s.id}')" class="portal-reminder-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 12px rgba(245,158,11,0.15);color:#ffffff;border:none;border-radius:6px;padding:6px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:12px">Fazer checkout</button>
           </div>
         `).join('')}
+      ` : ''}
       ` : ''}
 
       <div class="portal-section-sub" style="margin-top:20px">Histórico</div>
@@ -1713,6 +1674,161 @@ function initBio() {
   });
 }
 
+function renderAvaliacoes(assessments) {
+  const compAss = assessments.filter(a => a.type === 'composicao').sort((a,b) => new Date(b.date) - new Date(a.date));
+  const forcaAss = assessments.filter(a => a.type === 'forca').sort((a,b) => new Date(b.date) - new Date(a.date));
+  const conconiAss = assessments.filter(a => a.type === 'conconi').sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  let html = `
+    <div class="portal-section" id="portalAvaliacoesSection" style="padding-bottom: 80px;">
+      <h2 class="portal-section-title">Avaliações</h2>
+      
+      <!-- COMPOSIÇÃO CORPORAL -->
+      <div class="glass-card" style="margin-bottom:16px">
+        <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
+          ⚖️ Composição Corporal
+        </div>
+        ${compAss.length === 0 ? `
+          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliação de composição corporal registrada.</p>
+        ` : `
+          <!-- Latest evaluation key numbers -->
+          <div class="portal-stats-row" style="margin-top:12px;margin-bottom:12px;display:flex;gap:10px">
+            <div class="portal-stat-card glass-card" style="flex:1;text-align:center;padding:10px 4px">
+              <div class="portal-stat-val" style="color:var(--portal-primary);font-size:1.15rem;font-weight:800">${compAss[0].peso || '—'} <span style="font-size:0.7rem;font-weight:400">kg</span></div>
+              <div class="portal-stat-lbl" style="font-size:0.68rem">Peso Atual</div>
+            </div>
+            <div class="portal-stat-card glass-card" style="flex:1;text-align:center;padding:10px 4px">
+              <div class="portal-stat-val" style="color:var(--portal-warning);font-size:1.15rem;font-weight:800">${compAss[0].percentualGordura || '—'} <span style="font-size:0.7rem;font-weight:400">%</span></div>
+              <div class="portal-stat-lbl" style="font-size:0.68rem">% Gordura</div>
+            </div>
+            <div class="portal-stat-card glass-card" style="flex:1;text-align:center;padding:10px 4px">
+              <div class="portal-stat-val" style="color:var(--portal-success);font-size:1.15rem;font-weight:800">${compAss[0].massaMagra || '—'} <span style="font-size:0.7rem;font-weight:400">kg</span></div>
+              <div class="portal-stat-lbl" style="font-size:0.68rem">Massa Magra</div>
+            </div>
+          </div>
+
+          <!-- Circumferences and skins -->
+          <div style="font-size:0.8rem;line-height:1.6;margin-top:12px">
+            <div style="font-weight:800;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;color:var(--portal-text)">Circunferências & Dobras Recentes</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Cintura:</span> <strong>${compAss[0].cintura || '—'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Quadril:</span> <strong>${compAss[0].quadril || '—'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Coxa:</span> <strong>${compAss[0].coxa || '—'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Busto:</span> <strong>${compAss[0].busto || '—'} cm</strong></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Braço:</span> <strong>${compAss[0].braco || '—'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Panturrilha:</span> <strong>${compAss[0].panturrilha || '—'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>D. Abdominal:</span> <strong>${compAss[0].dobraAbdominal || '—'} mm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>D. Coxa:</span> <strong>${compAss[0].dobraCoxa || '—'} mm</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- History table -->
+          ${compAss.length >= 2 ? `
+            <div style="margin-top:16px">
+              <div style="font-weight:800;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;color:var(--portal-text)">Evolução Histórica</div>
+              <div style="overflow-x:auto">
+                <table style="width:100%;font-size:0.75rem;border-collapse:collapse;text-align:left">
+                  <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--portal-text-muted)">
+                      <th style="padding:6px 4px">Data</th>
+                      <th style="padding:6px 4px">Peso</th>
+                      <th style="padding:6px 4px">% BF</th>
+                      <th style="padding:6px 4px">M. Magra</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${compAss.map(a => `
+                      <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                        <td style="padding:6px 4px;color:var(--portal-text-muted)">${safeFormatDate(a.date)}</td>
+                        <td style="padding:6px 4px;font-weight:600">${a.peso || '—'} kg</td>
+                        <td style="padding:6px 4px;color:var(--portal-warning);font-weight:600">${a.percentualGordura || '—'}%</td>
+                        <td style="padding:6px 4px;color:var(--portal-success);font-weight:600">${a.massaMagra || '—'} kg</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ''}
+        `}
+      </div>
+
+      <!-- FORÇA E 1RM -->
+      <div class="glass-card" style="margin-bottom:16px">
+        <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
+          💪 Força (Carga Máxima Estimada - 1RM)
+        </div>
+        ${forcaAss.length === 0 ? `
+          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhum teste de força (1RM) registrado.</p>
+        ` : `
+          <div style="overflow-x:auto;margin-top:10px">
+            <table style="width:100%;font-size:0.75rem;border-collapse:collapse;text-align:left">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--portal-text-muted)">
+                  <th style="padding:6px 4px">Exercício</th>
+                  <th style="padding:6px 4px">1RM Est.</th>
+                  <th style="padding:6px 4px">Teste Realizado</th>
+                  <th style="padding:6px 4px">Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${forcaAss.map(a => `
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                    <td style="padding:8px 4px;font-weight:700;color:var(--portal-primary)">${a.exercise || '—'}</td>
+                    <td style="padding:8px 4px"><strong>${a.rm1 || '—'} kg</strong></td>
+                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${a.load || '—'}kg × ${a.reps || '—'} reps</td>
+                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${safeFormatDate(a.date)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+
+      <!-- CONCONI E CARDIO -->
+      <div class="glass-card" style="margin-bottom:16px">
+        <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
+          🏃 Capacidade Aeróbia (Conconi / Cardio)
+        </div>
+        ${conconiAss.length === 0 ? `
+          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliação cardiorrespiratória registrada.</p>
+        ` : `
+          <div style="overflow-x:auto;margin-top:10px">
+            <table style="width:100%;font-size:0.75rem;border-collapse:collapse;text-align:left">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--portal-text-muted)">
+                  <th style="padding:6px 4px">Modalidade</th>
+                  <th style="padding:6px 4px">VMA</th>
+                  <th style="padding:6px 4px">VO2 Máx</th>
+                  <th style="padding:6px 4px">FC Máx</th>
+                  <th style="padding:6px 4px">Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${conconiAss.map(a => `
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                    <td style="padding:8px 4px;font-weight:700;color:var(--portal-warning)">${a.exercise || 'Cardio'}</td>
+                    <td style="padding:8px 4px"><strong>${a.vma || '—'} km/h</strong></td>
+                    <td style="padding:8px 4px"><strong>${a.vo2Max || '—'} ml/kg</strong></td>
+                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${a.hrMax || '—'} bpm</td>
+                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${safeFormatDate(a.date)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+  return html;
+}
+
 // -- RELATORIOS -------------------------------------------------
 async function renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles = []) {
   const selectedMacroId = portalState.selectedReportMacroId || 'all';
@@ -1858,6 +1974,31 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
     `;
   }
 
+  // Extract all unique exercises performed by the student
+  const allExercises = new Set();
+  completed.forEach(s => {
+    (s.setLog || []).forEach(x => {
+      if (x.exerciseName) allExercises.add(x.exerciseName);
+    });
+  });
+  const uniqueExercises = Array.from(allExercises).sort();
+
+  let exerciseProgressionChartHtml = '';
+  if (uniqueExercises.length > 0) {
+    exerciseProgressionChartHtml = `
+      <div class="glass-card" style="margin-bottom:12px">
+        <div class="portal-card-label">📊 Análise Multivariada por Exercício</div>
+        <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">
+          Compare a evolução da Carga (eixo esquerdo) vs PSE e RIR (eixo direito) ao longo do tempo.
+        </p>
+        <select id="portalExerciseAnalysisSel" class="portal-textarea" style="margin-bottom:12px;padding:8px;font-size:0.85rem">
+          ${uniqueExercises.map((ex, idx) => `<option value="${ex}" ${idx===0?'selected':''}>${ex}</option>`).join('')}
+        </select>
+        <div style="height:220px;position:relative"><canvas id="portalExerciseAnalysisChart"></canvas></div>
+      </div>
+    `;
+  }
+
   return `<div class="portal-section" id="portalRelatoriosSection">
     <h2 class="portal-section-title">Relatorios</h2>
 
@@ -1936,6 +2077,8 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
     </div>
 
     ${compareSessionsHtml}
+
+    ${exerciseProgressionChartHtml}
 
     ${compAss.length>=2?`<div class="glass-card" style="margin-bottom:12px">
       <div class="portal-card-label">Evolucao da Composicao Corporal</div>
@@ -2161,6 +2304,107 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     if (compSel) {
       compSel.addEventListener('change', drawCompareChart);
       drawCompareChart();
+    }
+
+    // Multivariable Exercise Analysis Chart
+    const exAnalysisSel = document.getElementById('portalExerciseAnalysisSel');
+    const exAnalysisCtx = document.getElementById('portalExerciseAnalysisChart');
+    let exAnalysisChart = null;
+
+    const drawExAnalysisChart = () => {
+      if (!exAnalysisCtx || !exAnalysisSel) return;
+      const exerciseName = exAnalysisSel.value;
+
+      // Group sets of this exercise chronologically
+      const history = [];
+      completed.forEach(s => {
+        const matchingSets = (s.setLog || []).filter(x => x.exerciseName === exerciseName);
+        if (matchingSets.length > 0) {
+          const avgLoad = matchingSets.reduce((t, x) => t + (parseFloat(x.load) || 0), 0) / matchingSets.length;
+          
+          const sessionPse = s.postBiofeedback?.pse;
+          const setPses = matchingSets.filter(x => x.pse != null).map(x => parseFloat(x.pse));
+          const avgPse = setPses.length > 0 ? (setPses.reduce((t, v) => t + v, 0) / setPses.length) : (sessionPse || null);
+
+          const rirs = matchingSets.filter(x => x.rir != null && x.rir !== '').map(x => parseFloat(x.rir));
+          const avgRir = rirs.length > 0 ? (rirs.reduce((t, v) => t + v, 0) / rirs.length) : null;
+
+          history.push({
+            date: s.date,
+            load: avgLoad,
+            pse: avgPse,
+            rir: avgRir
+          });
+        }
+      });
+
+      history.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (exAnalysisChart) exAnalysisChart.destroy();
+
+      const labels = history.map(h => fmtDate(h.date));
+
+      exAnalysisChart = new Chart(exAnalysisCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Carga Média (kg)',
+              data: history.map(h => h.load),
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99,102,241,0.05)',
+              tension: 0.3,
+              yAxisID: 'y',
+              fill: true,
+              pointRadius: 4,
+              borderWidth: 2
+            },
+            {
+              label: 'PSE Média',
+              data: history.map(h => h.pse),
+              borderColor: '#ef4444',
+              tension: 0.3,
+              yAxisID: 'y1',
+              borderDash: [5, 3],
+              pointRadius: 4,
+              borderWidth: 1.5
+            },
+            {
+              label: 'RIR Média',
+              data: history.map(h => h.rir),
+              borderColor: '#10b981',
+              tension: 0.3,
+              yAxisID: 'y1',
+              pointRadius: 4,
+              borderWidth: 1.5
+            }
+          ]
+        },
+        options: {
+          ...co,
+          scales: {
+            x: co.scales.x,
+            y: {
+              position: 'left',
+              title: { display: true, text: 'Carga (kg)', color: '#94a3b8', font: {size: 9} },
+              ticks: { color: '#6366f1', font: {size: 9} },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: 'PSE / RIR', color: '#94a3b8', font: {size: 9} },
+              ticks: { color: '#94a3b8', font: {size: 9}, min: 0, max: 10 },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    };
+
+    if (exAnalysisSel) {
+      exAnalysisSel.addEventListener('change', drawExAnalysisChart);
+      drawExAnalysisChart();
     }
 
     // Body composition
@@ -2420,3 +2664,390 @@ function updateRirButton(btn, val) {
   btn.style.color = color;
   btn.style.borderColor = color;
 }
+
+// ── PORTAL INTEGRATED PREMIUM CHECKOUT MODAL ──────────────────
+window.showPortalCheckoutById = async function(id) {
+  try {
+    const session = await db.get('sessions', id);
+    if (!session) {
+      console.error('Sessão não encontrada para checkout: ' + id);
+      return;
+    }
+    showPortalCheckoutModal(session);
+  } catch (e) {
+    console.error('Erro ao buscar sessão no db:', e);
+  }
+};
+
+function showPortalCheckoutModal(session) {
+  document.getElementById('portalCheckoutModal')?.remove();
+
+  const container = document.querySelector('.portal-root') || document.body;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'portalCheckoutModal';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    animation: portalFadeIn 0.2s ease-out;
+  `;
+
+  const PAIN_CHIPS = [
+    { id: 'joelho_e', label: 'Joelho Esq.' },
+    { id: 'joelho_d', label: 'Joelho Dir.' },
+    { id: 'ombro_e', label: 'Ombro Esq.' },
+    { id: 'ombro_d', label: 'Ombro Dir.' },
+    { id: 'lombar', label: 'Coluna Lombar' },
+    { id: 'cervical', label: 'Coluna Cervical' },
+    { id: 'quadril', label: 'Quadril' },
+    { id: 'tornozelo', label: 'Tornozelo/Pé' },
+    { id: 'cotovelo', label: 'Cotovelo/Punho' }
+  ];
+
+  const currentPse = session.postBiofeedback?.pse || 5;
+  const currentFeeling = session.postBiofeedback?.feeling || 3;
+  const currentPain = session.postBiofeedback?.pain || 0;
+  const currentNotes = session.postBiofeedback?.notes || '';
+  const currentPainRegions = session.postBiofeedback?.painRegions || [];
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes portalSlideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
+      @keyframes portalFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      #portalCheckoutSheet {
+        animation: portalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        background: var(--portal-surface, #1e293b);
+        border-radius: 24px 24px 0 0;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        padding: 16px 16px env(safe-area-inset-bottom, 24px);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        box-sizing: border-box;
+        border-top: 1px solid rgba(255,255,255,0.08);
+      }
+      .portal-checkout-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--portal-text, #f1f5f9);
+        margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .portal-checkout-field {
+        margin-bottom: 16px;
+      }
+      .portal-checkout-desc {
+        font-size: 0.72rem;
+        color: var(--portal-text-muted, #94a3b8);
+        display: block;
+        margin-top: 2px;
+      }
+      .portal-feeling-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .portal-feeling-emoji-btn {
+        flex: 1;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 10px 2px;
+        font-size: 1.25rem;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+        color: var(--portal-text-muted, #94a3b8);
+      }
+      .portal-feeling-emoji-lbl {
+        font-size: 0.65rem;
+        font-weight: 600;
+      }
+      .portal-feeling-emoji-btn:hover {
+        background: rgba(255,255,255,0.06);
+        transform: translateY(-1px);
+      }
+      .portal-feeling-emoji-btn.active {
+        border-color: var(--portal-primary, #6366f1);
+        background: rgba(99,102,241,0.12);
+        color: var(--portal-primary, #6366f1);
+        transform: scale(1.05);
+      }
+      .portal-pain-chip-chk {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(255,255,255,0.02);
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        transition: all 0.15s ease;
+        color: var(--portal-text-muted, #94a3b8);
+      }
+      .portal-pain-chip-chk:hover {
+        background: rgba(255,255,255,0.05);
+      }
+      .portal-pain-chip-chk.active {
+        background: rgba(239,68,68,0.12);
+        border-color: #ef4444;
+        color: #fca5a5;
+      }
+      .portal-checkout-submit {
+        background: linear-gradient(135deg, var(--portal-primary, #6366f1), var(--portal-accent, #06b6d4));
+        border: none;
+        border-radius: 12px;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 100%;
+        margin-top: 8px;
+        box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+      }
+      .portal-checkout-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(99,102,241,0.4);
+      }
+    </style>
+    <div id="portalCheckoutSheet">
+      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+        <div style="width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15);"></div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div>
+          <span style="font-size: 1.1rem; font-weight: 800; color: var(--portal-text, #f1f5f9);">Checkout do Treino</span>
+          <div style="font-size: 0.75rem; color: var(--portal-text-muted, #94a3b8); margin-top: 2px;">
+            ${session.workoutName || 'Treino'} &middot; ${new Date(session.date).toLocaleDateString('pt-BR')}
+          </div>
+        </div>
+        <button id="closePortalCheckoutBtn" style="background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--portal-text, #fff);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div style="overflow-y: auto; flex: 1; padding-right: 4px;" id="portalCheckoutForm">
+        <!-- 1. PSE SLIDER -->
+        <div class="portal-checkout-field">
+          <label class="portal-checkout-label">
+            🥵 Esforço Percebido (PSE) <span style="font-size:1.15rem; font-weight:800; color:var(--portal-primary, #6366f1)"><span id="chkModalPseVal">${currentPse}</span>/10</span>
+          </label>
+          <input type="range" id="chkModalPseRange" min="1" max="10" value="${currentPse}" class="portal-range" style="width:100%">
+          <span id="chkModalPseDesc" class="portal-checkout-desc">Moderado (Respiração acelerada mas controlada)</span>
+        </div>
+
+        <!-- 2. FEELING/SATISFACTION -->
+        <div class="portal-checkout-field">
+          <label class="portal-checkout-label">😊 Sensação pós-treino (Recuperação/Humor)</label>
+          <div class="portal-feeling-row">
+            <button class="portal-feeling-emoji-btn ${currentFeeling===1?'active':''}" data-val="1">
+              <span>😩</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
+            </button>
+            <button class="portal-feeling-emoji-btn ${currentFeeling===2?'active':''}" data-val="2">
+              <span>🥱</span><span class="portal-feeling-emoji-lbl">Cansado</span>
+            </button>
+            <button class="portal-feeling-emoji-btn ${currentFeeling===3?'active':''}" data-val="3">
+              <span>🙂</span><span class="portal-feeling-emoji-lbl">Ok</span>
+            </button>
+            <button class="portal-feeling-emoji-btn ${currentFeeling===4?'active':''}" data-val="4">
+              <span>😁</span><span class="portal-feeling-emoji-lbl">Bem</span>
+            </button>
+            <button class="portal-feeling-emoji-btn ${currentFeeling===5?'active':''}" data-val="5">
+              <span>🔥</span><span class="portal-feeling-emoji-lbl">Excelente</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. ARTICULAR PAIN -->
+        <div class="portal-checkout-field">
+          <label class="portal-checkout-label">
+            🩹 Dor Articular / Desconforto <span style="font-size:1.15rem; font-weight:800; color:#ef4444"><span id="chkModalPainVal">${currentPain}</span>/10</span>
+          </label>
+          <input type="range" id="chkModalPainRange" min="0" max="10" value="${currentPain}" class="portal-range" style="width:100%">
+          <span id="chkModalPainDesc" class="portal-checkout-desc">Nenhuma Dor (Articulações 100%)</span>
+        </div>
+
+        <!-- 4. PAIN LOCATION CHIPS -->
+        <div id="chkModalPainGrp" style="display:${currentPain >= 1 ? 'block' : 'none'}; margin-bottom:16px;">
+          <label class="portal-checkout-label" style="font-size:0.8rem">Locais de dor <span class="portal-checkout-desc" style="display:inline;margin-left:4px">(selecione um ou mais)</span></label>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; padding:6px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:12px">
+            ${PAIN_CHIPS.map(c => {
+              const active = currentPainRegions.includes(c.id);
+              return `
+                <label class="portal-pain-chip-chk ${active ? 'active' : ''}">
+                  <input type="checkbox" name="chkPainRegions" value="${c.id}" ${active ? 'checked' : ''} style="display:none">
+                  ${c.label}
+                </label>
+              `;
+            }).join('')}
+          </div>
+          <div style="margin-top: 10px;">
+            <input type="text" id="chkModalPainDescription" value="${session.postBiofeedback?.painDescription || ''}" placeholder="Descreva brevemente o incômodo (opcional)..." class="portal-textarea" style="padding: 8px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.05); text-align: left;">
+          </div>
+        </div>
+
+        <!-- 5. NOTES -->
+        <div class="portal-checkout-field">
+          <label class="portal-checkout-label">📝 Observações do Treino</label>
+          <textarea id="chkModalNotes" class="portal-textarea" rows="2" placeholder="Ex: RIR em agachamento foi menor, me senti muito forte hoje...">${currentNotes}</textarea>
+        </div>
+
+        <button id="chkModalSubmitBtn" class="portal-checkout-submit">Salvar Checkout ✅</button>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(overlay);
+
+  const pseDescMap = {
+    1: 'Extremamente Leve (Sem esforço)',
+    2: 'Muito Leve (Sem esforço relevante)',
+    3: 'Leve (Confortável / Aquecimento)',
+    4: 'Moderado (Respiração acelerada mas controlada)',
+    5: 'Um Pouco Forte (Esforço nítido, exige foco)',
+    6: 'Forte (FC elevada, fala em frases curtas)',
+    7: 'Muito Forte (Esforço pesado, foco total)',
+    8: 'Muito Forte + (Queimação muscular intensa)',
+    9: 'Quase Máximo (Dificuldade extrema, pré-falha)',
+    10: 'Máximo / Falha (Esforço limite absoluto)'
+  };
+
+  const painDescMap = {
+    0: 'Nenhuma Dor (Articulações 100%)',
+    1: 'Leve (Desconforto muscular / articular leve)',
+    2: 'Leve (Desconforto muscular / articular leve)',
+    3: 'Moderada (Dor suportável, mas incomoda)',
+    4: 'Dor Moderada (Incomoda durante o movimento)',
+    5: 'Incômoda (Dor persistente pós-exercício)',
+    6: 'Incômoda (Dor persistente pós-exercício)',
+    7: 'Forte (Dificulta alguns movimentos do treino)',
+    8: 'Forte (Dificulta alguns movimentos do treino)',
+    9: 'Intensa (Muito forte / Impede treinar membros afetados)',
+    10: 'Intensa / Lesão (Muito forte / Impossível treinar)'
+  };
+
+  const updatePseDesc = (val) => {
+    document.getElementById('chkModalPseVal').textContent = val;
+    document.getElementById('chkModalPseDesc').textContent = pseDescMap[val] || '';
+  };
+
+  const updatePainDesc = (val) => {
+    document.getElementById('chkModalPainVal').textContent = val;
+    document.getElementById('chkModalPainDesc').textContent = painDescMap[val] || '';
+    document.getElementById('chkModalPainGrp').style.display = val >= 1 ? 'block' : 'none';
+  };
+
+  // Set initial descriptors
+  updatePseDesc(currentPse);
+  updatePainDesc(currentPain);
+
+  // Bind inputs
+  document.getElementById('chkModalPseRange').addEventListener('input', (e) => updatePseDesc(e.target.value));
+  document.getElementById('chkModalPainRange').addEventListener('input', (e) => updatePainDesc(e.target.value));
+
+  // Feeling buttons
+  let selectedFeeling = currentFeeling;
+  overlay.querySelectorAll('.portal-feeling-emoji-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      overlay.querySelectorAll('.portal-feeling-emoji-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedFeeling = parseInt(btn.dataset.val);
+    });
+  });
+
+  // Pain location chips
+  overlay.querySelectorAll('.portal-pain-chip-chk').forEach(lbl => {
+    const input = lbl.querySelector('input');
+    input.addEventListener('change', () => {
+      if (input.checked) {
+        lbl.classList.add('active');
+      } else {
+        lbl.classList.remove('active');
+      }
+    });
+  });
+
+  const closeSheet = () => {
+    overlay.style.animation = 'portalFadeIn 0.2s ease-in reverse';
+    const sheet = document.getElementById('portalCheckoutSheet');
+    if (sheet) sheet.style.animation = 'portalSlideUp 0.2s cubic-bezier(0.3, 0, 1, 1) reverse';
+    setTimeout(() => overlay.remove(), 180);
+  };
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeSheet();
+  });
+  document.getElementById('closePortalCheckoutBtn').addEventListener('click', closeSheet);
+
+  // Submit Handler
+  document.getElementById('chkModalSubmitBtn').addEventListener('click', async () => {
+    const pse = parseInt(document.getElementById('chkModalPseRange').value) || 5;
+    const pain = parseInt(document.getElementById('chkModalPainRange').value) || 0;
+    const notes = document.getElementById('chkModalNotes').value || '';
+    const painDescription = document.getElementById('chkModalPainDescription')?.value || '';
+
+    const painRegions = [];
+    overlay.querySelectorAll('input[name="chkPainRegions"]:checked').forEach(input => {
+      painRegions.push(input.value);
+    });
+
+    const postBiofeedback = {
+      pse,
+      feeling: selectedFeeling,
+      satisfaction: selectedFeeling * 2, // Map 1-5 feeling to 2-10 satisfaction
+      pain,
+      painRegions,
+      painDescription,
+      notes,
+      date: new Date().toISOString(),
+      submittedAt: new Date().toISOString()
+    };
+
+    try {
+      session.postBiofeedback = postBiofeedback;
+      await db.update('sessions', session);
+    } catch (e) {
+      console.error('Erro ao atualizar sessão:', e);
+    }
+
+    // Show success screen in the sheet
+    const sheet = document.getElementById('portalCheckoutSheet');
+    sheet.innerHTML = `
+      <div class="portal-success" style="padding:40px 20px; text-align:center;">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success, #10b981)" stroke-width="2" style="margin:0 auto 16px auto; display:block;">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--portal-text, #f1f5f9); margin-bottom:8px;">Checkout concluído!</div>
+        <p style="font-size:0.85rem; color:var(--portal-text-muted, #94a3b8); margin-bottom:0;">Obrigado por registrar seu esforço pós-treino.</p>
+      </div>
+    `;
+
+    // Refresh view
+    setTimeout(async () => {
+      closeSheet();
+      await loadSection(portalState.section || 'home');
+    }, 1500);
+  });
+}
+
