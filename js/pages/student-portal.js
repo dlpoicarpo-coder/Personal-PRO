@@ -219,12 +219,8 @@ function renderPortalShell(student) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           <span>Início</span>
         </button>
-        <button class="portal-nav-btn" data-section="treinos">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-          <span>Treinos</span>
-        </button>
-        <button class="portal-nav-btn" data-section="solo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <button class="portal-nav-btn" data-section="treinar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
           <span>Treinar</span>
         </button>
         <button class="portal-nav-btn" data-section="sessoes">
@@ -333,8 +329,7 @@ async function loadSection(section) {
 
   switch (section) {
     case 'home': content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks); break;
-    case 'treinos': content.innerHTML = renderTreinos(workouts, macrocycles); break;
-    case 'solo': content.innerHTML = renderSolo(workouts); initSolo(workouts); break;
+    case 'treinar': content.innerHTML = renderTreinar(workouts, schedules); initTreinar(workouts, schedules, student); break;
     case 'sessoes': content.innerHTML = renderSessoes(sessions, schedules); break;
     case 'bio': content.innerHTML = renderBio(biofeedbacks, sid, tid); initBio(); break;
     case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks); initRelatorios(); break;
@@ -342,7 +337,6 @@ async function loadSection(section) {
   }
 
   // Bind events after render
-  if (section === 'treinos') initTreinosSection();
   if (section === 'sessoes') initSessoesSection(sessions);
   if (section === 'home') initHomeSection(student, tid);
 
@@ -564,49 +558,40 @@ function renderTreinos(workouts, macrocycles) {
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         Ver vídeo
                       </a>` : ''}
-                    ${ex.notes ? `<div class="portal-ex-notes">${ex.notes}</div>` : ''}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-            <button class="portal-expand-btn" data-wid="${w.id}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              Ver exercícios
-            </button>
-          </div>
-        `).join('')}
-    </div>`;
-}
+// ── TREINAR (Smart) ────────────────────────────────────────────────
+function renderTreinar(workouts, schedules) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaySched = schedules.find(s => s.date === todayStr);
+  const nextSched = schedules
+    .filter(s => s.date > todayStr)
+    .sort((a,b) => a.date.localeCompare(b.date))[0];
+  const suggestedSched = todaySched || nextSched;
+  const suggestedWorkout = suggestedSched ? workouts.find(w => w.id === suggestedSched.workoutId) : null;
 
-function initTreinosSection() {
-  document.querySelectorAll('.portal-expand-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const wid = btn.dataset.wid;
-      const exDiv = document.getElementById(`wex_${wid}`);
-      const isOpen = exDiv.style.display !== 'none';
-      exDiv.style.display = isOpen ? 'none' : 'block';
-      btn.innerHTML = isOpen
-        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg> Ver exercícios`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> Fechar`;
-    });
-  });
-}
+  const suggestedCard = suggestedWorkout ? `
+    <div class="portal-suggested-card" id="suggestedCard">
+      <div class="portal-suggested-label">
+        ${todaySched
+          ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Treino de HOJE`
+          : `📅 Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
+        ${suggestedSched.time ? ` · ${suggestedSched.time}` : ''}
+      </div>
+      <div class="portal-suggested-name">${suggestedWorkout.name || 'Treino'}</div>
+      <div class="portal-suggested-meta">${(suggestedWorkout.exercises||[]).length} exercícios</div>
+      <button class="portal-submit-btn" id="startSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin-top:12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Iniciar Este Treino
+      </button>
+    </div>` : '';
 
-// ── SOLO TRAINING ──────────────────────────────────────────────
-function renderSolo(workouts) {
   return `
     <div class="portal-section">
-      <h2 class="portal-section-title">Treinar por Conta</h2>
-      <div class="glass-card" style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-color:rgba(99,102,241,0.25);margin-bottom:16px">
-        <div class="portal-card-label" style="color:#818cf8">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Sessão Autônoma — treino independente
-        </div>
-        <p style="font-size:0.82rem;color:var(--portal-text-secondary);margin:0">Escolha um treino como base ou registre livremente.</p>
-      </div>
+      <h2 class="portal-section-title">Treinar</h2>
 
+      ${suggestedCard}
+
+      <div class="portal-section-sub" style="margin-top:${suggestedCard?'20px':'0'}">Ou escolha outro treino</div>
       <div class="portal-bio-field">
-        <label class="portal-bio-label" style="margin-bottom:10px">Treino de referência (opcional)</label>
         <div class="portal-workout-picker" id="soloWorkoutPicker">
           <div class="portal-workout-pick-item selected" data-wid="">
             <div class="portal-workout-pick-icon">🎯</div>
@@ -631,135 +616,285 @@ function renderSolo(workouts) {
         Iniciar Sessão
       </button>
 
-      <!-- Active solo session -->
-      <div id="soloActiveSession" style="display:none;margin-top:16px">
-        <div class="glass-card" style="border-color:rgba(99,102,241,0.3)">
-          <div class="portal-card-label" style="color:#818cf8">⏱ Sessão em andamento</div>
-          <div id="soloTimer" class="portal-solo-timer">00:00</div>
-          <div id="soloExerciseLog"></div>
-          <div class="portal-bio-field" style="margin-top:12px">
-            <label class="portal-bio-label">PSE geral (1-10) <span id="soloPseVal">5</span></label>
-            <input type="range" id="soloPse" min="1" max="10" value="5" class="portal-range" oninput="document.getElementById('soloPseVal').textContent=this.value">
+      <!-- Active session -->
+      <div id="soloActiveSession" style="display:none;margin-top:4px">
+
+        <!-- Live panel -->
+        <div class="portal-live-panel">
+          <div class="portal-live-stat">
+            <div class="portal-live-val" id="liveTotal">00:00</div>
+            <div class="portal-live-lbl">⏱ Total</div>
           </div>
-          <div class="portal-bio-field">
-            <label class="portal-bio-label">Notas / Observações</label>
-            <textarea id="soloNotes" class="portal-textarea" rows="2" placeholder="Como foi o treino?"></textarea>
+          <div class="portal-live-stat">
+            <div class="portal-live-val" id="liveWork" style="color:#10b981">00:00</div>
+            <div class="portal-live-lbl">💪 Trabalho</div>
           </div>
-          <button id="soloFinishBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:8px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Finalizar & Salvar Sessão
-          </button>
+          <div class="portal-live-stat">
+            <div class="portal-live-val" id="liveRest" style="color:#06b6d4">00:00</div>
+            <div class="portal-live-lbl">🙏 Descanso</div>
+          </div>
+          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer">🔔</button>
         </div>
+
+        <!-- Rest timer overlay (hidden until set done) -->
+        <div id="restTimerOverlay" class="portal-rest-overlay" style="display:none">
+          <div class="portal-rest-label">Descanso</div>
+          <div class="portal-rest-countdown" id="restCountdown">60</div>
+          <div class="portal-rest-bar-track"><div class="portal-rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
+          <div class="portal-rest-actions">
+            <button class="portal-rest-adj" id="restMinus">-15s</button>
+            <button class="portal-rest-skip" id="restSkip">Pular ⏩</button>
+            <button class="portal-rest-adj" id="restPlus">+15s</button>
+          </div>
+        </div>
+
+        <!-- Exercises -->
+        <div id="soloExerciseLog" class="portal-live-exercises"></div>
+
+        <!-- Session notes -->
+        <div class="glass-card" style="margin-top:12px">
+          <div class="portal-card-label">📝 Anotações da Sessão</div>
+          <textarea id="soloNotes" class="portal-textarea" rows="3" placeholder="Observações gerais do treino..."></textarea>
+        </div>
+
+        <div class="portal-bio-field" style="margin-top:12px">
+          <label class="portal-bio-label">PSE geral (1-10) <span id="soloPseVal">5</span></label>
+          <input type="range" id="soloPse" min="1" max="10" value="5" class="portal-range" oninput="document.getElementById('soloPseVal').textContent=this.value">
+        </div>
+
+        <button id="soloFinishBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Finalizar & Salvar Sessão
+        </button>
       </div>
     </div>`;
 }
 
-function initSolo(workouts) {
+function initTreinar(workouts, schedules, student) {
   let soloTimerInterval = null;
   let soloStartTime = null;
+  let workSeconds = 0, restSeconds = 0;
+  let soundEnabled = true;
+  let restTimer = null;
+  let restTotal = 60;
+  let restRemaining = 60;
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
-
   const selInput = document.getElementById('soloWorkoutSel');
   const exBlock = document.getElementById('soloExercisesBlock');
 
-  // Card picker
+  // Sound helper (Web Audio API)
+  function playBeep(freq = 880, dur = 0.15, times = 3) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      let t = ctx.currentTime;
+      for (let i = 0; i < times; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.start(t); osc.stop(t + dur);
+        t += dur + 0.05;
+      }
+    } catch {}
+  }
+
+  // Sound toggle
+  document.getElementById('soundToggleBtn')?.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔔' : '🔕';
+  });
+
+  // Rest timer
+  function startRestTimer(seconds) {
+    if (restTimer) clearInterval(restTimer);
+    restTotal = seconds;
+    restRemaining = seconds;
+    const overlay = document.getElementById('restTimerOverlay');
+    const cd = document.getElementById('restCountdown');
+    const bar = document.getElementById('restBarFill');
+    if (!overlay) return;
+    overlay.style.display = 'block';
+    const updateUI = () => {
+      if (cd) cd.textContent = restRemaining;
+      if (bar) bar.style.width = `${(restRemaining / restTotal) * 100}%`;
+    };
+    updateUI();
+    restTimer = setInterval(() => {
+      restRemaining--;
+      updateUI();
+      if (restRemaining <= 0) {
+        clearInterval(restTimer);
+        overlay.style.display = 'none';
+        playBeep(660, 0.2, 3);
+      }
+    }, 1000);
+  }
+
+  function stopRestTimer() {
+    if (restTimer) clearInterval(restTimer);
+    const overlay = document.getElementById('restTimerOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  document.getElementById('restSkip')?.addEventListener('click', stopRestTimer);
+  document.getElementById('restMinus')?.addEventListener('click', () => {
+    restRemaining = Math.max(5, restRemaining - 15);
+    restTotal = Math.max(5, restTotal - 15);
+    document.getElementById('restCountdown').textContent = restRemaining;
+  });
+  document.getElementById('restPlus')?.addEventListener('click', () => {
+    restRemaining += 15; restTotal += 15;
+    document.getElementById('restCountdown').textContent = restRemaining;
+  });
+
+  // Workout card picker
   document.querySelectorAll('.portal-workout-pick-item').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.portal-workout-pick-item').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       const wid = card.dataset.wid;
-      selInput.value = wid;
+      if (selInput) selInput.value = wid;
       const w = workouts.find(w => w.id === wid);
       if (w && w.exercises?.length) {
         exBlock.innerHTML = `
-          <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do treino</div>
+          <div class="portal-section-sub" style="margin-bottom:8px">Exercícios</div>
           ${w.exercises.map((ex,i) => `
-            <div class="glass-card" style="padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+            <div class="glass-card" style="padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
               <div class="portal-ex-num">${i+1}</div>
               <div>
                 <div class="portal-ex-name" style="font-size:0.85rem">${ex.name}</div>
-                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}</div>
+                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
               </div>
             </div>
           `).join('')}`;
-      } else {
-        exBlock.innerHTML = '';
-      }
+      } else { exBlock.innerHTML = ''; }
     });
   });
 
-  document.getElementById('soloStartBtn')?.addEventListener('click', () => {
-    soloStartTime = new Date();
-    document.getElementById('soloActiveSession').style.display = 'block';
-    document.getElementById('soloStartBtn').style.display = 'none';
-    document.getElementById('soloExercisesBlock').style.display = 'none';
-    document.getElementById('soloWorkoutPicker').style.display = 'none';
+  // Start suggested workout
+  document.getElementById('startSuggestedBtn')?.addEventListener('click', (e) => {
+    const wid = e.currentTarget.dataset.wid;
+    if (selInput) selInput.value = wid;
+    document.querySelectorAll('.portal-workout-pick-item').forEach(c => c.classList.remove('selected'));
+    const matchCard = document.querySelector(`.portal-workout-pick-item[data-wid="${wid}"]`);
+    if (matchCard) matchCard.classList.add('selected');
+    document.getElementById('soloStartBtn')?.click();
+  });
 
-    // Build exercise log
-    const wid = selInput.value;
-    const w = workouts.find(w => w.id === wid);
+  // Build exercise log HTML
+  function buildExerciseLog(w) {
     const exLogEl = document.getElementById('soloExerciseLog');
     if (w && w.exercises?.length) {
       exLogEl.innerHTML = w.exercises.map((ex, ei) => `
-        <div class="portal-solo-ex" style="margin-bottom:12px">
-          <div style="font-size:0.85rem;font-weight:700;margin-bottom:6px">${ex.name}</div>
+        <div class="glass-card portal-live-ex-card">
+          <div class="portal-live-ex-header">
+            <div class="portal-ex-num">${ei+1}</div>
+            <div style="flex:1;min-width:0">
+              <div class="portal-ex-name">${ex.name}</div>
+              <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
+              ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
+            </div>
+            ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
+          </div>
+          ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
           ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => `
-            <div class="portal-solo-set-row">
+            <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
               <span class="portal-set-num">S${si+1}</span>
               <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0">
               <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5">
-              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="font-size:0.72rem">
-                <option value="">PSE</option>
-                ${[1,2,3,4,5,6,7,8,9,10].map(v=>`<option value="${v}">${v}</option>`).join('')}
-              </select>
-              <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" onclick="(function(el){el.classList.toggle('done');el.closest('.portal-solo-set-row').classList.toggle('set-done')})(this)">✓</button>
+              <input type="number" placeholder="PSE" class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" min="1" max="10">
+              <input type="number" placeholder="RIR" class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" min="0" max="10">
+              <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${ex.rest||60}">&#10003;</button>
             </div>
           `).join('')}
+          <div class="portal-live-ex-notes-wrap">
+            <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
+          </div>
         </div>
       `).join('');
     } else {
-      // Free exercise log
+      // Free log
       exLogEl.innerHTML = `
         <div id="soloFreeExercises"></div>
         <button id="soloAddExBtn" class="portal-expand-btn" style="border:1px dashed rgba(255,255,255,0.15);border-radius:10px;padding:10px;width:100%;justify-content:center;margin-bottom:8px;color:var(--portal-primary)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Adicionar exercício
         </button>`;
-      let freeExCount = 0;
+      let cnt = 0;
       document.getElementById('soloAddExBtn')?.addEventListener('click', () => {
         const div = document.createElement('div');
-        div.className = 'glass-card';
-        div.style.cssText = 'padding:10px;margin-bottom:8px';
-        const ei = freeExCount++;
+        div.className = 'glass-card'; div.style.cssText = 'padding:10px;margin-bottom:8px';
+        const ei = cnt++;
         div.innerHTML = `
           <input type="text" placeholder="Nome do exercício" class="portal-textarea" id="fex_${ei}_name" style="margin-bottom:6px">
           <div class="portal-solo-set-row">
             <span class="portal-set-num">S1</span>
             <input type="number" placeholder="Reps" class="portal-solo-input" id="fex_${ei}_reps">
             <input type="number" placeholder="kg" class="portal-solo-input" id="fex_${ei}_load" step="0.5">
+            <input type="number" placeholder="PSE" class="portal-solo-input portal-solo-pse" id="fex_${ei}_pse" min="1" max="10">
+            <input type="number" placeholder="RIR" class="portal-solo-input portal-solo-pse" id="fex_${ei}_rir" min="0" max="10">
           </div>`;
         document.getElementById('soloFreeExercises').appendChild(div);
       });
     }
 
-    // Timer
+    // Bind done buttons
+    exLogEl.querySelectorAll('.portal-solo-done-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const isDone = btn.classList.toggle('done');
+        btn.closest('.portal-solo-set-row')?.classList.toggle('set-done', isDone);
+        if (isDone) {
+          workSeconds += 30; // estimate 30s work per set
+          const restSec = parseInt(btn.dataset.rest) || 60;
+          startRestTimer(restSec);
+          playBeep(440, 0.1, 1);
+        }
+      });
+    });
+  }
+
+  // Main timer
+  function startMainTimer() {
+    soloStartTime = new Date();
     soloTimerInterval = setInterval(() => {
       const elapsed = Math.floor((new Date() - soloStartTime) / 1000);
-      const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-      const s = String(elapsed % 60).padStart(2, '0');
-      const timerEl = document.getElementById('soloTimer');
-      if (timerEl) timerEl.textContent = `${m}:${s}`;
+      const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      const el = document.getElementById('liveTotal');
+      const ew = document.getElementById('liveWork');
+      const er = document.getElementById('liveRest');
+      if (el) el.textContent = fmt(elapsed);
+      if (ew) ew.textContent = fmt(workSeconds);
+      const rd = Math.max(0, elapsed - workSeconds);
+      if (er) er.textContent = fmt(rd);
     }, 1000);
+  }
+
+  document.getElementById('soloStartBtn')?.addEventListener('click', () => {
+    document.getElementById('soloActiveSession').style.display = 'block';
+    document.getElementById('soloStartBtn').style.display = 'none';
+    document.getElementById('soloExercisesBlock').style.display = 'none';
+    document.getElementById('soloWorkoutPicker').style.display = 'none';
+    document.getElementById('suggestedCard')?.remove();
+    document.querySelector('.portal-section-sub')?.remove();
+
+    const wid = selInput?.value || '';
+    const w = workouts.find(w => w.id === wid);
+    buildExerciseLog(w);
+    startMainTimer();
   });
 
   document.getElementById('soloFinishBtn')?.addEventListener('click', async () => {
     clearInterval(soloTimerInterval);
+    stopRestTimer();
     const durationMin = Math.round((new Date() - soloStartTime) / 60000);
-    const wid = selInput.value;
+    const wid = selInput?.value || '';
     const w = workouts.find(w => w.id === wid);
-    const pse = parseInt(document.getElementById('soloPse').value);
-    const notes = document.getElementById('soloNotes').value;
+    const pse = parseInt(document.getElementById('soloPse')?.value) || 5;
+    const notes = document.getElementById('soloNotes')?.value || '';
 
     // Collect setLog
     const setLog = [];
@@ -770,8 +905,14 @@ function initSolo(workouts) {
           const reps = document.getElementById(`sr_${ei}_${si}_reps`)?.value;
           const load = document.getElementById(`sr_${ei}_${si}_load`)?.value;
           const psei = document.getElementById(`sr_${ei}_${si}_pse`)?.value;
+          const rir = document.getElementById(`sr_${ei}_${si}_rir`)?.value;
+          const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
           if (reps || load) {
-            setLog.push({ exerciseIdx: ei, exerciseName: ex.name, setIdx: si, reps: parseInt(reps)||0, load: parseFloat(load)||0, pse: psei ? parseInt(psei) : null });
+            setLog.push({ exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
+              reps: parseInt(reps)||0, load: parseFloat(load)||0,
+              pse: psei ? parseInt(psei) : null,
+              rir: rir !== '' && rir != null ? parseInt(rir) : null,
+              notes: exNotes });
           }
         }
       });

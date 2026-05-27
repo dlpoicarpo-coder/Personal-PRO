@@ -644,6 +644,75 @@
   border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 1px 6px;
 }
 
+/* ── Treinar Smart Section (Sprint 3) ──────────────── */
+.portal-suggested-card {
+  background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.05));
+  border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 16px; margin-bottom: 16px;
+  position: relative; overflow: hidden;
+}
+.portal-suggested-label { font-size: 0.7rem; font-weight: 700; color: var(--portal-success); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.portal-suggested-name { font-size: 1.1rem; font-weight: 800; color: var(--portal-text); margin-bottom: 4px; }
+.portal-suggested-meta { font-size: 0.8rem; color: var(--portal-text-secondary); }
+
+/* Live Panel */
+.portal-live-panel {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--portal-surface); border: 1px solid var(--portal-border);
+  border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; position: sticky; top: 10px; z-index: 10;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.portal-root[data-theme="light"] .portal-live-panel { box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+.portal-live-stat { display: flex; flex-direction: column; align-items: center; }
+.portal-live-val { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.portal-live-lbl { font-size: 0.6rem; color: var(--portal-text-muted); text-transform: uppercase; margin-top: 2px; }
+.portal-sound-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px; }
+
+/* Rest Overlay */
+.portal-rest-overlay {
+  background: rgba(15,23,42,0.95); border: 1px solid rgba(6,182,212,0.4); border-radius: 16px;
+  padding: 20px; text-align: center; margin-bottom: 16px; backdrop-filter: blur(10px);
+}
+.portal-root[data-theme="light"] .portal-rest-overlay { background: rgba(255,255,255,0.95); }
+.portal-rest-label { font-size: 0.8rem; font-weight: 700; color: #06b6d4; text-transform: uppercase; letter-spacing: 0.05em; }
+.portal-rest-countdown { font-size: 3rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--portal-text); line-height: 1.1; margin: 10px 0; }
+.portal-rest-bar-track { height: 6px; background: var(--portal-border); border-radius: 99px; overflow: hidden; margin-bottom: 16px; }
+.portal-rest-bar-fill { height: 100%; background: #06b6d4; transition: width 1s linear; }
+.portal-rest-actions { display: flex; justify-content: center; gap: 10px; }
+.portal-rest-adj { background: var(--portal-surface); border: 1px solid var(--portal-border); color: var(--portal-text); padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.portal-rest-skip { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); color: #06b6d4; padding: 8px 24px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+
+/* Exercises Live Card */
+.portal-live-ex-card { padding: 14px; margin-bottom: 12px; }
+.portal-live-ex-header { display: flex; gap: 12px; margin-bottom: 12px; }
+.portal-ex-method { font-size: 0.65rem; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; font-weight: 700; }
+.portal-ex-video { font-size: 0.7rem; color: #3b82f6; text-decoration: none; display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 6px; background: rgba(59,130,246,0.1); flex-shrink: 0; align-self: flex-start; }
+.portal-ex-desc { font-size: 0.75rem; color: var(--portal-text-secondary); background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 8px; margin-bottom: 12px; border-left: 2px solid var(--portal-border); }
+.portal-root[data-theme="light"] .portal-ex-desc { background: rgba(0,0,0,0.02); }
+
+/* Set Rows */
+.portal-solo-set-row {
+  display: flex; align-items: center; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--portal-border); transition: opacity 0.3s;
+}
+.portal-solo-set-row:last-child { border: none; }
+.portal-solo-set-row.set-done { opacity: 0.5; }
+.portal-solo-input {
+  flex: 1; min-width: 0; background: var(--portal-bg); border: 1px solid var(--portal-border);
+  color: var(--portal-text); padding: 8px 4px; border-radius: 6px; font-size: 0.85rem; text-align: center;
+  outline: none; transition: border-color 0.2s;
+}
+.portal-solo-input:focus { border-color: var(--portal-primary); }
+.portal-solo-pse { flex: 0.8; }
+.portal-solo-done-btn {
+  width: 36px; height: 36px; flex-shrink: 0; background: var(--portal-surface); border: 2px solid var(--portal-border);
+  border-radius: 10px; color: var(--portal-border); font-size: 1rem; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.portal-solo-done-btn.done {
+  background: var(--portal-success); border-color: var(--portal-success); color: white;
+}
+.portal-live-ex-notes-wrap { margin-top: 10px; }
+.portal-live-ex-notes-wrap textarea { font-size: 0.75rem; padding: 8px; }
+
 /* ── PWA Meta ─────────────────────────────────────── */
 @media (max-width: 480px) {
   .portal-root { max-width: 100vw; }
