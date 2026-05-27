@@ -320,7 +320,7 @@ async function loadSection(section) {
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
 
-  const [student, sessions, workouts, biofeedbacks, assessments, schedules, macrocycles, finances] = await Promise.all([
+  const [student, sessionsRaw, workouts, biofeedbacks, assessments, schedules, macrocycles, finances] = await Promise.all([
     db.get('students', sid).catch(() => null),
     db.getAll('sessions').then(all => all.filter(s => s.studentId === sid)).catch(() => []),
     db.getAll('workouts').then(all => all.filter(w => w.studentId === sid)).catch(() => []),
@@ -330,6 +330,22 @@ async function loadSection(section) {
     db.getAll('macrocycles').then(all => all.filter(m => m.studentId === sid)).catch(() => []),
     db.getAll('finances').then(all => all.filter(f => f.studentId === sid)).catch(() => []),
   ]);
+
+  // Normalize sessions: unify field names from trainer live-tracker vs solo portal
+  const sessions = sessionsRaw.map(s => {
+    const durationMin = s.durationMin || (s.totalDuration ? Math.round(s.totalDuration / 60) : 0);
+    // Resolve exercise names in setLog using session.exercises array
+    const exercises = s.exercises || [];
+    const setLog = (s.setLog || []).map(set => ({
+      ...set,
+      exerciseName: set.exerciseName || (exercises[set.exIdx]?.name) || (set.exerciseIdx != null ? exercises[set.exerciseIdx]?.name : null) || null,
+      load: parseFloat(set.load) || 0,
+      reps: parseFloat(set.reps) || 0,
+    }));
+    const totalVol = s.totalVolume || setLog.reduce((t,x)=>t+(x.load||0)*(x.reps||0),0);
+    return { ...s, durationMin, setLog, totalVolume: totalVol };
+  });
+
 
   portalState.student = student;
 
@@ -411,12 +427,27 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     paymentLabel = diff < 0 ? `Venceu há ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
   }
 
-  // Macrociclo progress
+  // Macrociclo progress — based on session count within macro period
   let macroProgress = 0;
+  let macroSessionsCount = 0;
   if (currentMacro?.startDate && currentMacro?.endDate) {
-    const total = new Date(currentMacro.endDate) - new Date(currentMacro.startDate);
-    const elapsed = now - new Date(currentMacro.startDate);
-    macroProgress = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+    const ms = new Date(currentMacro.startDate);
+    const me = new Date(currentMacro.endDate);
+    const total = me - ms;
+    const elapsed = now - ms;
+    // Date-based progress
+    const datePct = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+    // Session-based: sessions within macro date range
+    macroSessionsCount = completedSessions.filter(s => {
+      const d = new Date(s.date.includes('T')?s.date:s.date+'T12:00');
+      return d >= ms && d <= me;
+    }).length;
+    // Planned sessions (approx: macrocycle weeks * sessions/week from schedules)
+    const macroWeeks = Math.max(1, Math.ceil(total / (7*86400000)));
+    const schedInMacro = schedules.filter(s => s.date >= currentMacro.startDate && s.date <= currentMacro.endDate).length;
+    const plannedSessions = schedInMacro || (macroWeeks * 3);
+    const sesssPct = Math.min(100, Math.round((macroSessionsCount / plannedSessions) * 100));
+    macroProgress = datePct > 0 ? datePct : sesssPct;
   }
 
   // Today check-in banner
@@ -506,7 +537,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
           <div class="portal-macro-progress-bar">
             <div class="portal-macro-progress-fill" style="width:${macroProgress}%"></div>
           </div>
-          <div class="portal-macro-pct">${macroProgress}% concluído</div>
+          <div class="portal-macro-pct">${macroProgress}% concluído &middot; ${macroSessionsCount} sessões no ciclo</div>
           ${currentMacro.endDate ? `<div class="text-xs" style="color:var(--portal-text-muted);margin-top:4px">Termina em: ${new Date(currentMacro.endDate).toLocaleDateString('pt-BR')}</div>` : ''}
         </div>` : ''}
 
@@ -729,18 +760,27 @@ function initTreinar(workouts, schedules, student) {
       const wid = card.dataset.wid;
       if (selInput) selInput.value = wid;
       const w = workouts.find(w => w.id === wid);
-      if (w && w.exercises?.length) {
+    if (w && w.exercises?.length) {
         exBlock.innerHTML = `
-          <div class="portal-section-sub" style="margin-bottom:8px">Exercícios</div>
+          <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do Treino</div>
           ${w.exercises.map((ex,i) => `
-            <div class="glass-card" style="padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px">
-              <div class="portal-ex-num">${i+1}</div>
-              <div>
-                <div class="portal-ex-name" style="font-size:0.85rem">${ex.name}</div>
-                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
+            <div class="glass-card portal-ex-pick-card" data-ei="${i}" data-wid="${w.id}" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.2s">
+              <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
+              <div style="flex:1;min-width:0">
+                <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
+                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+ex.load+'kg':''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
               </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
           `).join('')}`;
+        // Bind info tap
+        exBlock.querySelectorAll('.portal-ex-pick-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const ei = parseInt(card.dataset.ei);
+            const ex = w.exercises[ei];
+            if (ex) showExerciseModal(ex);
+          });
+        });
       } else { exBlock.innerHTML = ''; }
     });
   });
@@ -768,6 +808,9 @@ function initTreinar(workouts, schedules, student) {
               <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
               ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
             </div>
+            <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </button>
             ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
           </div>
           ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
@@ -825,7 +868,20 @@ function initTreinar(workouts, schedules, student) {
         }
       });
     });
+
+    // Bind info buttons
+    if (w?.exercises) {
+      exLogEl.querySelectorAll('.portal-ex-info-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const ei = parseInt(btn.dataset.ei);
+          const ex = w.exercises[ei];
+          if (ex) showExerciseModal(ex);
+        });
+      });
+    }
   }
+
 
   // Main timer
   function startMainTimer() {
@@ -925,6 +981,129 @@ function safeFormatDate(dStr, timeStr = '') {
     if (isNaN(d.getTime())) return dStr;
     return d.toLocaleDateString('pt-BR', {weekday:'short',day:'numeric',month:'short'});
   } catch { return dStr; }
+}
+
+// -- EXERCISE DETAIL MODAL -------------------------------------
+function showExerciseModal(ex) {
+  // Remove any existing modal
+  document.getElementById('exDetailModal')?.remove();
+
+  const muscleIcons = {
+    'peito': '#f97316', 'chest': '#f97316',
+    'costas': '#10b981', 'back': '#10b981',
+    'pernas': '#6366f1', 'quad': '#6366f1', 'legs': '#6366f1', 'gluteo': '#6366f1',
+    'ombro': '#06b6d4', 'shoulder': '#06b6d4',
+    'biceps': '#f59e0b', 'bicep': '#f59e0b',
+    'triceps': '#8b5cf6', 'tricep': '#8b5cf6',
+    'core': '#ef4444', 'abdominal': '#ef4444',
+  };
+  const muscleLower = (ex.muscleGroup || ex.muscle || '').toLowerCase();
+  const muscleColor = Object.entries(muscleIcons).find(([k])=>muscleLower.includes(k))?.[1] || '#818cf8';
+
+  const loadTypeLabel = ex.loadType === 'bodyweight' ? 'Peso Corporal' :
+                        ex.loadType === 'intensity' ? 'Intensidade (%)' : 'Carga (kg)';
+
+  const modal = document.createElement('div');
+  modal.id = 'exDetailModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;justify-content:flex-end;
+    background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+    animation:fadeIn 0.2s ease;
+  `;
+
+  modal.innerHTML = `
+    <style>
+      @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+      @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+      #exDetailSheet { animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+    </style>
+    <div id="exDetailSheet" style="
+      background:var(--portal-card,#1e293b);border-radius:24px 24px 0 0;
+      padding:0 0 env(safe-area-inset-bottom,20px);max-height:85vh;overflow-y:auto;
+      box-shadow:0 -20px 60px rgba(0,0,0,0.5);
+    ">
+      <!-- Handle -->
+      <div style="display:flex;justify-content:center;padding:12px 0 0">
+        <div style="width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.2)"></div>
+      </div>
+
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:16px 20px 12px">
+        <div style="flex:1">
+          <div style="font-size:1.15rem;font-weight:800;color:var(--portal-text,#f1f5f9);line-height:1.3">${ex.name}</div>
+          ${ex.muscleGroup||ex.muscle ? `<div style="font-size:0.8rem;color:${muscleColor};font-weight:600;margin-top:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="${muscleColor}" style="vertical-align:middle;margin-right:4px"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            ${ex.muscleGroup||ex.muscle}
+          </div>` : ''}
+        </div>
+        <button id="closeExModal" style="background:rgba(255,255,255,0.08);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Quick stats row -->
+      <div style="display:flex;gap:8px;padding:0 20px 16px;overflow-x:auto">
+        ${ex.sets ? `<div style="background:rgba(99,102,241,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:#818cf8">${ex.sets}</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Séries</div>
+        </div>` : ''}
+        ${ex.reps ? `<div style="background:rgba(16,185,129,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:#10b981">${ex.reps}</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Reps</div>
+        </div>` : ''}
+        ${ex.load ? `<div style="background:rgba(249,115,22,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:#f97316">${ex.load}${ex.loadType!=='bodyweight'?'kg':'%'}</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">${loadTypeLabel}</div>
+        </div>` : ''}
+        ${ex.rest ? `<div style="background:rgba(6,182,212,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:#06b6d4">${ex.rest}s</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Descanso</div>
+        </div>` : ''}
+        ${ex.rir!=null ? `<div style="background:rgba(245,158,11,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:#f59e0b">RIR ${ex.rir}</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Reserva</div>
+        </div>` : ''}
+      </div>
+
+      <!-- Video -->
+      ${ex.videoUrl ? `<div style="padding:0 20px 16px">
+        ${ex.videoUrl.includes('youtube') || ex.videoUrl.includes('youtu.be') ?
+          `<div style="position:relative;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000">
+            <iframe src="${ex.videoUrl.replace('watch?v=','embed/').replace('youtu.be/','youtube.com/embed/')}" style="position:absolute;inset:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+          </div>` :
+          `<video src="${ex.videoUrl}" controls playsinline style="width:100%;border-radius:14px;max-height:220px;background:#000"></video>`
+        }
+      </div>` : `<div style="margin:0 20px 16px;height:160px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhum vídeo vinculado</span>
+      </div>`}
+
+      <!-- Description / Technique -->
+      <div style="padding:0 20px 20px">
+        ${ex.description||ex.notes||ex.technique ? `
+        <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px;border-left:3px solid ${muscleColor}">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${muscleColor};margin-bottom:8px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${muscleColor}" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Técnica de Execução
+          </div>
+          <p style="font-size:0.82rem;line-height:1.7;color:var(--portal-text-secondary,#94a3b8);margin:0">${ex.description||ex.notes||ex.technique}</p>
+        </div>` : `
+        <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:8px">Dicas de Execução</div>
+          <p style="font-size:0.82rem;line-height:1.7;color:#64748b;margin:0">Mantenha a postura correta durante todo o movimento. Controle a fase excêntrica (descida) em 2-3 segundos. Respire corretamente: expire no esforço, inspire no retorno.</p>
+        </div>`}
+
+        ${ex.method ? `<div style="margin-top:10px;background:rgba(139,92,246,0.1);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><polygon points="12 2 2 7 12 22 22 7 12 2"/></svg>
+          <span style="font-size:0.8rem;color:#a78bfa;font-weight:600">${ex.method}</span>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  document.getElementById('closeExModal')?.addEventListener('click', () => modal.remove());
 }
 
 function renderSessoes(sessions, schedules) {
