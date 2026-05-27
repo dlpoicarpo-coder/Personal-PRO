@@ -1020,18 +1020,6 @@ export function initTracker(navigateFn) {
   document.querySelectorAll('.do-set').forEach(btn => {
     btn.addEventListener('click', () => showSetModal(btn));
   });
-      state.session.currentExIdx = state.exIdx;
-      state.session.workSec = state.workSec;
-      db.put('sessions', state.session);
-
-      // Auto-iniciar descanso
-      state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
-      state.restTimer.reset(); state.restTimer.start();
-      const rb = document.getElementById('goRest'); if (rb) rb.textContent = '⏸ Pausar Descanso';
-      const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
-
-      notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg`);
-  }
 
   // Navegar exercícios
   const refreshLive = async () => {
@@ -1502,4 +1490,6 @@ function generateSessionPDF(session, student) {
     doc.save(`sessao_${(student?.name||'aluno').replace(/\s/g,'_')}_${date.replace(/\//g,'-')}.pdf`);
     notify.success('PDF gerado!');
   } catch(err){ console.error(err); notify.error('Erro ao gerar PDF.'); }
+}
+
 }
