@@ -1,396 +1,525 @@
 // ========================================
-// PERSONAL PRO — Supabase Wrapper (Sistema de Treinamento)
+// PERSONAL PRO — Database (v3)
+// Supabase Auth + Multi-Tenant Isolation
+// All records scoped to trainer_id (user.id)
 // ========================================
 
-const supabaseUrl = 'https://vbxedlloesvjpqzunqyv.supabase.co'; 
-const supabaseKey = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
-const SUPABASE_TABLES = ['students', 'workouts', 'sessions', 'biofeedback', 'macrocycles', 'assessments', 'anamneses', 'finances', 'financial', 'workout_templates', 'exercises', 'cycles', 'schedules', 'settings'];
+import { getSupabase, getCurrentUser } from './utils/auth.js';
+
+const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
 
 class Database {
   constructor() {
-    // Single Supabase instance (fixes "Multiple GoTrueClient instances" warning)
-    this.supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
-    if (!this.supabase) {
-      console.warn("Supabase client não encontrado. Usando LocalStorage (Offline Mode).");
-    }
+    // Use the singleton from auth.js
+    this._currentUser = null;
   }
 
-  // Helper for LocalStorage
-  _getLocal(storeName) {
+  get supabase() {
+    return getSupabase();
+  }
+
+  // Get current user id (trainer_id used in all records)
+  async _getTrainerId() {
+    if (this._currentUser?.id) return this._currentUser.id;
+    const user = await getCurrentUser();
+    if (user) this._currentUser = user;
+    return user?.id || null;
+  }
+
+  // ── LOCAL STORAGE HELPERS (scoped per trainer_id) ──
+  _localKey(storeName, trainerId) {
+    return trainerId ? `pp_${trainerId}_${storeName}` : `pp_${storeName}`;
+  }
+
+  _getLocal(storeName, trainerId) {
     try {
-      const data = localStorage.getItem(`pp_${storeName}`);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+      const key = this._localKey(storeName, trainerId);
+      const data = localStorage.getItem(key);
+      if (data) return JSON.parse(data);
+      // Fallback: try old unscoped key (migration)
+      const old = localStorage.getItem(`pp_${storeName}`);
+      return old ? JSON.parse(old) : [];
+    } catch { return []; }
   }
 
-  _getTableName(storeName) {
-    if (storeName === 'anamnesis') return 'anamneses';
-    if (storeName === 'finances') return 'financial';
-    return storeName;
-  }
-
-  _saveLocal(storeName, items) {
+  _saveLocal(storeName, items, trainerId) {
     try {
-      localStorage.setItem(`pp_${storeName}`, JSON.stringify(items));
-    } catch (e) {
-      console.error('LocalStorage error:', e);
-    }
+      localStorage.setItem(this._localKey(storeName, trainerId), JSON.stringify(items));
+    } catch (e) { console.error('LocalStorage error:', e); }
   }
 
+  // ── GET SINGLE RECORD ──
   async get(storeName, id) {
-    let localItem = this._getLocal(storeName).find(i => i.id === id) || null;
-    if (!this.supabase) return localItem;
+    const trainerId = await this._getTrainerId();
+    const local = this._getLocal(storeName, trainerId).find(i => i.id === id) || null;
+    if (!this.supabase) return local;
 
     try {
-      const { data, error } = await this.supabase
-        .from(this._getTableName(storeName))
-        .select('data')
-        .eq('id', id)
-        .single();
-        
-      if (error && error.code !== 'PGRST116') {
-        console.warn(`Supabase get error (${storeName}), usando fallback local:`, error.message);
-        return localItem;
-      }
-      return data ? data.data : localItem;
-    } catch (err) {
-      console.warn(`Supabase get exception, usando fallback local:`, err.message);
-      return localItem;
-    }
+      let q = this.supabase.from(storeName).select('*').eq('id', id);
+      if (trainerId) q = q.eq('trainer_id', trainerId);
+      const { data, error } = await q.single();
+      if (error && error.code !== 'PGRST116') return local;
+      return data ? (data.data || data) : local;
+    } catch { return local; }
   }
 
+  // Tabelas que existem no Supabase (as demais ficam só em localStorage)
+  SUPABASE_TABLES = new Set([
+    'students','sessions','biofeedback','workouts','assessments',
+    'cycles','macrocycles','schedules','financial','finances',
+    'events','prescriptions','anamneses','settings','exercises','methods',
+  ]);
+
+  // ── GET ALL RECORDS ──
   async getAll(storeName) {
-    let localData = this._getLocal(storeName);
-    if (!this.supabase || !SUPABASE_TABLES.includes(this._getTableName(storeName))) return localData;
+    const trainerId = await this._getTrainerId();
+    const local     = this._getLocal(storeName, trainerId) || [];
+
+    if (!this.supabase || !this.SUPABASE_TABLES.has(storeName)) return local;
 
     try {
-      const { data, error } = await this.supabase
-        .from(this._getTableName(storeName))
-        .select('data');
-        
+      let data, error;
+
+      // exercises e methods: buscar trainer_id OU is_default=true
+      if (storeName === 'exercises' || storeName === 'methods') {
+        const q1 = trainerId
+          ? this.supabase.from(storeName).select('*').eq('trainer_id', trainerId)
+          : this.supabase.from(storeName).select('*').eq('is_default', true);
+        const q2 = this.supabase.from(storeName).select('*').eq('is_default', true);
+        const [r1, r2] = await Promise.all([q1, q2]);
+        const all = [...(r1.data||[]), ...(r2.data||[])];
+        // Deduplicar por id
+        const seen = new Set();
+        data  = all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+        error = r1.error;
+      } else {
+        let q = this.supabase.from(storeName).select('*');
+        if (trainerId) q = q.eq('trainer_id', trainerId);
+        ({ data, error } = await q);
+      }
+
       if (error) {
-        console.warn(`Supabase getAll error (${storeName}), usando fallback local:`, error.message);
-        return localData;
+        console.warn(`getAll(${storeName}) Supabase error:`, error.message);
+        return local;
       }
-      
-      if (data) {
-        const remoteData = data.map(row => row.data);
-        // Merge with local data (remote overrides local if id matches)
-        const merged = [...localData];
-        remoteData.forEach(remoteItem => {
-          const idx = merged.findIndex(i => i.id === remoteItem.id);
-          if (idx >= 0) {
-            // Keep remote if updated later or simply override
-            merged[idx] = remoteItem;
-          } else {
-            merged.push(remoteItem);
-          }
-        });
-        // Update local cache
-        this._saveLocal(storeName, merged);
-        return merged;
-      }
-      return localData;
-    } catch (err) {
-      return localData;
+
+      if (!data) return local;
+
+      // Mapear: usar r.data (JSONB) se existir, senão usar a row direta
+      const remote = data.map(r => {
+        if (r.data && typeof r.data === 'object') {
+          return { ...r.data, id: r.id }; // id da row sempre prevalece
+        }
+        return { ...r };
+      });
+
+      // Mesclar com local (local pode ter registros offline)
+      const merged = new Map();
+      local.forEach(r => { if (r?.id) merged.set(r.id, r); });
+      remote.forEach(r => { if (r?.id) merged.set(r.id, r); });
+      const result = [...merged.values()];
+
+      this._saveLocal(storeName, result, trainerId);
+      return result;
+    } catch (e) {
+      console.warn(`getAll(${storeName}) exception:`, e?.message || e);
+      return local;
     }
   }
 
-  async getAllForStudent(storeName, studentId, trainerId) {
-    let localData = this._getLocal(storeName).filter(i => i.studentId === studentId);
-    if (!this.supabase || !SUPABASE_TABLES.includes(this._getTableName(storeName))) return localData;
+  // ── GET ALL FOR STUDENT (sem filtro de trainer_id) ──────────
+  async getAllForStudent(storeName, studentId) {
+    const trainerId = await this._getTrainerId();
+    const local = (this._getLocal(storeName, trainerId) || [])
+      .filter(r => r?.studentId === studentId);
+
+    if (!this.supabase) return local;
 
     try {
-      let query = this.supabase
-        .from(this._getTableName(storeName))
-        .select('data');
-      
-      // We can't easily filter by data->studentId in basic select without specific indexing,
-      // but if the table has trainer_id we can filter by it to reduce payload.
-      if (trainerId) {
-        query = query.eq('trainer_id', trainerId);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        console.warn(`Supabase getAllForStudent error (${storeName}):`, error.message);
-        return localData;
-      }
-      
-      if (data) {
-        const remoteData = data.map(row => row.data).filter(d => d.studentId === studentId);
-        // Merge
-        const merged = [...localData];
-        remoteData.forEach(remoteItem => {
-          const idx = merged.findIndex(i => i.id === remoteItem.id);
-          if (idx >= 0) merged[idx] = remoteItem;
-          else merged.push(remoteItem);
-        });
-        return merged;
-      }
-      return localData;
-    } catch (err) {
-      return localData;
+      // Busca 1: pelo trainer_id (registros do personal + formulários com trainer correto)
+      // Busca 2: pelo studentId direto via JSONB (registros antigos)
+      const [r1, r2] = await Promise.all([
+        this.supabase.from(storeName).select('*').eq('trainer_id', trainerId),
+        this.supabase.from(storeName).select('*').filter('data->>studentId', 'eq', studentId),
+      ]);
+
+      const all  = [...(r1.data||[]), ...(r2.data||[])];
+      const seen = new Set();
+      return all
+        .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
+        .map(r => r.data ? { ...r.data, id: r.id } : r)
+        .filter(r => r?.studentId === studentId);
+    } catch (e) {
+      console.warn('getAllForStudent error:', e);
+      return local;
     }
   }
 
+  // ── GET BY INDEX ──
   async getByIndex(storeName, indexName, value) {
     const all = await this.getAll(storeName);
     return all.filter(item => item && item[indexName] === value);
   }
 
+  // ── PUT (UPSERT) ──
   async put(storeName, item) {
-    // Compatibilidade: converte 'key' para 'id' se necessário
+    const trainerId = await this._getTrainerId();
+
+    // Normalize id
     if (!item.id && item.key) item.id = item.key;
-    
     if (!item.id) item.id = crypto.randomUUID();
-    item.updatedAt = new Date().toISOString();
-    if (!item.createdAt) item.createdAt = new Date().toISOString();
+    item.updatedAt = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000),s=o<=0?'+':'-',h=String(Math.floor(Math.abs(o)/60)).padStart(2,'0'),m=String(Math.abs(o)%60).padStart(2,'0'); return l.toISOString().slice(0,-1)+s+h+':'+m; })();
+    if (!item.createdAt) item.createdAt = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000),s=o<=0?'+':'-',h=String(Math.floor(Math.abs(o)/60)).padStart(2,'0'),m=String(Math.abs(o)%60).padStart(2,'0'); return l.toISOString().slice(0,-1)+s+h+':'+m; })();
+    if (trainerId) item.trainer_id = trainerId;
 
-    // Sempre salva localmente como garantia (Offline-first / Fallback)
-    const localAll = this._getLocal(storeName);
-    const idx = localAll.findIndex(i => i.id === item.id);
-    if (idx >= 0) localAll[idx] = item; else localAll.push(item);
-    this._saveLocal(storeName, localAll);
+    // Save locally first (offline-first)
+    const all = this._getLocal(storeName, trainerId);
+    const idx = all.findIndex(i => i.id === item.id);
+    if (idx >= 0) all[idx] = item; else all.push(item);
+    this._saveLocal(storeName, all, trainerId);
 
-    let trainerId = item.trainer_id || item.trainerId || null;
-    if (!trainerId && this.supabase) {
-      try {
-        const { data: { user } } = await this.supabase.auth.getUser();
-        if (user) {
-          trainerId = user.id;
-        }
-      } catch (err) {
-        console.warn('Erro ao obter trainerId para o payload do Supabase:', err);
-      }
-    }
-
-    const payload = {
-      id: item.id,
-      data: item
-    };
-    if (trainerId) {
-      payload.trainer_id = trainerId;
-      item.trainer_id = trainerId;
-      item.trainerId = trainerId;
-    }
+    if (!this.supabase) return item;
 
     try {
-      const { error } = await this.supabase
-        .from(this._getTableName(storeName))
-        .upsert(payload);
-        
-      if (error) {
-        console.warn(`Supabase put error (${storeName}), salvo apenas localmente:`, error.message);
-      }
-    } catch (err) {
-      console.warn(`Supabase put exception (${storeName}):`, err.message);
-    }
-    
+      const payload = { id: item.id, trainer_id: trainerId || null, data: item };
+      const { error } = await this.supabase.from(storeName).upsert(payload);
+      if (error) console.warn(`Supabase put error (${storeName}):`, error.message);
+    } catch (err) { console.warn(`Supabase put exception:`, err.message); }
+
     return item;
   }
 
+  // ── ADD (alias for put) ──
   async add(storeName, item) {
     return this.put(storeName, item);
   }
 
+  // ── DELETE ──
   async delete(storeName, id) {
-    // Delete local
-    const localAll = this._getLocal(storeName).filter(i => i.id !== id);
-    this._saveLocal(storeName, localAll);
+    const trainerId = await this._getTrainerId();
+    const all = this._getLocal(storeName, trainerId).filter(i => i.id !== id);
+    this._saveLocal(storeName, all, trainerId);
 
     if (!this.supabase) return;
-
     try {
-      const { error } = await this.supabase
-        .from(this._getTableName(storeName))
-        .delete()
-        .eq('id', id);
-        
-      if (error) {
-        console.warn(`Supabase delete error (${storeName}):`, error.message);
-      }
-    } catch(err) {
-      // ignore
-    }
+      let q = this.supabase.from(storeName).delete().eq('id', id);
+      if (trainerId) q = q.eq('trainer_id', trainerId);
+      const { error } = await q;
+      if (error) console.warn(`Supabase delete error (${storeName}):`, error.message);
+    } catch {}
   }
 
+  // ── CLEAR ──
   async clear(storeName) {
-    localStorage.removeItem(`pp_${storeName}`);
+    const trainerId = await this._getTrainerId();
+    localStorage.removeItem(this._localKey(storeName, trainerId));
     if (!this.supabase) return;
-
     try {
-      const { error } = await this.supabase
-        .from(this._getTableName(storeName))
-        .delete()
-        .not('id', 'is', null);
-        
-      if (error) console.warn(`Supabase clear error (${storeName}):`, error.message);
-    } catch(err) {}
+      let q = this.supabase.from(storeName).delete().not('id', 'is', null);
+      if (trainerId) q = q.eq('trainer_id', trainerId);
+      const { error } = await q;
+      if (error) console.warn(`Supabase clear error:`, error.message);
+    } catch {}
   }
 
-  async exportAll() {
-    const data = { _version: 'v4' };
-    for (const store of SUPABASE_TABLES) {
-      data[store] = await this.getAll(store);
-    }
-    return data;
-  }
-
-  async importAll(data) {
-    if (!data._version) throw new Error('Invalid format');
-    for (const store of SUPABASE_TABLES) {
-      if (data[store]) {
-        await this.clear(store);
-        for (const item of data[store]) {
-          await this.put(store, item);
-        }
-      }
-    }
-  }
-
+  // ── COUNT ──
   async count(storeName) {
-    const localCount = this._getLocal(storeName).length;
-    if (!this.supabase) return localCount;
-
+    const trainerId = await this._getTrainerId();
+    const local = this._getLocal(storeName, trainerId);
+    if (!this.supabase) return local.length;
     try {
-      const { count, error } = await this.supabase
-        .from(this._getTableName(storeName))
-        .select('id', { count: 'exact', head: true });
-        
-      if (error) {
-        console.warn(`Supabase count error (${storeName}):`, error.message);
-        return localCount;
-      }
+      let q = this.supabase.from(storeName).select('id', { count: 'exact', head: true });
+      if (trainerId) q = q.eq('trainer_id', trainerId);
+      const { count, error } = await q;
+      if (error) return local.length;
       return count || 0;
-    } catch(err) {
-      return localCount;
-    }
+    } catch { return local.length; }
   }
 
+  // ── SET CURRENT USER (called after login) ──
+  setUser(user) {
+    this._currentUser = user;
+  }
+
+  // ── SEED INITIAL TEMPLATES ──
   async seedTemplates() {
-    // Adiciona templates iniciais se o banco estiver vazio
-    const exerciciosCount = await this.count('exercises');
-    if (exerciciosCount === 0) {
-      const templatesEx = [
-        // ── PEITO ──
-        { name: 'Supino Reto com Barra', muscleGroup: 'Peito', category: 'Musculação', equipment: 'Barra', description: 'Exercício base para desenvolvimento do peitoral maior. Deite no banco, segure a barra na largura dos ombros, desça até o peito e empurre até a extensão dos braços.' },
-        { name: 'Supino Inclinado com Halteres', muscleGroup: 'Peito', category: 'Musculação', equipment: 'Halteres', description: 'Foco na porção clavicular (superior) do peitoral. Banco inclinado a 30-45°, desça os halteres controladamente e pressione para cima.' },
-        { name: 'Crucifixo Reto', muscleGroup: 'Peito', category: 'Musculação', equipment: 'Halteres', description: 'Isolamento do peitoral com amplitude máxima. Braços levemente flexionados, abra em arco até sentir o alongamento e feche contraindo o peito.' },
-        { name: 'Peck Deck (Voador)', muscleGroup: 'Peito', category: 'Musculação', equipment: 'Máquina', description: 'Isolamento do peitoral na máquina. Ajuste a altura do assento, mantenha os cotovelos alinhados e junte os braços à frente do peito.' },
-        { name: 'Cross Over', muscleGroup: 'Peito', category: 'Musculação', equipment: 'Cabo', description: 'Exercício no cabo para definição do peitoral. Posicione-se no centro, puxe os cabos para baixo e à frente cruzando as mãos.' },
-        { name: 'Supino Declinado com Barra', muscleGroup: 'Peito', category: 'Musculação', equipment: 'Barra', description: 'Foco na porção esternal (inferior) do peitoral. Banco declinado a 15-30°, execução similar ao supino reto.' },
-        { name: 'Flexão de Braços', muscleGroup: 'Peito', category: 'Funcional', equipment: 'Peso corporal', description: 'Exercício funcional básico. Mãos na largura dos ombros, corpo alinhado, desça o peito ao chão e empurre de volta.' },
-        // ── COSTAS ──
-        { name: 'Puxada Frontal', muscleGroup: 'Costas', category: 'Musculação', equipment: 'Cabo', description: 'Desenvolvimento dos dorsais. Segure a barra na largura ou além dos ombros, puxe até a altura do queixo contraindo as escápulas.' },
-        { name: 'Remada Curvada com Barra', muscleGroup: 'Costas', category: 'Musculação', equipment: 'Barra', description: 'Exercício composto para espessura das costas. Tronco inclinado a 45°, puxe a barra em direção ao abdômen inferior.' },
-        { name: 'Remada Unilateral com Halter', muscleGroup: 'Costas', category: 'Musculação', equipment: 'Halteres', description: 'Trabalho unilateral para corrigir assimetrias. Apoie uma mão e joelho no banco, puxe o halter em direção ao quadril.' },
-        { name: 'Remada Baixa (Sentado)', muscleGroup: 'Costas', category: 'Musculação', equipment: 'Cabo', description: 'Foco na porção média das costas e romboides. Sentado, pés apoiados, puxe o triângulo em direção ao abdômen.' },
-        { name: 'Barra Fixa (Pull-up)', muscleGroup: 'Costas', category: 'Funcional', equipment: 'Peso corporal', description: 'Exercício avançado de peso corporal. Pegada pronada, puxe o corpo até o queixo ultrapassar a barra.' },
-        { name: 'Pullover no Cabo', muscleGroup: 'Costas', category: 'Musculação', equipment: 'Cabo', description: 'Isolamento do dorsal. Em pé de frente ao cabo alto, braços estendidos, puxe a barra em arco até as coxas.' },
-        { name: 'Levantamento Terra', muscleGroup: 'Costas', category: 'Musculação', equipment: 'Barra', description: 'Exercício composto completo para toda a cadeia posterior. Mantenha a coluna neutra, empurre o chão com os pés e estenda quadril e joelhos.' },
-        // ── OMBROS ──
-        { name: 'Desenvolvimento com Halteres', muscleGroup: 'Ombros', category: 'Musculação', equipment: 'Halteres', description: 'Exercício base para deltoides. Sentado ou em pé, pressione os halteres acima da cabeça até a extensão total dos braços.' },
-        { name: 'Elevação Lateral', muscleGroup: 'Ombros', category: 'Musculação', equipment: 'Halteres', description: 'Isolamento do deltoide lateral. Eleve os halteres lateralmente até a altura dos ombros, cotovelos levemente flexionados.' },
-        { name: 'Elevação Frontal', muscleGroup: 'Ombros', category: 'Musculação', equipment: 'Halteres', description: 'Foco no deltoide anterior. Eleve os halteres à frente até a altura dos olhos, alternando ou simultaneamente.' },
-        { name: 'Crucifixo Invertido', muscleGroup: 'Ombros', category: 'Musculação', equipment: 'Halteres', description: 'Foco no deltoide posterior. Tronco inclinado, abra os braços lateralmente mantendo cotovelos levemente flexionados.' },
-        { name: 'Face Pull', muscleGroup: 'Ombros', category: 'Musculação', equipment: 'Cabo', description: 'Saúde do ombro e deltoide posterior. No cabo alto com corda, puxe em direção ao rosto abrindo os cotovelos.' },
-        { name: 'Arnold Press', muscleGroup: 'Ombros', category: 'Musculação', equipment: 'Halteres', description: 'Variação do desenvolvimento com rotação. Comece com palmas voltadas para o rosto, rode e pressione acima da cabeça.' },
-        { name: 'Remada Alta', muscleGroup: 'Ombros', category: 'Musculação', equipment: 'Barra', description: 'Trabalha deltoide lateral e trapézio. Puxe a barra próximo ao corpo até a altura do queixo, cotovelos apontando para cima.' },
-        // ── BÍCEPS ──
-        { name: 'Rosca Direta com Barra', muscleGroup: 'Bíceps', category: 'Musculação', equipment: 'Barra', description: 'Exercício base para bíceps. Cotovelos fixos ao lado do corpo, flexione os antebraços contraindo o bíceps no topo.' },
-        { name: 'Rosca Alternada com Halteres', muscleGroup: 'Bíceps', category: 'Musculação', equipment: 'Halteres', description: 'Permite foco unilateral e maior amplitude. Alterne os braços supinando o punho durante a subida.' },
-        { name: 'Rosca Martelo', muscleGroup: 'Bíceps', category: 'Musculação', equipment: 'Halteres', description: 'Pegada neutra que enfatiza o braquiorradial e braquial. Flexione mantendo as palmas voltadas uma para a outra.' },
-        { name: 'Rosca Scott', muscleGroup: 'Bíceps', category: 'Musculação', equipment: 'Barra', description: 'Isolamento do bíceps no banco Scott. Apoie os braços no banco, flexione lentamente e desça controladamente.' },
-        { name: 'Rosca Concentrada', muscleGroup: 'Bíceps', category: 'Musculação', equipment: 'Halteres', description: 'Máximo isolamento do bíceps. Sentado, cotovelo apoiado na parte interna da coxa, flexione e segure a contração.' },
-        // ── TRÍCEPS ──
-        { name: 'Tríceps Pulley', muscleGroup: 'Tríceps', category: 'Musculação', equipment: 'Cabo', description: 'Exercício padrão para tríceps. Cotovelos fixos ao lado do corpo, estenda os antebraços para baixo contraindo o tríceps.' },
-        { name: 'Tríceps Testa', muscleGroup: 'Tríceps', category: 'Musculação', equipment: 'Barra', description: 'Foco na cabeça longa do tríceps. Deitado no banco, desça a barra em direção à testa e estenda os braços.' },
-        { name: 'Tríceps Francês', muscleGroup: 'Tríceps', category: 'Musculação', equipment: 'Halteres', description: 'Exercício overhead para cabeça longa. Halter atrás da cabeça, estenda verticalmente mantendo cotovelos fixos.' },
-        { name: 'Tríceps Corda', muscleGroup: 'Tríceps', category: 'Musculação', equipment: 'Cabo', description: 'Variação com corda para maior ativação. Abra as pontas da corda ao final do movimento para pico de contração.' },
-        { name: 'Mergulho nas Paralelas', muscleGroup: 'Tríceps', category: 'Funcional', equipment: 'Peso corporal', description: 'Exercício avançado. Corpo vertical (foco tríceps), desça até 90° nos cotovelos e empurre de volta.' },
-        // ── QUADRÍCEPS ──
-        { name: 'Agachamento Livre com Barra', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Barra', description: 'Rei dos exercícios de perna. Barra apoiada no trapézio, agache até pelo menos 90° nos joelhos mantendo a coluna neutra.' },
-        { name: 'Leg Press 45°', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Máquina', description: 'Alta carga com menor demanda de estabilização. Pés na largura dos ombros, desça até 90° nos joelhos.' },
-        { name: 'Cadeira Extensora', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Máquina', description: 'Isolamento do quadríceps. Estenda os joelhos até a extensão total, segure a contração por 1-2 segundos.' },
-        { name: 'Hack Squat', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Máquina', description: 'Agachamento guiado na máquina com foco no quadríceps. Costas apoiadas, desça controladamente.' },
-        { name: 'Agachamento Búlgaro', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Halteres', description: 'Exercício unilateral avançado. Pé traseiro elevado no banco, agache até o joelho quase tocar o chão.' },
-        { name: 'Passada (Avanço)', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Halteres', description: 'Trabalha quadríceps e glúteos. Dê um passo à frente, desça o joelho traseiro em direção ao chão e volte.' },
-        // ── POSTERIOR ──
-        { name: 'Mesa Flexora', muscleGroup: 'Posterior', category: 'Musculação', equipment: 'Máquina', description: 'Isolamento dos isquiotibiais deitado. Flexione os joelhos puxando a almofada em direção aos glúteos.' },
-        { name: 'Cadeira Flexora', muscleGroup: 'Posterior', category: 'Musculação', equipment: 'Máquina', description: 'Isolamento sentado dos isquiotibiais. Flexione os joelhos contra a resistência da máquina.' },
-        { name: 'Stiff com Barra', muscleGroup: 'Posterior', category: 'Musculação', equipment: 'Barra', description: 'Alongamento ativo dos isquiotibiais. Pernas semi-estendidas, incline o tronco à frente mantendo a coluna neutra.' },
-        { name: 'Bom Dia (Good Morning)', muscleGroup: 'Posterior', category: 'Musculação', equipment: 'Barra', description: 'Barra no trapézio, incline o tronco à frente como uma reverência. Foco nos isquiotibiais e eretores da espinha.' },
-        // ── GLÚTEOS ──
-        { name: 'Hip Thrust', muscleGroup: 'Glúteos', category: 'Musculação', equipment: 'Barra', description: 'Melhor exercício para glúteos. Costas apoiadas no banco, barra no quadril, empurre os quadris para cima até a extensão total.' },
-        { name: 'Elevação Pélvica', muscleGroup: 'Glúteos', category: 'Funcional', equipment: 'Peso corporal', description: 'Versão no solo do hip thrust. Deitado, pés apoiados, eleve o quadril contraindo os glúteos no topo.' },
-        { name: 'Abdução na Máquina', muscleGroup: 'Glúteos', category: 'Musculação', equipment: 'Máquina', description: 'Isolamento do glúteo médio. Sentado, abra as pernas contra a resistência da máquina.' },
-        { name: 'Agachamento Sumô', muscleGroup: 'Glúteos', category: 'Musculação', equipment: 'Halteres', description: 'Pés afastados além dos ombros com pontas para fora. Enfatiza glúteos e adutores.' },
-        // ── PANTURRILHA ──
-        { name: 'Panturrilha em Pé', muscleGroup: 'Panturrilha', category: 'Musculação', equipment: 'Máquina', description: 'Foco no gastrocnêmio (porção lateral). Em pé, eleve os calcanhares o máximo possível e desça alongando.' },
-        { name: 'Panturrilha Sentado', muscleGroup: 'Panturrilha', category: 'Musculação', equipment: 'Máquina', description: 'Foco no sóleo (porção profunda). Joelhos a 90°, eleve os calcanhares contra a resistência.' },
-        { name: 'Panturrilha no Leg Press', muscleGroup: 'Panturrilha', category: 'Musculação', equipment: 'Máquina', description: 'Pés na borda inferior da plataforma, empurre apenas com os dedos e antepé.' },
-        // ── ABDÔMEN / CORE ──
-        { name: 'Abdominal Crunch', muscleGroup: 'Abdômen', category: 'Musculação', equipment: 'Peso corporal', description: 'Flexão do tronco para isolamento do reto abdominal. Eleve os ombros do chão contraindo o abdômen.' },
-        { name: 'Abdominal Infra', muscleGroup: 'Abdômen', category: 'Musculação', equipment: 'Peso corporal', description: 'Foco na porção inferior do reto abdominal. Eleve as pernas ou o quadril em direção ao peito.' },
-        { name: 'Prancha Frontal', muscleGroup: 'Core', category: 'Funcional', equipment: 'Peso corporal', description: 'Exercício isométrico para estabilização do core. Mantenha o corpo em linha reta apoiado nos antebraços e pontas dos pés.' },
-        { name: 'Prancha Lateral', muscleGroup: 'Core', category: 'Funcional', equipment: 'Peso corporal', description: 'Estabilização lateral do core e oblíquos. Apoiado em um antebraço, corpo em linha reta lateral.' },
-        { name: 'Russian Twist', muscleGroup: 'Core', category: 'Funcional', equipment: 'Peso corporal', description: 'Rotação do tronco para oblíquos. Sentado com pés elevados, rode o tronco de um lado para o outro com peso.' },
-        { name: 'Abdominal na Roda', muscleGroup: 'Core', category: 'Funcional', equipment: 'Roda abdominal', description: 'Exercício avançado de core. Ajoelhado, role a roda à frente estendendo o corpo e retorne contraindo o abdômen.' },
-        // ── CORPO INTEIRO / FUNCIONAL ──
-        { name: 'Burpee', muscleGroup: 'Corpo Inteiro', category: 'Funcional', equipment: 'Peso corporal', description: 'Exercício metabólico completo. Agache, salte para posição de flexão, faça uma flexão, volte e salte.' },
-        { name: 'Kettlebell Swing', muscleGroup: 'Corpo Inteiro', category: 'Funcional', equipment: 'Kettlebell', description: 'Movimento explosivo de quadril. Balance o kettlebell entre as pernas e projete para frente com extensão do quadril.' },
-        { name: 'Farmer Walk', muscleGroup: 'Corpo Inteiro', category: 'Funcional', equipment: 'Halteres', description: 'Caminhe com pesos pesados em cada mão. Trabalha grip, core, trapézio e estabilização geral.' },
-        { name: 'Battle Rope', muscleGroup: 'Corpo Inteiro', category: 'Funcional', equipment: 'Corda naval', description: 'Exercício de alta intensidade com corda naval. Faça ondas alternadas ou simultâneas por tempo determinado.' },
-        // ── CARDIO ──
-        { name: 'Esteira - Caminhada', muscleGroup: 'Cardio', category: 'Cardio', equipment: 'Esteira', description: 'Atividade aeróbica de baixa intensidade. Ideal para aquecimento, recuperação ativa ou LISS (Low Intensity Steady State).' },
-        { name: 'Esteira - Corrida', muscleGroup: 'Cardio', category: 'Cardio', equipment: 'Esteira', description: 'Atividade aeróbica de média a alta intensidade. Pode ser usada para MICT (moderada contínua) ou intervalados.' },
-        { name: 'Bicicleta Ergométrica', muscleGroup: 'Cardio', category: 'Cardio', equipment: 'Bicicleta', description: 'Baixo impacto articular. Excelente para aquecimento, condicionamento ou HIIT em bike.' },
-        { name: 'Elíptico / Transport', muscleGroup: 'Cardio', category: 'Cardio', equipment: 'Elíptico', description: 'Movimento de corpo inteiro com baixo impacto. Trabalha membros superiores e inferiores simultaneamente.' },
-        { name: 'Remo Ergométrico', muscleGroup: 'Cardio', category: 'Cardio', equipment: 'Remo', description: 'Cardio de corpo inteiro. Excelente para condicionamento — trabalha pernas, costas e braços no mesmo movimento.' },
-        { name: 'Pular Corda', muscleGroup: 'Cardio', category: 'Cardio', equipment: 'Corda', description: 'Alta queima calórica em pouco tempo. Melhora coordenação, agilidade e condicionamento cardiovascular.' },
-        { name: 'HIIT Genérico', muscleGroup: 'Cardio', category: 'Cardio', equipment: 'Variado', description: 'Treino Intervalado de Alta Intensidade. Alterne períodos de esforço máximo (20-40s) com descanso ativo (10-60s).' },
-        // ── ALONGAMENTO / MOBILIDADE ──
-        { name: 'Foam Rolling', muscleGroup: 'Corpo Inteiro', category: 'Mobilidade', equipment: 'Rolo', description: 'Auto-liberação miofascial com rolo. Role lentamente sobre os músculos tensos por 30-60s cada grupo.' },
-        { name: 'Mobilidade de Quadril', muscleGroup: 'Glúteos', category: 'Mobilidade', equipment: 'Nenhum', description: 'Exercícios de mobilidade articular do quadril: rotações internas/externas, 90/90, pigeon stretch.' },
-        { name: 'Rotação Torácica', muscleGroup: 'Core', category: 'Mobilidade', equipment: 'Nenhum', description: 'Melhora a mobilidade da coluna torácica. Fundamental para postura e saúde do ombro.' },
-      ];
-      for (const ex of templatesEx) {
-        await this.put('exercises', ex);
-      }
-    }
+    // Sempre verificar métodos independente do seed de exercícios
+    await this.seedMethods();
 
-    const cyclesCount = await this.count('cycles');
-    if (cyclesCount === 0) {
-      const templatesCycles = [
-        {
-          name: 'Macrociclo: Hipertrofia (12 Semanas)',
-          description: 'Focado em ganho máximo de massa magra. Ondulação progressiva de carga.',
-          phases: ['Adaptação Anatômica (3 sem)', 'Hipertrofia I (4 sem)', 'Hipertrofia II (3 sem)', 'Polimento / Deload (2 sem)'],
-          duration: '12 semanas'
-        },
-        {
-          name: 'Macrociclo: Emagrecimento Acelerado',
-          description: 'Combinação de Treinamento de Força com HIIT/SIT para otimização metabólica.',
-          phases: ['Resistência Muscular (4 sem)', 'Misto Força+HIIT (4 sem)', 'Definição Extrema (4 sem)'],
-          duration: '12 semanas'
-        },
-        {
-          name: 'Macrociclo: Treinamento Concorrente (Cardio + Força)',
-          description: 'Periodização Polarizada. Foco em melhorar a capacidade cardiorrespiratória e manter massa magra.',
-          phases: ['Base Aeróbica (4 sem)', 'Intensificação (HIIT + Força Base) (4 sem)', 'Performance Máxima (4 sem)'],
-          duration: '12 semanas'
-        }
+    const exercisesCount = await this.count('exercises');
+    if (exercisesCount < 80) {
+      const exercises = [
+        // PEITO
+        { name: 'Supino Reto com Barra',         muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício base para desenvolvimento do peitoral maior.' },
+        { name: 'Supino Inclinado com Halteres',  muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Foco na porção clavicular do peitoral.' },
+        { name: 'Supino Declinado com Barra',     muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Ênfase na porção inferior do peitoral.' },
+        { name: 'Crucifixo Reto',                 muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento do peitoral com amplitude máxima.' },
+        { name: 'Crucifixo Inclinado',            muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento da porção superior do peitoral.' },
+        { name: 'Peck Deck (Voador)',             muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento do peitoral na máquina.' },
+        { name: 'Cross Over Alto',                muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Ênfase na porção inferior do peitoral.' },
+        { name: 'Cross Over Baixo',               muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Ênfase na porção superior do peitoral.' },
+        { name: 'Flexão de Braços',               muscleGroup: 'Peito',        category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Exercício funcional básico para peitoral.' },
+        { name: 'Flexão Diamante',                muscleGroup: 'Peito',        category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Variação com ênfase no tríceps.' },
+        { name: 'Supino com Halteres',            muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Maior amplitude de movimento que a barra.' },
+        // COSTAS
+        { name: 'Puxada Frontal',                 muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Desenvolvimento dos dorsais.' },
+        { name: 'Puxada Fechada',                 muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Ênfase na espessura das costas.' },
+        { name: 'Remada Curvada com Barra',       muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício composto para espessura das costas.' },
+        { name: 'Remada Unilateral com Halter',   muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Trabalho unilateral para corrigir assimetrias.' },
+        { name: 'Remada Baixa (Sentado)',          muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Foco na porção média das costas e romboides.' },
+        { name: 'Remada Cavalinho',               muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Remada em máquina para espessura das costas.' },
+        { name: 'Barra Fixa (Pull-up)',           muscleGroup: 'Costas',       category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Exercício avançado de peso corporal.' },
+        { name: 'Levantamento Terra',             muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício composto para toda a cadeia posterior.' },
+        { name: 'Levantamento Terra Romeno',      muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Ênfase nos isquiotibiais e glúteos.' },
+        { name: 'Pullover com Halter',            muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Trabalha serrátil e dorsal.' },
+        // OMBROS
+        { name: 'Desenvolvimento com Halteres',   muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Exercício base para deltoides.' },
+        { name: 'Desenvolvimento com Barra',      muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Maior sobrecarga no desenvolvimento.' },
+        { name: 'Elevação Lateral',               muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento do deltoide lateral.' },
+        { name: 'Elevação Frontal',               muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Foco no deltoide anterior.' },
+        { name: 'Elevação Lateral no Cabo',       muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Tensão constante no deltoide lateral.' },
+        { name: 'Face Pull',                      muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Saúde do ombro e deltoide posterior.' },
+        { name: 'Arnold Press',                   muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Variação do desenvolvimento com rotação.' },
+        { name: 'Encolhimento de Ombros',         muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento do trapézio.' },
+        // BÍCEPS
+        { name: 'Rosca Direta com Barra',         muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício base para bíceps.' },
+        { name: 'Rosca Alternada com Halteres',   muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Permite foco unilateral e maior amplitude.' },
+        { name: 'Rosca Martelo',                  muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Pegada neutra que enfatiza o braquiorradial.' },
+        { name: 'Rosca Scott',                    muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Isolamento do bíceps no banco Scott.' },
+        { name: 'Rosca Concentrada',              muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Máximo isolamento do bíceps.' },
+        { name: 'Rosca no Cabo',                  muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Tensão constante no bíceps.' },
+        { name: 'Rosca 21',                       muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Técnica avançada: 7 parciais baixo + 7 alto + 7 completas.' },
+        // TRÍCEPS
+        { name: 'Tríceps Pulley',                 muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Exercício padrão para tríceps.' },
+        { name: 'Tríceps Testa',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Foco na cabeça longa do tríceps.' },
+        { name: 'Tríceps Francês',                muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Exercício overhead para cabeça longa.' },
+        { name: 'Tríceps Corda',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Variação com corda para maior ativação.' },
+        { name: 'Mergulho (Dip)',                 muscleGroup: 'Tríceps',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Exercício composto para tríceps e peito inferior.' },
+        { name: 'Extensão de Tríceps no Cabo',    muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Extensão unilateral no cabo.' },
+        { name: 'Tríceps Coice',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento da cabeça lateral do tríceps.' },
+        // QUADRÍCEPS
+        { name: 'Agachamento Livre com Barra',    muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Rei dos exercícios de perna.' },
+        { name: 'Agachamento Frontal',            muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Maior ativação do quadríceps.' },
+        { name: 'Leg Press 45°',                  muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Alta carga com menor demanda de estabilização.' },
+        { name: 'Cadeira Extensora',              muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento do quadríceps.' },
+        { name: 'Agachamento Búlgaro',            muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Exercício unilateral avançado.' },
+        { name: 'Passada (Avanço)',               muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Trabalha quadríceps e glúteos.' },
+        { name: 'Afundo com Barra',               muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Variação do afundo com maior carga.' },
+        { name: 'Hack Squat',                     muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Agachamento guiado com ênfase no quadríceps.' },
+        { name: 'Agachamento Sumô',               muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Enfatiza glúteos e adutores.' },
+        // POSTERIOR
+        { name: 'Mesa Flexora',                   muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento dos isquiotibiais deitado.' },
+        { name: 'Cadeira Flexora',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento dos isquiotibiais sentado.' },
+        { name: 'Stiff com Barra',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Alongamento ativo dos isquiotibiais.' },
+        { name: 'Stiff Unilateral',               muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Versão unilateral para equilíbrio.' },
+        { name: 'Good Morning',                   muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Fortalece eretores e isquiotibiais.' },
+        // GLÚTEOS
+        { name: 'Hip Thrust',                     muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Melhor exercício para glúteos.' },
+        { name: 'Hip Thrust com Halteres',        muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Versão com halteres para variação.' },
+        { name: 'Abdução na Máquina',             muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento do glúteo médio.' },
+        { name: 'Coice no Cabo',                  muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Isolamento do glúteo máximo.' },
+        { name: 'Ponte de Glúteos',               muscleGroup: 'Glúteos',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Versão sem carga do hip thrust.' },
+        { name: 'Agachamento Sumô com Halter',    muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Enfatiza glúteos e adutores.' },
+        // PANTURRILHA
+        { name: 'Panturrilha em Pé',              muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Foco no gastrocnêmio.' },
+        { name: 'Panturrilha Sentado',            muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Foco no sóleo.' },
+        { name: 'Panturrilha no Leg Press',       muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Variação com maior amplitude.' },
+        // CORE / ABDÔMEN
+        { name: 'Abdominal Crunch',               muscleGroup: 'Abdômen',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Flexão do tronco para reto abdominal.' },
+        { name: 'Abdominal Infra',                muscleGroup: 'Abdômen',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Elevação de pernas para abdômen inferior.' },
+        { name: 'Crunch no Cabo',                 muscleGroup: 'Abdômen',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Abdominal com sobrecarga.' },
+        { name: 'Prancha Frontal',                muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'time',       defaultReps: '30s', description: 'Exercício isométrico para estabilização do core.' },
+        { name: 'Prancha Lateral',                muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'time',       defaultReps: '20s', description: 'Estabilização lateral do core e oblíquos.' },
+        { name: 'Prancha com Toque no Ombro',     muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Antirrotação e estabilidade do core.' },
+        { name: 'Russian Twist',                  muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Rotação do tronco para oblíquos.' },
+        { name: 'Dead Bug',                       muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Estabilização lombar em decúbito.' },
+        { name: 'Bird Dog',                       muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Coordenação e estabilidade lombo-pélvica.' },
+        { name: 'Rollout com Roda',               muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Roda abdominal',loadType: 'bodyweight', description: 'Anti-extensão avançada para core.' },
+        { name: 'Rotação com Cabo',               muscleGroup: 'Core',         category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Rotação de tronco com resistência.' },
+        // CARDIO / ENDURANCE — expandido
+        { name: 'Esteira - Corrida',               muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '20min', intensityField: 'speed_kmh',  description: 'Corrida aeróbica. Registre velocidade (km/h).' },
+        { name: 'Esteira - Caminhada',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '30min', intensityField: 'speed_kmh',  description: 'Caminhada aeróbica de baixa intensidade.' },
+        { name: 'Esteira - Intervalado (HIIT)',    muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '30s',   intensityField: 'speed_kmh',  description: 'Sprint + recuperação. Ex: 30s rápido / 90s lento.' },
+        { name: 'Corrida ao Ar Livre',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '30min', intensityField: 'pace_min_km',description: 'Corrida externa. Registre pace (min/km).' },
+        { name: 'Caminhada ao Ar Livre',           muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '40min', intensityField: 'pace_min_km',description: 'Caminhada externa de baixa intensidade.' },
+        { name: 'Bicicleta Ergométrica',           muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Bicicleta',      loadType: 'time',       defaultReps: '20min', intensityField: 'watts',      description: 'Pedalada indoor. Registre potência (watts) ou RPM.' },
+        { name: 'Bicicleta Ergométrica - HIIT',   muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Bicicleta',      loadType: 'time',       defaultReps: '20s',   intensityField: 'watts',      description: 'Sprint de 20s + recuperação de 40s. 8-12 rounds (Tabata).' },
+        { name: 'Ciclismo ao Ar Livre',            muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Bicicleta',      loadType: 'time',       defaultReps: '45min', intensityField: 'speed_kmh',  description: 'Pedalar externo. Registre velocidade e distância.' },
+        { name: 'Elíptico',                        muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Elíptico',       loadType: 'time',       defaultReps: '20min', intensityField: 'level',      description: 'Aeróbico de baixo impacto. Registre nível de resistência.' },
+        { name: 'Remo Ergométrico',                muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Remo',           loadType: 'time',       defaultReps: '15min', intensityField: 'pace_500m',  description: 'Remo indoor. Registre pace/500m e dividir por splits.' },
+        { name: 'Remo Ergométrico - Sprint',       muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Remo',           loadType: 'time',       defaultReps: '250m',  intensityField: 'pace_500m',  description: 'Sprints de 250m com recuperação ativa.' },
+        { name: 'Natação - Nado Livre',            muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Piscina',        loadType: 'time',       defaultReps: '30min', intensityField: 'pace_100m',  description: 'Nado contínuo. Registre pace/100m.' },
+        { name: 'Natação - Intervalado',           muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Piscina',        loadType: 'time',       defaultReps: '50m',   intensityField: 'pace_100m',  description: 'Series de 50m com descanso controlado.' },
+        { name: 'Pular Corda',                     muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Corda',          loadType: 'time',       defaultReps: '2min',  intensityField: 'jumps_min',  description: 'Aeróbico de alta intensidade. Ótimo para coordenação.' },
+        { name: 'Pular Corda - Dupla Entrada',    muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Corda',          loadType: 'time',       defaultReps: '30s',   intensityField: 'jumps_min',  description: 'Técnica avançada. Alta demanda cardiovascular.' },
+        { name: 'HIIT Tabata',                     muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Variado',        loadType: 'time',       defaultReps: '20s',   intensityField: 'level',      description: '20s max / 10s repouso × 8 rounds = 4min. Alta intensidade.' },
+        { name: 'HIIT 30-30',                      muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Variado',        loadType: 'time',       defaultReps: '30s',   intensityField: 'level',      description: '30s esforço máximo / 30s recuperação ativa. 8-12 rounds.' },
+        { name: 'HIIT Pirâmide',                   muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Variado',        loadType: 'time',       defaultReps: '30s',   intensityField: 'level',      description: '30s→60s→90s→60s→30s de esforço, com igual recuperação.' },
+        { name: 'Fartlek',                         muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '30min', intensityField: 'speed_kmh',  description: 'Corrida com variações espontâneas de ritmo e intensidade.' },
+        { name: 'Corrida de Limiar (Tempo Run)',   muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '20min', intensityField: 'pace_min_km',description: 'Corrida no limiar anaeróbio. ~80-85% FC Máx.' },
+        { name: 'Corrida Longa (LSD)',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '60min', intensityField: 'pace_min_km',description: 'Long Slow Distance. 60-75% FC Máx. Base aeróbica.' },
+        { name: 'Corrida em Pista - Intervalado', muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Pista',          loadType: 'time',       defaultReps: '400m',  intensityField: 'pace_min_km',description: 'Series de 400m, 800m ou 1km com recuperação ativa.' },
+        { name: 'Step Aeróbico',                   muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Step',           loadType: 'time',       defaultReps: '30min', intensityField: 'level',      description: 'Aeróbico com step. Baixo impacto, boa coordenação.' },
+        { name: 'Spinning',                        muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Bicicleta',      loadType: 'time',       defaultReps: '45min', intensityField: 'watts',      description: 'Ciclismo indoor em grupo. Alta intensidade.' },
+        { name: 'Escalador de Montanha',           muscleGroup: 'Cardio',        category: 'Funcional',  equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s',   intensityField: 'reps',       description: 'Mountain climber. Core + cardio.' },
+        { name: 'Jumping Jack',                    muscleGroup: 'Cardio',        category: 'Funcional',  equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s',   intensityField: 'reps',       description: 'Polichinelo. Aquecimento e cardio leve.' },
+        { name: 'Agachamento com Salto',           muscleGroup: 'Cardio',        category: 'Funcional',  equipment: 'Peso corporal',  loadType: 'bodyweight', defaultReps: '15',    intensityField: 'reps',       description: 'Jump squat. Potência + cardio metabólico.' },
+        { name: 'Burpee',                          muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Peso corporal',  loadType: 'bodyweight', defaultReps: '10',    intensityField: 'reps',       description: 'Exercício metabólico completo. Alta demanda cardiorrespiratória.' },
+        { name: 'Kettlebell Swing',                muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Kettlebell',     loadType: 'weight',     defaultReps: '15',    intensityField: 'weight',     description: 'Movimento explosivo de quadril. Cardio + força.' },
+        { name: 'Battle Rope - Ondas Alternadas', muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Corda',          loadType: 'time',       defaultReps: '30s',   intensityField: 'reps',       description: 'Cardio de alta intensidade. Ombros e core.' },
+        { name: 'Box Jump',                        muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Caixote',        loadType: 'bodyweight', defaultReps: '10',    intensityField: 'height_cm',  description: 'Salto explosivo. Potência de membros inferiores.' },
+        { name: 'Assault Bike',                    muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Assault Bike',   loadType: 'time',       defaultReps: '20s',   intensityField: 'calories',   description: 'Bicicleta com braços. Exige todo o corpo. Alta intensidade.' },
+        { name: 'Ski Erg',                         muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Ski Erg',        loadType: 'time',       defaultReps: '500m',  intensityField: 'pace_500m',  description: 'Simulador de esqui nórdico. Core + cardio.' },
+        { name: 'Air Runner',                      muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Air Runner',     loadType: 'time',       defaultReps: '200m',  intensityField: 'pace_min_km',description: 'Esteira não motorizada. Mais demanda do que a convencional.' },
+        // FUNCIONAIS já existentes mantidos abaixo
+        { name: 'Kettlebell Goblet Squat',         muscleGroup: 'Quadríceps',    category: 'Funcional',  equipment: 'Kettlebell',     loadType: 'weight',     description: 'Agachamento com kettlebell.' },
+        { name: 'Turkish Get-Up',                  muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Kettlebell',     loadType: 'weight',     description: 'Movimento complexo para estabilidade total.' },
+        { name: 'Farmer Walk',                     muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Halteres',       loadType: 'weight',     description: 'Caminhada com carga para força funcional.' },
+        { name: 'Slam Ball',                       muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Medicine Ball',  loadType: 'weight',     description: 'Potência e força explosiva.' },
+        // MOBILIDADE
+        { name: 'Alongamento de Quadril',          muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Flexibilidade do flexor do quadril.' },
+        { name: 'Rotação Torácica',                muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Mobilidade da coluna torácica.' },
+        { name: 'Hip 90/90',                       muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '45s', description: 'Mobilidade de quadril em rotação interna/externa.' },
+        { name: 'Abertura de Quadril com Haltere', muscleGroup: 'Glúteos',       category: 'Mobilidade', equipment: 'Halteres',       loadType: 'weight',     description: 'Fortalecimento e mobilidade do glúteo médio.' },
       ];
-      for (const cycle of templatesCycles) {
-        await this.put('cycles', cycle);
+
+      // Salvar métodos — delegado para seedMethods() que já rodou antes
+      // Adicionar apenas exercícios que não existem ainda
+      const existing = await this.getAll('exercises');
+      const existingNames = new Set(existing.map(e => e.name.toLowerCase()));
+      for (const ex of exercises) {
+        if (!existingNames.has(ex.name.toLowerCase())) {
+          await this.add('exercises', { ...ex, is_default: true });
+        }
+      }
+
+      // Marcar exercícios existentes sem is_default como padrão
+      const toMark = existing.filter(e => !e.is_default);
+      for (const e of toMark) {
+        await this.put('exercises', { ...e, is_default: true });
       }
     }
   }
+
+  // ── SEED MÉTODOS (sempre verifica, independente do seed de exercícios) ──
+  async seedMethods() {
+    const methods = [
+      // Força / Hipertrofia
+      { name: 'Drop-set',       category: 'Hipertrofia', description: 'Executar até a falha, reduzir carga ~20% e continuar sem descanso. Repetir 2-3x.', sets: '3+drops', repsHint: '8-12 + drops', restHint: '120-180s entre drop-sets completos' },
+      { name: 'Pirâmide Crescente',  category: 'Força',        description: 'Aumentar carga a cada série, reduzir reps: 15→12→10→8. Boa para progressão de força.', sets: '4', repsHint: '15→12→10→8', restHint: '90-120s' },
+      { name: 'Pirâmide Decrescente',category: 'Força',        description: 'Inicia pesado e reduz carga: 8→10→12→15. Trabalha força e resistência na mesma sessão.', sets: '4', repsHint: '8→10→12→15', restHint: '90-120s' },
+      { name: 'Pirâmide Dupla',      category: 'Hipertrofia',  description: 'Crescente depois decrescente: 15→12→10→8→10→12→15. Máximo volume. Mais desgastante.', sets: '7', repsHint: '15→12→10→8→10→12→15', restHint: '90s' },
+      { name: 'Pirâmide Completa',   category: 'Hipertrofia',  description: 'Versão estendida com 10 séries: 20→15→12→10→8→6→8→10→12→15. Volume e intensidade máximos. Para avançados.', sets: '10', repsHint: '20→15→12→10→8→6→8→10→12→15', restHint: '90-120s' },
+      { name: 'Rest-Pause',      category: 'Força',       description: 'Executar até a falha, descanso de 15-20s, continuar até nova falha. 2-3 mini-séries.', sets: '1-3', repsHint: 'Até a falha + pausa', restHint: '15-20s entre mini-séries' },
+      { name: 'Super-série Agonista', category: 'Hipertrofia', description: 'Dois exercícios do mesmo grupo muscular sem descanso. Ex: Supino + Crucifixo.', sets: '3', repsHint: '10-12 cada', restHint: '90s após o par' },
+      { name: 'Super-série Antagonista', category: 'Hipertrofia', description: 'Dois exercícios de grupos opostos sem descanso. Ex: Rosca + Tríceps.', sets: '3', repsHint: '10-12 cada', restHint: '60s após o par' },
+      { name: 'Tri-set',         category: 'Hipertrofia', description: 'Três exercícios consecutivos sem descanso. Alto estímulo metabólico.', sets: '3', repsHint: '8-12 cada', restHint: '120s após o tri' },
+      { name: 'Série Gigante',   category: 'Hipertrofia', description: '4+ exercícios consecutivos. Máximo estímulo. Reduzir cargas.', sets: '3', repsHint: '10-15 cada', restHint: '180s após o set' },
+      { name: 'Cluster',         category: 'Força',       description: 'Carga 85-95% 1RM. Execução: 2-3 reps, pausa 10-15s, repetir até 5 cluster. Força máxima.', sets: '5', repsHint: '2-3 por cluster', restHint: '10-15s entre clusters; 3-5min entre sets' },
+      { name: 'Excêntrico Acentuado', category: 'Hipertrofia', description: 'Fase excêntrica 4-6 segundos. Provoca mais dano muscular e hipertrofia.', sets: '3-4', repsHint: '6-8', restHint: '120s' },
+      { name: 'Isometria',       category: 'Força',       description: 'Sustentação em posição de tensão por 30-60s. Boa para estabilização.', sets: '3', repsHint: '30-60s', restHint: '90s' },
+      { name: 'Pré-exaustão',    category: 'Hipertrofia', description: 'Isolamento antes do composto. Ex: Crucifixo → Supino. Fatiga o músculo-alvo primeiro.', sets: '3', repsHint: '12 iso + 8-10 composto', restHint: '0s entre, 120s entre séries' },
+      { name: 'Bi-set',          category: 'Hipertrofia', description: 'Dois exercícios para o mesmo músculo, sem pausa.', sets: '3-4', repsHint: '10 cada', restHint: '90s após o par' },
+      { name: '21s',             category: 'Hipertrofia', description: '7 reps parciais (0-90°) + 7 reps parciais (90-180°) + 7 reps completas = 21.', sets: '3', repsHint: '21 (7+7+7)', restHint: '90-120s' },
+      { name: 'Stripping',       category: 'Hipertrofia', description: 'Similar ao drop-set com barra: remover anilhas sem parar.', sets: '1 longa', repsHint: 'Até a falha com cada carga', restHint: '120-180s' },
+      { name: 'FST-7',           category: 'Hipertrofia', description: '7 séries do exercício isolador com 30-45s descanso. Alta congestão.', sets: '7', repsHint: '12-15', restHint: '30-45s' },
+      // Cardio / Endurance
+      { name: 'Zona 1 (Z1)',     category: 'Cardio',      description: '<65% FC Máx. Recuperação ativa, base aeróbica.', sets: '1', repsHint: '20-60min contínuo', restHint: 'Sem descanso' },
+      { name: 'Zona 2 (Z2)',     category: 'Cardio',      description: '65-75% FC Máx. Base aeróbica. Longo e lento.', sets: '1', repsHint: '30-90min contínuo', restHint: 'Sem descanso' },
+      { name: 'Zona 3 (Z3)',     category: 'Cardio',      description: '75-80% FC Máx. Limiar aeróbico inferior.', sets: '1', repsHint: '20-40min', restHint: 'Sem descanso' },
+      { name: 'Zona 4 (Z4) — Limiar', category: 'Cardio', description: '80-90% FC Máx. Limiar anaeróbio.', sets: '1-3', repsHint: '10-20min', restHint: '5min recuperação ativa entre blocos' },
+      { name: 'Zona 5 (Z5) — VO2max', category: 'Cardio', description: '90-100% FC Máx. Intervalos curtos. Melhora VO2max.', sets: '4-8', repsHint: '3-5min esforço', restHint: '3-5min recuperação' },
+      { name: 'Tabata',          category: 'Cardio',      description: '20s máximo / 10s repouso × 8 rounds = 4min.', sets: '1-3 blocos', repsHint: '20s esforço / 10s repouso', restHint: '60-90s entre blocos' },
+      { name: 'HIIT 1:2',        category: 'Cardio',      description: 'Ratio 1:2 trabalho:descanso. 30s esforço / 60s recuperação. 8-12 rounds.', sets: '8-12', repsHint: '30s esforço', restHint: '60s recuperação ativa' },
+      { name: 'HIIT 1:1',        category: 'Cardio',      description: 'Ratio 1:1. 30s esforço / 30s recuperação. Mais intenso.', sets: '8-12', repsHint: '30s esforço', restHint: '30s recuperação ativa' },
+      { name: 'SIT (Sprint Interval Training)', category: 'Cardio', description: 'Sprints de 10-30s máximos. Melhora potência anaeróbica.', sets: '4-6', repsHint: '10-30s sprint', restHint: '2-4min recuperação completa' },
+      { name: 'Série de Repetição (VO2max)', category: 'Cardio', description: 'Intervalos de 3-5min a 95-100% VO2max.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforço' },
+      { name: 'Steady State',    category: 'Cardio',      description: 'Ritmo constante e moderado. Zona 2-3. Base aeróbica.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
+      { name: 'Progressivo',     category: 'Cardio',      description: 'Aumentar velocidade/intensidade a cada bloco. Ex: +0.5km/h a cada 5min.', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
+    ];
+    const existing = await this.getAll('methods');
+    const existingNames = new Set(existing.map(m => m.name));
+    for (const m of methods) {
+      if (!existingNames.has(m.name)) {
+        await this.add('methods', { ...m, is_default: true });
+      }
+    }
+    // Marcar métodos existentes sem is_default como padrão
+    const toMark = existing.filter(m => !m.is_default);
+    for (const m of toMark) {
+      await this.put('methods', { ...m, is_default: true });
+    }
+  }
+
+
+  // ── RESEED ADMIN — marca todos os padrões (chamado pelo painel admin) ──
+  async reseedDefaults() {
+    // Marcar todos os exercícios existentes como padrão
+    const exercises = await this.getAll('exercises');
+    for (const e of exercises) {
+      if (!e.is_default) await this.put('exercises', { ...e, is_default: true });
+    }
+    // Marcar todos os métodos existentes como padrão
+    const methods = await this.getAll('methods');
+    for (const m of methods) {
+      if (!m.is_default) await this.put('methods', { ...m, is_default: true });
+    }
+    return { exercises: exercises.length, methods: methods.length };
+  }
+
+
+  // ── GLOBAL DATA (admin defaults — visible to all) ──
+  // Exercícios/métodos/templates com is_default=true são globais
+  // Não filtrados por trainer_id
+  async getGlobal(storeName) {
+    if (this.supabase) {
+      try {
+        const { data, error } = await this.supabase
+          .from(storeName)
+          .select('data')
+          .eq('is_default', true);
+        if (!error && data?.length) return data.map(r => r.data);
+      } catch(_) {}
+    }
+    // Fallback: LocalStorage global (sem trainer_id)
+    try {
+      const raw = localStorage.getItem(`pp_global_${storeName}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  // ── GET ALL (user data + global defaults merged) ──
+  async getAllWithGlobal(storeName) {
+    const [userItems, globalItems] = await Promise.all([
+      this.getAll(storeName),
+      this.getGlobal(storeName),
+    ]);
+    // Merge: globais primeiro, depois os do usuário (sem duplicar ids)
+    const userIds = new Set(userItems.map(i => i.id));
+    const merged  = [...globalItems.filter(g => !userIds.has(g.id)), ...userItems];
+    return merged;
+  }
+
+  // ── SEED GLOBAL DEFAULTS (admin only) ──
+  async seedGlobalDefaults(storeName, items) {
+    const marked = items.map(item => ({ ...item, is_default: true }));
+    if (this.supabase) {
+      try {
+        for (const item of marked) {
+          if (!item.id) item.id = crypto.randomUUID();
+          await this.supabase.from(storeName).upsert({ id: item.id, is_default: true, data: item });
+        }
+        return;
+      } catch(_) {}
+    }
+    localStorage.setItem(`pp_global_${storeName}`, JSON.stringify(marked));
+  }
+
+
+
 }
 
-export const db = new Database();
+const db = new Database();
 export default db;
+export { db };
