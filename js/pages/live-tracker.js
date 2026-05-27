@@ -32,12 +32,7 @@ function resetState() {
 }
 
 function totalVolume() {
-  return state.setLog.reduce((t, s) => {
-    const reps = parseInt(s.reps) || 0;
-    const load = parseFloat(s.load) || 0;
-    if (isNaN(reps) || isNaN(load)) return t;
-    return t + (reps * load);
-  }, 0);
+  return state.setLog.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
 }
 
 // ── RENDER SETUP ─────────────────────────────────────────────
@@ -58,14 +53,10 @@ export async function renderTracker() {
 
   if (state.session) return renderLiveView(students);
 
-  let completed = sessions
+  const completed = sessions
     .filter(s => s.status === 'completed')
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  if (state.sessionsStudentFilter) {
-    completed = completed.filter(s => s.studentId === state.sessionsStudentFilter);
-  }
-  completed = completed.slice(0, 10);
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
 
   return `
     <div class="page-header">
@@ -97,6 +88,7 @@ export async function renderTracker() {
           style="width:100%;padding:14px;font-size:1rem;margin-top:8px">
           ▶ Iniciar Treino ao Vivo
         </button>
+        <div id="macroBanner" style="display:none;margin-top:10px"></div>
       </div>
 
       <div class="card">
@@ -121,53 +113,62 @@ export async function renderTracker() {
       </div>
     </div>
 
-    ${(completed.length || state.sessionsStudentFilter) ? `
+    ${completed.length ? `
     <div class="card mt-lg">
-      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-        <span class="card-title">Sessões Recentes</span>
-        <select class="form-select" id="trkSessionsStudentFilter" style="max-width:220px;padding:4px 8px;font-size:0.8rem;height:32px">
-          <option value="">Filtrar Aluno (Todos)</option>
-          ${active.map(s => `<option value="${s.id}" ${state.sessionsStudentFilter === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
-        </select>
-      </div>
+      <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
       <div class="table-container">
         <table class="data-table">
           <thead><tr>
-            <th style="white-space:nowrap">Aluno</th>
-            <th style="white-space:nowrap">Treino</th>
-            <th style="white-space:nowrap;text-align:center">Data</th>
-            <th style="text-align:center;white-space:nowrap">Duração</th>
-            <th style="text-align:center;white-space:nowrap">Volume</th>
-            <th style="text-align:center;white-space:nowrap">Séries</th>
-            <th style="text-align:center;white-space:nowrap">PSE</th>
-            <th style="text-align:center;white-space:nowrap">Carga</th>
-            <th style="text-align:right;min-width:100px">Ações</th>
+            <th>Aluno</th>
+            <th>Treino</th>
+            <th>Data</th>
+            <th>Duração</th>
+            <th>Volume</th>
+            <th>Séries</th>
+            <th>PSE</th>
+            <th>Carga</th>
+            <th>Obs.</th>
+            <th style="width:90px;text-align:center"></th>
           </tr></thead>
-          <tbody>${completed.length ? completed.map(s => {
-            const st = students.find(x => x.id === s.studentId);
+          <tbody>${completed.map(s => {
+            const st  = students.find(x => x.id === s.studentId);
             const pse = s.postBiofeedback?.pse || 0;
+            const dur = s.totalDuration ? Math.round(s.totalDuration/60) : 0;
+            const carga = s.trainingLoad || s.postBiofeedback?.trainingLoad || (pse && dur ? pse*dur : 0);
+            const postNotes = s.postBiofeedback?.notes || '';
+            const setNotes  = (s.setLog||[]).filter(x=>x.notes).map(x=>`S${x.setIdx+1}: ${x.notes}`);
+            const allObs    = [postNotes, ...setNotes].filter(Boolean);
+            const obsTitle  = allObs.join(' | ');
             return `<tr>
               <td style="white-space:nowrap">${st?.name || '?'}</td>
-              <td style="white-space:nowrap">${s.workoutName || '-'}</td>
-              <td style="text-align:center;white-space:nowrap">${Calc.formatDate(s.date)}</td>
-              <td style="text-align:center;white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
-              <td style="text-align:center;white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
-              <td style="text-align:center;white-space:nowrap">${s.totalSets || '-'}</td>
-              <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'};white-space:nowrap"><strong>${pse||'-'}</strong></td>
-              <td style="text-align:center;white-space:nowrap">${Math.round(pse * ((s.totalDuration || 0) / 60))}</td>
-              <td style="display:flex;gap:4px;justify-content:flex-end">
-                <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver" style="padding:4px 6px;color:var(--accent)">
+              <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.workoutName || '-'}</td>
+              <td style="white-space:nowrap">${Calc.formatDate(s.date)}</td>
+              <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
+              <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
+              <td style="text-align:center">${s.totalSets || '-'}</td>
+              <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}">
+                <strong>${pse||'-'}</strong>
+              </td>
+              <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
+              <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
+                ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
+              </td>
+              <td style="white-space:nowrap;text-align:right;padding-right:8px">
+                <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver"
+                  style="padding:4px 6px;color:var(--accent);display:inline-flex;align-items:center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
-                <button class="btn btn-ghost btn-sm edit-session-btn" data-id="${s.id}" title="Editar" style="padding:4px 6px;color:var(--text-muted)">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <button class="btn btn-ghost btn-sm edit-session" data-id="${s.id}" title="Editar"
+                  style="padding:4px 6px;color:var(--primary);display:inline-flex;align-items:center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
-                <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir" style="padding:4px 6px;color:var(--danger)">
+                <button class="btn btn-ghost btn-sm delete-session" data-id="${s.id}" title="Excluir"
+                  style="padding:4px 6px;color:var(--danger);display:inline-flex;align-items:center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 </button>
               </td>
             </tr>`;
-          }).join('') : `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);font-style:italic">Nenhuma sessão de treino concluída encontrada para o filtro selecionado.</td></tr>`}</tbody>
+          }).join('')}</tbody>
         </table>
       </div>
     </div>` : ''}
@@ -187,6 +188,7 @@ function renderLiveView(students) {
 
   return `
     <div class="tracker-live">
+      <div id="macroBanner" style="display:none;margin-bottom:10px"></div>
       <div class="tracker-header">
         <div class="flex items-center gap-md">
           <div class="avatar">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
@@ -218,8 +220,7 @@ function renderLiveView(students) {
         <div class="card">
           <div class="card-header">
             <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
-            <div class="flex gap-xs" style="align-items:center">
-              <button class="btn btn-ghost btn-sm" id="editExBtn" style="padding:4px 6px;color:var(--accent);display:flex;align-items:center;gap:3px;font-size:0.75rem" title="Editar Exercício">✏️ Editar</button>
+            <div class="flex gap-xs">
               <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
               <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
             </div>
@@ -230,7 +231,7 @@ function renderLiveView(students) {
             <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
-              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}${ex.name.toLowerCase().match(/cardio|aeróbico|esteira|bike|hiit|corrida|elíptico|natação/) ? '' : 'kg'}</span>` : ''}
+              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}kg</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
               <span>${ex.rest || 60}s desc.</span>
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
@@ -239,10 +240,9 @@ function renderLiveView(students) {
 
           <div id="setArea" style="display:flex;flex-direction:column;gap:6px">
             ${Array.from({ length: exSets }, (_, i) => {
-              const isCardio = (ex.name || '').toLowerCase().match(/cardio|aeróbico|esteira|bike|hiit|corrida|elíptico|natação/);
               const done     = state.setLog.find(l => l.exIdx === state.exIdx && l.setIdx === i);
               const isActive = !done && i === state.setIdx;
-              const repsVal  = done ? done.reps : (isCardio ? (String(ex.reps||'')) : (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12);
+              const repsVal  = done ? done.reps : (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
               const loadVal  = done ? done.load : ex.load || '';
               const pseVal   = done ? done.pse  : '';
               const rirVal   = done && done.rir != null ? done.rir : '';
@@ -253,20 +253,20 @@ function renderLiveView(students) {
                 <span style="font-size:0.85rem;font-weight:700;min-width:18px;
                   color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">${isCardio ? 'Tempo/Reps' : 'Reps'}</span>
-                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${isCardio ? 'text' : 'number'}" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
+                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">${isCardio ? 'Intens.' : 'kg'}</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${isCardio ? 'text' : 'number'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">kg</span>
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE (Percepção de Esforço)">
+                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
-                  <span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${pseVal || '—'}</span>
+                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR (Reps na Reserva)">
+                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR — Reps in Reserve: quantas repetições ainda sobravam no tanque (0=falha, 1=1 rep sobrando...)">
                   <span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span>
-                  <span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${rirVal !== '' ? rirVal : '—'}</span>
+                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
                 </div>
                 ${done
                   ? `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px">
@@ -277,9 +277,6 @@ function renderLiveView(students) {
                   : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:36px;align-self:flex-end">✓</button>`}
               </div>`;
             }).join('')}
-          </div>
-          <div style="margin-top:10px">
-            <button class="btn btn-ghost btn-sm" id="addSetBtn" style="width:100%;border:1px dashed var(--border-color);padding:6px;font-size:0.8rem">+ Adicionar Série</button>
           </div>
 
           <div style="border-top:1px solid var(--border-color);margin-top:12px;padding-top:10px">
@@ -356,19 +353,6 @@ export function initTracker(navigateFn) {
   const wSel = document.getElementById('trkWorkout');
   const sBtn = document.getElementById('startBtn');
 
-  const filterSel = document.getElementById('trkSessionsStudentFilter');
-  if (filterSel) {
-    filterSel.addEventListener('change', async () => {
-      state.sessionsStudentFilter = filterSel.value;
-      const students = await db.getAll('students');
-      const content  = document.getElementById('pageContent');
-      if (content) {
-        content.innerHTML = await renderTracker();
-        initTracker(navigateFn);
-      }
-    });
-  }
-
   // Excluir sessão
   document.querySelectorAll('.delete-session').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -391,13 +375,150 @@ export function initTracker(navigateFn) {
   });
 
   // Editar sessão
-  document.querySelectorAll('.edit-session-btn').forEach(btn => {
+  document.querySelectorAll('.edit-session').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const session = await db.get('sessions', btn.dataset.id);
+      const session  = await db.get('sessions', btn.dataset.id);
       if (!session) return;
       const students = await db.getAll('students');
       const student  = students.find(x => x.id === session.studentId);
-      editSessionSummaryModal(session, student, navigateFn);
+      const workouts = await db.getAll('workouts');
+
+      // Montar linhas de exercícios editáveis
+      const exs    = session.exercises || [];
+      const setLog = session.setLog    || [];
+
+      const exRows = exs.map((ex, ei) => {
+        const sets = setLog.filter(s => s.exIdx === ei);
+        return `
+          <div style="background:var(--bg-page);border-radius:8px;padding:10px;margin-bottom:8px" id="ex_${ei}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">${ex.name}</div>
+              ${ex.method ? `<span style="font-size:0.68rem;color:var(--accent)">${ex.method}</span>` : ''}
+            </div>
+            ${sets.map((s, si) => `
+              <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:5px" id="set_${ei}_${si}">
+                <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;min-width:20px">S${si+1}</span>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Reps</label>
+                  <input type="number" class="form-input set-reps" data-ei="${ei}" data-si="${si}"
+                    value="${s.reps||0}" min="0" max="100"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Carga (kg)</label>
+                  <input type="number" class="form-input set-load" data-ei="${ei}" data-si="${si}"
+                    value="${s.load||0}" min="0" step="0.5"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">PSE</label>
+                  <input type="number" class="form-input set-pse" data-ei="${ei}" data-si="${si}"
+                    value="${s.pse||''}" min="1" max="10" placeholder="—"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">RIR</label>
+                  <input type="number" class="form-input set-rir" data-ei="${ei}" data-si="${si}"
+                    value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="—"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+              </div>`).join('')}
+          </div>`;
+      }).join('');
+
+      const pse      = session.postBiofeedback?.pse || '';
+      const sessDate = session.date ? session.date.slice(0,10) : Calc.todayLocal();
+      const wkOptions = workouts
+        .filter(w => w.studentId === session.studentId)
+        .map(w => `<option value="${w.id}" ${w.id===session.workoutId?'selected':''}>${w.name}</option>`)
+        .join('');
+
+      openModal({
+        title: `Editar Sessão — ${student?.name||'Aluno'}`,
+        size: 'xl',
+        content: `
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+            <div class="form-group">
+              <label class="form-label">Data</label>
+              <input class="form-input" type="date" id="editSessDate" value="${sessDate}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Treino</label>
+              <select class="form-select" id="editSessWorkout">
+                <option value="">— manter atual —</option>
+                ${wkOptions}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">PSE geral</label>
+              <input class="form-input" type="number" id="editSessPse" value="${pse}" min="1" max="10" placeholder="1-10" />
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px">
+              Séries por exercício <span style="color:var(--accent);font-weight:400">(edite reps, carga, PSE e RIR)</span>
+            </div>
+            <div style="max-height:55vh;overflow-y:auto;padding-right:4px">
+              ${exRows || '<p style="color:var(--text-muted);font-size:0.85rem">Nenhum exercício registrado</p>'}
+            </div>
+          </div>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar alterações', class: 'btn-primary', onClick: async () => {
+            // Coletar edições das séries
+            const newSetLog = [...setLog];
+            document.querySelectorAll('.set-reps').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0) {
+                newSetLog[idx] = { ...newSetLog[idx], reps: parseFloat(inp.value)||0 };
+              }
+            });
+            document.querySelectorAll('.set-load').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0) newSetLog[idx] = { ...newSetLog[idx], load: parseFloat(inp.value)||0 };
+            });
+            document.querySelectorAll('.set-pse').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0 && inp.value !== '') newSetLog[idx] = { ...newSetLog[idx], pse: parseInt(inp.value) };
+            });
+            document.querySelectorAll('.set-rir').forEach(inp => {
+              const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
+              const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
+              if (idx >= 0 && inp.value !== '') newSetLog[idx] = { ...newSetLog[idx], rir: parseInt(inp.value) };
+            });
+
+            // Recalcular totais
+            const newVol  = newSetLog.reduce((t,s) => t+((s.reps||0)*(s.load||0)), 0);
+            const newSets = newSetLog.length;
+            const pseParse = parseInt(document.getElementById('editSessPse')?.value)||session.postBiofeedback?.pse||0;
+            const newDate  = document.getElementById('editSessDate')?.value || sessDate;
+            const newWkId  = document.getElementById('editSessWorkout')?.value || session.workoutId;
+            const newWk    = newWkId ? workouts.find(w=>w.id===newWkId) : null;
+
+            const updated = {
+              ...session,
+              date:         newDate,
+              workoutId:    newWkId || session.workoutId,
+              workoutName:  newWk?.name || session.workoutName,
+              setLog:       newSetLog,
+              totalVolume:  Math.round(newVol),
+              totalSets:    newSets,
+              postBiofeedback: {
+                ...(session.postBiofeedback||{}),
+                pse: pseParse,
+              },
+            };
+
+            await db.put('sessions', updated);
+            notify.success('Sessão atualizada!');
+            closeModal();
+            navigateFn('/tracker');
+          }},
+        ],
+      });
     });
   });
 
@@ -419,34 +540,63 @@ export function initTracker(navigateFn) {
         wks.map(w => `<option value="${w.id}">${w.name}${w.phase ? ' — ' + w.phase : ''} (${Calc.formatDate(w.date)})</option>`).join('');
       // Verificar se aluno já fez check-in hoje
       await checkPreBioStatus(sid);
+      await checkMacroAlert(sid);
     });
     wSel?.addEventListener('change', async () => {
       sBtn.disabled = !wSel.value;
       if (wSel.value) {
         const wk = await db.get('workouts', wSel.value);
-        if (wk?.studentId) {
-          await checkPreBioStatus(wk.studentId);
-          
-          if (wk.macrocycleId) {
-            const macro = await db.get('macrocycles', wk.macrocycleId).catch(()=>null);
-            if (macro && macro.endDate) {
-              const diffDays = Math.ceil((new Date(macro.endDate) - new Date()) / (1000 * 60 * 60 * 24));
-              if (diffDays >= 0 && diffDays <= 7) {
-                notify.warning(`Atenção: Macrociclo deste treino encerra em ${diffDays} dia(s)!`);
-              }
-            }
-          }
-        }
+        if (wk?.studentId) await checkPreBioStatus(wk.studentId);
       }
     });
 
     // Função para verificar e exibir status do check-in do aluno
+    // Alerta de macrociclo encerrando
+    async function checkMacroAlert(sid) {
+      if (!sid) return;
+      const macros = await db.getAll('macrocycles');
+      const now    = Date.now();
+      const active = macros
+        .filter(m => m.studentId === sid && m.status === 'active' && m.startDate && m.totalWeeks)
+        .map(m => {
+          const endMs    = new Date(m.startDate + 'T12:00:00').getTime() + m.totalWeeks * 7 * 86400000;
+          const daysLeft = Math.ceil((endMs - now) / 86400000);
+          return { ...m, daysLeft };
+        })
+        .filter(m => m.daysLeft >= 0 && m.daysLeft <= 7);
+
+      const banner = document.getElementById('macroBanner');
+      if (!banner) return;
+      if (!active.length) { banner.style.display = 'none'; return; }
+
+      const m = active[0];
+      const color = m.daysLeft <= 1 ? '#ef4444' : m.daysLeft <= 3 ? '#f97316' : '#8b5cf6';
+      const label = m.daysLeft === 0 ? 'Encerra hoje!'
+                  : m.daysLeft === 1 ? 'Encerra amanhã'
+                  : `${m.daysLeft} dias restantes`;
+      banner.style.display = '';
+      banner.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+          background:${color}15;border:1px solid ${color}40;border-radius:8px">
+          <span style="font-size:1.2rem">⏰</span>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:0.88rem;color:${color}">Macrociclo encerrando — ${label}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted)">${m.name||'Macrociclo'} · ${m.totalWeeks} sem · Planeje a reavaliação</div>
+          </div>
+          <a href="#/periodizacao" style="font-size:0.75rem;font-weight:600;color:${color};text-decoration:none">Ver →</a>
+        </div>`;
+    }
+
     async function checkPreBioStatus(sid) {
-      const allBf   = await db.getAll('biofeedback');
+      // Usar getAllForStudent para pegar também formulários públicos
+      const allBf = await db.getAllForStudent('biofeedback', sid);
+      // Data local YYYY-MM-DD (sem UTC offset)
+      const _d = new Date();
+      const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
       const todayPre = allBf.find(f =>
         f.studentId === sid &&
-        f.formType === 'pre' &&
-        new Date(f.date).toDateString() === new Date().toDateString()
+        (f.formType === 'pre' || f.formType == null) && // formType null = registro antigo
+        (f.date||'').slice(0,10) === todayStr
       );
       const statusEl  = document.getElementById('preBioStatus');
       const loadedEl  = document.getElementById('preBioLoaded');
@@ -460,17 +610,16 @@ export function initTracker(navigateFn) {
         if (emptyEl)  emptyEl.style.display  = 'none';
         if (valuesEl) {
           const vals = [
-            ['Sono',     todayPre.sleep,                 false],
-            ['TQR',      (todayPre.tqr??todayPre.energy), false],
-            ['Estresse', todayPre.stress,               true],
-            ['Dor',      todayPre.pain,                 true],
+            ['Sono',        todayPre.sleep,                  false],
+            ['Alim. (24h)', todayPre.nutrition||null,         false],
+            ['TQR',         (todayPre.tqr??todayPre.energy),  false],
+            ['Mental',      todayPre.stress,                  true],
+            ['Dor',         todayPre.pain,                    true],
+            todayPre.menstrual ? ['Ciclo', '🔴', false] : null,
           ];
-          if (todayPre.food != null) vals.push(['Alim.', todayPre.food, false]);
-          if (todayPre.menstrualCycle) vals.push(['Ciclo', todayPre.menstrualCycle, false]);
-          
-          valuesEl.innerHTML = vals.map(([l,v,inv])=>`
+          valuesEl.innerHTML = vals.filter(Boolean).map(([l,v,inv])=>`
             <span style="padding:3px 8px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-color);color:${
-              v==null?'var(--text-muted)':(typeof v==='string'?'var(--primary)':(inv?(v>=7?'var(--danger)':v>=5?'var(--warning)':'var(--success)'):(v<=3?'var(--danger)':v<=5?'var(--warning)':'var(--success)')))
+              v==null?'var(--text-muted)':inv?(v>=7?'var(--danger)':v>=5?'var(--warning)':'var(--success)'):(v<=3?'var(--danger)':v<=5?'var(--warning)':'var(--success)')
             }">
               ${l} <strong>${v??'—'}</strong>
             </span>`).join('');
@@ -499,30 +648,20 @@ export function initTracker(navigateFn) {
     }
   }
 
-  document.getElementById('genPreLinkBtn')?.addEventListener('click', async () => {
+  document.getElementById('genPreLinkBtn')?.addEventListener('click', () => {
     const sid = sSel?.value;
     if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
-    const st = await db.get('students', sid);
-    if (!st) { notify.error('Aluno não encontrado'); return; }
-    const trainerId = st.trainer_id || window.currentUser?.id || '';
-    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}?t=${trainerId}&n=${encodeURIComponent(st.name||'')}`;
-    
-    try {
-      navigator.clipboard?.writeText(url);
-    } catch(e) {}
+    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}`;
+    navigator.clipboard?.writeText(url);
     notify.success('Link pré-treino copiado!');
-    
     openModal({
       title: 'Link Pré-Treino', size: 'sm',
-      preventBackdropClose: true,
       content: `<p class="text-muted text-sm mb-md">Envie para o aluno preencher:</p>
         <div style="display:flex;gap:8px">
           <input class="form-input" value="${url}" readonly onclick="this.select()" style="font-size:0.78rem;flex:1" />
           <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='✓'">Copiar</button>
         </div>
-        <div style="margin-top:16px;text-align:center;">
-          <a href="https://wa.me/?text=${encodeURIComponent('Olá ' + st.name + '! Faça seu check-in pré-treino aqui: ' + url)}" target="_blank" class="btn btn-secondary btn-sm" style="width:100%">Enviar pelo WhatsApp</a>
-        </div>`,
+        <a href="https://wa.me/?text=${encodeURIComponent('Check-in pré-treino: ' + url)}" target="_blank" class="btn btn-secondary btn-sm mt-sm">WhatsApp</a>`,
       actions: [{ label: 'Fechar', class: 'btn-primary', onClick: () => closeModal() }]
     });
   });
@@ -531,12 +670,14 @@ export function initTracker(navigateFn) {
     const wk = await db.get('workouts', wSel.value);
     if (!wk) return;
     const preBf = { sleep:5, tqr:5, energy:5, stress:5, pain:0 }; // defaults neutros
-    // Carregar check-in do aluno (formulário enviado pelo aluno via link)
-    const allBf = await db.getAll('biofeedback');
+    // Carregar check-in do aluno via getAllForStudent (pega formulários públicos)
+    const _d2 = new Date();
+    const todayStr2 = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2,'0')}-${String(_d2.getDate()).padStart(2,'0')}`;
+    const allBf = await db.getAllForStudent('biofeedback', wk.studentId);
     const todayPre = allBf.find(f =>
       f.studentId === wk.studentId &&
-      f.formType === 'pre' &&
-      new Date(f.date).toDateString() === new Date().toDateString()
+      (f.formType === 'pre' || f.formType == null) &&
+      (f.date||'').slice(0,10) === todayStr2
     );
     if (todayPre) {
       Object.assign(preBf, {
@@ -545,12 +686,10 @@ export function initTracker(navigateFn) {
         energy: todayPre.tqr ?? todayPre.energy,
         stress: todayPre.stress,
         pain:   todayPre.pain,
-        food:   todayPre.food,
-        menstrualCycle: todayPre.menstrualCycle,
       });
       notify.success('Dados pré-treino do aluno carregados!');
     }
-    const session = { studentId: wk.studentId, workoutId: wk.id, workoutName: wk.name, exercises: JSON.parse(JSON.stringify(wk.exercises || [])), date: new Date().toISOString(), startTime: Date.now(), status: 'running', soundEnabled: document.getElementById('trkSound')?.checked !== false, preBiofeedback: preBf, setLog: [] };
+    const session = { studentId: wk.studentId, workoutId: wk.id, workoutName: wk.name, exercises: JSON.parse(JSON.stringify(wk.exercises || [])), date: Calc.nowISO(), startTime: Date.now(), status: 'running', soundEnabled: document.getElementById('trkSound')?.checked !== false, preBiofeedback: preBf, setLog: [] };
     const saved = await db.add('sessions', session);
     resetState();
     state.session = { ...session, id: saved.id };
@@ -690,143 +829,58 @@ export function initTracker(navigateFn) {
     btn.addEventListener('click', () => {
       const i    = parseInt(btn.dataset.i);
       const row  = btn.closest('.set-row');
-      const repsStr = row.querySelector('.set-reps')?.value || '';
-      const reps = parseInt(repsStr) || 0; // Se isCardio, pode não ser numero, mas mantemos o valor bruto
-      const loadStr = row.querySelector('.set-load')?.value || '';
-      const load = parseFloat(loadStr) || 0;
+      const reps  = parseInt(row.querySelector('.set-reps')?.value) || 0;
+      const load  = parseFloat(row.querySelector('.set-load')?.value) || 0;
+      const pse   = parseInt(row.querySelector('.set-pse')?.value) || 0;
+      const rirEl = row.querySelector('.set-rir');
+      const rir   = rirEl?.value !== '' ? parseInt(rirEl.value) : null;
       const notes = document.getElementById('setNotes')?.value || '';
-      
-      const curEx = state.session?.exercises?.[state.exIdx] || {};
-      const isCardio = (curEx.name || '').toLowerCase().match(/cardio|aeróbico|esteira|bike|hiit|corrida|elíptico|natação/);
 
-      // Iniciar timer de descanso assim que abrir o modal (conforme solicitado)
+      // Validação: avisar se PSE ou RIR estão inconsistentes
+      // RIR 0 com PSE < 8 é incomum — lembrete discreto
+      if (rir === 0 && pse > 0 && pse < 7) {
+        notify.warning('RIR 0 (falha) com PSE baixo — verifique os valores.');
+      }
+
+      // Estimativa de 1RM se tiver carga e reps
+      const ex = (state.session?.exercises || [])[state.exIdx] || {};
+      let rm1Estimated = null;
+      if (load > 0 && reps > 0 && reps <= 12) {
+        rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2; // Epley
+      }
+
+      state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps, load, pse, rir, notes, rm1Estimated, time: Date.now() });
+
+      row.classList.add('set-done'); row.classList.remove('set-active');
+      row.style.background = 'rgba(16,185,129,0.04)';
+      row.querySelectorAll('input').forEach(inp => inp.disabled = true);
+      btn.replaceWith(Object.assign(document.createElement('span'), { className: 'badge badge-success', textContent: '✓', style: 'min-width:32px;text-align:center' }));
+
+      const exSets = parseInt(curEx.sets) || 3;
+      if (i + 1 < exSets) {
+        state.setIdx = i + 1;
+        const nr = document.querySelector(`[data-si="${i+1}"]`);
+        if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
+      }
+
+      const volEl = document.getElementById('liveVol');
+      if (volEl) volEl.textContent = totalVolume() + ' kg';
+      const totalS = (state.session.exercises||[]).reduce((s,e)=>s+(parseInt(e.sets)||3),0);
+      const fill   = document.querySelector('.progress-fill');
+      if (fill) fill.style.width = Math.round((state.setLog.length/totalS)*100)+'%';
+
+      state.session.setLog = state.setLog;
+      state.session.currentExIdx = state.exIdx;
+      state.session.workSec = state.workSec;
+      db.put('sessions', state.session);
+
+      // Auto-iniciar descanso
       state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
       state.restTimer.reset(); state.restTimer.start();
       const rb = document.getElementById('goRest'); if (rb) rb.textContent = '⏸ Pausar Descanso';
       const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
 
-      db.get('settings', 'trainer').then(settings => {
-        const setts = settings || {};
-        const showPSE = setts.enablePSE !== 'false';
-        const showRIR = setts.enableRIR !== 'false';
-
-        openModal({
-          title: `Feedback da Série ${i + 1}`,
-          size: 'sm',
-          content: `
-            <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Reps Realizadas</label>
-              <input type="${isCardio ? 'text' : 'number'}" id="modalReps" class="form-input" value="${isCardio ? repsStr : reps}">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Carga</label>
-              <input type="${isCardio ? 'text' : 'number'}" step="0.5" id="modalLoad" class="form-input" value="${isCardio ? loadStr : load}">
-            </div>
-          </div>
-          ${showPSE ? `
-          <div class="form-group">
-            <label class="form-label">PSE (Escala de Borg-Foster) *</label>
-            <select class="form-select" id="modalPse" style="font-size:0.9rem">
-              <option value="">Selecione o esforço</option>
-              <option value="0">0 - Repouso</option>
-              <option value="1">1 - Muito Fácil</option>
-              <option value="2">2 - Fácil</option>
-              <option value="3">3 - Moderado</option>
-              <option value="4">4 - Um Pouco Difícil</option>
-              <option value="5">5 - Difícil</option>
-              <option value="6">6 - Difícil +</option>
-              <option value="7" selected>7 - Muito Difícil</option>
-              <option value="8">8 - Muito Difícil +</option>
-              <option value="9">9 - Quase Máximo</option>
-              <option value="10">10 - Esforço Máximo</option>
-            </select>
-          </div>` : '<input type="hidden" id="modalPse" value="0" />'}
-          ${showRIR ? `
-          <div class="form-group">
-            <label class="form-label">RIR (Repetições na Reserva) *</label>
-            <select class="form-select" id="modalRir" style="font-size:0.9rem">
-              <option value="">Selecione</option>
-              <option value="0">0 - Falha / Sem sobrar nada</option>
-              <option value="1">1 - Sobrou 1 rep</option>
-              <option value="2">2 - Sobraram 2 reps</option>
-              <option value="3">3 - Sobraram 3 reps</option>
-              <option value="4">4+ - Sobraram 4 ou mais</option>
-            </select>
-          </div>` : '<input type="hidden" id="modalRir" value="0" />'}
-          <div class="form-group" style="margin-bottom:20px">
-            <label class="form-label">Observações da Série</label>
-            <textarea id="modalNotes" class="form-textarea" rows="2" placeholder="Observações específicas..."></textarea>
-          </div>
-          <button id="modalSaveSet" class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem">Concluir Série</button>
-        `,
-        actions: []
-      });
-
-      document.getElementById('modalSaveSet').addEventListener('click', () => {
-        const pse = parseInt(document.getElementById('modalPse').value);
-        const rir = parseInt(document.getElementById('modalRir').value);
-        if (showRIR && isNaN(rir) && !isCardio) {
-          notify.error('Por favor, preencha o RIR.');
-          return;
-        }
-        closeModal();
-
-        // Validação: avisar se PSE ou RIR estão inconsistentes
-        if (rir === 0 && pse > 0 && pse < 7) {
-          notify.warning('RIR 0 (falha) com PSE baixo — verifique os valores.');
-        }
-
-        let rm1Estimated = null;
-        const modalReps = document.getElementById('modalReps');
-        const modalLoad = document.getElementById('modalLoad');
-        const finalReps = isCardio ? (modalReps ? modalReps.value : repsStr) : (modalReps ? parseInt(modalReps.value) : reps);
-        const finalLoad = isCardio ? (modalLoad ? modalLoad.value : loadStr) : (modalLoad ? parseFloat(modalLoad.value) : load);
-        const modalNotesInput = document.getElementById('modalNotes')?.value;
-        const finalNotes = modalNotesInput ? (notes ? notes + ' | ' + modalNotesInput : modalNotesInput) : notes;
-
-        if (finalLoad > 0 && finalReps > 0 && finalReps <= 12) {
-          rm1Estimated = Math.round((finalLoad * (1 + finalReps / 30)) * 2) / 2; // Epley
-        }
-
-        state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps: finalReps, load: finalLoad, pse, rir: isNaN(rir) ? null : rir, notes: finalNotes, rm1Estimated, time: Date.now() });
-
-        // Update DOM inputs with the final values BEFORE disabling
-        const repsInput = row.querySelector('.set-reps');
-        const loadInput = row.querySelector('.set-load');
-        if (repsInput) repsInput.value = finalReps;
-        if (loadInput) loadInput.value = finalLoad;
-
-        row.classList.add('set-done'); row.classList.remove('set-active');
-        row.style.background = 'rgba(16,185,129,0.04)';
-        row.querySelectorAll('input').forEach(inp => inp.disabled = true);
-        
-        row.children[3].innerHTML = `<span style="font-size:0.55rem;color:var(--warning)">PSE</span><span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${pse || '—'}</span>`;
-        row.children[4].innerHTML = `<span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span><span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">${isNaN(rir)?'—':rir}</span>`;
-        
-        btn.replaceWith(Object.assign(document.createElement('span'), { className: 'badge badge-success', textContent: '✓', style: 'min-width:32px;text-align:center' }));
-
-        const exSets = parseInt(curEx.sets) || 3;
-        if (i + 1 < exSets) {
-          state.setIdx = i + 1;
-          const nr = document.querySelector(`[data-si="${i+1}"]`);
-          if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
-        }
-
-        const volEl = document.getElementById('liveVol');
-        if (volEl) volEl.textContent = totalVolume() + ' kg';
-        const totalS = (state.session.exercises||[]).reduce((s,e)=>s+(parseInt(e.sets)||3),0);
-        const fill   = document.querySelector('.progress-fill');
-        if (fill) fill.style.width = Math.round((state.setLog.length/totalS)*100)+'%';
-
-        state.session.setLog = state.setLog;
-        state.session.currentExIdx = state.exIdx;
-        state.session.workSec = state.workSec;
-        db.put('sessions', state.session);
-
-        notify.info(`Série ${i+1} ✓ — ${finalReps}×${finalLoad}${isCardio?'':'kg'}`);
-      });
-      });
+      notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg`);
     });
   });
 
@@ -839,79 +893,6 @@ export function initTracker(navigateFn) {
   document.getElementById('prevEx')?.addEventListener('click', () => { if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
   document.getElementById('nextEx')?.addEventListener('click', () => { if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
   document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
-
-  // Edit current exercise active Targets
-  document.getElementById('editExBtn')?.addEventListener('click', () => {
-    if (!state.session) return;
-    const curEx = state.session.exercises[state.exIdx];
-    openModal({
-      title: 'Editar Exercício ao Vivo',
-      size: 'sm',
-      content: `
-        <div class="form-group" style="margin-bottom:12px">
-          <label class="form-label">Nome do Exercício</label>
-          <input type="text" id="editExName" class="form-input" value="${curEx.name || ''}" />
-        </div>
-        <div class="form-row" style="display:flex;gap:12px;margin-bottom:12px">
-          <div class="form-group" style="flex:1">
-            <label class="form-label">Séries Alvo</label>
-            <input type="number" id="editExSets" class="form-input" min="1" value="${parseInt(curEx.sets) || 3}" />
-          </div>
-          <div class="form-group" style="flex:1">
-            <label class="form-label">Descanso (s)</label>
-            <input type="number" id="editExRest" class="form-input" min="0" value="${parseInt(curEx.rest) || 60}" />
-          </div>
-        </div>
-        <div class="form-row" style="display:flex;gap:12px;margin-bottom:12px">
-          <div class="form-group" style="flex:1">
-            <label class="form-label">Reps Alvo</label>
-            <input type="text" id="editExReps" class="form-input" value="${curEx.reps || '12'}" />
-          </div>
-          <div class="form-group" style="flex:1">
-            <label class="form-label">Carga Alvo (kg)</label>
-            <input type="number" id="editExLoad" class="form-input" step="0.5" value="${parseFloat(curEx.load) || ''}" />
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label class="form-label">Método</label>
-          <input type="text" id="editExMethod" class="form-input" value="${curEx.method || ''}" placeholder="Ex: Pirâmide, Bi-set, Drop-set" />
-        </div>
-      `,
-      actions: [
-        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-        { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
-          const newName = document.getElementById('editExName').value || curEx.name;
-          const newSets = parseInt(document.getElementById('editExSets').value) || parseInt(curEx.sets) || 3;
-          const newRest = parseInt(document.getElementById('editExRest').value) || 60;
-          const newReps = document.getElementById('editExReps').value || curEx.reps;
-          const newLoad = parseFloat(document.getElementById('editExLoad').value) || curEx.load;
-          const newMethod = document.getElementById('editExMethod').value;
-          
-          curEx.name = newName;
-          curEx.sets = newSets;
-          curEx.rest = newRest;
-          curEx.reps = newReps;
-          curEx.load = newLoad;
-          curEx.method = newMethod;
-          
-          await db.put('sessions', state.session);
-          closeModal();
-          notify.success('Exercício atualizado com sucesso!');
-          refreshLive();
-        }}
-      ]
-    });
-  });
-
-  // Add custom set to the active exercise
-  document.getElementById('addSetBtn')?.addEventListener('click', async () => {
-    if (!state.session) return;
-    const curEx = state.session.exercises[state.exIdx];
-    curEx.sets = (parseInt(curEx.sets) || 3) + 1;
-    await db.put('sessions', state.session);
-    notify.success('Nova série adicionada para este exercício!');
-    refreshLive();
-  });
 
   // Finalizar
   document.getElementById('endBtn')?.addEventListener('click', async () => {
@@ -926,7 +907,6 @@ export function initTracker(navigateFn) {
 
     openModal({
       title: 'Finalizar Sessão', size: 'md',
-      preventBackdropClose: true,
       content: `
         <div style="display:flex;justify-content:center;gap:12px;margin-bottom:16px">
           ${[['Duração',Math.round(dur/60)+'min'],['Volume',vol+'kg'],['Séries',state.setLog.length]].map(([l,v])=>
@@ -988,7 +968,7 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
     totalDuration: dur, totalVolume: vol, density: dens,
     workSeconds: state.workSec, restSeconds: Math.max(0, dur - state.workSec),
     setLog: [...state.setLog], totalSets: state.setLog.length,
-    postBiofeedback: { pse: parseInt(post.pse)||7, satisfaction: parseInt(post.satisfaction)||8, notes: post.notes||'', submittedAt: new Date().toISOString() },
+    postBiofeedback: { pse: parseInt(post.pse)||7, satisfaction: parseInt(post.satisfaction)||8, notes: post.notes||'', submittedAt: Calc.nowISO() },
   };
 
   await db.put('sessions', sessionData);
@@ -1044,365 +1024,334 @@ function buildSessionSummary(session, student) {
   return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${new Date(session.date).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
 }
 
-// ── EDIT SUMMARY ─────────────────────────────────────────────
-function editSessionSummaryModal(session, student, navigateFn) {
-  closeModal(() => {
-    openModal({
-      title: 'Editar Resumo da Sessão', size: 'md',
-      content: `
-        <form id="editPostF">
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Data</label>
-              <input class="form-input" name="date" type="date" value="${session.date ? session.date.slice(0,10) : ''}" required />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Duração (min)</label>
-              <input class="form-input" name="duration" type="number" value="${session.totalDuration ? Math.round(session.totalDuration/60) : 0}" />
-            </div>
-            <div class="form-group"><label class="form-label">Volume Total (kg)</label>
-              <input class="form-input" name="volume" type="number" value="${session.totalVolume ? Math.round(session.totalVolume) : 0}" />
-            </div>
-          </div>
-          <div class="form-group" style="margin-top:10px">
-            <div class="flex items-center justify-between mb-xs">
-              <label class="form-label" style="margin:0">PSE (Esforço)</label>
-              <span style="font-size:1.2rem;font-weight:700;color:var(--primary)" id="editPseV">${session.postBiofeedback?.pse || 7}</span>
-            </div>
-            <input name="pse" type="range" min="1" max="10" value="${session.postBiofeedback?.pse || 7}" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('editPseV').textContent=this.value" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Séries Realizadas</label>
-            <div style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-card); padding: 10px;">
-              ${(session.exercises || []).map((ex, exIdx) => {
-                 const sets = (session.setLog || []).map((s, i) => ({...s, globalIndex: i})).filter(s => s.exIdx === exIdx);
-                 if (!sets.length) return '';
-                 return `
-                   <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--border-color);">
-                     <strong style="font-size: 0.85rem; display: block; margin-bottom: 8px; color: var(--primary);">${ex.name}</strong>
-                     <div style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; text-align: center;">
-                       <div>Sér.</div><div>Reps</div><div>Carga</div><div>Desc.</div>
-                     </div>
-                     ${sets.map(s => `
-                       <div style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; align-items: center;">
-                         <div style="text-align: center; font-weight: 600; color: var(--text-muted); font-size: 0.8rem;">S${(s.setIdx || 0) + 1}</div>
-                         <input class="form-input form-sm" name="set_${s.globalIndex}_reps" type="number" value="${s.reps||0}" style="padding:4px; text-align:center" />
-                         <input class="form-input form-sm" name="set_${s.globalIndex}_load" type="number" value="${s.load||0}" style="padding:4px; text-align:center" />
-                         <input class="form-input form-sm" name="set_${s.globalIndex}_rest" type="number" value="${s.restDuration||0}" style="padding:4px; text-align:center" />
-                       </div>
-                     `).join('')}
-                   </div>
-                 `;
-              }).join('')}
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Observações</label>
-            <textarea class="form-textarea" name="notes" rows="2">${session.postBiofeedback?.notes || ''}</textarea>
-          </div>
-        </form>`,
-      actions: [
-        { label: 'Cancelar', class: 'btn-secondary', onClick: () => {
-          closeModal();
-          // Optionally reopen the view summary if needed, but since it could have been accessed from the list, just close.
-          if (document.querySelector('.view-session')) window.location.reload(); 
-        }},
-        { label: 'Salvar', class: 'btn-primary', onClick: async () => {
-          const fd = new FormData(document.getElementById('editPostF'));
-          session.postBiofeedback = session.postBiofeedback || {};
-          session.postBiofeedback.pse = parseInt(fd.get('pse'));
-          session.postBiofeedback.notes = fd.get('notes');
-          session.date = fd.get('date') ? new Date(fd.get('date') + 'T12:00:00').toISOString() : session.date;
-          session.totalDuration = (parseInt(fd.get('duration')) || 0) * 60;
-          
-          let totalVol = 0;
-          (session.setLog || []).forEach((s, i) => {
-            s.reps = parseInt(fd.get(`set_${i}_reps`)) || 0;
-            s.load = parseFloat(fd.get(`set_${i}_load`)) || 0;
-            s.restDuration = parseInt(fd.get(`set_${i}_rest`)) || 0;
-            totalVol += (s.reps * s.load);
-          });
-          
-          session.totalVolume = totalVol > 0 ? totalVol : (parseInt(fd.get('volume')) || 0);
-
-          await db.put('sessions', session);
-          notify.success('Sessão atualizada!');
-          closeModal(() => {
-            window.location.reload();
-          });
-        }}
-      ]
-    });
-  });
-}
-
 // ── SHOW SUMMARY ─────────────────────────────────────────────
 function showSessionSummary(summaryText, session, student, navigateFn) {
-  const durMin = Math.round((session.totalDuration||0)/60);
-  const exs    = session.exercises||[];
-  const setLog = session.setLog||[];
-  const ini    = (student?.name||'?').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase();
+  const durMin  = Math.round((session.totalDuration||0)/60);
+  const exs     = session.exercises||[];
+  const setLog  = session.setLog||[];
+  const vol     = Math.round(session.totalVolume||0);
+  const ini     = (student?.name||'?').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase();
 
-  const pse = session.postBiofeedback?.pse || 7;
-  const cargaTotal = Math.round(pse * durMin);
-  const peso = student?.weight || session?.studentWeight || (session?.preBiofeedback?.peso) || 70;
-  const kcalEst = Calc.caloriasAtividade(peso, durMin, 'musculacao');
+  // Gasto calórico estimado (MET musculação 5.0 · Compêndio ACSM 2011)
+  const peso    = student?.weight || session.preBiofeedback?.peso || null;
+  const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
 
+  // PSE / Densidade
+  const pse    = session.postBiofeedback?.pse || '—';
+  const densModal = (vol && durMin) ? Math.round(vol / durMin) + ' kg/m' : '—';
+  const pseC   = typeof pse==='number'?(pse>=9?'var(--danger)':pse>=7?'var(--warning)':'var(--success)'):'inherit';
+
+  // Linha por exercício
   const exRows = exs.map((ex,i) => {
-    const sets = setLog.filter(l=>l.exIdx===i);
-    if (!sets.length) return `<tr style="opacity:0.4"><td colspan="7">${ex.name} — não realizado</td></tr>`;
+    const sets    = setLog.filter(l=>l.exIdx===i);
+    if (!sets.length) return `<tr style="opacity:0.35"><td colspan="8" style="font-size:0.78rem">${ex.name} — não realizado</td></tr>`;
     const maxLoad   = Math.max(...sets.map(s=>s.load||0));
     const totalReps = sets.reduce((t,s)=>t+(s.reps||0),0);
-    const vol       = sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
-    const avgPse    = sets.filter(s=>s.pse).length
-      ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : '—';
-    const avgRir    = sets.filter(s=>s.rir!=null).length
-      ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
+    const exVol     = sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
+    const avgPse    = sets.filter(s=>s.pse).length ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : '—';
+    const avgRir    = sets.filter(s=>s.rir!=null).length ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
     const rm1Est    = sets.find(s=>s.rm1Estimated)?.rm1Estimated;
-
-    // Linhas de sub-séries
-    const setDetail = sets.map(s=>
-      `<div style="font-size:0.7rem;color:var(--text-muted);padding-left:8px">
-        S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>
-        ${s.pse?`<span style="color:var(--warning)"> PSE ${s.pse}</span>`:''}
-        ${s.rir!=null?`<span style="color:var(--accent)"> RIR ${s.rir}</span>`:''}
-      </div>`).join('');
-
-    return `
-      <tr>
-        <td style="vertical-align:middle; min-width:140px">
-          <strong style="font-size:0.85rem">${ex.name}</strong>
-          ${ex.method?`<div style="font-size:0.68rem;color:var(--accent)">${ex.method}</div>`:''}
-          <div id="setDetail_${i}" style="display:none;margin-top:6px">${setDetail}</div>
-          <button onclick="const d=document.getElementById('setDetail_${i}');d.style.display=d.style.display==='none'?'':'none'"
-            style="font-size:0.65rem;color:var(--primary);background:none;border:none;cursor:pointer;padding:2px 0;margin-top:4px">
-            ▸ séries
-          </button>
-        </td>
-        <td style="text-align:center;vertical-align:middle;white-space:nowrap">${sets.length}</td>
-        <td style="text-align:center;vertical-align:middle;white-space:nowrap">${totalReps}</td>
-        <td style="text-align:center;vertical-align:middle;font-weight:600;white-space:nowrap">${maxLoad}kg</td>
-        <td style="text-align:center;vertical-align:middle;color:var(--primary);white-space:nowrap">${vol}kg</td>
-        <td style="text-align:center;vertical-align:middle;color:var(--warning);white-space:nowrap">${avgPse}</td>
-        <td style="text-align:center;vertical-align:middle;color:var(--accent);white-space:nowrap">${avgRir}</td>
-        ${rm1Est?`<td style="text-align:center;vertical-align:middle;color:var(--success);font-weight:600;white-space:nowrap">${rm1Est}kg</td>`:`<td style="text-align:center;vertical-align:middle;color:var(--text-muted)">—</td>`}
-      </tr>`;
+    const pseColor  = parseFloat(avgPse)>8?'var(--danger)':parseFloat(avgPse)>6?'var(--warning)':'var(--success)';
+    const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:''}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:''}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:''}${s.notes?` <span style="color:var(--text-muted);font-style:italic">"${s.notes}"</span>`:''}</div>`).join('');
+    return `<tr>
+      <td>
+        <div style="font-weight:600;font-size:0.85rem">${ex.name}</div>
+        ${ex.method?`<div style="font-size:0.68rem;color:var(--accent)">${ex.method}</div>`:''}
+        <button onclick="const d=this.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none'" style="font-size:0.62rem;color:var(--primary);background:none;border:none;cursor:pointer">▸ séries</button>
+        <div style="display:none">${detail}</div>
+      </td>
+      <td style="text-align:center">${sets.length}</td>
+      <td style="text-align:center">${totalReps}</td>
+      <td style="text-align:center;font-weight:600">${maxLoad}kg</td>
+      <td style="text-align:center;color:var(--primary);font-weight:600">${exVol}kg</td>
+      <td style="text-align:center;color:${pseColor};font-weight:600">${avgPse}</td>
+      <td style="text-align:center;color:var(--accent)">${avgRir}</td>
+      <td style="text-align:center;color:var(--success);font-weight:600">${rm1Est?rm1Est+'kg':'—'}</td>
+    </tr>`;
   }).join('');
 
   openModal({
     title: 'Resumo da Sessão', size: 'xl',
-    preventBackdropClose: true,
     content: `
-      <div style="background:var(--bg-page);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="background:var(--bg-page);border-radius:10px;padding:16px;margin-bottom:14px">
         <div class="flex items-center gap-md mb-md">
           <div class="avatar">${ini}</div>
           <div>
             <div style="font-weight:700;font-size:1.05rem">${student?.name||'Aluno'}</div>
-            <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR')}</div>
+            <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
-          ${[
-            ['Duração',      durMin+' min',                           '#3b82f6', 'rgba(59,130,246,0.08)'],
-            ['Volume',       Math.round(session.totalVolume||0)+' kg','#10b981', 'rgba(16,185,129,0.08)'],
-            ['Carga Total',  String(cargaTotal),                      '#f59e0b', 'rgba(245,158,11,0.08)'],
-            ['Séries',       String(session.totalSets||0),            '#8b5cf6', 'rgba(139,92,246,0.08)'],
-            ['PSE Final',    String(session.postBiofeedback?.pse||'—'),
-              (session.postBiofeedback?.pse||0)>8?'#ef4444':(session.postBiofeedback?.pse||0)>6?'#f59e0b':'#10b981',
-              (session.postBiofeedback?.pse||0)>8?'rgba(239,68,68,0.08)':(session.postBiofeedback?.pse||0)>6?'rgba(245,158,11,0.08)':'rgba(16,185,129,0.08)'],
-            ['Gasto Kcal',   kcalEst+' kcal',                         '#06b6d4', 'rgba(6,182,212,0.08)'],
-          ].map(([l,v,c,bg])=>`
-            <div style="text-align:center;padding:10px;background:${bg};border:1px solid ${c}33;border-radius:8px">
-              <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">${l}</div>
-              <div style="font-size:1.2rem;font-weight:700;color:${c};margin-top:2px">${v}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px">
+          ${[['Duração',durMin+'min','var(--primary)'],['Volume',vol.toLocaleString('pt-BR')+'kg','var(--primary)'],['Séries',String(session.totalSets||0),'var(--primary)'],['PSE',String(pse)+'/10',pseC],['Densid.',densModal,'var(--accent)'],['Kcal est.',kcalEst?kcalEst+'kcal':'—','var(--warning)']].map(([l,v,c])=>`
+            <div style="text-align:center;padding:9px 5px;background:var(--bg-card);border-radius:8px">
+              <div style="font-size:0.56rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:3px">${l}</div>
+              <div style="font-size:1.05rem;font-weight:800;color:${c}">${v}</div>
             </div>`).join('')}
         </div>
+        ${kcalEst?`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,0.06);border-radius:6px;font-size:0.68rem;color:var(--text-muted)">MET 5.0 (musculação) · ACSM Compendium (Ainsworth et al. 2011)${peso?' · Peso: '+peso+'kg':''}</div>`:''}
       </div>
-      <div style="margin-bottom:6px;display:flex;gap:16px;font-size:0.68rem;color:var(--text-muted)">
-        <span style="color:var(--warning)">■ PSE = Percepção de esforço (1-10)</span>
-        <span style="color:var(--accent)">■ RIR = Reps in Reserve (0=falha, 3=3 reps sobrando)</span>
-        <span style="color:var(--success)">■ 1RM = Estimativa Epley</span>
+      ${session.preBiofeedback||session.postBiofeedback?`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        ${session.preBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pré</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
+            <span>Sono <strong>${session.preBiofeedback.sleep||'—'}/10</strong></span>
+            <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
+            <span>Est. Mental <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
+            ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain}/10</strong></span>`:''}
+          </div>
+        </div>`:''}
+        ${session.postBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
+          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pós</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
+            <span>PSE <strong style="color:${pseC}">${pse}/10</strong></span>
+            <span>Densid. <strong>${densModal}</strong></span>
+            ${session.postBiofeedback.notes?`<span style="color:var(--text-muted);font-style:italic">"${session.postBiofeedback.notes}"</span>`:''}
+          </div>
+        </div>`:''}
+      </div>`:''
+      }
+
+      ${(()=>{
+        const allNotes = (session.setLog||[]).filter(s=>s.notes);
+        if (!allNotes.length) return '';
+        const byEx = {};
+        allNotes.forEach(s=>{
+          const ex = (session.exercises||[])[s.exIdx];
+          const key = ex?.name||`Ex ${s.exIdx+1}`;
+          if (!byEx[key]) byEx[key] = [];
+          byEx[key].push(`S${s.setIdx+1}: ${s.notes}`);
+        });
+        return `<div style="margin-bottom:12px;padding:12px 14px;background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.15);border-radius:8px">
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:8px">📝 Observações do Treino</div>
+          ${Object.entries(byEx).map(([ex,notes])=>`
+            <div style="margin-bottom:5px">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary)">${ex}</div>
+              ${notes.map(n=>`<div style="font-size:0.75rem;color:var(--text-muted);padding-left:8px;font-style:italic">· ${n}</div>`).join('')}
+            </div>`).join('')}
+        </div>`;
+      })()}
+
+      <div style="margin-bottom:6px;display:flex;gap:14px;font-size:0.67rem;color:var(--text-muted);flex-wrap:wrap">
+        <span style="color:var(--warning)">■ PSE — esforço percebido</span>
+        <span style="color:var(--accent)">■ RIR — reps no tanque</span>
+        <span style="color:var(--success)">■ 1RM — estimativa Epley</span>
       </div>
       <div class="table-container">
-        <table class="data-table" style="font-size:0.8rem">
+        <table class="data-table" style="font-size:0.82rem">
           <thead><tr>
-            <th style="min-width:140px">Exercício</th>
-            <th style="text-align:center;white-space:nowrap">Séries</th>
-            <th style="text-align:center;white-space:nowrap">Reps</th>
-            <th style="text-align:center;white-space:nowrap">Carga Máx</th>
-            <th style="text-align:center;white-space:nowrap">Volume</th>
-            <th style="text-align:center;color:var(--warning);white-space:nowrap">PSE</th>
-            <th style="text-align:center;color:var(--accent);white-space:nowrap">RIR</th>
-            <th style="text-align:center;color:var(--success);white-space:nowrap">1RM Est.</th>
+            <th>Exercício</th>
+            <th style="text-align:center">Séries</th>
+            <th style="text-align:center">Reps</th>
+            <th style="text-align:center">Carga máx</th>
+            <th style="text-align:center">Volume</th>
+            <th style="text-align:center;color:var(--warning)">PSE</th>
+            <th style="text-align:center;color:var(--accent)">RIR</th>
+            <th style="text-align:center;color:var(--success)">1RM</th>
           </tr></thead>
           <tbody>${exRows}</tbody>
         </table>
       </div>
-      ${session.postBiofeedback?.notes?`<p class="text-sm text-muted mt-md">Obs: ${session.postBiofeedback.notes}</p>`:''}
-      <div style="margin-top:16px; display:flex; align-items:center; gap:8px;">
-        <label class="form-label mb-none">Formato do PDF:</label>
-        <select id="sessionPdfFormatSel" class="form-select form-select-sm" style="width:auto; border-color:var(--primary); color:var(--primary); font-weight:600;">
-          <option value="mobile">📱 Celular (Vertical)</option>
-          <option value="a4">📄 A4 (Horizontal)</option>
-        </select>
-      </div>
     `,
     actions: [
       { label: 'WhatsApp', class: 'btn-secondary', onClick: () => {
-        const phone = student?.phone?.replace(/\D/g,'')||'';
-        if (!phone) { notify.warning('Aluno sem telefone'); return; }
+        const phone = student?.phone?.replace(/\D/g,'')||'';        if (!phone) { notify.warning('Aluno sem telefone'); return; }
         window.open(`https://wa.me/${phone.startsWith('55')?phone:'55'+phone}?text=${encodeURIComponent(summaryText)}`, '_blank');
       }},
       { label: 'Copiar', class: 'btn-secondary', onClick: () => { navigator.clipboard?.writeText(summaryText); notify.success('Copiado!'); }},
-      { label: 'Editar', class: 'btn-secondary', onClick: () => editSessionSummaryModal(session, student, navigateFn) },
-      { label: 'Gerar PDF', class: 'btn-secondary', onClick: () => {
-          const fmt = document.getElementById('sessionPdfFormatSel')?.value || 'mobile';
-          generateSessionPDF(session, student, fmt);
-      }},
+      { label: 'PDF', class: 'btn-secondary', onClick: () => generateSessionPDF(session, student) },
       { label: 'Fechar', class: 'btn-primary', onClick: () => { closeModal(); navigateFn('/tracker'); }},
     ]
   });
 }
 
-// ── PDF ──────────────────────────────────────────────────────
-function generateSessionPDF(session, student, format = 'mobile') {
+function generateSessionPDF(session, student) {
   try {
     const { jsPDF } = window.jspdf;
     if (!jsPDF) { notify.error('jsPDF não disponível'); return; }
-    const isMobile = format === 'mobile';
-    const pw = isMobile ? 120 : 210;
-    const doc = new jsPDF({ unit:'mm', format: isMobile ? [pw, 260] : 'a4' });
-    
-    const isDark = true; // Força tema escuro sempre
-    const g=[16,185,129];
-    const dk=isDark?[241,245,249]:[15,23,42];
-    const mu=isDark?[148,163,184]:[100,116,139];
-    const bgPage=isDark?[11,15,25]:[255,255,255];
-    const bgCard=isDark?[17,24,39]:null;
-    const tableEven=isDark?[17,24,39]:[248,250,252];
-    const tableOdd=isDark?[11,15,25]:[255,255,255];
-    
-    const addNewPage = () => { doc.addPage(); if(isDark){ doc.setFillColor(...bgPage); doc.rect(0,0,pw,300,'F'); } };
-    if(isDark){ doc.setFillColor(...bgPage); doc.rect(0,0,pw,300,'F'); }
+    const doc    = new jsPDF({ unit:'mm', format:'a4' });
+    const G      = [16,185,129], DK=[15,23,42], MU=[100,116,139], LI=[241,245,249], WA=[245,158,11], AC=[6,182,212];
+    const durMin = Math.round((session.totalDuration||0)/60);
+    const vol    = Math.round(session.totalVolume||0);
+    const exs    = session.exercises||[], setLog = session.setLog||[];
+    const date   = new Date(session.date).toLocaleDateString('pt-BR');
+    const dateL  = new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const peso   = student?.weight || session.preBiofeedback?.peso || null;
+    const kcal   = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
+    const pse    = session.postBiofeedback?.pse || '—';
+    const densVal= (vol && durMin) ? Math.round(vol/durMin) : 0;
 
-    const durMin=Math.round((session.totalDuration||0)/60);
-    const exs=session.exercises||[], setLog=session.setLog||[];
-    const date=new Date(session.date).toLocaleDateString('pt-BR');
+    // Cabeçalho compacto
+    doc.setFillColor(...G); doc.rect(0,0,210,22,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text('Personal PRO',14,10);
+    doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('Relatório de Sessão · '+dateL,14,17);
+    doc.text(student?.name||'Aluno',196,10,{align:'right'});
+    doc.text(session.workoutName||'Treino',196,17,{align:'right'});
 
-    doc.setFillColor(...g); doc.rect(0,0,pw,26,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
-    doc.text('Personal PRO',14,11);
-    doc.setFontSize(9); doc.setFont('helvetica','normal');
-    doc.text('Relatório de Sessão',14,19);
-    doc.text(date, pw - 14, 11,{align:'right'});
-
-    doc.setTextColor(...dk); doc.setFontSize(13); doc.setFont('helvetica','bold');
-    doc.text(student?.name||'Aluno',14,36);
-    doc.setFontSize(9); doc.setFont('helvetica','normal');
-    doc.setTextColor(...mu);
-    doc.text(session.workoutName||'Treino',14,42);
-
-    const pse = session.postBiofeedback?.pse || 7;
-    const cargaTotal = Math.round(pse * durMin);
-    const peso = student?.weight || session?.studentWeight || (session?.preBiofeedback?.peso) || 70;
-    const kcalEst = Calc.caloriasAtividade(peso, durMin, 'musculacao');
-
-    const densidade = session.density ? session.density.toFixed(2) : '0.00';
-    const cards = [
-      { label: 'DURAÇÃO', value: durMin + 'm', bg: isDark?bgCard:[239, 246, 255], accent: [59, 130, 246] },
-      { label: 'VOLUME', value: (session.totalVolume || 0) + 'kg', bg: isDark?bgCard:[240, 253, 248], accent: [16, 185, 129] },
-      { label: 'CARGA TOT.', value: String(cargaTotal), bg: isDark?bgCard:[254, 243, 199], accent: [245, 158, 11] },
-      { label: 'SÉRIES', value: String(session.totalSets || 0), bg: isDark?bgCard:[245, 243, 255], accent: [139, 92, 246] },
-      { label: 'DENSIDADE', value: densidade, bg: isDark?bgCard:[254, 242, 242], accent: [220, 38, 38] },
-      { label: 'PSE', value: String(session.postBiofeedback?.pse || '-'), bg: isDark?bgCard:[254, 226, 226], accent: [239, 68, 68] },
-      { label: 'KCAL', value: String(kcalEst), bg: isDark?bgCard:[224, 242, 254], accent: [2, 132, 199] },
+    // Stats — 2 linhas de 4 cards (mais legível)
+    let y=28;
+    const dens       = vol && durMin ? Math.round(vol/durMin) : 0;
+    const cargaSess  = session.trainingLoad || session.postBiofeedback?.trainingLoad
+                     || (pse && durMin ? pse * durMin : 0);
+    const stats1 = [
+      ['Duração',  durMin+'min',                     G],
+      ['Volume',   vol.toLocaleString('pt-BR')+'kg', G],
+      ['Séries',   String(session.totalSets||0),      G],
+      ['PSE',      String(pse)+'/10',                 WA],
     ];
-
-    let bx = 14;
-    let by = 48;
-    const cardsPerRow = isMobile ? 2 : 4;
-    cards.forEach((card, idx) => {
-      if (idx > 0 && idx % cardsPerRow === 0) {
-        bx = 14;
-        by += 20;
-      }
-      doc.setFillColor(...card.bg);
-      doc.roundedRect(bx, by, 42.5, 16, 2, 2, 'F');
-      
-      if(isDark) { doc.setDrawColor(31, 41, 55); doc.roundedRect(bx, by, 42.5, 16, 2, 2, 'D'); }
-
-      doc.setTextColor(...mu); // Muted text for secondary label
-      doc.setFontSize(5);
-      doc.setFont('helvetica', 'normal');
-      doc.text(card.label, bx + 21.25, by + 5, { align: 'center' });
-      
-      doc.setTextColor(...card.accent);
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
-      doc.text(card.value, bx + 21.25, by + 12, { align: 'center' });
-      
-      bx += 46.5; 
+    const stats2 = [
+      ['Carga',    cargaSess ? cargaSess+' u.a.' : '—', AC],
+      ['Densid.',  dens ? dens+' kg/m' : '—',           AC],
+      ['Kcal est.',kcal ? kcal+' kcal' : '—',           WA],
+      ['TQR entr.',String((session.preBiofeedback?.tqr??session.preBiofeedback?.energy)||'—')+'/10', G],
+    ];
+    const sw = 43; // 4 cards × 43mm + 3 gaps × 2mm = 178mm (cabe em 182mm)
+    [stats1, stats2].forEach((row, ri) => {
+      row.forEach(([l,v,c], i) => {
+        const x  = 14 + i*(sw+2);
+        const yy = y + ri*20;
+        doc.setFillColor(...LI); doc.roundedRect(x,yy,sw,17,2,2,'F');
+        doc.setTextColor(...MU); doc.setFontSize(6.2); doc.text(l.toUpperCase(),x+sw/2,yy+5.5,{align:'center'});
+        doc.setTextColor(...c); doc.setFontSize(10); doc.setFont('helvetica','bold');
+        doc.text(v,x+sw/2,yy+13,{align:'center'});
+        doc.setFont('helvetica','normal');
+      });
     });
+    y+=44;
 
-    let y = by + 24;
-    doc.setTextColor(...dk); doc.setFontSize(10); doc.setFont('helvetica','bold');
-    doc.text('Exercícios Realizados',14,y); y+=5;
-    doc.setFillColor(...g); doc.rect(14,y, pw - 28, 6.5,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7.5);
-    const cx = isMobile ? {s: 55, r: 70, c: 85, v: 100} : {s: 94, r: 114, c: 134, v: 162};
-    [['Exercício',14],['Séries',cx.s],['Reps',cx.r],['Carga',cx.c],['Vol',cx.v]].forEach(([h,x])=>doc.text(h,x+1,y+4.5));
-    y+=6.5;
+    // Nota calórica + biofeedback pré — numa linha
+    if (session.preBiofeedback || kcal) {
+      const pre=session.preBiofeedback||{};
+      doc.setFillColor(240,253,244); doc.roundedRect(14,y,182,9,1.5,1.5,'F');
+      doc.setFillColor(...G); doc.rect(14,y,2,9,'F');
+      doc.setTextColor(...G); doc.setFontSize(5.5); doc.setFont('helvetica','bold'); doc.text('CHECK-IN PRÉ',17,y+3.5);
+      doc.setFont('helvetica','normal'); doc.setTextColor(...MU); doc.setFontSize(6.5);
+      const preInfo = [
+        pre.sleep?`Sono ${pre.sleep}/10`:'',
+        pre.tqr!=null?`TQR ${pre.tqr??pre.energy}/10`:'',
+        pre.stress?`Est.Mental ${pre.stress}/10`:'',
+        (pre.pain||0)>=3?`Dor ${pre.pain}/10`:'',
+        kcal?`Kcal est. ${kcal}`:'',
+      ].filter(Boolean).join('  ·  ');
+      doc.text(preInfo||'—',63,y+5.5);
+      y+=13;
+    }
+
+    // Tabela exercícios
+    y+=2;
+    doc.setTextColor(...DK); doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text('Exercícios Realizados',14,y); y+=5;
+    doc.setFillColor(...G); doc.rect(14,y,182,7,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+    [['Exercício',14],['S',88],['Reps',98],['Máx',110],['Vol',126],['PSE',142],['RIR',154],['1RM',166]].forEach(([h,x])=>doc.text(h,x+1,y+4.8));
+    y+=7;
 
     exs.forEach((ex,i)=>{
       const sets=setLog.filter(l=>l.exIdx===i);
       if(!sets.length) return;
       const maxLoad=Math.max(...sets.map(s=>s.load||0));
-      const totalReps=sets.reduce((t,s)=>t+(s.reps||0),0);
-      const vol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
-      doc.setFillColor(...(i%2===0?tableEven:tableOdd));
-      doc.rect(14,y,pw - 28,6.5,'F');
-      if (isDark) { doc.setDrawColor(31, 41, 55); doc.rect(14,y,pw-28,6.5,'D'); }
-      doc.setTextColor(...dk); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
-      let exName = ex.name||'-';
-      if (isMobile && exName.length > 18) exName = exName.substring(0, 18) + '...';
-      doc.text(exName,15,y+4.5);
-      doc.setFont('helvetica','normal');
-      doc.text(String(sets.length),cx.s,y+4.5);
-      doc.text(String(totalReps),cx.r,y+4.5);
-      doc.text(maxLoad+'kg',cx.c,y+4.5);
-      doc.text(vol+'kg',cx.v,y+4.5);
-      y+=7.5; 
-      
-      sets.forEach((s) => {
-        doc.setFontSize(6.5);
-        doc.setTextColor(...mu);
-        const setTxt = `S${(s.setIdx||0)+1}: ${s.reps||0}x ${s.load||0}kg ${s.pse ? ' (PSE: ' + s.pse + ')' : ''} ${s.restDuration ? ' (Desc: ' + s.restDuration + 's)' : ''}`;
-        doc.text(setTxt, 18, y+2);
-        y+=3.5;
-        if(y > (isMobile?245:272)){addNewPage();y=20;}
-      });
-      y+=2.5;
-      if(y > (isMobile?245:272)){addNewPage();y=20;}
+      const tReps=sets.reduce((t,s)=>t+(s.reps||0),0);
+      const exVol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
+      const avgPse=sets.filter(s=>s.pse).length?(sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1):'—';
+      const avgRir=sets.filter(s=>s.rir!=null).length?(sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1):'—';
+      const rm1=sets.find(s=>s.rm1Estimated)?.rm1Estimated;
+      const rowH=ex.method?10:8;
+      if(y>265){doc.addPage();y=20;}
+      doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255); doc.rect(14,y,182,rowH,'F');
+      doc.setTextColor(...DK); doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.text(ex.name||'—',15,y+5);
+      if(ex.method){doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...AC);doc.text(ex.method,15,y+8.5);}
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...DK);
+      doc.text(String(sets.length),89,y+5);
+      doc.text(String(tReps),99,y+5);
+      doc.text(maxLoad+'kg',111,y+5);
+      doc.setTextColor(...G); doc.setFont('helvetica','bold'); doc.text(exVol+'kg',127,y+5);
+      const pc=parseFloat(avgPse);
+      doc.setTextColor(pc>8?220:pc>6?200:16,pc>8?50:pc>6?120:185,pc>8?50:pc>6?20:129);
+      doc.text(String(avgPse),143,y+5);
+      doc.setTextColor(...AC); doc.setFont('helvetica','normal'); doc.text(String(avgRir),155,y+5);
+      doc.setTextColor(...G); doc.text(rm1?rm1+'kg':'—',167,y+5);
+      y+=rowH;
+      // Sub-séries só se tiver notas (economiza espaço)
+      const setsWithNotes = sets.filter(s=>s.notes);
+      if (setsWithNotes.length) {
+        setsWithNotes.forEach(s=>{
+          if(y>270){doc.addPage();y=20;}
+          doc.setFillColor(250,252,255); doc.rect(18,y,178,4.5,'F');
+          doc.setTextColor(...MU); doc.setFontSize(5.5); doc.setFont('helvetica','italic');
+          doc.text(`S${s.setIdx+1} (${s.reps}×${s.load}kg): ${s.notes}`,22,y+3.2);
+          y+=4.5;
+        });
+      }
+      y+=1;
     });
 
-    if (session.postBiofeedback?.notes) {
-      y += 5;
-      if (y > (isMobile?235:260)) { addNewPage(); y = 20; }
-      doc.setTextColor(...dk); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
-      doc.text('Observações:', 14, y);
-      y += 5;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-      const splitNotes = doc.splitTextToSize(session.postBiofeedback.notes, pw - 28);
-      doc.text(splitNotes, 14, y);
-      y += splitNotes.length * 4;
+    // ── Bloco de observações compacto ──────────────────────
+    const allNotes = setLog.filter(s=>s.notes);
+    const postNotes = session.postBiofeedback?.notes;
+
+    if (allNotes.length > 0 || postNotes) {
+      if(y>255){doc.addPage();y=20;}
+      y+=4;
+
+      // Agrupar por exercício primeiro para calcular altura real
+      const byEx = {};
+      allNotes.forEach(s=>{
+        const ex  = exs[s.exIdx];
+        const key = ex?.name || `Ex ${s.exIdx+1}`;
+        if(!byEx[key]) byEx[key]=[];
+        byEx[key].push(`S${s.setIdx+1}: ${s.notes}`);
+      });
+
+      const numLines = Object.keys(byEx).length + (postNotes ? 1 : 0);
+      const notesH   = numLines * 5.5 + 11;
+
+      doc.setFillColor(240,249,255); doc.roundedRect(14,y,182,notesH,1.5,1.5,'F');
+      doc.setFillColor(...AC); doc.rect(14,y,2,notesH,'F');
+      doc.setTextColor(...AC); doc.setFontSize(6.2); doc.setFont('helvetica','bold');
+      doc.text('OBSERVAÇÕES DO TREINO',17,y+5);
+      let ny = y+9.5;
+
+      Object.entries(byEx).forEach(([exName, notes])=>{
+        if(ny>272){doc.addPage();ny=20;}
+        doc.setTextColor(...DK); doc.setFontSize(6); doc.setFont('helvetica','bold');
+        const labelW = doc.getTextWidth(exName+': ');
+        doc.text(exName+':',17,ny);
+        doc.setFont('helvetica','normal'); doc.setTextColor(...MU);
+        // Wrap longo em múltiplas notas
+        const notesText = notes.join('  ·  ');
+        const maxW = 182 - labelW - 5;
+        if (doc.getTextWidth(notesText) > maxW) {
+          doc.text(notesText.slice(0, Math.floor(notesText.length * maxW / doc.getTextWidth(notesText))), 17+labelW, ny);
+        } else {
+          doc.text(notesText, 17+labelW, ny);
+        }
+        ny+=5.5;
+      });
+
+      if(postNotes){
+        if(ny>272){doc.addPage();ny=20;}
+        doc.setTextColor(...DK); doc.setFontSize(6); doc.setFont('helvetica','bold');
+        const lw = doc.getTextWidth('Pós-treino: ');
+        doc.text('Pós-treino:',17,ny);
+        doc.setFont('helvetica','normal'); doc.setTextColor(...MU);
+        doc.text(postNotes,17+lw,ny);
+        ny+=5.5;
+      }
+      y = ny + 4;
     }
 
-    const pageH = isMobile ? 260 : 297;
-    doc.setFillColor(...(isDark?[17,24,39]:dk)); doc.rect(0, pageH - 10, pw, 10, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7);
-    doc.text('Personal PRO — Sistema Profissional de Personal Trainer', pw/2, pageH - 4, {align:'center'});
+    // Rodapé em todas as páginas
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){
+      doc.setPage(p);
+      doc.setFillColor(...DK); doc.rect(0,287,210,10,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(6.5); doc.setFont('helvetica','normal');
+      doc.text('Personal PRO — Sistema Profissional de Personal Trainer',105,293,{align:'center'});
+      doc.text(`Pág ${p}/${pages}`,196,293);
+    }
+
     doc.save(`sessao_${(student?.name||'aluno').replace(/\s/g,'_')}_${date.replace(/\//g,'-')}.pdf`);
     notify.success('PDF gerado!');
-  } catch(err) { notify.error('Erro ao gerar PDF.'); console.error(err); }
+  } catch(err){ console.error(err); notify.error('Erro ao gerar PDF.'); }
 }
-
