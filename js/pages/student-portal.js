@@ -522,42 +522,6 @@ function initHomeSection(student, tid) {
   });
 }
 
-// ── TREINOS ────────────────────────────────────────────────────
-function renderTreinos(workouts, macrocycles) {
-  const sorted = [...workouts].sort((a,b) => new Date(b.date||0)-new Date(a.date||0));
-  const currentMacro = macrocycles.sort((a,b) => new Date(b.startDate)-new Date(a.startDate))[0];
-
-  return `
-    <div class="portal-section">
-      <h2 class="portal-section-title">Meus Treinos</h2>
-      ${currentMacro ? `<div class="portal-macro-badge">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        ${currentMacro.name}
-      </div>` : ''}
-
-      ${sorted.length === 0 ? `<div class="portal-empty">Nenhum treino cadastrado ainda</div>` :
-        sorted.map(w => `
-          <div class="portal-workout-card glass-card" data-wid="${w.id}">
-            <div class="portal-workout-header">
-              <div>
-                <div class="portal-workout-name">${w.name || 'Treino'}</div>
-                <div class="portal-workout-meta">${w.cycle || ''} ${w.date ? '· '+new Date(w.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'}) : ''}</div>
-              </div>
-              <div class="portal-workout-badge">${(w.exercises||[]).length} ex.</div>
-            </div>
-            <div class="portal-workout-exercises" id="wex_${w.id}" style="display:none">
-              ${(w.exercises||[]).map((ex,i) => `
-                <div class="portal-exercise-row">
-                  <div class="portal-ex-num">${i+1}</div>
-                  <div class="portal-ex-info">
-                    <div class="portal-ex-name">${ex.name}</div>
-                    <div class="portal-ex-detail">${ex.sets||'3'}×${ex.reps||'10-12'} ${ex.load?'· '+ex.load+'kg':''} ${ex.rest?'· '+ex.rest+' descanso':''}</div>
-                    ${ex.method ? `<div class="portal-ex-method">${ex.method}</div>` : ''}
-                    ${ex.videoUrl ? `
-                      <a href="${ex.videoUrl}" target="_blank" class="portal-ex-video">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        Ver vídeo
-                      </a>` : ''}
 // ── TREINAR (Smart) ────────────────────────────────────────────────
 function renderTreinar(workouts, schedules) {
   const todayStr = new Date().toISOString().split('T')[0];
