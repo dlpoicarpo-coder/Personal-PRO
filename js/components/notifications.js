@@ -3,6 +3,77 @@ import { openModal, closeModal } from './modal.js';
 import { Calc } from '../utils/calculations.js';
 import { notify } from './toast.js';
 
+// ── Dismiss persistence — Supabase + localStorage fallback ────
+async function getSupabase() {
+  try {
+    const { getSupabase: gs } = await import('../utils/auth.js');
+    return gs?.() || null;
+  } catch { return null; }
+}
+
+async function loadDismissed() {
+  // Start with localStorage (instant, offline)
+  const local = JSON.parse(localStorage.getItem('pp_notifs_dismissed') || '{}');
+  const nowMs = Date.now();
+  // Clean stale (>30 days)
+  let changed = false;
+  for (const [k, ts] of Object.entries(local)) {
+    if (nowMs - ts > 30 * 24 * 60 * 60 * 1000) { delete local[k]; changed = true; }
+  }
+  if (changed) localStorage.setItem('pp_notifs_dismissed', JSON.stringify(local));
+
+  // Merge with Supabase (so dismisses from other devices also apply)
+  try {
+    const sb = await getSupabase();
+    if (sb) {
+      const { data, error } = await sb
+        .from('notification_dismissed')
+        .select('id, dismissed_at');
+      if (!error && data) {
+        let localChanged = false;
+        data.forEach(row => {
+          const ts = new Date(row.dismissed_at).getTime();
+          if (!local[row.id]) { local[row.id] = ts; localChanged = true; }
+        });
+        if (localChanged) localStorage.setItem('pp_notifs_dismissed', JSON.stringify(local));
+      }
+    }
+  } catch { /* offline — use local only */ }
+
+  return local;
+}
+
+async function dismissNotification(id) {
+  const dismissed = JSON.parse(localStorage.getItem('pp_notifs_dismissed') || '{}');
+  dismissed[id] = Date.now();
+  localStorage.setItem('pp_notifs_dismissed', JSON.stringify(dismissed));
+
+  // Persist to Supabase
+  try {
+    const sb = await getSupabase();
+    if (sb) {
+      await sb.from('notification_dismissed').upsert({ id, dismissed_at: new Date().toISOString() }, { onConflict: 'id,trainer_id' });
+    }
+  } catch { /* offline — localStorage already saved */ }
+}
+
+async function dismissAll(ids) {
+  const dismissed = JSON.parse(localStorage.getItem('pp_notifs_dismissed') || '{}');
+  const now = new Date().toISOString();
+  ids.forEach(id => { dismissed[id] = Date.now(); });
+  localStorage.setItem('pp_notifs_dismissed', JSON.stringify(dismissed));
+
+  try {
+    const sb = await getSupabase();
+    if (sb && ids.length > 0) {
+      await sb.from('notification_dismissed').upsert(
+        ids.map(id => ({ id, dismissed_at: now })),
+        { onConflict: 'id,trainer_id' }
+      );
+    }
+  } catch { /* offline */ }
+}
+
 export async function checkNotifications() {
   const students = await db.getAll('students');
   const activeStudents = students.filter(s => s.status === 'Ativo');
@@ -169,25 +240,11 @@ export async function checkNotifications() {
     }
   });
 
-  // Load dismissed items from localStorage
-  const dismissed = JSON.parse(localStorage.getItem('pp_notifs_dismissed') || '{}');
-  const nowTime = Date.now();
-  const cleanedDismissed = {};
-  let changed = false;
-  for (const [key, ts] of Object.entries(dismissed)) {
-    // Retain dismissed items for 30 days
-    if (nowTime - ts < 30 * 24 * 60 * 60 * 1000) {
-      cleanedDismissed[key] = ts;
-    } else {
-      changed = true;
-    }
-  }
-  if (changed) {
-    localStorage.setItem('pp_notifs_dismissed', JSON.stringify(cleanedDismissed));
-  }
+  // Load dismissed from localStorage + Supabase
+  const dismissed = await loadDismissed();
 
   // Filter out any dismissed notifications
-  return notifications.filter(n => !cleanedDismissed[n.id]);
+  return notifications.filter(n => !dismissed[n.id]);
 }
 
 async function refreshNotificationsModal(notifsListContainer, badge) {
@@ -236,9 +293,7 @@ async function refreshNotificationsModal(notifsListContainer, badge) {
     notifsListContainer.querySelectorAll('.dismiss-notif-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        const dismissed = JSON.parse(localStorage.getItem('pp_notifs_dismissed') || '{}');
-        dismissed[id] = Date.now();
-        localStorage.setItem('pp_notifs_dismissed', JSON.stringify(dismissed));
+        await dismissNotification(id);
         notify.success('Notificação dispensada!');
         await refreshNotificationsModal(notifsListContainer, badge);
       });
@@ -290,11 +345,7 @@ export async function initNotifications() {
     setTimeout(() => {
       document.getElementById('clearAllNotifBtn')?.addEventListener('click', async () => {
         const activeNotifs = await checkNotifications();
-        const dismissed = JSON.parse(localStorage.getItem('pp_notifs_dismissed') || '{}');
-        activeNotifs.forEach(n => {
-          dismissed[n.id] = Date.now();
-        });
-        localStorage.setItem('pp_notifs_dismissed', JSON.stringify(dismissed));
+        await dismissAll(activeNotifs.map(n => n.id));
         badge.style.display = 'none';
         notify.success('Todas as notificações foram limpas!');
         const container = document.getElementById('modalNotifsList');

@@ -120,6 +120,14 @@ CREATE TABLE IF NOT EXISTS anamneses (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Notificações Dispensadas (persiste dismiss entre dispositivos)
+CREATE TABLE IF NOT EXISTS notification_dismissed (
+  id           TEXT NOT NULL,
+  trainer_id   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  dismissed_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY  (id, trainer_id)
+);
+
 -- ============================================================
 -- ÍNDICES DE PERFORMANCE
 -- ============================================================
@@ -134,6 +142,7 @@ CREATE INDEX IF NOT EXISTS idx_cycles_trainer      ON cycles(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_exercises_trainer   ON exercises(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_settings_trainer    ON settings(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_financial_trainer   ON financial(trainer_id);
+CREATE INDEX IF NOT EXISTS idx_notif_dismissed_trainer ON notification_dismissed(trainer_id);
 
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS) — Isolamento Multi-Tenant
@@ -153,6 +162,7 @@ ALTER TABLE exercises   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE financial   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE anamneses   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_dismissed ENABLE ROW LEVEL SECURITY;
 
 -- ── FUNÇÃO AUXILIAR (evita repetição) ───────────────────────
 -- Cria políticas CRUD completas para uma tabela
@@ -234,6 +244,11 @@ CREATE POLICY "anamneses_select_trainer" ON anamneses FOR SELECT USING (
 );
 CREATE POLICY "anamneses_update_trainer" ON anamneses FOR UPDATE USING (auth.uid() = trainer_id);
 CREATE POLICY "anamneses_delete_trainer" ON anamneses FOR DELETE USING (auth.uid() = trainer_id);
+
+-- NOTIFICATION_DISMISSED
+CREATE POLICY "notif_dismissed_select" ON notification_dismissed FOR SELECT USING (auth.uid() = trainer_id);
+CREATE POLICY "notif_dismissed_insert" ON notification_dismissed FOR INSERT WITH CHECK (auth.uid() = trainer_id);
+CREATE POLICY "notif_dismissed_delete" ON notification_dismissed FOR DELETE USING (auth.uid() = trainer_id);
 
 -- ============================================================
 -- TRIGGER: atualizar updated_at automaticamente
