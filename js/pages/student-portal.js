@@ -679,14 +679,8 @@ function renderTreinar(workouts, schedules) {
         </div>
 
         <div class="portal-bio-field" style="margin-top:12px">
-          <label class="portal-bio-label">PSE geral (Borg CR10) <span id="soloPseVal">5</span>
-            <span id="soloPseDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Algo Pesado</span>
-          </label>
-          <select id="soloPse" class="portal-textarea" style="margin-top:4px;padding:10px" onchange="
-            document.getElementById('soloPseVal').textContent=this.value;
-            var d=['','Extremamente Leve','Muito Leve','Leve','Moderado','Algo Pesado','Pesado / Forte','Muito Forte','Muito Forte+','Extremamente Forte','Esforço Máximo'];
-            document.getElementById('soloPseDesc').textContent=d[this.value]||'';
-          ">
+          <label class="portal-bio-label">PSE Geral da Sessão (Borg CR10)</label>
+          <select id="soloPse" class="portal-textarea" style="display: none;">
             <option value="1">1 - Extremamente Leve (Repouso)</option>
             <option value="2">2 - Muito Leve</option>
             <option value="3">3 - Leve (Fácil)</option>
@@ -698,6 +692,10 @@ function renderTreinar(workouts, schedules) {
             <option value="9">9 - Extremamente Forte (Quase Máximo)</option>
             <option value="10">10 - Esforço Máximo (Exaustão)</option>
           </select>
+          <button type="button" id="soloPseBtn" class="portal-textarea" style="margin-top:4px;padding:12px;text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:rgba(255,255,255,0.05);color:var(--portal-text);border:1px solid var(--portal-border);border-radius:12px;width:100%;box-sizing:border-box;">
+            <span id="soloPseBtnVal">5 - Algo Pesado</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
         </div>
 
         <button id="soloFinishBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:8px">
@@ -721,6 +719,32 @@ function initTreinar(workouts, schedules, student) {
   const tid = portalState.trainerId;
   const selInput = document.getElementById('soloWorkoutSel');
   const exBlock = document.getElementById('soloExercisesBlock');
+
+  // Bind premium custom selector for General Session PSE
+  document.getElementById('soloPseBtn')?.addEventListener('click', () => {
+    const selectEl = document.getElementById('soloPse');
+    if (!selectEl) return;
+    openCustomSelector('Selecionar PSE Geral', PSE_OPTIONS, selectEl.value, (val) => {
+      selectEl.value = val;
+      selectEl.dispatchEvent(new Event('change'));
+      const btnValEl = document.getElementById('soloPseBtnVal');
+      if (btnValEl) {
+        const descMap = {
+          '1': '1 - Extremamente Leve',
+          '2': '2 - Muito Leve',
+          '3': '3 - Leve',
+          '4': '4 - Moderado',
+          '5': '5 - Um Pouco Forte',
+          '6': '6 - Forte',
+          '7': '7 - Muito Forte',
+          '8': '8 - Muito Forte +',
+          '9': '9 - Quase Máximo',
+          '10': '10 - Máximo (Falha)'
+        };
+        btnValEl.textContent = descMap[val] || val;
+      }
+    });
+  });
 
   // Sound helper (Web Audio API)
   function playBeep(freq = 880, dur = 0.15, times = 3) {
