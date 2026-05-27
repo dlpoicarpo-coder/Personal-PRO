@@ -529,15 +529,35 @@ export function initWorkouts(navigateFn) {
       const st = await db.get('students', w.studentId);
       const macro = w.macrocycleId ? await db.get('macrocycles', w.macrocycleId) : null;
       const allWorkouts = await db.getAll('workouts');
+      
+      const cleanWorkoutName = (name) => {
+        if (!name) return '';
+        return name
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/\bsem(ana)?\s*\d+\b/g, '')
+          .replace(/\bsem\.\s*\d+\b/g, '')
+          .replace(/[-—_]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+      
+      const targetCleanName = cleanWorkoutName(w.name);
+
       const doneSessions = (await db.getAll('sessions')).filter(s => {
         if (s.status !== 'completed') return false;
         if (s.studentId !== w.studentId) return false;
+        
         const sw = allWorkouts.find(xw => xw.id === s.workoutId);
-        if (!sw) return false;
-        const matchName = sw.name === w.name;
-        const matchMacro = w.macrocycleId ? sw.macrocycleId === w.macrocycleId : sw.cycle === w.cycle;
-        return matchName && matchMacro;
+        const sessionWorkoutName = sw ? sw.name : s.workoutName || '';
+        if (!sessionWorkoutName) return false;
+
+        const cleanSessName = cleanWorkoutName(sessionWorkoutName);
+        return cleanSessName === targetCleanName || cleanSessName.includes(targetCleanName) || targetCleanName.includes(cleanSessName);
       });
+
+      // Ordenar do mais recente para o mais antigo (data decrescente)
+      doneSessions.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
 
       openModal({
         title: w.name, size: 'lg',
@@ -590,10 +610,15 @@ export function initWorkouts(navigateFn) {
               <div style="display:flex;flex-direction:column;gap:12px">
                 ${doneSessions.map((se, si) => {
                   const setLog = se.setLog || [];
+                  const sessionWorkout = allWorkouts.find(xw => xw.id === se.workoutId);
+                  const displaySessionName = sessionWorkout ? sessionWorkout.name : se.workoutName || w.name;
                   return `
                     <div style="background:var(--bg-page);border:1px solid var(--border-color);border-radius:8px;padding:12px">
                       <div class="flex justify-between items-center mb-xs" style="flex-wrap:wrap;gap:6px">
-                        <span class="badge badge-success" style="font-size:0.7rem;text-transform:none">Sessão #${si+1} — Realizado</span>
+                        <div>
+                          <span class="badge badge-success" style="font-size:0.7rem;text-transform:none">Realizado</span>
+                          <strong style="font-size:0.8rem;margin-left:6px">${displaySessionName}</strong>
+                        </div>
                         <span style="font-size:0.78rem;color:var(--text-muted)">${Calc.formatDate(se.date || se.createdAt)} · Volume Total: <strong style="color:var(--primary)">${se.totalVolume || 0}kg</strong></span>
                       </div>
                       ${se.postBiofeedback?.pse ? `
@@ -613,8 +638,22 @@ export function initWorkouts(navigateFn) {
                               const exSets = setLog.filter(s => s.exName === ex.name || (w.exercises[s.exIdx] && w.exercises[s.exIdx].name === ex.name));
                               const realSets = exSets.length;
                               const avgRealLoad = realSets ? Math.round(exSets.reduce((sum, s) => sum + (s.load || 0), 0) / realSets * 10) / 10 : '-';
+                              
+                              const setsDetailsHTML = realSets ? `
+                                <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
+                                  ${exSets.map((s, idx) => `
+                                    <span style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:4px;padding:2px 5px;white-space:nowrap">
+                                      <strong>S${s.setIdx != null ? s.setIdx + 1 : idx + 1}:</strong> ${s.reps || 0} reps × ${s.load || 0}kg ${ex.rest ? ` <span style="color:var(--text-muted);font-size:0.62rem">(${ex.rest}s)</span>` : ''}
+                                    </span>
+                                  `).join('')}
+                                </div>
+                              ` : '';
+
                               return `<tr>
-                                <td><strong>${ex.name}</strong></td>
+                                <td>
+                                  <strong>${ex.name}</strong>
+                                  ${setsDetailsHTML}
+                                </td>
                                 <td>${ex.sets}</td>
                                 <td style="font-weight:700;color:${realSets >= ex.sets ? 'var(--success)' : 'var(--text-muted)'}">${realSets || '0'}</td>
                                 <td>${ex.load ? ex.load + 'kg' : '-'}</td>
