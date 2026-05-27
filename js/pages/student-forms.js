@@ -76,45 +76,42 @@ export async function renderPreForm(studentIdRaw) {
           <form id="preStudentForm">
             <input type="hidden" name="studentId" value="${studentId}" />
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Qualidade do Sono</label>
-              <div class="form-hint" style="margin-bottom:16px">1 = Péssimo · 10 = Ótimo</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="sleep" value="${val}" ${val === 7 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
-              </div>
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Qualidade do Sono <span id="sleepVal">7</span>/10</label>
+              <input type="range" name="sleep" min="1" max="10" value="7" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('sleepVal').textContent=this.value" />
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Nível de Recuperação (TQR)</label>
               <select class="form-select" name="tqr" style="font-size:0.95rem">
-                <option value="0">0 - Muito Muito Fraca (Nenhuma recuperação)</option>
-                <option value="1">1 - Muito Fraca</option>
-                <option value="2">2 - Fraca</option>
-                <option value="3">3 - Moderada</option>
-                <option value="4">4 - Moderada +</option>
-                <option value="5" selected>5 - Boa</option>
-                <option value="6">6 - Boa +</option>
-                <option value="7">7 - Muito Boa</option>
-                <option value="8">8 - Muito Boa +</option>
-                <option value="9">9 - Quase Excelente</option>
-                <option value="10">10 - Excelente (Recuperação máxima)</option>
+                <option value="0">0 - Não recuperado</option>
+                <option value="1">1 - Muito mal recuperado</option>
+                <option value="2">2 - Mal recuperado</option>
+                <option value="3">3 - Pouco recuperado</option>
+                <option value="4">4 - Recuperação abaixo da média</option>
+                <option value="5" selected>5 - Recuperação parcial</option>
+                <option value="6">6 - Razoavelmente recuperado</option>
+                <option value="7">7 - Bem recuperado</option>
+                <option value="8">8 - Muito bem recuperado</option>
+                <option value="9">9 - Excelente recuperação</option>
+                <option value="10">10 - Totalmente recuperado</option>
               </select>
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Alimentação nas últimas 24h</label>
               <select class="form-select" name="food" style="font-size:0.95rem">
-                <option value="5" selected>Excelente (Bati as metas / Muito nutritiva)</option>
+                <option value="5" selected>Excelente (Bati as metas / Saudável)</option>
                 <option value="4">Boa (Maioria saudável / Poucos furos)</option>
                 <option value="3">Regular (Na média / Algumas escapadas)</option>
                 <option value="2">Ruim (Pulei refeições / Comi mal)</option>
-                <option value="1">Péssima (Muito fast food / Quase não comi)</option>
+                <option value="1">Péssima (Fast food / Quase não comi)</option>
               </select>
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
               <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Ciclo Menstrual (Se aplicável)</label>
               <select class="form-select" name="menstrualCycle" style="font-size:0.95rem">
-                <option value="">Não se aplica / Prefiro não informar</option>
+                <option value="" selected>Não se aplica / Prefiro não informar</option>
                 <option value="Menstruacao">Menstruação</option>
                 <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
                 <option value="Ovulatoria">Fase Ovulatória</option>
@@ -123,39 +120,44 @@ export async function renderPreForm(studentIdRaw) {
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Nível de Estresse</label>
-              <div class="form-hint" style="margin-bottom:16px">1 = Relaxado · 10 = Muito estressado</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="stress" value="${val}" ${val === 5 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
-              </div>
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Nível de Estresse <span id="stressVal">5</span>/10</label>
+              <input type="range" name="stress" min="1" max="10" value="5" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('stressVal').textContent=this.value" />
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Motivação para Treinar</label>
-              <div class="form-hint" style="margin-bottom:16px">1 = Muito baixa · 10 = Muito alta</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="motivation" value="${val}" ${val === 7 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
-              </div>
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Motivação <span id="motivVal">7</span>/10</label>
+              <input type="range" name="motivation" min="1" max="10" value="7" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('motivVal').textContent=this.value" />
             </div>
 
             <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
-              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Dor / Desconforto Articular</label>
-              <div class="form-hint" style="margin-bottom:16px">1 = Nenhuma dor · 10 = Muita dor</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; overflow-x:auto; padding-bottom:8px">
-                ${[1,2,3,4,5,6,7,8,9,10].map(val => `<label style="display:flex; flex-direction:column; align-items:center; cursor:pointer; gap:8px"><input type="radio" name="pain" value="${val}" ${val === 1 ? 'checked' : ''} onchange="document.getElementById('painGroup').style.display=this.value>=3?'block':'none'" style="width:20px;height:20px;accent-color:var(--primary)" /><span style="font-size:0.85rem;font-weight:500;color:var(--text-muted)">${val}</span></label>`).join('')}
-              </div>
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Dor / Desconforto <span id="painVal">1</span>/10</label>
+              <input type="range" name="pain" min="1" max="10" value="1" style="width:100%;accent-color:var(--primary)" oninput="
+                document.getElementById('painVal').textContent=this.value;
+                document.getElementById('painGroup').style.display=this.value>=3?'block':'none';
+              " />
             </div>
-            <div class="form-group" id="painGroup" style="display:none">
-              <label class="form-label">Onde está a dor?</label>
-              ${painRegionSelector('painRegion')}
-              <div class="form-group mt-sm">
-                <label class="form-label text-sm">Descreva a dor</label>
+
+            <div class="form-group" id="painGroup" style="display:none; margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:150px;overflow-y:auto;padding:6px;background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:10px">
+                ${PAIN_REGIONS.map(r=>`
+                  <label class="portal-pain-chip" style="
+                    display:flex;align-items:center;gap:4px;padding:4px 10px;
+                    border:1px solid var(--border-color);border-radius:20px;
+                    cursor:pointer;font-size:0.78rem;transition:all 0.15s">
+                    <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
+                    ${r.label}
+                  </label>`).join('')}
+              </div>
+              <div class="form-group mt-sm" style="margin-top:12px">
+                <label class="form-label text-sm">Descreva a dor (opcional)</label>
                 <textarea class="form-textarea" name="painDescription" rows="2" placeholder="Ex: Dor aguda no ombro direito ao levantar o braço"></textarea>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Alguma observação?</label>
-              <textarea class="form-textarea" name="notes" rows="2" placeholder="Como você está se sentindo? Dormiu bem? Comeu bem?"></textarea>
+
+            <div class="form-group" style="margin-bottom:24px; padding:16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card)">
+              <label class="form-label" style="font-size:1.1rem; font-weight:600; margin-bottom:12px">Alguma observação?</label>
+              <textarea class="form-textarea" name="notes" rows="2" placeholder="Como você está se sentindo hoje? Dormiu bem? Comeu bem?"></textarea>
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%;padding:16px;font-size:1rem;margin-top:12px">Enviar Pré-Treino</button>
           </form>
@@ -172,13 +174,42 @@ export async function renderPreForm(studentIdRaw) {
 
 export function initPreForm() {
   setupFormDraft('preStudentForm');
+
+  // Tag toggle listener for pain chips
+  setTimeout(() => {
+    document.querySelectorAll('.portal-pain-chip').forEach(tag => {
+      tag.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        const cb = tag.querySelector('input');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        tag.style.borderColor = cb.checked ? 'var(--primary)' : '';
+        tag.style.background  = cb.checked ? 'rgba(16, 185, 129, 0.12)' : '';
+        tag.style.color       = cb.checked ? 'var(--primary)' : '';
+      });
+    });
+  }, 100);
+
   document.getElementById('preStudentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const data = Object.fromEntries(fd);
-    data.formType = 'pre';
-    data.date = new Date().toISOString();
-    ['sleep', 'tqr', 'stress', 'pain', 'food', 'motivation'].forEach(k => data[k] = parseInt(data[k]) || (k === 'pain' ? 1 : k === 'motivation' ? 7 : 5));
+    const painVal = parseInt(fd.get('pain')) || 1;
+    const data = {
+      studentId: fd.get('studentId'),
+      formType: 'pre',
+      date: new Date().toISOString(),
+      sleep: parseInt(fd.get('sleep')) || 7,
+      tqr: parseInt(fd.get('tqr')) || 5,
+      stress: parseInt(fd.get('stress')) || 5,
+      pain: painVal,
+      painRegions: painVal >= 3 ? fd.getAll('painRegions') : [],
+      painDescription: painVal >= 3 ? fd.get('painDescription') : '',
+      food: parseInt(fd.get('food')) || 5,
+      motivation: parseInt(fd.get('motivation')) || 7,
+      menstrualCycle: fd.get('menstrualCycle') || '',
+      notes: fd.get('notes') || '',
+    };
     
     // Mapeamento para retrocompatibilidade
     data.mood = data.tqr;

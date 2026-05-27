@@ -1438,17 +1438,20 @@ function renderBio(biofeedbacks, sid, tid) {
             <input type="range" name="sleep" min="1" max="10" value="7" class="portal-range" oninput="document.getElementById('sleepVal').textContent=this.value">
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Recuperação (TQR) <span id="tqrVal">5</span>/10
-              <span id="tqrDesc" style="font-size:0.72rem;color:var(--portal-text-muted);margin-left:8px">Recuperação parcial</span>
-            </label>
-            <input type="range" name="tqr" min="0" max="10" value="5" class="portal-range" oninput="
-              document.getElementById('tqrVal').textContent=this.value;
-              var d=['Não recuperado','Muito mal recuperado','Mal recuperado','Pouco recuperado','Recuperação abaixo da média','Recuperação parcial','Razoavelmente recuperado','Bem recuperado','Muito bem recuperado','Excelente recuperação','Totalmente recuperado'];
-              document.getElementById('tqrDesc').textContent=d[this.value]||'';
-            ">
-            <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--portal-text-muted);margin-top:4px">
-              <span style="color:#ef4444">0 — Esgotado</span><span style="color:#f59e0b">5 — Parcial</span><span style="color:#10b981">10 — Pleno</span>
-            </div>
+            <label class="portal-bio-label">Recuperação (TQR)</label>
+            <select name="tqr" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
+              <option value="0">0 - Não recuperado</option>
+              <option value="1">1 - Muito mal recuperado</option>
+              <option value="2">2 - Mal recuperado</option>
+              <option value="3">3 - Pouco recuperado</option>
+              <option value="4">4 - Recuperação abaixo da média</option>
+              <option value="5" selected>5 - Recuperação parcial</option>
+              <option value="6">6 - Razoavelmente recuperado</option>
+              <option value="7">7 - Bem recuperado</option>
+              <option value="8">8 - Muito bem recuperado</option>
+              <option value="9">9 - Excelente recuperação</option>
+              <option value="10">10 - Totalmente recuperado</option>
+            </select>
           </div>
           <div class="portal-bio-field">
             <label class="portal-bio-label">Alimentação nas últimas 24h</label>
@@ -1557,10 +1560,12 @@ function renderBio(biofeedbacks, sid, tid) {
 function initBio() {
   setTimeout(() => {
     document.querySelectorAll('.portal-pain-chip').forEach(tag => {
-      tag.addEventListener('click', () => {
+      tag.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT') return;
         const cb = tag.querySelector('input');
         if (!cb) return;
         cb.checked = !cb.checked;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
         tag.style.borderColor = cb.checked ? 'var(--portal-primary)' : '';
         tag.style.background  = cb.checked ? 'var(--portal-primary-glow)' : '';
         tag.style.color       = cb.checked ? 'var(--portal-primary)' : '';
