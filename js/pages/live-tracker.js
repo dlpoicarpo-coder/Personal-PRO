@@ -53,9 +53,8 @@ export async function renderTracker() {
 
   if (state.session) return renderLiveView(students);
 
-  const selectedFilterId = sessionStorage.getItem('pp_tracker_filter') || '';
   const completed = sessions
-    .filter(s => s.status === 'completed' && (!selectedFilterId || s.studentId === selectedFilterId))
+    .filter(s => s.status === 'completed')
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 10);
 
@@ -116,13 +115,7 @@ export async function renderTracker() {
 
     ${completed.length ? `
     <div class="card mt-lg">
-      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <span class="card-title">Sessões Recentes</span>
-        <select class="form-select" id="sessFilterStudent" style="max-width:200px;font-size:0.8rem;padding:4px 8px;height:30px">
-          <option value="">Todos os alunos</option>
-          ${active.map(s => `<option value="${s.id}" ${s.id === selectedFilterId ? 'selected' : ''}>${s.name}</option>`).join('')}
-        </select>
-      </div>
+      <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
       <div class="table-container">
         <table class="data-table">
           <thead><tr>
@@ -227,10 +220,7 @@ function renderLiveView(students) {
         <div class="card">
           <div class="card-header">
             <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
-            <div class="flex gap-xs" style="align-items:center">
-              <button class="btn btn-ghost btn-sm" id="editActiveEx" title="Editar Exercício" style="color:var(--primary);display:inline-flex;align-items:center;padding:4px 6px">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
+            <div class="flex gap-xs">
               <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
               <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
             </div>
@@ -264,25 +254,25 @@ function renderLiveView(students) {
                   color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
                   <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
-                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" />
+                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
                   <span style="font-size:0.55rem;color:var(--text-muted)">kg</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" />
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
-                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" />
+                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR — Reps in Reserve: quantas repetições ainda sobravam no tanque (0=falha, 1=1 rep sobrando...)">
                   <span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span>
-                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" />
+                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
                 </div>
                 ${done
                   ? `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px">
-                      <span class="pse-lbl" style="font-size:0.6rem;color:var(--warning)">${done.pse ? `PSE ${done.pse}` : ''}</span>
+                      ${done.pse ? `<span style="font-size:0.6rem;color:var(--warning)">PSE ${done.pse}</span>` : ''}
                       <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
-                      <span class="rir-lbl" style="font-size:0.6rem;color:var(--accent)">${done.rir != null ? `RIR ${done.rir}` : ''}</span>
+                      ${done.rir != null ? `<span style="font-size:0.6rem;color:var(--accent)">RIR ${done.rir}</span>` : ''}
                     </div>`
                   : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:36px;align-self:flex-end">✓</button>`}
               </div>`;
@@ -362,15 +352,6 @@ export function initTracker(navigateFn) {
   const sSel = document.getElementById('trkStudent');
   const wSel = document.getElementById('trkWorkout');
   const sBtn = document.getElementById('startBtn');
-
-  // Filtro por aluno nas sessões recentes
-  const filterSel = document.getElementById('sessFilterStudent');
-  if (filterSel) {
-    filterSel.addEventListener('change', () => {
-      sessionStorage.setItem('pp_tracker_filter', filterSel.value);
-      navigateFn('/tracker');
-    });
-  }
 
   // Excluir sessão
   document.querySelectorAll('.delete-session').forEach(btn => {
@@ -843,57 +824,188 @@ export function initTracker(navigateFn) {
 
   document.getElementById('sndToggle')?.addEventListener('change', e => { state.restTimer.soundEnabled = e.target.checked; });
 
-  // Completar série
-  document.querySelectorAll('.do-set').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const i    = parseInt(btn.dataset.i);
-      const row  = btn.closest('.set-row');
+  // Modal de confirmação de série com PSE e RIR
+  function showSetModal(btn) {
+    const i    = parseInt(btn.dataset.i);
+    const row  = btn.closest('.set-row');
+    const reps = row.querySelector('.set-reps')?.value || '';
+    const load = row.querySelector('.set-load')?.value || '';
+    const ex   = (state.session?.exercises || [])[state.exIdx] || {};
+
+    // Remover modal anterior se existir
+    document.getElementById('setConfirmModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'setConfirmModal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:9999;
+      display:flex;align-items:flex-end;justify-content:center;
+      background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
+    `;
+    modal.innerHTML = `
+      <div style="
+        background:#111827;border:1px solid rgba(255,255,255,0.1);
+        border-radius:16px 16px 0 0;padding:20px 20px 32px;
+        width:100%;max-width:440px;
+        animation:slideUp 0.2s ease;
+      ">
+        <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div style="font-weight:700;font-size:1rem;color:#f1f5f9">Série ${i+1} concluída</div>
+            <div style="font-size:0.78rem;color:#64748b;margin-top:2px">${ex.name||'Exercício'} — ${reps||'?'} reps × ${load||'?'}kg</div>
+          </div>
+          <button id="closeSetModal" style="background:none;border:none;color:#64748b;font-size:1.2rem;cursor:pointer;padding:4px">✕</button>
+        </div>
+
+        <!-- PSE -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:0.7rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
+            PSE — Percepção de Esforço
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => {
+              const color = n<=3?'#10b981':n<=5?'#22c55e':n<=7?'#f59e0b':n<=9?'#ef4444':'#dc2626';
+              const labels = {1:'Mínimo',3:'Fácil',5:'Moderado',7:'Difícil',9:'Muito difícil',10:'Máximo'};
+              return `<button class="pse-btn" data-v="${n}" style="
+                flex:1;min-width:calc(10% - 3px);padding:8px 4px;
+                background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+                border-radius:8px;cursor:pointer;transition:all 0.1s;
+                font-size:0.9rem;font-weight:700;color:${color};
+              " title="${labels[n]||''}">${n}</button>`;
+            }).join('')}
+          </div>
+          <div id="pseLabel" style="font-size:0.72rem;color:#94a3b8;margin-top:6px;min-height:16px;text-align:center"></div>
+        </div>
+
+        <!-- RIR -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:0.7rem;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
+            RIR — Reps sobrando no tanque
+          </div>
+          <div style="display:flex;gap:6px">
+            ${[0,1,2,3,4,5].map(n => {
+              const labels = {0:'Falha',1:'1 sobrou',2:'2 sobraram',3:'3 sobraram',4:'4 sobraram',5:'5+'};
+              return `<button class="rir-btn" data-v="${n}" style="
+                flex:1;padding:8px 4px;
+                background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+                border-radius:8px;cursor:pointer;transition:all 0.1s;
+                font-size:0.9rem;font-weight:700;color:#06b6d4;
+              " title="${labels[n]}">${n}</button>`;
+            }).join('')}
+          </div>
+          <div id="rirLabel" style="font-size:0.72rem;color:#94a3b8;margin-top:6px;min-height:16px;text-align:center"></div>
+        </div>
+
+        <!-- Notas -->
+        <div style="margin-bottom:16px">
+          <input id="modalSetNotes" type="text" placeholder="Observação (opcional)"
+            style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.08);border-radius:8px;
+            color:#e2e8f0;font-size:0.85rem;font-family:inherit" />
+        </div>
+
+        <button id="confirmSetBtn" style="
+          width:100%;padding:14px;background:#10b981;color:#fff;border:none;
+          border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;
+          opacity:0.5;pointer-events:none;
+        ">Confirmar série</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    let selPse = 0, selRir = null;
+    const pseLabels = {1:'Repouso',2:'Muito fácil',3:'Fácil',4:'Moderado',5:'Um pouco difícil',6:'Difícil',7:'Muito difícil',8:'Muito difícil',9:'Extenuante',10:'Máximo absoluto'};
+    const rirLbls  = {0:'Falha — não conseguiria mais nenhuma',1:'1 repetição sobrando',2:'2 repetições sobrando',3:'3 repetições sobrando',4:'4 repetições sobrando',5:'5 ou mais sobrando'};
+
+    modal.querySelectorAll('.pse-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        modal.querySelectorAll('.pse-btn').forEach(x => x.style.background='rgba(255,255,255,0.04)');
+        b.style.background = 'rgba(245,158,11,0.2)';
+        b.style.borderColor = 'rgba(245,158,11,0.6)';
+        selPse = parseInt(b.dataset.v);
+        document.getElementById('pseLabel').textContent = pseLabels[selPse]||'';
+        updateConfirm();
+      });
+    });
+
+    modal.querySelectorAll('.rir-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        modal.querySelectorAll('.rir-btn').forEach(x => { x.style.background='rgba(255,255,255,0.04)'; x.style.borderColor='rgba(255,255,255,0.08)'; });
+        b.style.background = 'rgba(6,182,212,0.15)';
+        b.style.borderColor = 'rgba(6,182,212,0.5)';
+        selRir = parseInt(b.dataset.v);
+        document.getElementById('rirLabel').textContent = rirLbls[selRir]||'';
+        updateConfirm();
+      });
+    });
+
+    function updateConfirm() {
+      const btn2 = document.getElementById('confirmSetBtn');
+      if (selPse > 0) {
+        btn2.style.opacity = '1'; btn2.style.pointerEvents = 'auto';
+      }
+    }
+
+    document.getElementById('closeSetModal')?.addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    document.getElementById('confirmSetBtn')?.addEventListener('click', () => {
+      if (!selPse) return;
+      const notes = document.getElementById('modalSetNotes')?.value || '';
+      modal.remove();
+      completeSet(btn, i, row, selPse, selRir, notes);
+    });
+  }
+
+  function completeSet(btn, i, row, pse, rir, notes) {
       const reps  = parseInt(row.querySelector('.set-reps')?.value) || 0;
       const load  = parseFloat(row.querySelector('.set-load')?.value) || 0;
-      const pse   = parseInt(row.querySelector('.set-pse')?.value) || 0;
-      const rirEl = row.querySelector('.set-rir');
-      const rir   = rirEl?.value !== '' ? parseInt(rirEl.value) : null;
-      const notes = document.getElementById('setNotes')?.value || '';
 
-      // Validação: avisar se PSE ou RIR estão inconsistentes
-      // RIR 0 com PSE < 8 é incomum — lembrete discreto
       if (rir === 0 && pse > 0 && pse < 7) {
         notify.warning('RIR 0 (falha) com PSE baixo — verifique os valores.');
       }
 
-      // Estimativa de 1RM se tiver carga e reps
       const ex = (state.session?.exercises || [])[state.exIdx] || {};
       let rm1Estimated = null;
       if (load > 0 && reps > 0 && reps <= 12) {
-        rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2; // Epley
+        rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2;
       }
 
       state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps, load, pse, rir, notes, rm1Estimated, time: Date.now() });
 
       row.classList.add('set-done'); row.classList.remove('set-active');
       row.style.background = 'rgba(16,185,129,0.04)';
-      
-      // Criar o container da badge done com labels de PSE e RIR
-      const doneContainer = document.createElement('div');
-      doneContainer.style.display = 'flex';
-      doneContainer.style.flexDirection = 'column';
-      doneContainer.style.alignItems = 'center';
-      doneContainer.style.gap = '1px';
-      doneContainer.style.minWidth = '38px';
-      doneContainer.innerHTML = `
-        <span class="pse-lbl" style="font-size:0.6rem;color:var(--warning)">${pse ? `PSE ${pse}` : ''}</span>
-        <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
-        <span class="rir-lbl" style="font-size:0.6rem;color:var(--accent)">${rir !== null ? `RIR ${rir}` : ''}</span>
-      `;
-      btn.replaceWith(doneContainer);
+      row.querySelectorAll('input').forEach(inp => inp.disabled = true);
+      btn.replaceWith(Object.assign(document.createElement('span'), {
+        className: 'badge badge-success',
+        textContent: '✓',
+        style: 'min-width:32px;text-align:center'
+      }));
 
       const exSets = parseInt(curEx.sets) || 3;
       if (i + 1 < exSets) {
-        state.setIdx = i + 1;
-        const nr = document.querySelector(`[data-si="${i+1}"]`);
-        if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
+        state.restTimer.reset(); state.restTimer.start();
+        state.isResting = true; state.workTimer?.stop();
+        state.workSec = state.workTimer?.getElapsed() || 0;
+        const c = document.getElementById('restCount');
+        const l = document.getElementById('restLbl');
+        const b2 = document.getElementById('goRest');
+        if (c) { c.textContent = formatTime(state.restTimer.duration); c.style.color='var(--warning)'; }
+        if (l) l.textContent = `Descansando após série ${i+1}...`;
+        if (b2) b2.textContent = '⏸ Pausar Descanso';
       }
 
+      const rirTxt = rir != null ? ` RIR ${rir}` : '';
+      notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg PSE ${pse}${rirTxt}`);
+
+      // Avançar para próxima série
+      state.setIdx = i + 1;
+      const nr = document.querySelector(`[data-si="${i+1}"]`);
+      if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
+
+      // Atualizar volume e progresso
       const volEl = document.getElementById('liveVol');
       if (volEl) volEl.textContent = totalVolume() + ' kg';
       const totalS = (state.session.exercises||[]).reduce((s,e)=>s+(parseInt(e.sets)||3),0);
@@ -901,6 +1013,13 @@ export function initTracker(navigateFn) {
       if (fill) fill.style.width = Math.round((state.setLog.length/totalS)*100)+'%';
 
       state.session.setLog = state.setLog;
+      renderProgress();
+  }
+
+  // Completar série — abre modal
+  document.querySelectorAll('.do-set').forEach(btn => {
+    btn.addEventListener('click', () => showSetModal(btn));
+  });
       state.session.currentExIdx = state.exIdx;
       state.session.workSec = state.workSec;
       db.put('sessions', state.session);
@@ -912,49 +1031,7 @@ export function initTracker(navigateFn) {
       const rl = document.getElementById('restLbl'); if (rl) { rl.textContent = 'Descansando...'; rl.style.color = ''; }
 
       notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg`);
-    });
-  });
-
-  // Atualizar série concluída dinamicamente ao editar inputs
-  const handleDoneSetChange = (row) => {
-    const si = parseInt(row.dataset.si);
-    const reps = parseInt(row.querySelector('.set-reps')?.value) || 0;
-    const load = parseFloat(row.querySelector('.set-load')?.value) || 0;
-    const pse = parseInt(row.querySelector('.set-pse')?.value) || 0;
-    const rirEl = row.querySelector('.set-rir');
-    const rir = rirEl?.value !== '' ? parseInt(rirEl.value) : null;
-
-    const idx = state.setLog.findIndex(l => l.exIdx === state.exIdx && l.setIdx === si);
-    if (idx >= 0) {
-      let rm1Estimated = null;
-      if (load > 0 && reps > 0 && reps <= 12) {
-        rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2;
-      }
-      state.setLog[idx] = { ...state.setLog[idx], reps, load, pse, rir, rm1Estimated };
-      
-      state.session.setLog = state.setLog;
-      db.put('sessions', state.session);
-
-      const volEl = document.getElementById('liveVol');
-      if (volEl) volEl.textContent = totalVolume() + ' kg';
-
-      const pseLbl = row.querySelector('.pse-lbl');
-      if (pseLbl) pseLbl.textContent = pse ? `PSE ${pse}` : '';
-      const rirLbl = row.querySelector('.rir-lbl');
-      if (rirLbl) rirLbl.textContent = rir !== null ? `RIR ${rir}` : '';
-    }
-  };
-
-  document.querySelectorAll('.set-row').forEach(row => {
-    const si = parseInt(row.dataset.si);
-    ['.set-reps', '.set-load', '.set-pse', '.set-rir'].forEach(selector => {
-      row.querySelector(selector)?.addEventListener('input', () => {
-        if (state.setLog.some(l => l.exIdx === state.exIdx && l.setIdx === si)) {
-          handleDoneSetChange(row);
-        }
-      });
-    });
-  });
+  }
 
   // Navegar exercícios
   const refreshLive = async () => {
@@ -965,87 +1042,6 @@ export function initTracker(navigateFn) {
   document.getElementById('prevEx')?.addEventListener('click', () => { if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
   document.getElementById('nextEx')?.addEventListener('click', () => { if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
   document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
-
-  // Editar Exercício Atual
-  document.getElementById('editActiveEx')?.addEventListener('click', () => {
-    const ex = (state.session?.exercises || [])[state.exIdx];
-    if (!ex) return;
-
-    openModal({
-      title: 'Editar Exercício em Andamento',
-      size: 'md',
-      content: `
-        <form id="editActiveExForm" style="padding:4px">
-          <div class="form-group">
-            <label class="form-label">Nome do Exercício</label>
-            <input class="form-input" name="name" value="${ex.name || ''}" placeholder="Ex: Agachamento Livre" required />
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-            <div class="form-group">
-              <label class="form-label">Séries</label>
-              <input class="form-input" type="number" name="sets" value="${ex.sets || 3}" min="1" max="15" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Reps Recomendadas</label>
-              <input class="form-input" name="reps" value="${ex.reps || '12'}" placeholder="Ex: 12 ou 4x8-10" />
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-            <div class="form-group">
-              <label class="form-label">Carga Recomendada (kg)</label>
-              <input class="form-input" type="number" step="0.5" name="load" value="${ex.load || ''}" placeholder="Ex: 50" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Descanso (s)</label>
-              <input class="form-input" type="number" name="rest" value="${ex.rest || 60}" placeholder="Ex: 60" required />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Método</label>
-            <input class="form-input" name="method" value="${ex.method || ''}" placeholder="Ex: Bi-set, Drop-set, etc." />
-          </div>
-        </form>
-      `,
-      actions: [
-        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-        { label: 'Salvar', class: 'btn-primary', onClick: async () => {
-          const fd = new FormData(document.getElementById('editActiveExForm'));
-          const name = fd.get('name').trim();
-          const sets = parseInt(fd.get('sets')) || 3;
-          const reps = fd.get('reps').trim();
-          const load = fd.get('load') !== '' ? parseFloat(fd.get('load')) : '';
-          const rest = parseInt(fd.get('rest')) || 60;
-          const method = fd.get('method').trim();
-
-          if (!name) { notify.error('O nome do exercício é obrigatório'); return; }
-
-          const oldSets = parseInt(ex.sets) || 3;
-          ex.name = name;
-          ex.sets = sets;
-          ex.reps = reps;
-          ex.load = load;
-          ex.rest = rest;
-          ex.method = method;
-
-          if (state.setIdx >= sets) {
-            state.setIdx = sets - 1;
-          }
-
-          if (sets < oldSets) {
-            state.setLog = state.setLog.filter(l => !(l.exIdx === state.exIdx && l.setIdx >= sets));
-          }
-
-          state.session.exercises[state.exIdx] = ex;
-          state.session.setLog = state.setLog;
-          await db.put('sessions', state.session);
-
-          notify.success('Exercício atualizado!');
-          closeModal();
-          refreshLive();
-        }}
-      ]
-    });
-  });
 
   // Finalizar
   document.getElementById('endBtn')?.addEventListener('click', async () => {
@@ -1109,7 +1105,6 @@ export function initTracker(navigateFn) {
       ]
     });
   });
-}
 
 // ── FINISH SESSION ───────────────────────────────────────────
 async function finishSession(dur, vol, dens, post, navigateFn) {
