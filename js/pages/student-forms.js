@@ -21,7 +21,7 @@ async function publicGet(table, id) {
     if (item) return item;
   } catch(_) {}
 
-  // 2. Supabase anon — select=* para ter o id da row mesmo se data é null
+  // 2. Supabase anon — buscar por id direto
   try {
     const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
     const res = await fetch(url, {
@@ -35,20 +35,40 @@ async function publicGet(table, id) {
       const rows = await res.json();
       if (rows?.length) {
         const row = rows[0];
-        // row.data tem os campos do objeto; garantir que id está presente
         const obj = row.data ? { ...row.data, id: row.id } : { ...row };
-        return obj;
+        if (obj.id || obj.name) return obj;
+      }
+    } else {
+      console.warn(`publicGet(${table}) HTTP ${res.status}:`, await res.text().catch(()=>''));
+    }
+  } catch(e) { console.warn(`publicGet(${table}) fetch error:`, e?.message); }
+
+  // 3. Fallback — buscar via data JSONB (formato antigo)
+  try {
+    const url2 = `${SUPABASE_URL}/rest/v1/${table}?data->>id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
+    const res2 = await fetch(url2, {
+      headers: {
+        'apikey':        SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Accept':        'application/json',
+      }
+    });
+    if (res2.ok) {
+      const rows2 = await res2.json();
+      if (rows2?.length) {
+        const row = rows2[0];
+        return row.data ? { ...row.data, id: row.data.id || row.id } : { ...row };
       }
     }
   } catch(_) {}
 
-  // 3. Fallback localStorage
+  // 4. Fallback localStorage
   try {
-    for (let i=0;i<localStorage.length;i++) {
+    for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key || !key.includes(`_${table}`)) continue;
-      const items = JSON.parse(localStorage.getItem(key)||'[]');
-      const found = items.find ? items.find(x => x?.id === id) : null;
+      const items = JSON.parse(localStorage.getItem(key) || '[]');
+      const found = Array.isArray(items) ? items.find(x => x?.id === id) : null;
       if (found) return found;
     }
   } catch(_) {}
@@ -438,10 +458,11 @@ function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
 // ══════════════════════════════════════════════════════════
 
 export async function renderPreForm(studentId) {
-  const student = await publicGet('students', studentId);
+  // Limpar parâmetros extras do ID (links antigos tinham ?t=...&n=...)
+  const cleanId = (studentId || '').split('?')[0].split('&')[0].trim();
+  const student = await publicGet('students', cleanId);
 
-  if (!student) {
-    return `
+  if (!student) {    return `
       <style>${FORM_CSS}</style>
       <div class="student-form-page">
         <div class="form-card">
@@ -487,7 +508,7 @@ export async function renderPreForm(studentId) {
           </div>
 
           <form id="preStudentForm" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();}">
-            <input type="hidden" name="studentId" value="${studentId}" />
+            <input type="hidden" name="studentId" value="${cleanId}" />
             <input type="hidden" name="trainerId" value="${student.trainer_id||student.trainerId||''}" />
             <input type="hidden" name="sleep" value="5" />
             <input type="hidden" name="nutrition" value="5" />
@@ -642,7 +663,8 @@ export function initPreForm() {
 // ══════════════════════════════════════════════════════════
 
 export async function renderPostForm(sessionId) {
-  const session = await publicGet('sessions', sessionId);
+  const cleanSessionId = (sessionId || '').split('?')[0].split('&')[0].trim();
+  const session = await publicGet('sessions', cleanSessionId);
 
   if (!session) {
     return `
