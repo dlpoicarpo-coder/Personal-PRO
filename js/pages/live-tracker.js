@@ -53,8 +53,9 @@ export async function renderTracker() {
 
   if (state.session) return renderLiveView(students);
 
+  const selectedFilterId = sessionStorage.getItem('pp_tracker_filter') || '';
   const completed = sessions
-    .filter(s => s.status === 'completed')
+    .filter(s => s.status === 'completed' && (!selectedFilterId || s.studentId === selectedFilterId))
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 10);
 
@@ -115,7 +116,13 @@ export async function renderTracker() {
 
     ${completed.length ? `
     <div class="card mt-lg">
-      <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <span class="card-title">Sessões Recentes</span>
+        <select class="form-select" id="sessFilterStudent" style="max-width:200px;font-size:0.8rem;padding:4px 8px;height:30px">
+          <option value="">Todos os alunos</option>
+          ${active.map(s => `<option value="${s.id}" ${s.id === selectedFilterId ? 'selected' : ''}>${s.name}</option>`).join('')}
+        </select>
+      </div>
       <div class="table-container">
         <table class="data-table">
           <thead><tr>
@@ -352,6 +359,15 @@ export function initTracker(navigateFn) {
   const sSel = document.getElementById('trkStudent');
   const wSel = document.getElementById('trkWorkout');
   const sBtn = document.getElementById('startBtn');
+
+  // Filtro por aluno nas sessões recentes
+  const filterSel = document.getElementById('sessFilterStudent');
+  if (filterSel) {
+    filterSel.addEventListener('change', () => {
+      sessionStorage.setItem('pp_tracker_filter', filterSel.value);
+      navigateFn('/tracker');
+    });
+  }
 
   // Excluir sessão
   document.querySelectorAll('.delete-session').forEach(btn => {

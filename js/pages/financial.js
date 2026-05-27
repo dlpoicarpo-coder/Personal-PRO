@@ -177,11 +177,17 @@ export async function renderFinancial() {
 
     <!-- Tabela registros -->
     <div class="card">
-      <div class="card-header">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <span class="card-title">Registros Financeiros</span>
-        <div style="position:relative">
-          <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-muted)" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="finSearch" class="form-input" placeholder="Buscar aluno..." style="padding-left:28px;width:180px;font-size:0.82rem" />
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="finFilterStudent" class="form-select" style="max-width:180px;font-size:0.82rem;padding:4px 8px;height:32px">
+            <option value="">Todos os alunos</option>
+            ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+          </select>
+          <div style="position:relative">
+            <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-muted)" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="finSearch" class="form-input" placeholder="Buscar aluno..." style="padding-left:28px;width:160px;font-size:0.82rem;height:32px" />
+          </div>
         </div>
       </div>
 
@@ -199,7 +205,7 @@ export async function renderFinancial() {
               const isOverdue = r.status==='pending' && due < now;
               const statusLabel = r.status==='paid' ? 'Pago' : isOverdue ? 'Vencido' : 'Pendente';
               const statusBadge = r.status==='paid' ? 'success' : isOverdue ? 'danger' : 'warning';
-              return `<tr data-status="${isOverdue?'overdue':r.status}" data-name="${(st?.name||'').toLowerCase()}">
+              return `<tr data-status="${isOverdue?'overdue':r.status}" data-student-id="${r.studentId}" data-name="${(st?.name||'').toLowerCase()}">
                 <td>
                   <div class="flex items-center gap-sm">
                     <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
@@ -339,14 +345,17 @@ export function initFinancial(navigateFn) {
   // ── Estado ativo dos filtros ──
   let activeTabFilter = 'all';
   let activeSearch    = '';
+  let activeStudent   = '';
 
   function applyFinFilters() {
     document.querySelectorAll('#finTable tbody tr').forEach(row => {
       const st  = row.dataset.status || '';
       const nm  = row.dataset.name   || '';
-      const matchTab    = activeTabFilter === 'all' || st === activeTabFilter;
-      const matchSearch = !activeSearch || nm.includes(activeSearch);
-      row.style.display = matchTab && matchSearch ? '' : 'none';
+      const sid = row.dataset.studentId || '';
+      const matchTab     = activeTabFilter === 'all' || st === activeTabFilter;
+      const matchSearch  = !activeSearch || nm.includes(activeSearch);
+      const matchStudent = !activeStudent || sid === activeStudent;
+      row.style.display = matchTab && matchSearch && matchStudent ? '' : 'none';
     });
   }
 
@@ -363,6 +372,12 @@ export function initFinancial(navigateFn) {
   // Busca — preserva filtro de tab
   document.getElementById('finSearch')?.addEventListener('input', e => {
     activeSearch = e.target.value.toLowerCase().trim();
+    applyFinFilters();
+  });
+
+  // Filtro por aluno dropdown
+  document.getElementById('finFilterStudent')?.addEventListener('change', e => {
+    activeStudent = e.target.value;
     applyFinFilters();
   });
 
