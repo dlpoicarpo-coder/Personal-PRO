@@ -1376,6 +1376,30 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
       ${svgBarChart(kcalData, '#f97316')}
     </div>` : '';
 
+  // Density trend chart
+  const densityData = completed.slice(0,10).reverse().map(s => {
+    const vol = (s.setLog||[]).reduce((t,x) => t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
+    const durMin = s.durationMin || 0;
+    return durMin > 0 ? parseFloat((vol / durMin).toFixed(1)) : 0;
+  }).filter(v => v > 0);
+  const densityChart = densityData.length >= 2 ? `
+    <div class="glass-card">
+      <div class="portal-card-label">⚡ Densidade de Treino (kg/min)</div>
+      ${svgLineChart(densityData, '#06b6d4')}
+    </div>` : '';
+
+  // Training load chart (PSE x Duration)
+  const trLoadData = completed.slice(0,10).reverse().map(s => {
+    const pse = s.postBiofeedback?.pse || 0;
+    const durMin = s.durationMin || 0;
+    return pse * durMin;
+  }).filter(v => v > 0);
+  const trLoadChart = trLoadData.length >= 2 ? `
+    <div class="glass-card">
+      <div class="portal-card-label">🔋 Carga de Treino (PSE × min)</div>
+      ${svgBarChart(trLoadData, '#8b5cf6')}
+    </div>` : '';
+
   // Weight trend chart from assessments
   const weightData = compAss.map(a => ({ date: a.date, v: parseFloat(a.peso)||0 })).filter(d => d.v > 0);
   const weightChart = weightData.length >= 2 ? `
@@ -1436,6 +1460,8 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
 
       ${pseChart}
       ${volChart}
+      ${densityChart}
+      ${trLoadChart}
       ${kcalChart}
       ${caloricCard}
       ${weightChart}
