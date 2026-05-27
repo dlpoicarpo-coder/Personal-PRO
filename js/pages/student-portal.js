@@ -261,6 +261,12 @@ function initPortalNav() {
 
   document.querySelectorAll('.portal-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      const activeSession = document.getElementById('soloActiveSession');
+      if (activeSession && activeSession.style.display === 'block') {
+        if (!confirm('Você tem um treino em andamento! Tem certeza que deseja sair sem salvar? O progresso será perdido.')) {
+          return;
+        }
+      }
       document.querySelectorAll('.portal-nav-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       loadSection(btn.dataset.section);
