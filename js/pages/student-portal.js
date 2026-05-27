@@ -338,7 +338,7 @@ async function loadSection(section) {
     case 'treinar': content.innerHTML = renderTreinar(workouts, schedules); initTreinar(workouts, schedules, student); break;
     case 'sessoes': content.innerHTML = renderSessoes(sessions, schedules); break;
     case 'bio': content.innerHTML = renderBio(biofeedbacks, sid, tid); initBio(); break;
-    case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks); initRelatorios(); break;
+    case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks); initRelatorios(student, sessions, assessments, biofeedbacks); break;
     default: content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks);
   }
 
@@ -1225,311 +1225,336 @@ function initBio() {
   });
 }
 
-// ── RELATÓRIOS ─────────────────────────────────────────────────
+// -- RELATORIOS -------------------------------------------------
 async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
-  const completed = sessions.filter(s => s.status === 'completed');
+  const completed = sessions.filter(s => s.status === 'completed').sort((a,b) => new Date(a.date)-new Date(b.date));
   const compAss = assessments.filter(a => a.type === 'composicao').sort((a,b) => new Date(a.date)-new Date(b.date));
+  const bf = [...biofeedbacks].sort((a,b) => new Date(a.date)-new Date(b.date));
+
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const sessionsMonth = completed.filter(s => new Date(s.date) >= startOfMonth).length;
-  const avgPse = biofeedbacks.filter(b=>b.pse).length
-    ? (biofeedbacks.filter(b=>b.pse).slice(0,10).reduce((t,b)=>t+b.pse,0)/biofeedbacks.filter(b=>b.pse).slice(0,10).length).toFixed(1)
-    : '—';
+  const recent10 = bf.slice(-10);
+  const avgPse   = recent10.length ? (recent10.reduce((t,b)=>t+(b.pse||0),0)/recent10.length).toFixed(1) : '--';
+  const avgSleep = recent10.length ? (recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length).toFixed(1) : '--';
 
-  // Volume total (carga × reps)
-  const totalVol = completed.reduce((t, s) => {
-    return t + (s.setLog||[]).reduce((tt,x) => tt+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
-  }, 0);
+  const totalVol = completed.reduce((t,s)=>t+(s.setLog||[]).reduce((tt,x)=>tt+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0),0);
+  const avgVolPerSess = completed.length ? Math.round(totalVol/completed.length) : 0;
+  const avgDurMin = completed.length ? Math.round(completed.reduce((t,s)=>t+(s.durationMin||0),0)/completed.length) : 0;
 
-  // Density: volume / session count
-  const density = completed.length > 0 ? (totalVol / completed.length).toFixed(0) : '—';
+  const lastComp = compAss[compAss.length-1];
+  const age = student?.birthDate ? Calc.calcularIdade(student.birthDate) : (student?.age||0);
+  const objMap = {'Emagrecimento':'emagrecimento','Perda de peso':'emagrecimento','Hipertrofia':'hipertrofia','Ganho de massa':'hipertrofia','Manutencao':'manutencao','Saude':'manutencao'};
+  const obj = objMap[student?.goal] || 'manutencao';
+  const tmbRes = lastComp?.peso && age ? Calc.tmb(lastComp.peso, lastComp.altura, age, student?.gender||'M', lastComp.massaMagra) : null;
+  const sessPerWeek = completed.length>1 ? completed.length/Math.max(1,Math.ceil((new Date(completed[completed.length-1].date)-new Date(completed[0].date))/(7*86400000))) : 3;
+  const nivelAtiv = sessPerWeek>=5?'ativo':sessPerWeek>=3?'moderado':sessPerWeek>=1?'leve':'sedentario';
+  const tdeeRes = tmbRes ? Calc.tdee(tmbRes.valor, nivelAtiv) : null;
+  const metaRes = tdeeRes ? Calc.metaCalorica(tdeeRes.valor, obj) : null;
+  const macrosRes = metaRes && lastComp?.peso ? Calc.macros(metaRes.kcal, lastComp.peso, obj) : null;
 
-  // Exercise evolution (top exercise with most data)
+  // Exercise load sparklines
   const exMap = {};
   completed.forEach(s => {
     (s.setLog||[]).forEach(x => {
-      if (!x.exerciseName) return;
+      if (!x.exerciseName || !x.load || x.load<=0) return;
       if (!exMap[x.exerciseName]) exMap[x.exerciseName] = [];
-      exMap[x.exerciseName].push({ date: s.date, load: parseFloat(x.load)||0, reps: parseFloat(x.reps)||0 });
+      exMap[x.exerciseName].push({ date: s.date, load: parseFloat(x.load)||0 });
     });
   });
-  const topEx = Object.entries(exMap).sort((a,b) => b[1].length-a[1].length).slice(0,3);
+  const topEx = Object.entries(exMap).filter(([,sets])=>sets.length>=2)
+    .map(([name,sets])=>{
+      const sorted=sets.sort((a,b)=>new Date(a.date)-new Date(b.date));
+      const first=sorted[0],last=sorted[sorted.length-1];
+      const delta=last.load-first.load;
+      return {name,first,last,delta,pct:first.load>0?Math.round((delta/first.load)*100):0,sets:sorted};
+    }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct)).slice(0,6);
 
-  // Caloric
-  const lastComp = compAss[compAss.length-1];
-  let caloricCard = '';
-  if (lastComp && student) {
-    const age = student.birthDate ? Calc.calcularIdade(student.birthDate) : student.age || 0;
-    const tmb = age ? Calc.tmb(lastComp.peso, lastComp.altura, age, student.gender || 'M', lastComp.massaMagra) : null;
-    if (tmb) {
-      const tdee = Calc.tdee(tmb.valor, 'moderado');
-      const objMap = {'Emagrecimento':'emagrecimento','Hipertrofia':'hipertrofia','Manutenção':'manutencao'};
-      const obj = objMap[student.goal] || 'manutencao';
-      const meta = Calc.metaCalorica(tdee.valor, obj);
-      const mac = Calc.macros(meta.kcal, lastComp.peso, obj);
-      caloricCard = `
-        <div class="glass-card portal-caloric-card">
-          <div class="portal-card-label">Gasto Energético Estimado</div>
-          <div class="portal-caloric-grid">
-            <div class="portal-caloric-item">
-              <div class="portal-caloric-val">${tmb.valor}</div>
-              <div class="portal-caloric-lbl">TMB</div>
-            </div>
-            <div class="portal-caloric-item" style="color:var(--portal-primary)">
-              <div class="portal-caloric-val">${tdee.valor}</div>
-              <div class="portal-caloric-lbl">TDEE</div>
-            </div>
-            <div class="portal-caloric-item" style="color:var(--portal-accent)">
-              <div class="portal-caloric-val">${meta.kcal}</div>
-              <div class="portal-caloric-lbl">Meta</div>
-            </div>
-          </div>
-          <div class="portal-macros-row">
-            <div style="color:#10b981">🥩 Proteína: ${mac.proteina.g}g</div>
-            <div style="color:#f59e0b">🍚 Carb: ${mac.carboidrato.g}g</div>
-            <div style="color:#8b5cf6">🥑 Gordura: ${mac.gordura.g}g</div>
-          </div>
-        </div>`;
-    }
-  }
-
-  // Evolução composição
-  let evolCard = '';
-  if (compAss.length >= 2) {
-    const first = compAss[0], last = compAss[compAss.length-1];
-    const dpeso = last.peso && first.peso ? (last.peso - first.peso).toFixed(1) : null;
-    const dgord = last.percentualGordura && first.percentualGordura ? (last.percentualGordura - first.percentualGordura).toFixed(1) : null;
-    const dmass = last.massaMagra && first.massaMagra ? (last.massaMagra - first.massaMagra).toFixed(1) : null;
-    evolCard = `
-      <div class="glass-card portal-evol-card">
-        <div class="portal-card-label">Evolução da Composição</div>
-        <div class="portal-evol-grid">
-          ${dpeso!=null?`<div class="portal-evol-item">
-            <div style="font-size:1.3rem;font-weight:700;color:${dpeso<0?'var(--portal-success)':dpeso>0?'var(--portal-danger)':'var(--portal-text-secondary)'}">${dpeso>0?'+':''}${dpeso}kg</div>
-            <div class="portal-caloric-lbl">Peso</div>
-          </div>`:''}
-          ${dgord!=null?`<div class="portal-evol-item">
-            <div style="font-size:1.3rem;font-weight:700;color:${dgord<0?'var(--portal-success)':'var(--portal-danger)'}">${dgord>0?'+':''}${dgord}%</div>
-            <div class="portal-caloric-lbl">% Gordura</div>
-          </div>`:''}
-          ${dmass!=null?`<div class="portal-evol-item">
-            <div style="font-size:1.3rem;font-weight:700;color:${dmass>0?'var(--portal-success)':'var(--portal-danger)'}">${dmass>0?'+':''}${dmass}kg</div>
-            <div class="portal-caloric-lbl">Massa Magra</div>
-          </div>`:''}
-        </div>
-        <div style="font-size:0.7rem;color:var(--portal-text-muted);margin-top:6px">${new Date(first.date).toLocaleDateString('pt-BR')} → ${new Date(last.date).toLocaleDateString('pt-BR')}</div>
-      </div>`;
-  }
-
-  // Exercise evolution cards
-  let exEvolCards = '';
-  if (topEx.length > 0) {
-    exEvolCards = `
-      <div class="portal-section-sub" style="margin-top:8px">Evolução por Exercício</div>
-      ${topEx.map(([name, entries]) => {
-        const sorted = entries.sort((a,b) => new Date(a.date)-new Date(b.date));
-        const first = sorted[0], last = sorted[sorted.length-1];
-        const diff = last.load - first.load;
-        const sparkData = sorted.map(e => e.load);
-        return `
-          <div class="glass-card portal-ex-evol-card">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-              <div class="portal-ex-evol-name">${name}</div>
-              <div style="font-size:1.3rem;font-weight:800;color:${diff>=0?'var(--portal-success)':'var(--portal-danger)'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>
-            </div>
-            ${svgSparkline(sparkData, diff>=0?'#10b981':'#ef4444')}
-            <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--portal-text-muted);margin-top:4px">
-              <span>${new Date(first.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}: ${first.load}kg</span>
-              <span>${new Date(last.date+'T12:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}: ${last.load}kg</span>
-            </div>
-          </div>`;
-      }).join('')}`;
-  }
-
-  // PSE trend chart
-  const pseData = completed.slice(0,12).reverse().map(s => s.postBiofeedback?.pse || 0).filter(v => v > 0);
-  const pseChart = pseData.length >= 2 ? `
-    <div class="glass-card">
-      <div class="portal-card-label">📈 Tendência PSE (últimas sessões)</div>
-      ${svgLineChart(pseData, '#f59e0b', 1, 10, ['1','5','10'])}
-    </div>` : '';
-
-  // Volume trend chart
-  const volData = completed.slice(0,10).reverse().map(s =>
-    Math.round((s.setLog||[]).reduce((t,x) => t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0)/100)*100
-  ).filter(v => v > 0);
-  const volChart = volData.length >= 2 ? `
-    <div class="glass-card">
-      <div class="portal-card-label">🏋️ Volume por Sessão (kg)</div>
-      ${svgBarChart(volData, '#6366f1')}
-    </div>` : '';
-
-  // Kcal trend chart
-  const kcalData = completed.slice(0,10).reverse().map(s => {
-    const durMin = s.durationMin || 0;
-    const p = (compAss[compAss.length-1]?.peso) || (student?.weight) || 70;
-    return durMin ? Math.round(Calc.caloriasAtividade(p, durMin, 'musculacao')) : 0;
-  }).filter(v => v > 0);
-  const kcalChart = kcalData.length >= 2 ? `
-    <div class="glass-card">
-      <div class="portal-card-label">🔥 Gasto Calórico (kcal/sessão)</div>
-      ${svgBarChart(kcalData, '#f97316')}
-    </div>` : '';
-
-  // Density trend chart
-  const densityData = completed.slice(0,10).reverse().map(s => {
-    const vol = (s.setLog||[]).reduce((t,x) => t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
-    const durMin = s.durationMin || 0;
-    return durMin > 0 ? parseFloat((vol / durMin).toFixed(1)) : 0;
-  }).filter(v => v > 0);
-  const densityChart = densityData.length >= 2 ? `
-    <div class="glass-card">
-      <div class="portal-card-label">⚡ Densidade de Treino (kg/min)</div>
-      ${svgLineChart(densityData, '#06b6d4')}
-    </div>` : '';
-
-  // Training load chart (PSE x Duration)
-  const trLoadData = completed.slice(0,10).reverse().map(s => {
-    const pse = s.postBiofeedback?.pse || 0;
-    const durMin = s.durationMin || 0;
-    return pse * durMin;
-  }).filter(v => v > 0);
-  const trLoadChart = trLoadData.length >= 2 ? `
-    <div class="glass-card">
-      <div class="portal-card-label">🔋 Carga de Treino (PSE × min)</div>
-      ${svgBarChart(trLoadData, '#8b5cf6')}
-    </div>` : '';
-
-  // Weight trend chart from assessments
-  const weightData = compAss.map(a => ({ date: a.date, v: parseFloat(a.peso)||0 })).filter(d => d.v > 0);
-  const weightChart = weightData.length >= 2 ? `
-    <div class="glass-card">
-      <div class="portal-card-label">⚖️ Evolução do Peso (kg)</div>
-      ${svgLineChart(weightData.map(d=>d.v), '#06b6d4', Math.min(...weightData.map(d=>d.v))-2, Math.max(...weightData.map(d=>d.v))+2)}
-      <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--portal-text-muted);margin-top:2px">
-        <span>${new Date(weightData[0].date).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})}</span>
-        <span>${new Date(weightData[weightData.length-1].date).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})}</span>
+  // Caloric card
+  let caloricHtml = '';
+  if (tmbRes && tdeeRes && metaRes) {
+    caloricHtml = `<div class="glass-card portal-caloric-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Gasto Energetico Estimado &middot; ${tmbRes.formula}</div>
+      <div class="portal-caloric-grid">
+        <div class="portal-caloric-item"><div class="portal-caloric-val">${tmbRes.valor}</div><div class="portal-caloric-lbl">TMB kcal</div></div>
+        <div class="portal-caloric-item" style="color:var(--portal-primary)"><div class="portal-caloric-val">${tdeeRes.valor}</div><div class="portal-caloric-lbl">TDEE kcal</div></div>
+        <div class="portal-caloric-item" style="color:var(--portal-accent)"><div class="portal-caloric-val">${metaRes.kcal}</div><div class="portal-caloric-lbl">Meta kcal</div></div>
       </div>
-    </div>` : '';
+      ${macrosRes?`<div class="portal-macros-row" style="margin-top:8px">
+        <div style="color:#10b981">Proteina: <b>${macrosRes.proteina.g}g</b></div>
+        <div style="color:#f59e0b">Carb: <b>${macrosRes.carboidrato.g}g</b></div>
+        <div style="color:#8b5cf6">Gordura: <b>${macrosRes.gordura.g}g</b></div>
+      </div>`:''}
+    </div>`;
+  }
 
   // Motivational feed
-  const feedMessages = [
-    { icon: '🏆', msg: `${completed.length} sessões concluídas! Continue assim!` },
-    { icon: '🔥', msg: `PSE médio ${avgPse} — você está trabalhando no limite certo!` },
-    { icon: '📈', msg: `Volume total acumulado: ${(totalVol/1000).toFixed(1)}t levantadas!` },
-    { icon: '⚡', msg: `Densidade média por sessão: ${density}kg de volume!` },
-    { icon: '💪', msg: `${sessionsMonth} treinos só este mês. Incrível!` },
-  ].filter(f => !f.msg.includes('undefined') && !f.msg.includes('NaN') && !f.msg.includes('—'));
+  const pseNum = parseFloat(avgPse)||0;
+  const sleepNum = parseFloat(avgSleep)||0;
+  let feedTxt = '';
+  if (pseNum>8) feedTxt='Seus treinos estao muito intensos! Vamos ajustar o ritmo para garantir boa recuperacao.';
+  else if (pseNum>6) feedTxt='Voce esta treinando na intensidade ideal! Continue assim.';
+  else feedTxt='Boa consistencia! Temos margem para evoluir a intensidade gradualmente.';
+  if (sleepNum>0 && sleepNum<6) feedTxt+=' O sono esta abaixo do ideal.';
+  else if (sleepNum>=7) feedTxt+=' Otima qualidade de sono!';
+  if (completed.length>0) feedTxt+=` ${completed.length} sessoes concluidas. Incrivel!`;
 
-  const feed = feedMessages.length > 0 ? `
-    <div class="portal-section-sub" style="margin-top:8px">💬 Feed do Treinador</div>
-    <div class="portal-feed-card glass-card">
-      ${feedMessages.map(f => `
-        <div class="portal-feed-item">
-          <span class="portal-feed-icon">${f.icon}</span>
-          <span class="portal-feed-msg">${f.msg}</span>
+  // Exercise progression
+  const exHtml = topEx.length>0 ? `<div class="glass-card" style="margin-bottom:12px">
+    <div class="portal-card-label" style="margin-bottom:12px">Progressao de Carga por Exercicio</div>
+    ${topEx.map(ex=>{
+      const col=ex.delta>=0?'#10b981':'#ef4444';
+      const W=280,H=40,pad=4;
+      const lo=Math.min(...ex.sets.map(s=>s.load)),hi=Math.max(...ex.sets.map(s=>s.load));
+      const r=hi-lo||1;
+      const xs=ex.sets.map((_,i)=>pad+(i/(ex.sets.length-1))*(W-pad*2));
+      const ys=ex.sets.map(s=>H-pad-((s.load-lo)/r)*(H-pad*2));
+      const path=xs.map((x,i)=>`${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+      const area=`${path} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
+      return `<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:0.8rem;font-weight:700">${ex.name}</span>
+          <span style="font-size:0.85rem;font-weight:800;color:${col}">${ex.delta>=0?'+':''}${ex.delta.toFixed(1)}kg (${ex.delta>=0?'+':''}${ex.pct}%)</span>
         </div>
-      `).join('')}
-    </div>` : '';
-
-  return `
-    <div class="portal-section">
-      <h2 class="portal-section-title">Relatórios</h2>
-
-      <div class="portal-stats-row">
-        <div class="portal-stat-card glass-card">
-          <div class="portal-stat-val" style="color:var(--portal-primary)">${sessionsMonth}</div>
-          <div class="portal-stat-lbl">Treinos/mês</div>
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:40px">
+          <defs><linearGradient id="sg${ex.name.replace(/\W/g,'')}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${col}" stop-opacity="0.2"/><stop offset="100%" stop-color="${col}" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="${area}" fill="url(#sg${ex.name.replace(/\W/g,'')})"/>
+          <path d="${path}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"/>
+          ${xs.map((x,i)=>`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="2.5" fill="${col}"/>`).join('')}
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--portal-text-muted)">
+          <span>${safeFormatDate(ex.first.date)}: ${ex.first.load}kg</span>
+          <span>${safeFormatDate(ex.last.date)}: ${ex.last.load}kg</span>
         </div>
-        <div class="portal-stat-card glass-card">
-          <div class="portal-stat-val" style="color:var(--portal-accent)">${avgPse}</div>
-          <div class="portal-stat-lbl">PSE médio</div>
-        </div>
-      </div>
+      </div>`;
+    }).join('')}
+  </div>` : '';
 
-      <div class="portal-stats-row">
-        <div class="portal-stat-card glass-card">
-          <div class="portal-stat-val" style="color:#10b981;font-size:1.1rem">${(totalVol/1000).toFixed(1)}t</div>
-          <div class="portal-stat-lbl">Volume total</div>
-        </div>
-        <div class="portal-stat-card glass-card">
-          <div class="portal-stat-val" style="color:#f59e0b;font-size:1.1rem">${density}</div>
-          <div class="portal-stat-lbl">Vol/sessão (kg)</div>
-        </div>
-      </div>
+  return `<div class="portal-section" id="portalRelatoriosSection">
+    <h2 class="portal-section-title">Relatorios</h2>
 
-      ${pseChart}
-      ${volChart}
-      ${densityChart}
-      ${trLoadChart}
-      ${kcalChart}
-      ${caloricCard}
-      ${weightChart}
-      ${evolCard}
-      ${exEvolCards}
-      ${feed}
+    <div class="portal-stats-row" style="grid-template-columns:repeat(2,1fr)">
+      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:var(--portal-primary)">${completed.length}</div><div class="portal-stat-lbl">Sessoes</div></div>
+      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:var(--portal-accent)">${avgPse}</div><div class="portal-stat-lbl">PSE Medio</div></div>
+    </div>
+    <div class="portal-stats-row" style="grid-template-columns:repeat(2,1fr)">
+      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#10b981;font-size:1.1rem">${(totalVol/1000).toFixed(1)}t</div><div class="portal-stat-lbl">Volume Total</div></div>
+      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#f59e0b;font-size:1.1rem">${avgDurMin}min</div><div class="portal-stat-lbl">Duracao Media</div></div>
+    </div>
+    <div class="portal-stats-row" style="grid-template-columns:repeat(2,1fr)">
+      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#6366f1;font-size:1.1rem">${avgVolPerSess.toLocaleString('pt-BR')}kg</div><div class="portal-stat-lbl">Vol/Sessao</div></div>
+      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#06b6d4;font-size:1.1rem">${sessionsMonth}</div><div class="portal-stat-lbl">Treinos/mes</div></div>
+    </div>
 
-      ${compAss.length === 0 && completed.length === 0 ? `<div class="portal-empty">Peça ao seu treinador para registrar suas avaliações e realize sessões para ver os gráficos de evolução.</div>` : ''}
-    </div>`;
+    ${caloricHtml}
+
+    <div class="glass-card portal-feed-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Resumo do seu Desempenho</div>
+      <p style="font-size:0.82rem;line-height:1.7;color:var(--portal-text-secondary);margin-top:8px">${feedTxt}</p>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Evolucao do Bem-estar</div>
+      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Sono (roxo) &middot; TQR (verde) &middot; Estresse (amarelo)</p>
+      <div style="height:200px;position:relative"><canvas id="portalWellnessChart"></canvas></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">PSE por Sessao</div>
+      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Zona ideal: 6-8. Acima de 8 por 3+ sessoes = atencao a fadiga.</p>
+      <div style="height:180px;position:relative"><canvas id="portalPseChart"></canvas></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Volume por Sessao (kg)</div>
+      <div style="height:180px;position:relative"><canvas id="portalVolChart"></canvas></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Carga de Treino Semanal (PSE x min)</div>
+      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Aumentos graduais de ~10%/semana sao ideais.</p>
+      <div style="height:180px;position:relative"><canvas id="portalLoadChart"></canvas></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Gasto Calorico nas Sessoes (kcal)</div>
+      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Estimativa com MET de musculacao x peso x duracao.</p>
+      <div style="height:180px;position:relative"><canvas id="portalKcalChart"></canvas></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Densidade de Treino (kg/min)</div>
+      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Volume levantado por minuto de treino.</p>
+      <div style="height:180px;position:relative"><canvas id="portalDensityChart"></canvas></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Frequencia Semanal (ultimas 8 semanas)</div>
+      <div style="height:160px;position:relative"><canvas id="portalFreqChart"></canvas></div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Radar de Wellness</div>
+      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Media dos ultimos 5 check-ins. Quanto maior, melhor.</p>
+      <div style="height:220px;position:relative"><canvas id="portalRadarChart"></canvas></div>
+    </div>
+
+    ${compAss.length>=2?`<div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Evolucao da Composicao Corporal</div>
+      <div style="height:200px;position:relative"><canvas id="portalMeasuresChart"></canvas></div>
+    </div>`:''}
+
+    ${exHtml}
+
+    ${completed.length===0?`<div class="portal-empty">Realize sessoes de treino para ver os graficos de evolucao.</div>`:''}
+  </div>`;
 }
 
-// ── SVG CHART HELPERS ──────────────────────────────────────────
-function svgLineChart(data, color = '#10b981', min = null, max = null, yLabels = []) {
-  if (!data || data.length < 2) return '';
-  const W = 300, H = 80, pad = 6;
-  const lo = min ?? Math.min(...data);
-  const hi = max ?? Math.max(...data);
-  const range = hi - lo || 1;
-  const xs = data.map((_, i) => pad + (i / (data.length - 1)) * (W - pad * 2));
-  const ys = data.map(v => H - pad - ((v - lo) / range) * (H - pad * 2));
-  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-  const area = `${path} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
-  return `
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:80px;overflow:visible">
-      <defs>
-        <linearGradient id="lg_${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
-          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d="${area}" fill="url(#lg_${color.replace('#','')})" />
-      <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      ${xs.map((x,i) => `<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="3" fill="${color}"/>`)}
-      ${[data[0], data[data.length-1]].map((v,i) => {
-        const xi = i === 0 ? xs[0] : xs[xs.length-1];
-        const yi = i === 0 ? ys[0] : ys[ys.length-1];
-        return `<text x="${xi.toFixed(1)}" y="${(yi-6).toFixed(1)}" text-anchor="middle" font-size="9" fill="${color}" font-weight="700">${v}</text>`;
-      }).join('')}
-    </svg>`;
+// -- INIT RELATORIOS (Chart.js) --------------------------------
+function initRelatorios(student, sessions, assessments, biofeedbacks) {
+  const completed = sessions.filter(s => s.status === 'completed').sort((a,b) => new Date(a.date)-new Date(b.date));
+  const compAss = assessments.filter(a => a.type === 'composicao').sort((a,b) => new Date(a.date)-new Date(b.date));
+  const bf = [...biofeedbacks].sort((a,b) => new Date(a.date)-new Date(b.date));
+
+  const fmtDate = d => {
+    try { return new Date(d.includes('T')?d:d+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }
+    catch { return d||''; }
+  };
+
+  const co = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'#94a3b8', font:{size:10} } } },
+    scales:{
+      x:{ ticks:{color:'#64748b',font:{size:9},maxRotation:45}, grid:{color:'rgba(255,255,255,0.04)'} },
+      y:{ ticks:{color:'#94a3b8',font:{size:9}}, grid:{color:'rgba(255,255,255,0.04)'} }
+    }
+  };
+
+  const drawAll = () => {
+    // Wellness
+    const wCtx = document.getElementById('portalWellnessChart');
+    if (wCtx && bf.length>=2) {
+      new Chart(wCtx, { type:'line', data:{ labels:bf.map(b=>fmtDate(b.date)), datasets:[
+        {label:'Sono', data:bf.map(b=>b.sleep||null), borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,0.08)', tension:0.3, fill:true, pointRadius:3},
+        {label:'TQR',  data:bf.map(b=>b.tqr||null),   borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',  tension:0.3, fill:true, pointRadius:3},
+        {label:'Estresse', data:bf.map(b=>b.stress||null), borderColor:'#f59e0b', borderDash:[5,3], tension:0.3, fill:false, pointRadius:3},
+      ]}, options:{...co, scales:{...co.scales, y:{...co.scales.y,min:0,max:10}}} });
+    }
+
+    // PSE per session
+    const pseCtx = document.getElementById('portalPseChart');
+    if (pseCtx && completed.length>=2) {
+      new Chart(pseCtx, { type:'line', data:{ labels:completed.map(s=>fmtDate(s.date)), datasets:[
+        {label:'PSE', data:completed.map(s=>s.postBiofeedback?.pse||null), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.15)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#ef4444'}
+      ]}, options:{...co, plugins:{legend:{display:false}}, scales:{...co.scales, y:{...co.scales.y,min:0,max:10}}} });
+    }
+
+    // Volume
+    const volCtx = document.getElementById('portalVolChart');
+    if (volCtx && completed.length>=2) {
+      const recent=completed.slice(-12);
+      new Chart(volCtx, { type:'bar', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
+        {label:'Volume (kg)', data:recent.map(s=>Math.round((s.setLog||[]).reduce((t,x)=>t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0))),
+          backgroundColor:'rgba(99,102,241,0.6)', borderColor:'#6366f1', borderWidth:1, borderRadius:4}
+      ]}, options:{...co, plugins:{legend:{display:false}}} });
+    }
+
+    // Weekly load
+    const loadCtx = document.getElementById('portalLoadChart');
+    if (loadCtx && completed.length>=2) {
+      const wc={};
+      completed.forEach(s=>{
+        const d=new Date(s.date.includes('T')?s.date:s.date+'T12:00');
+        const mon=new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
+        const key=mon.toISOString().split('T')[0];
+        wc[key]=(wc[key]||0)+(s.postBiofeedback?.pse||5)*(s.durationMin||0);
+      });
+      const wKeys=Object.keys(wc).sort().slice(-8);
+      new Chart(loadCtx, { type:'bar', data:{ labels:wKeys.map(k=>fmtDate(k)), datasets:[
+        {label:'Carga', data:wKeys.map(k=>wc[k]), backgroundColor:'rgba(16,185,129,0.5)', borderColor:'#10b981', borderWidth:1, borderRadius:4}
+      ]}, options:{...co, plugins:{legend:{display:false}}} });
+    }
+
+    // Kcal
+    const peso = compAss[compAss.length-1]?.peso || student?.weight || 70;
+    const kcalCtx = document.getElementById('portalKcalChart');
+    if (kcalCtx && completed.length>=2) {
+      const recent=completed.slice(-12);
+      new Chart(kcalCtx, { type:'bar', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
+        {label:'Kcal', data:recent.map(s=>s.durationMin?Math.round(Calc.caloriasAtividade(peso,s.durationMin,'musculacao')):null),
+          backgroundColor:'rgba(249,115,22,0.6)', borderColor:'#f97316', borderWidth:1, borderRadius:4}
+      ]}, options:{...co, plugins:{legend:{display:false}}} });
+    }
+
+    // Density
+    const denCtx = document.getElementById('portalDensityChart');
+    if (denCtx && completed.length>=2) {
+      const recent=completed.slice(-12);
+      new Chart(denCtx, { type:'line', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
+        {label:'kg/min', data:recent.map(s=>{
+          const vol=(s.setLog||[]).reduce((t,x)=>t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
+          return s.durationMin>0?parseFloat((vol/s.durationMin).toFixed(1)):null;
+        }), borderColor:'#06b6d4', backgroundColor:'rgba(6,182,212,0.1)', fill:true, tension:0.3, pointRadius:3}
+      ]}, options:{...co, plugins:{legend:{display:false}}} });
+    }
+
+    // Frequency
+    const freqCtx = document.getElementById('portalFreqChart');
+    if (freqCtx && completed.length>=1) {
+      const fc={};
+      completed.forEach(s=>{
+        const d=new Date(s.date.includes('T')?s.date:s.date+'T12:00');
+        const mon=new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
+        const key=mon.toISOString().split('T')[0];
+        fc[key]=(fc[key]||0)+1;
+      });
+      const fKeys=Object.keys(fc).sort().slice(-8);
+      new Chart(freqCtx, { type:'bar', data:{ labels:fKeys.map(k=>fmtDate(k)), datasets:[
+        {label:'Sessoes', data:fKeys.map(k=>fc[k]), backgroundColor:'rgba(6,182,212,0.5)', borderColor:'#06b6d4', borderWidth:1, borderRadius:4}
+      ]}, options:{...co, plugins:{legend:{display:false}}, scales:{...co.scales, y:{...co.scales.y,min:0,ticks:{stepSize:1,color:'#94a3b8',font:{size:9}}}}} });
+    }
+
+    // Radar
+    const radCtx = document.getElementById('portalRadarChart');
+    if (radCtx && bf.length>=1) {
+      const r5=bf.slice(-5);
+      const avg=arr=>arr.length?parseFloat((arr.reduce((t,v)=>t+v,0)/arr.length).toFixed(1)):0;
+      new Chart(radCtx, { type:'radar', data:{ labels:['Sono','TQR','Motivacao','Alimentacao','Anti-Estresse'],
+        datasets:[{ label:'Wellness', data:[
+          avg(r5.map(b=>b.sleep||0)), avg(r5.map(b=>b.tqr||0)),
+          avg(r5.map(b=>b.motivation||0)), avg(r5.map(b=>b.food||0)),
+          avg(r5.map(b=>10-(b.stress||5))),
+        ], backgroundColor:'rgba(16,185,129,0.15)', borderColor:'#10b981', pointBackgroundColor:'#10b981' }]
+      }, options:{ responsive:true, maintainAspectRatio:false,
+        scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#64748b',font:{size:9},backdropColor:'transparent'},grid:{color:'rgba(255,255,255,0.08)'},angleLines:{color:'rgba(255,255,255,0.08)'},pointLabels:{color:'#94a3b8',font:{size:10}}}},
+        plugins:{legend:{display:false}}
+      }});
+    }
+
+    // Body composition
+    const measCtx = document.getElementById('portalMeasuresChart');
+    if (measCtx && compAss.length>=2) {
+      const ds=[];
+      if (compAss.some(a=>a.peso)) ds.push({label:'Peso (kg)', data:compAss.map(a=>a.peso||null), borderColor:'#10b981', tension:0.3, yAxisID:'y'});
+      if (compAss.some(a=>a.percentualGordura)) ds.push({label:'BF %', data:compAss.map(a=>a.percentualGordura||null), borderColor:'#f59e0b', tension:0.3, yAxisID:'y1'});
+      if (ds.length) new Chart(measCtx, { type:'line', data:{ labels:compAss.map(a=>fmtDate(a.date)), datasets:ds },
+        options:{ responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
+          scales:{y:{position:'left',ticks:{color:'#10b981',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:9}},grid:{display:false}},x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}}
+        }});
+    }
+  };
+
+  if (window.Chart) {
+    drawAll();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    s.onload = drawAll;
+    document.head.appendChild(s);
+  }
 }
 
-function svgBarChart(data, color = '#6366f1') {
-  if (!data || data.length < 2) return '';
-  const W = 300, H = 70, pad = 4;
-  const max = Math.max(...data) || 1;
-  const barW = Math.max(4, (W - pad * 2) / data.length - 2);
-  return `
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:70px">
-      ${data.map((v, i) => {
-        const bh = Math.max(2, ((v / max) * (H - pad * 2)));
-        const x = pad + i * ((W - pad * 2) / data.length) + 1;
-        const y = H - pad - bh;
-        return `
-          <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${color}" opacity="${0.5 + 0.5*(v/max)}"/>
-          ${v > 0 ? `<text x="${(x+barW/2).toFixed(1)}" y="${(y-2).toFixed(1)}" text-anchor="middle" font-size="8" fill="${color}" font-weight="700">${v>=1000?(v/1000).toFixed(1)+'k':v}</text>` : ''}`;
-      }).join('')}
-    </svg>`;
-}
-
-function svgSparkline(data, color = '#10b981') {
-  if (!data || data.length < 2) return '';
-  const W = 200, H = 36, pad = 4;
-  const lo = Math.min(...data), hi = Math.max(...data);
-  const range = hi - lo || 1;
-  const xs = data.map((_, i) => pad + (i / (data.length - 1)) * (W - pad * 2));
-  const ys = data.map(v => H - pad - ((v - lo) / range) * (H - pad * 2));
-  const path = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:36px"><path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>${xs.map((x,i) => `<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="2.5" fill="${color}"/>`)}</svg>`;
-}
-
-function initRelatorios() {}
+// (end of student-portal.js)
