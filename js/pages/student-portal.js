@@ -1364,6 +1364,18 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
       ${svgBarChart(volData, '#6366f1')}
     </div>` : '';
 
+  // Kcal trend chart
+  const kcalData = completed.slice(0,10).reverse().map(s => {
+    const durMin = s.durationMin || 0;
+    const p = (compAss[compAss.length-1]?.peso) || (student?.weight) || 70;
+    return durMin ? Math.round(Calc.caloriasAtividade(p, durMin, 'musculacao')) : 0;
+  }).filter(v => v > 0);
+  const kcalChart = kcalData.length >= 2 ? `
+    <div class="glass-card">
+      <div class="portal-card-label">🔥 Gasto Calórico (kcal/sessão)</div>
+      ${svgBarChart(kcalData, '#f97316')}
+    </div>` : '';
+
   // Weight trend chart from assessments
   const weightData = compAss.map(a => ({ date: a.date, v: parseFloat(a.peso)||0 })).filter(d => d.v > 0);
   const weightChart = weightData.length >= 2 ? `
@@ -1424,6 +1436,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks) {
 
       ${pseChart}
       ${volChart}
+      ${kcalChart}
       ${caloricCard}
       ${weightChart}
       ${evolCard}
