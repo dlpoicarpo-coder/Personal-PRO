@@ -935,7 +935,12 @@ async function initReportCharts(studentId, cycleFilter = '') {
       
       try {
         const aiText = await generateAIInsight(student, sortedSes, bf, 28);
-        txtAI.innerHTML = `<strong>Insight de Ouro ✨:</strong><br/><br/>${aiText.replace(/\\n/g, '<br/>').replace(/\n/g, '<br/>')}`;
+        txtAI.innerHTML = `<strong>Insight de Ouro ✨:</strong><br/><br/>`;
+        const textNode = document.createElement('div');
+        textNode.style.whiteSpace = 'pre-wrap';
+        textNode.style.wordBreak = 'break-word';
+        textNode.textContent = aiText;
+        txtAI.appendChild(textNode);
         btnAI.style.display = 'none';
       } catch(err) {
         txtAI.innerHTML = `<span style="color:var(--danger)">Erro: ${err.message}</span>`;

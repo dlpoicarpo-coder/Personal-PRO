@@ -149,7 +149,7 @@ Mantenha a formatação clara, com quebras de linha e emojis, sendo direto e pro
     }
 
     const data = await res.json();
-    return data.candidates[0].content.parts[0].text.trim();
+    return data.candidates[0].content.parts.map(p => p.text).join('').trim();
   } catch (err) {
     console.error('Gemini API Error:', err);
     throw err;
