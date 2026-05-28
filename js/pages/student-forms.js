@@ -102,6 +102,8 @@ async function publicAdd(table, data) {
       pse:          parseFloat(data.pse)       || null,
       duration:     parseFloat(data.duration)  || null,
       trainingLoad: parseFloat(data.trainingLoad) || null,
+      food:         parseFloat(data.food)      || null,
+      motivation:   parseFloat(data.motivation) || null,
     });
   }
 
@@ -144,6 +146,8 @@ async function publicPut(table, data) {
         pse:          parseFloat(data.pse)          || null,
         duration:     parseFloat(data.duration)     || null,
         trainingLoad: parseFloat(data.trainingLoad) || null,
+        food:         parseFloat(data.food)         || null,
+        motivation:   parseFloat(data.motivation)   || null,
       });
     }
 
@@ -517,6 +521,19 @@ const DOR_SCALE = [
   { v:10, color:'#dc2626', label:'10 - Intensa / Lesão', desc:'Dor severa, risco de lesão ou incapacidade' }
 ];
 
+const MOTIVACAO_SCALE = [
+  { v:1,  color:'#ef4444', label:'1 - Muito Baixa', desc:'Sem nenhuma vontade de treinar hoje' },
+  { v:2,  color:'#ef4444', label:'2 - Muito Baixa', desc:'Sem nenhuma vontade de treinar hoje' },
+  { v:3,  color:'#fb923c', label:'3 - Baixa', desc:'Desanimado, vou treinar por pura obrigação' },
+  { v:4,  color:'#fb923c', label:'4 - Baixa', desc:'Desanimado, vou treinar por pura obrigação' },
+  { v:5,  color:'#eab308', label:'5 - Moderada', desc:'Foco mediano, treino mantido por disciplina' },
+  { v:6,  color:'#eab308', label:'6 - Moderada', desc:'Foco mediano, treino mantido por disciplina' },
+  { v:7,  color:'#10b981', label:'7 - Alta', desc:'Focado, animado e com boa energia mental' },
+  { v:8,  color:'#10b981', label:'8 - Alta', desc:'Focado, animado e com boa energia mental' },
+  { v:9,  color:'#06b6d4', label:'9 - Muito Alta', desc:'Energia máxima, sedento por treinar pesado' },
+  { v:10, color:'#06b6d4', label:'10 - Muito Alta', desc:'Energia máxima, sedento por treinar pesado' }
+];
+
 function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
   return `
     <div class="q">
@@ -615,7 +632,9 @@ export async function renderPreForm(studentId) {
 
             ${scalePickerHTML('sleep', SONO_SCALE, 7, '😴 Qualidade do Sono 🌙', 'Selecione o descritor que melhor representa sua última noite de sono.')}
 
-            ${scalePickerHTML('nutrition', ALIMENTACAO_SCALE, 4, '🍎 Alimentação nas últimas 24h', 'Como foi sua ingestão de alimentos e hidratação nas últimas 24h?')}
+            ${scalePickerHTML('food', ALIMENTACAO_SCALE, 4, '🍎 Alimentação nas últimas 24h', 'Como foi sua ingestão de alimentos e hidratação nas últimas 24h?')}
+
+            ${scalePickerHTML('motivation', MOTIVACAO_SCALE, 7, '🔥 Motivação para o Treino', 'Como está sua disposição e motivação para o treino de hoje?')}
 
             ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, '🤯 Nível de Estresse Mental', 'Como está sua mente e seu nível de estresse hoje?')}
 
@@ -706,8 +725,8 @@ export function initPreForm() {
       data.date        = Calc.nowISO();
 
       // Normalizar numéricos
-      ['sleep','tqr','stress','pain','nutrition'].forEach(k => {
-        data[k] = parseInt(data[k]) || (k==='pain'?1:5);
+      ['sleep','tqr','stress','pain','food','motivation'].forEach(k => {
+        data[k] = parseInt(data[k]) || (k==='pain'?0:(k==='motivation'?7:5));
       });
       data.energy    = data.tqr;
       data.mood      = Math.round((data.sleep + data.tqr) / 2);
@@ -715,7 +734,7 @@ export function initPreForm() {
       data.submittedByStudent = true;
       data.submittedAt = Calc.nowISO();
       // Garantir trainerId
-      if (!data.trainerId && student) data.trainerId = student.trainer_id || student.trainerId || '';
+      data.trainerId = data.trainerId || '';
 
       await publicAdd('biofeedback', data);
       e.target.classList.add('hidden');

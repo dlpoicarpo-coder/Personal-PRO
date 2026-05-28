@@ -954,8 +954,14 @@ async function initReportCharts(studentId, cycleFilter = '') {
   if (rCtx && bf.length > 0) {
     const l5 = bf.slice(-5); const avg = k => l5.reduce((s, b) => s + (b[k] || 0), 0) / l5.length;
     new Chart(rCtx, { type: 'radar', data: {
-      labels: ['Sono', 'TQR', 'Baixo Estresse', 'Sem Dor'],
-      datasets: [{ label: 'Média (últimos 5)', data: [avg('sleep'), avg('tqr') ?? avg('energy'), 10 - avg('stress'), 10 - (avg('pain') || 0)], backgroundColor: 'rgba(16,185,129,0.2)', borderColor: '#10b981', pointBackgroundColor: '#10b981' }]
+      labels: ['Sono', 'TQR', 'Motivação', 'Alimentação', 'Baixo Estresse'],
+      datasets: [{ label: 'Média (últimos 5)', data: [
+        avg('sleep'), 
+        avg('tqr') ?? avg('energy'), 
+        avg('motivation') || 5, 
+        (avg('food') || 5) * 2, 
+        10 - avg('stress')
+      ], backgroundColor: 'rgba(16,185,129,0.2)', borderColor: '#10b981', pointBackgroundColor: '#10b981' }]
     }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 10, ticks: { stepSize: 2, color: '#64748b', backdropColor: 'transparent' }, grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#94a3b8', font: { size: 11 } } } }, plugins: { legend: { display: false } } } });
   }
 

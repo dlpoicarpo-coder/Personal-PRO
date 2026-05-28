@@ -611,11 +611,12 @@ export function initTracker(navigateFn) {
         if (valuesEl) {
           const vals = [
             ['Sono',        todayPre.sleep,                  false],
-            ['Alim. (24h)', todayPre.nutrition||null,         false],
+            ['Alim. (24h)', todayPre.food||null,             false],
             ['TQR',         (todayPre.tqr??todayPre.energy),  false],
             ['Mental',      todayPre.stress,                  true],
             ['Dor',         todayPre.pain,                    true],
-            todayPre.menstrual ? ['Ciclo', '🔴', false] : null,
+            ['Motivação',   todayPre.motivation,             false],
+            todayPre.menstrualCycle ? ['Ciclo', '🔴', false] : null,
           ];
           valuesEl.innerHTML = vals.filter(Boolean).map(([l,v,inv])=>`
             <span style="padding:3px 8px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-color);color:${

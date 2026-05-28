@@ -1429,102 +1429,6 @@ function initSessoesSection() {
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> Fechar`;
     });
   });
-
-  // Checkout toggle
-  document.querySelectorAll('.checkout-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const sid = btn.dataset.sid;
-      const form = document.getElementById(`chkform_${sid}`);
-      const isOpen = form.style.display !== 'none';
-      form.style.display = isOpen ? 'none' : 'block';
-      btn.innerHTML = isOpen
-        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg> Fazer checkout`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> Fechar`;
-    });
-  });
-
-  // Checkout submit
-  document.querySelectorAll('[id^="chksubmit_"]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const sid = btn.dataset.sid;
-      const pse = parseInt(document.getElementById(`chkpse_${sid}`)?.value) || 5;
-      const notes = document.getElementById(`chknotes_${sid}`)?.value || '';
-      const feeling = document.querySelector(`[data-sid="${sid}"].portal-feeling-btn.active`)?.dataset.val || null;
-
-      try {
-        // Update session in local DB
-        const session = await db.get('sessions', sid);
-        if (session) {
-          const selectedFeelingVal = feeling ? parseInt(feeling) : 4;
-          const postBiofeedback = {
-            pse,
-            feeling: selectedFeelingVal,
-            satisfaction: selectedFeelingVal * 2,
-            notes,
-            date: new Date().toISOString(),
-            submittedAt: new Date().toISOString(),
-            submittedByStudent: true
-          };
-          session.postBiofeedback = postBiofeedback;
-          await db.update('sessions', session);
-
-          // Sincronizar com tabela biofeedback
-          try {
-            const allBf = await db.getAll('biofeedback');
-            let bfEntry = allBf.find(b => b.sessionId === session.id);
-            if (!bfEntry && session.date) {
-              const sessDateStr = session.date.slice(0, 10);
-              bfEntry = allBf.find(b => 
-                b.studentId === session.studentId && 
-                b.formType === 'complete' && 
-                (b.date || '').slice(0, 10) === sessDateStr
-              );
-            }
-            
-            const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
-            const trainingLoad = Calc.cargaTreino ? Calc.cargaTreino(pse, durMin) : (pse * durMin);
-            
-            const newBfData = {
-              studentId: session.studentId,
-              date: session.date || new Date().toISOString(),
-              sleep: session.preBiofeedback?.sleep || 7,
-              tqr: (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
-              energy: (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
-              stress: session.preBiofeedback?.stress || 5,
-              pain: session.preBiofeedback?.pain || 0,
-              painRegions: session.preBiofeedback?.painRegions || [],
-              pse,
-              feeling: selectedFeelingVal,
-              satisfaction: selectedFeelingVal * 2,
-              duration: durMin,
-              trainingLoad,
-              notes,
-              sessionId: session.id,
-              formType: 'complete',
-              submittedAt: new Date().toISOString(),
-              submittedByStudent: true
-            };
-            
-            if (bfEntry) {
-              await db.put('biofeedback', { ...bfEntry, ...newBfData });
-            } else {
-              await db.add('biofeedback', newBfData);
-            }
-          } catch (bfErr) {
-            console.error('Erro ao sincronizar biofeedback:', bfErr);
-          }
-        }
-      } catch(e) { console.error(e); }
-
-      const card = document.getElementById(`checkout_${sid}`);
-      if (card) {
-        card.innerHTML = `<div class="portal-success" style="padding:16px">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <div>Checkout salvo! PSE ${pse}</div>
-        </div>`;
-      }
-    });
-  });
 }
 
 // ── BIOFEEDBACK ────────────────────────────────────────────────
@@ -1700,16 +1604,17 @@ function initBio() {
     data.mood = data.tqr;
     data.energy = data.tqr;
 
+    // Sempre salvar localmente primeiro (Offline-first & feedback instantâneo no portal local)
+    await db.add('biofeedback', data);
+
     try {
       const { getSupabase } = await import('../utils/auth.js');
       const sb = getSupabase?.();
       if (sb && data.trainerId) {
         await sb.from('biofeedback').insert([data]);
-      } else {
-        await db.add('biofeedback', data);
       }
-    } catch {
-      await db.add('biofeedback', data);
+    } catch (sbErr) {
+      console.warn('Erro ao inserir no Supabase, mantido em local DB:', sbErr);
     }
 
     e.target.innerHTML = `<div class="portal-success">
@@ -2272,7 +2177,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       new Chart(radCtx, { type:'radar', data:{ labels:['Sono','TQR','Motivacao','Alimentacao','Anti-Estresse'],
         datasets:[{ label:'Wellness', data:[
           avg(r5.map(b=>b.sleep||0)), avg(r5.map(b=>b.tqr||0)),
-          avg(r5.map(b=>b.motivation||0)), avg(r5.map(b=>b.food||0)),
+          avg(r5.map(b=>b.motivation||0)), avg(r5.map(b=>(b.food||0)*2)),
           avg(r5.map(b=>10-(b.stress||5))),
         ], backgroundColor:'rgba(16,185,129,0.15)', borderColor:'#10b981', pointBackgroundColor:'#10b981' }]
       }, options:{ responsive:true, maintainAspectRatio:false,
@@ -3149,7 +3054,7 @@ function showPortalCheckoutModal(session) {
 
     try {
       session.postBiofeedback = postBiofeedback;
-      await db.update('sessions', session);
+      await db.put('sessions', session);
 
       // Sincronizar com tabela biofeedback
       try {

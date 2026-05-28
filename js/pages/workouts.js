@@ -420,7 +420,7 @@ export function initWorkouts(navigateFn) {
     openModal({
       title: '+ Novo Treino', size: 'xl',
       preventBackdropClose: true,
-      content: workoutFormHTML(students, {}, allEx) +
+      content: workoutFormHTML(students, {}, allEx, allMethods) +
         `<datalist id="exerciseList">${allEx.map(e => `<option value="${e.name}">`).join('')}</datalist>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
@@ -711,11 +711,30 @@ export function initWorkouts(navigateFn) {
       const allMethods = await db.getAll('methods');   // ← carrega métodos
       let exIndex      = (w.exercises || []).length;
 
-      // Find last completed session for this workout
+      // Find last completed session for this workout using normalized name comparisons
+      const cleanWorkoutName = (name) => {
+        if (!name) return '';
+        return name
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/\bsem(ana)?\s*\d+\b/g, '')
+          .replace(/\bsem\.\s*\d+\b/g, '')
+          .replace(/[-—_]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+      
+      const targetCleanName = cleanWorkoutName(w.name);
       const allSessions = await db.getAll('sessions');
       const lastSession = allSessions
-        .filter(s => s.status === 'completed' && s.studentId === w.studentId && s.workoutName === w.name)
-        .sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+        .filter(s => {
+          if (s.status !== 'completed' || s.studentId !== w.studentId) return false;
+          const sessionWorkoutName = s.workoutName || '';
+          if (!sessionWorkoutName) return false;
+          const cleanSessName = cleanWorkoutName(sessionWorkoutName);
+          return cleanSessName === targetCleanName || cleanSessName.includes(targetCleanName) || targetCleanName.includes(cleanSessName);
+        })
+        .sort((a,b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt))[0];
 
       let lastSessionBanner = '';
       if (lastSession) {
