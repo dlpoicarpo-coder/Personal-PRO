@@ -132,7 +132,7 @@ Mantenha a formatação clara, com quebras de linha e emojis, sendo direto e pro
     ],
     generationConfig: {
       temperature: 0.6,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 4096,
     }
   };
 
