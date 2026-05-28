@@ -98,13 +98,28 @@ export async function generateAIInsight(student, sessions, biofeedbacks, days = 
     }))
   };
 
-  const systemPrompt = `Você é um Personal Trainer especialista e analista de dados esportivos.
-Aqui estão os dados estruturados em JSON das últimas 4 semanas (${days} dias) de treinos e respostas de bem-estar (Check-in/Biofeedback) do aluno.
-Aja como um analista que está lendo os gráficos de evolução do aluno. Analise "gráfico por gráfico" (tendência de volume, tendência de intensidade/PSE e tendência de recuperação/sono).
-Crie um resumo analítico (1 a 2 parágrafos).
-Explique a correlação entre a evolução do volume/carga de treino e a resposta do corpo (PSE, sono, dor).
-Dê recomendações claras para o próximo microciclo baseado nas tendências dessas 4 semanas.
-Não use formatação excessiva. Apenas texto limpo com algumas quebras de linha e emojis sutis.`;
+  const systemPrompt = `Você é um Cientista de Dados Esportivos e Treinador de Elite.
+Você está analisando o dashboard de Relatórios de um aluno nas últimas 4 semanas (${days} dias).
+O painel exibe 4 gráficos principais: Evolução do Bem-estar (Recuperação/Dor/Sono), PSE por Sessão, Volume por Sessão, e Carga Total de Treino.
+
+Gere uma análise detalhada e separe OBRIGATORIAMENTE o seu texto analisando "gráfico por gráfico" usando os exatos tópicos abaixo:
+
+📊 Gráfico de Bem-estar:
+(Análise de como o sono, TQR e as dores se comportaram nas sessões).
+
+📈 Gráfico de PSE por Sessão:
+(Análise do esforço percebido, se esteve na zona ideal ou gerou fadiga acumulada).
+
+🏋️ Gráfico de Volume por Sessão:
+(Análise da evolução ou manutenção do volume total levantado em kg).
+
+🔥 Gráfico de Carga de Treino:
+(Análise da relação entre o esforço e a duração das sessões ao longo das semanas).
+
+💡 Recomendação Prática:
+(O que o treinador deve ajustar para a próxima semana/mesociclo com base no cruzamento desses gráficos).
+
+Mantenha a formatação clara, com quebras de linha e emojis, sendo direto e profissional.`;
 
   const requestBody = {
     contents: [
@@ -116,8 +131,8 @@ Não use formatação excessiva. Apenas texto limpo com algumas quebras de linha
       }
     ],
     generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 250,
+      temperature: 0.6,
+      maxOutputTokens: 1000,
     }
   };
 
