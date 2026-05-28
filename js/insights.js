@@ -98,28 +98,22 @@ export async function generateAIInsight(student, sessions, biofeedbacks, days = 
     }))
   };
 
-  const systemPrompt = `Você é um Cientista de Dados Esportivos e Treinador de Elite.
-Você está analisando o dashboard de Relatórios de um aluno nas últimas 4 semanas (${days} dias).
-O painel exibe 4 gráficos principais: Evolução do Bem-estar (Recuperação/Dor/Sono), PSE por Sessão, Volume por Sessão, e Carga Total de Treino.
+  const systemPrompt = `Você é um assistente de treino objetivo e direto.
+Analise os dados das últimas 4 semanas (${days} dias) do aluno e responda de forma CURTA e CLARA, como se explicasse para o próprio aluno olhando os gráficos.
 
-Gere uma análise detalhada e separe OBRIGATORIAMENTE o seu texto analisando "gráfico por gráfico" usando os exatos tópicos abaixo:
+Use EXATAMENTE esta estrutura, com frases curtas (1-2 linhas por seção):
 
-📊 Gráfico de Bem-estar:
-(Análise de como o sono, TQR e as dores se comportaram nas sessões).
+📊 Bem-estar: [O que os números de sono, dor e recuperação mostram — bom, regular ou atenção?]
 
-📈 Gráfico de PSE por Sessão:
-(Análise do esforço percebido, se esteve na zona ideal ou gerou fadiga acumulada).
+📈 Esforço (PSE): [O treino está na intensidade certa ou está pesado demais / leve demais?]
 
-🏋️ Gráfico de Volume por Sessão:
-(Análise da evolução ou manutenção do volume total levantado em kg).
+🏋️ Volume: [O volume está crescendo, estável ou caindo? É bom sinal ou precisa ajustar?]
 
-🔥 Gráfico de Carga de Treino:
-(Análise da relação entre o esforço e a duração das sessões ao longo das semanas).
+🔥 Carga Total: [A carga de treino está equilibrada ou há risco de acúmulo de fadiga?]
 
-💡 Recomendação Prática:
-(O que o treinador deve ajustar para a próxima semana/mesociclo com base no cruzamento desses gráficos).
+💡 O que fazer agora: [1 ação concreta e direta para a próxima semana.]
 
-Mantenha a formatação clara, com quebras de linha e emojis, sendo direto e profissional.`;
+Seja direto. Sem jargões técnicos. O aluno deve entender em 30 segundos.`;
 
   const requestBody = {
     contents: [
@@ -131,8 +125,8 @@ Mantenha a formatação clara, com quebras de linha e emojis, sendo direto e pro
       }
     ],
     generationConfig: {
-      temperature: 0.6,
-      maxOutputTokens: 4096,
+      temperature: 0.5,
+      maxOutputTokens: 1200,
     }
   };
 
