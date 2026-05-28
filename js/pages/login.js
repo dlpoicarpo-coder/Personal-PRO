@@ -31,7 +31,7 @@ export function renderLogin() {
                 <label class="form-label">Senha</label>
                 <div style="position:relative">
                   <input class="form-input" name="password" type="password" autocomplete="current-password" required placeholder="Sua senha" id="loginPasswordInput" />
-                  <button type="button" id="toggleLoginPass" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.9rem">👁</button>
+                  <button type="button" id="toggleLoginPass" title="Mostrar/ocultar senha" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:4px"><svg id="eyeIconLogin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg id="eyeOffIconLogin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
                 </div>
               </div>
               <p id="loginError" class="text-sm mt-sm" style="color:var(--danger);display:none"></p>
@@ -63,7 +63,7 @@ export function renderLogin() {
                 <label class="form-label">Senha *</label>
                 <div style="position:relative">
                   <input class="form-input" name="password" type="password" required placeholder="Mínimo 6 caracteres" id="signupPasswordInput" autocomplete="new-password" />
-                  <button type="button" id="toggleSignupPass" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.9rem">👁</button>
+                  <button type="button" id="toggleSignupPass" title="Mostrar/ocultar senha" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:4px"><svg id="eyeIconSignup" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg id="eyeOffIconSignup" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
                 </div>
               </div>
               <div class="form-group">
@@ -142,10 +142,16 @@ export async function initLogin(onSuccess) {
   document.getElementById('toggleLoginPass')?.addEventListener('click', () => {
     const inp = document.getElementById('loginPasswordInput');
     inp.type = inp.type === 'password' ? 'text' : 'password';
+    const isText = inp.type === 'text';
+    document.getElementById('eyeIconLogin').style.display = isText ? 'none' : '';
+    document.getElementById('eyeOffIconLogin').style.display = isText ? '' : 'none';
   });
   document.getElementById('toggleSignupPass')?.addEventListener('click', () => {
     const inp = document.getElementById('signupPasswordInput');
     inp.type = inp.type === 'password' ? 'text' : 'password';
+    const isText = inp.type === 'text';
+    document.getElementById('eyeIconSignup').style.display = isText ? 'none' : '';
+    document.getElementById('eyeOffIconSignup').style.display = isText ? '' : 'none';
   });
 
   // LOGIN FORM
