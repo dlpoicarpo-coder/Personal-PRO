@@ -115,7 +115,13 @@ export async function renderTracker() {
 
     ${completed.length ? `
     <div class="card mt-lg">
-      <div class="card-header"><span class="card-title">Sessões Recentes</span></div>
+      <div class="card-header" style="justify-content:space-between">
+        <span class="card-title">Sessões Recentes</span>
+        <select id="filterRecentStudent" class="form-select form-select-sm" style="width:auto; max-width:200px">
+          <option value="">Todos os alunos</option>
+          ${active.map(s => `<option value="${s.id}">${s.name.split(' ')[0]}</option>`).join('')}
+        </select>
+      </div>
       <div class="table-container">
         <table class="data-table">
           <thead><tr>
@@ -139,7 +145,7 @@ export async function renderTracker() {
             const setNotes  = (s.setLog||[]).filter(x=>x.notes).map(x=>`S${x.setIdx+1}: ${x.notes}`);
             const allObs    = [postNotes, ...setNotes].filter(Boolean);
             const obsTitle  = allObs.join(' | ');
-            return `<tr>
+            return `<tr class="recent-session-row" data-sid="${s.studentId}">
               <td style="white-space:nowrap">${st?.name || '?'}</td>
               <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.workoutName || '-'}</td>
               <td style="white-space:nowrap">${Calc.formatDate(s.date)}</td>
@@ -221,7 +227,9 @@ function renderLiveView(students) {
           <div class="card-header">
             <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
             <div class="flex gap-xs">
-              <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar Exercício">✏️</button>
+              <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar Exercício" style="display:flex;align-items:center;justify-content:center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
               <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
               <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
             </div>
@@ -353,6 +361,21 @@ export function initTracker(navigateFn) {
   const sSel = document.getElementById('trkStudent');
   const wSel = document.getElementById('trkWorkout');
   const sBtn = document.getElementById('startBtn');
+
+  // Filtro de sessões recentes
+  const filterRecentSel = document.getElementById('filterRecentStudent');
+  if (filterRecentSel) {
+    filterRecentSel.addEventListener('change', (e) => {
+      const selectedSid = e.target.value;
+      document.querySelectorAll('.recent-session-row').forEach(row => {
+        if (!selectedSid || row.dataset.sid === selectedSid) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+  }
 
   // Excluir sessão
   document.querySelectorAll('.delete-session').forEach(btn => {
@@ -1098,7 +1121,10 @@ export function initTracker(navigateFn) {
             <input class="form-input" type="number" id="editExLiveRest" value="${curEx.rest||60}" />
           </div>
         </div>
-        <button id="delExLiveBtn" class="btn btn-danger btn-sm" style="margin-top:10px;width:100%">🗑️ Excluir Exercício</button>
+        <button id="delExLiveBtn" class="btn btn-danger btn-sm" style="margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          Excluir Exercício
+        </button>
       `,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
