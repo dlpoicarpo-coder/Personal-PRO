@@ -240,7 +240,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </span></div>
       
       <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color); margin-bottom: 16px;">
-        ${generateAlgorithmicInsight(student, completed, bfFiltered, 7).text}
+        ${generateAlgorithmicInsight(student, completed, bf, 7).text}
       </p>
 
       <div id="aiInsightResult" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border-color)">
