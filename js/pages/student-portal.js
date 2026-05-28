@@ -2095,7 +2095,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       try {
         const sortedSes = [...sessions].filter(s => s.status === 'completed').sort((a,b) => new Date(a.date) - new Date(b.date));
         const aiText = await generateAIInsight(student, sortedSes, biofeedbacks, 28);
-        txtAI.innerHTML = `<strong>Insight Analítico ✨:</strong><br/><br/>${aiText.replace(/\\n/g, '<br/>')}`;
+        txtAI.innerHTML = `<strong>Insight Analítico ✨:</strong><br/><br/>${aiText.replace(/\\n/g, '<br/>').replace(/\n/g, '<br/>')}`;
         btnAI.style.display = 'none';
       } catch(err) {
         txtAI.innerHTML = `<span style="color:var(--portal-danger)">Erro: ${err.message}</span>`;
