@@ -17,7 +17,7 @@ function filterRecent(data, days, dateField = 'date') {
 /**
  * Gera os insights algorítmicos básicos cruzando dados dos últimos 7 dias.
  */
-export function generateAlgorithmicInsight(student, sessions, biofeedbacks, days = 7) {
+export function generateAlgorithmicInsight(student, sessions, biofeedbacks, days = 28) {
   const recentSessions = filterRecent(sessions.filter(s => s.status === 'completed'), days, 'endTime');
   const previousSessions = filterRecent(sessions.filter(s => s.status === 'completed'), days * 2, 'endTime').filter(s => !recentSessions.includes(s));
   
@@ -67,7 +67,7 @@ export function generateAlgorithmicInsight(student, sessions, biofeedbacks, days
 /**
  * Chama a API do Gemini para gerar uma análise profunda.
  */
-export async function generateAIInsight(student, sessions, biofeedbacks, days = 7) {
+export async function generateAIInsight(student, sessions, biofeedbacks, days = 28) {
   const settings = await db.get('settings', 'trainer') || {};
   const apiKey = settings.geminiApiKey;
 
@@ -98,12 +98,13 @@ export async function generateAIInsight(student, sessions, biofeedbacks, days = 
     }))
   };
 
-  const systemPrompt = `Você é um Personal Trainer especialista e motivacional analisando a evolução de um aluno.
-Aqui estão os dados estruturados em JSON dos últimos ${days} dias de treinos e respostas de bem-estar (Check-in/Biofeedback) do aluno.
-Crie um pequeno parágrafo encorajador (máximo 3-4 frases curtas) fornecendo um "Insight de Ouro".
-Cruze os dados: se ele dormiu mal e a percepção de esforço foi alta, explique a relação. Se ele teve volume alto e boa motivação, elogie.
-Fale diretamente com o aluno, usando tom acolhedor, profissional e direto. Dê uma recomendação prática se houver algum ponto fraco (ex: mais água, dormir melhor, cuidar da dor).
-Não use formatação excessiva. Apenas o texto limpo, talvez com 1 ou 2 emojis.`;
+  const systemPrompt = `Você é um Personal Trainer especialista e analista de dados esportivos.
+Aqui estão os dados estruturados em JSON das últimas 4 semanas (${days} dias) de treinos e respostas de bem-estar (Check-in/Biofeedback) do aluno.
+Aja como um analista que está lendo os gráficos de evolução do aluno. Analise "gráfico por gráfico" (tendência de volume, tendência de intensidade/PSE e tendência de recuperação/sono).
+Crie um resumo analítico (1 a 2 parágrafos).
+Explique a correlação entre a evolução do volume/carga de treino e a resposta do corpo (PSE, sono, dor).
+Dê recomendações claras para o próximo microciclo baseado nas tendências dessas 4 semanas.
+Não use formatação excessiva. Apenas texto limpo com algumas quebras de linha e emojis sutis.`;
 
   const requestBody = {
     contents: [

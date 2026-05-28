@@ -236,11 +236,11 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.05; user-select: none;">✨</div>
       <div class="card-header"><span class="card-title" style="color:var(--accent); display:flex; align-items:center; gap:8px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        Resumo da Evolução (Últimos 7 dias)
+        Resumo da Evolução (Últimas 4 semanas)
       </span></div>
       
       <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color); margin-bottom: 16px;">
-        ${generateAlgorithmicInsight(student, completed, bf, 7).text}
+        ${generateAlgorithmicInsight(student, completed, bf, 28).text}
       </p>
 
       <div id="aiInsightResult" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border-color)">
