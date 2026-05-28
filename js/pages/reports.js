@@ -630,7 +630,7 @@ export async function initReports(navigateFn) {
 
     // ── Capturar gráficos por ID (não por posição) ──
     const chartIds = [
-      { id: 'wellnessChart',  title: 'Evolução do Bem-estar',      desc: 'Sono (roxo), TQR/Recuperação (verde), Estresse (amarelo tracejado). Valores acima de 7 indicam boa recuperação.' },
+      { id: 'wellnessChart',  title: 'Evolução do Bem-estar',      desc: 'Sono (roxo), TQR (verde), Estresse (amarelo), Dor (verm.), Motivação (azul), Alimentação (laranja).' },
       { id: 'loadChart',      title: 'Carga de Treino Semanal',     desc: 'Carga semanal = PSE × Duração. Aumentos graduais de ~10%/semana são ideais para progressão sem risco.' },
       { id: 'pseChart',       title: 'PSE por Sessão',              desc: 'Percepção Subjetiva de Esforço (1–10). Zona ideal para hipertrofia: 6–8. Acima de 8 por 3+ sessões seguidas = atenção à fadiga.' },
       { id: 'radarChart',     title: 'Radar de Wellness',           desc: 'Média dos últimos 5 check-ins. Quanto maior a área, melhor o estado geral. Pontas "encolhidas" indicam itens a melhorar.' },
@@ -903,7 +903,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
 
   // Wellness chart — filtrar apenas registros que têm dados de bem-estar (não só PSE do tracker)
   const wCtx = document.getElementById('wellnessChart');
-  const bfWellness = bf.filter(b => b.sleep || b.mood || b.energy || b.stress);
+  const bfWellness = bf.filter(b => b.sleep || b.mood || b.energy || b.stress || b.pain || b.motivation || b.food);
   if (wCtx && bfWellness.length > 1) {
     new Chart(wCtx, {
       type: 'line',
@@ -913,6 +913,9 @@ async function initReportCharts(studentId, cycleFilter = '') {
           { label: 'Sono',       data: bfWellness.map(b => b.sleep  || null), borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
           { label: 'TQR',      data: bfWellness.map(b => b.tqr ?? b.energy ?? null), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
           { label: 'Estresse (↓=melhor)', data: bfWellness.map(b => b.stress || null), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true, borderDash: [5,3] },
+          { label: 'Dor', data: bfWellness.map(b => b.pain || null), borderColor: '#ef4444', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true, borderDash: [2,2] },
+          { label: 'Motivação', data: bfWellness.map(b => b.motivation || null), borderColor: '#3b82f6', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
+          { label: 'Alimentação', data: bfWellness.map(b => b.food || null), borderColor: '#f97316', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
         ]
       },
       options: {

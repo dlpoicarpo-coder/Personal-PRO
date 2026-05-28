@@ -202,6 +202,9 @@ function renderPortalShell(student) {
           </div>
         </div>
         <div class="portal-header-actions">
+          <button class="portal-theme-btn" id="portalTutorialBtn" title="Como usar" data-section="tutorial" style="cursor:pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
           <button class="portal-theme-btn" id="portalThemeToggle" title="Alternar tema">
             <svg id="themeIconDark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
             <svg id="themeIconLight" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -277,6 +280,11 @@ function initPortalNav() {
       btn.classList.add('active');
       loadSection(btn.dataset.section);
     });
+  });
+
+  document.getElementById('portalTutorialBtn')?.addEventListener('click', () => {
+    document.querySelectorAll('.portal-nav-btn').forEach(b => b.classList.remove('active'));
+    loadSection('tutorial');
   });
 
   document.getElementById('portalLogout')?.addEventListener('click', () => {
@@ -362,6 +370,7 @@ async function loadSection(section) {
     case 'bio': content.innerHTML = renderBio(biofeedbacks, sid, tid); initBio(); break;
     case 'avaliacoes': content.innerHTML = renderAvaliacoes(assessments); break;
     case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); initRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); break;
+    case 'tutorial': content.innerHTML = renderStudentTutorial(); initStudentTutorial(); break;
     default: content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks);
   }
 
@@ -1982,7 +1991,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
 
     <div class="glass-card" style="margin-bottom:12px">
       <div class="portal-card-label">Evolucao do Bem-estar</div>
-      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Sono (roxo) &middot; TQR (verde) &middot; Estresse (amarelo)</p>
+      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Sono (roxo) &middot; TQR (verde) &middot; Estresse (amarelo) &middot; Dor (verm.) &middot; Motiv. (azul) &middot; Alim. (laranja)</p>
       <div style="height:200px;position:relative"><canvas id="portalWellnessChart"></canvas></div>
     </div>
 
@@ -2093,6 +2102,9 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         {label:'Sono', data:bf.map(b=>b.sleep||null), borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,0.08)', tension:0.3, fill:true, pointRadius:3},
         {label:'TQR',  data:bf.map(b=>b.tqr||null),   borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',  tension:0.3, fill:true, pointRadius:3},
         {label:'Estresse', data:bf.map(b=>b.stress||null), borderColor:'#f59e0b', borderDash:[5,3], tension:0.3, fill:false, pointRadius:3},
+        {label:'Dor', data:bf.map(b=>b.pain||null), borderColor:'#ef4444', borderDash:[2,2], tension:0.3, fill:false, pointRadius:3},
+        {label:'Motivação', data:bf.map(b=>b.motivation||null), borderColor:'#3b82f6', tension:0.3, fill:false, pointRadius:3},
+        {label:'Alimentação', data:bf.map(b=>b.food||null), borderColor:'#f97316', tension:0.3, fill:false, pointRadius:3},
       ]}, options:{...co, scales:{...co.scales, y:{...co.scales.y,min:0,max:10}}} });
     }
 
@@ -3127,3 +3139,61 @@ function showPortalCheckoutModal(session) {
   });
 }
 
+function renderStudentTutorial() {
+  return `
+    <div class="portal-section">
+      <h2 class="portal-section-title">Como usar o Portal</h2>
+      
+      <div class="glass-card" style="margin-bottom:12px">
+        <div class="portal-card-label" style="display:flex;align-items:center;gap:8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Check-in (Biofeedback)
+        </div>
+        <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
+          Sempre que for treinar, acesse a aba <strong>Check-in</strong> antes de começar. 
+          Lá você avalia seu sono, estresse, e se tem alguma dor. 
+          Seu treinador verá isso em tempo real e pode adaptar o treino se você não estiver 100%!
+        </p>
+      </div>
+
+      <div class="glass-card" style="margin-bottom:12px">
+        <div class="portal-card-label" style="display:flex;align-items:center;gap:8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          Treinar e Checkout
+        </div>
+        <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
+          Na aba <strong>Treinar</strong>, escolha o treino do dia. Você verá a lista de exercícios.<br><br>
+          1. Concluiu uma série? Você pode marcá-la (opcional, ajuda você a se guiar).<br>
+          2. Terminou o treino todo? Clique em <strong>Concluir Treino (Checkout)</strong>.<br>
+          3. Informe o quão pesado foi (PSE 1-10) para atualizar seus gráficos e o do seu treinador.
+        </p>
+      </div>
+
+      <div class="glass-card" style="margin-bottom:12px">
+        <div class="portal-card-label" style="display:flex;align-items:center;gap:8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Gráficos e Evolução
+        </div>
+        <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
+          A aba <strong>Relatórios</strong> cruza os dados do seu Check-in com os seus Treinos concluídos. 
+          Acompanhe sua Evolução do Bem-Estar, Volume de Treino levantado, e a estimativa de Calorias gastas!
+        </p>
+      </div>
+
+      <div class="glass-card" style="margin-bottom:12px">
+        <div class="portal-card-label" style="display:flex;align-items:center;gap:8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          Instalar como Aplicativo (PWA)
+        </div>
+        <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
+          Você não precisa acessar sempre pelo link do WhatsApp. Adicione este portal à tela inicial do seu celular! 
+          Basta clicar em <strong>Compartilhar &gt; Adicionar à Tela Inicial</strong> (no Safari/iPhone) ou usar o botão "App" no topo da tela (se disponível no Android).
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function initStudentTutorial() {
+  // No specific interactivity needed yet
+}

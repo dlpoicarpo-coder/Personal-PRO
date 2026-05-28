@@ -746,7 +746,7 @@ export function initPeriodization(navigateFn) {
                 intensityPct: 65 + Math.round((w / d.totalWeeks) * 25),
                 volumePct: 70, repsRange: '10-12'
               };
-              const weekStart = new Date(d.startDate);
+              const weekStart = new Date(d.startDate + 'T12:00');
               weekStart.setDate(weekStart.getDate() + (w * 7));
 
               const baseIntensity = d.weeks[0]?.intensityPct || 60;

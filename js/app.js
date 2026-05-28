@@ -228,7 +228,7 @@ function initApp() {
 
     // Database deduplication and methods repair
     setTimeout(async () => {
-      if (localStorage.getItem('fixed_db_v6')) return;
+      if (localStorage.getItem('fixed_db_v7')) return;
       try {
         // Dedup exercises
         const exs = await db.getAll('exercises');
@@ -301,7 +301,7 @@ function initApp() {
         for (const m of defaultMethods) {
           if (!freshMethods.find(x => x.name === m.name)) await db.add('methods', m);
         }
-        localStorage.setItem('fixed_db_v6', '1');
+        localStorage.setItem('fixed_db_v7', '1');
         window.location.reload();
       } catch(e) { console.error('DB repair error:', e); }
     }, 2000);

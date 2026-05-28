@@ -192,6 +192,32 @@ const TUTORIALS = [
       },
     ]
   },
+  {
+    section: 'Portal do Aluno',
+    icon: '📱',
+    items: [
+      {
+        title: 'Como o aluno acessa o Portal',
+        steps: [
+          'No cadastro do aluno, ou na aba de alunos, copie o <strong>Link do Portal</strong>.',
+          'Envie o link para o aluno pelo WhatsApp.',
+          'O aluno não precisa de senha! O acesso é simplificado pelo link único que salva o progresso localmente.',
+          'No portal, o aluno visualizará seus treinos, histórico, e gráficos de evolução.'
+        ],
+        tip: 'O Portal do Aluno pode ser adicionado à tela inicial do celular como um aplicativo (PWA).'
+      },
+      {
+        title: 'Check-in e Checkout pelo Portal',
+        steps: [
+          'Antes de iniciar o treino, o aluno pode preencher o Biofeedback (Sono, TQR, Estresse, Dor).',
+          'O aluno dá o "Check-in" em cada exercício que for completando.',
+          'No final da sessão, ele preenche o formulário Pós-treino informando a Percepção de Esforço (PSE) e satisfação.',
+          'O sistema sincroniza automaticamente esses dados para o seu painel de Relatórios!'
+        ],
+        tip: 'Todos os gráficos do Portal (Volume, Densidade, Radar de Wellness) atualizam sozinhos com esses dados!'
+      }
+    ]
+  }
 ];
 
 export function renderTutorial() {

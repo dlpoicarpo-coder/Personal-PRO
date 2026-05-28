@@ -836,6 +836,20 @@ export function initTracker(navigateFn) {
     // Remover modal anterior se existir
     document.getElementById('setConfirmModal')?.remove();
 
+    // Start rest timer immediately while the user fills the modal
+    const exSets = parseInt(curEx?.sets || ex?.sets) || 3;
+    if (i + 1 < exSets) {
+      state.restTimer.reset(); state.restTimer.start();
+      state.isResting = true; state.workTimer?.stop();
+      state.workSec = state.workTimer?.getElapsed() || 0;
+      const c = document.getElementById('restCount');
+      const l = document.getElementById('restLbl');
+      const b2 = document.getElementById('goRest');
+      if (c) { c.textContent = formatTime(state.restTimer.duration); c.style.color='var(--warning)'; }
+      if (l) l.textContent = `Descansando após série ${i+1}...`;
+      if (b2) b2.textContent = '⏸ Pausar Descanso';
+    }
+
     const modal = document.createElement('div');
     modal.id = 'setConfirmModal';
     modal.style.cssText = `
@@ -864,19 +878,21 @@ export function initTracker(navigateFn) {
           <div style="font-size:0.7rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
             PSE — Percepção de Esforço
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:6px">
             ${[1,2,3,4,5,6,7,8,9,10].map(n => {
               const color = n<=3?'#10b981':n<=5?'#22c55e':n<=7?'#f59e0b':n<=9?'#ef4444':'#dc2626';
-              const labels = {1:'Mínimo',3:'Fácil',5:'Moderado',7:'Difícil',9:'Muito difícil',10:'Máximo'};
+              const labels = {1:'Mínimo',2:'M. Fácil',3:'Fácil',4:'Moderado',5:'P. Difícil',6:'Difícil',7:'M. Difícil',8:'V. Difícil',9:'Extremo',10:'Máximo'};
               return `<button class="pse-btn" data-v="${n}" style="
-                flex:1;min-width:calc(10% - 3px);padding:8px 4px;
+                padding:6px 2px;display:flex;flex-direction:column;align-items:center;
                 background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
                 border-radius:8px;cursor:pointer;transition:all 0.1s;
-                font-size:0.9rem;font-weight:700;color:${color};
-              " title="${labels[n]||''}">${n}</button>`;
+              ">
+                <span style="font-size:1rem;font-weight:700;color:${color}">${n}</span>
+                <span style="font-size:0.55rem;color:#94a3b8;margin-top:2px;text-align:center;line-height:1.1">${labels[n]}</span>
+              </button>`;
             }).join('')}
           </div>
-          <div id="pseLabel" style="font-size:0.72rem;color:#94a3b8;margin-top:6px;min-height:16px;text-align:center"></div>
+          <div id="pseLabel" style="font-size:0.72rem;color:#94a3b8;margin-top:6px;min-height:16px;text-align:center;font-weight:600"></div>
         </div>
 
         <!-- RIR -->
@@ -884,18 +900,20 @@ export function initTracker(navigateFn) {
           <div style="font-size:0.7rem;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
             RIR — Reps sobrando no tanque
           </div>
-          <div style="display:flex;gap:6px">
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px">
             ${[0,1,2,3,4,5].map(n => {
-              const labels = {0:'Falha',1:'1 sobrou',2:'2 sobraram',3:'3 sobraram',4:'4 sobraram',5:'5+'};
+              const labels = {0:'Falha Total',1:'1 rep',2:'2 reps',3:'3 reps',4:'4 reps',5:'5+ reps'};
               return `<button class="rir-btn" data-v="${n}" style="
-                flex:1;padding:8px 4px;
+                padding:6px 2px;display:flex;flex-direction:column;align-items:center;
                 background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
                 border-radius:8px;cursor:pointer;transition:all 0.1s;
-                font-size:0.9rem;font-weight:700;color:#06b6d4;
-              " title="${labels[n]}">${n}</button>`;
+              ">
+                <span style="font-size:1rem;font-weight:700;color:#06b6d4">${n}</span>
+                <span style="font-size:0.55rem;color:#94a3b8;margin-top:2px">${labels[n]}</span>
+              </button>`;
             }).join('')}
           </div>
-          <div id="rirLabel" style="font-size:0.72rem;color:#94a3b8;margin-top:6px;min-height:16px;text-align:center"></div>
+          <div id="rirLabel" style="font-size:0.72rem;color:#94a3b8;margin-top:6px;min-height:16px;text-align:center;font-weight:600"></div>
         </div>
 
         <!-- Notas -->
@@ -986,17 +1004,6 @@ export function initTracker(navigateFn) {
       }));
 
       const exSets = parseInt(curEx.sets) || 3;
-      if (i + 1 < exSets) {
-        state.restTimer.reset(); state.restTimer.start();
-        state.isResting = true; state.workTimer?.stop();
-        state.workSec = state.workTimer?.getElapsed() || 0;
-        const c = document.getElementById('restCount');
-        const l = document.getElementById('restLbl');
-        const b2 = document.getElementById('goRest');
-        if (c) { c.textContent = formatTime(state.restTimer.duration); c.style.color='var(--warning)'; }
-        if (l) l.textContent = `Descansando após série ${i+1}...`;
-        if (b2) b2.textContent = '⏸ Pausar Descanso';
-      }
 
       const rirTxt = rir != null ? ` RIR ${rir}` : '';
       notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg PSE ${pse}${rirTxt}`);
@@ -1080,6 +1087,7 @@ export function initTracker(navigateFn) {
           </div>
         </form>`,
       actions: [
+        { label: 'Voltar e Editar', class: 'btn-ghost', onClick: () => closeModal() },
         { label: 'Salvar e Finalizar', class: 'btn-primary', id: 'doSave', onClick: async () => {
           const btn = document.getElementById('doSave');
           if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
@@ -1109,7 +1117,11 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   };
 
   await db.put('sessions', sessionData);
+  const bfId = 'bf_' + s.studentId + '_' + s.date.substring(0, 10);
+  const existingBf = await db.get('biofeedback', bfId) || {};
   await db.add('biofeedback', {
+    ...existingBf,
+    id: bfId,
     studentId: s.studentId, date: s.date,
     ...s.preBiofeedback,
     pse: parseInt(post.pse)||7,

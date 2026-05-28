@@ -114,7 +114,7 @@ async function publicAdd(table, data) {
         'apikey':        SUPABASE_ANON,
         'Authorization': `Bearer ${SUPABASE_ANON}`,
         'Content-Type':  'application/json',
-        'Prefer':        'return=minimal',
+        'Prefer':        'return=minimal,resolution=merge-duplicates',
       },
       body: JSON.stringify(row),
     });
@@ -736,6 +736,9 @@ export function initPreForm() {
       // Garantir trainerId
       data.trainerId = data.trainerId || '';
 
+      // ID determinístico para permitir mesclagem de check-ins do mesmo dia
+      data.id = 'bf_' + data.studentId + '_' + data.date.substring(0, 10);
+
       await publicAdd('biofeedback', data);
       e.target.classList.add('hidden');
       document.getElementById('preSuccess')?.classList.remove('hidden');
@@ -989,6 +992,7 @@ export function initPostForm() {
           }
         } else {
           await publicAdd('biofeedback', {
+            id: 'bf_' + session.studentId + '_' + (session.date||Calc.nowISO()).substring(0, 10),
             studentId: session.studentId, trainerId: data.trainerId||session.trainerId||'',
             date: session.date||Calc.nowISO(),
             pse, tqrPost, duration: dur, trainingLoad: pse*dur,
