@@ -1992,13 +1992,10 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
         Sua Evolução Analítica (Últimas 4 semanas)
       </div>
-      <p style="font-size:0.85rem; line-height:1.5; color:var(--portal-text); margin-bottom: 12px; position:relative; z-index:2">
-        ${generateAlgorithmicInsight(student, completed, bf, 28).text}
-      </p>
       <div id="aiInsightResultPortal" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-color); position:relative; z-index:2">
         <p style="font-size:0.85rem; line-height:1.5; color:var(--portal-text);" id="aiInsightTextPortal"></p>
       </div>
-      <button id="btnGenerateAIPortal" class="portal-reminder-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border:none; width:100%; color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; border-radius:8px; font-weight:700; position:relative; z-index:2">
+      <button id="btnGenerateAIPortal" class="portal-reminder-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border:none; width:100%; color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; border-radius:8px; font-weight:700; position:relative; z-index:2; margin-top: 12px;">
         <span>Analisar Gráficos com IA ✨</span>
       </button>
     </div>

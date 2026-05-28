@@ -231,27 +231,6 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
     </div>
 
-    <!-- Motor de Insights -->
-    <div class="card mb-lg" style="border:1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); position: relative; overflow: hidden;">
-      <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.05; user-select: none;">✨</div>
-      <div class="card-header"><span class="card-title" style="color:var(--accent); display:flex; align-items:center; gap:8px">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        Resumo da Evolução (Últimas 4 semanas)
-      </span></div>
-      
-      <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color); margin-bottom: 16px;">
-        ${generateAlgorithmicInsight(student, completed, bf, 28).text}
-      </p>
-
-      <div id="aiInsightResult" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border-color)">
-        <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color);" id="aiInsightText"></p>
-      </div>
-
-      <button id="btnGenerateAI" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border:none; display:flex; align-items:center; gap:8px">
-        <span>Analisar com IA (Gemini)</span>
-      </button>
-    </div>
-
     <!-- Sub-stats de treino -->
     <div class="stats-grid mb-lg" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card" style="padding:12px;text-align:center">
@@ -922,28 +901,6 @@ async function initReportCharts(studentId, cycleFilter = '') {
   const student = await db.get('students', studentId);
   const co = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: { y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } };
   const chartsInstance = {};
-
-  const btnAI = document.getElementById('btnGenerateAI');
-  const txtAI = document.getElementById('aiInsightText');
-  const resAI = document.getElementById('aiInsightResult');
-  if (btnAI && txtAI && resAI) {
-    btnAI.addEventListener('click', async () => {
-      btnAI.disabled = true;
-      btnAI.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;border-top-color:#fff;margin-right:8px"></div> <span>Gerando análise...</span>';
-      resAI.style.display = 'block';
-      txtAI.innerHTML = 'A Inteligência Artificial está analisando suas métricas de sono, volume e esforço...';
-      
-      try {
-        const aiText = await generateAIInsight(student, sortedSes, bf, 7);
-        txtAI.innerHTML = `<strong>Insight de Ouro ✨:</strong><br/><br/>${aiText.replace(/\\n/g, '<br/>')}`;
-        btnAI.style.display = 'none'; // hide after success
-      } catch(err) {
-        txtAI.innerHTML = `<span style="color:var(--danger)">Erro: ${err.message}</span>`;
-        btnAI.innerHTML = '<span>Tentar novamente</span>';
-        btnAI.disabled = false;
-      }
-    });
-  }
 
   // Wellness chart — filtrar apenas registros que têm dados de bem-estar (não só PSE do tracker)
   const wCtx = document.getElementById('wellnessChart');
