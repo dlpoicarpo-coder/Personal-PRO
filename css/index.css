@@ -1253,3 +1253,139 @@ h4 {
 [data-theme="light"] ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.15);
 }
+
+/* ========================================
+   MOBILE RESPONSIVE — Trainer System
+   ======================================== */
+@media (max-width: 768px) {
+  /* Fix dark overlay / background gap */
+  body {
+    background: var(--bg-primary);
+    min-height: 100dvh;
+  }
+
+  html, body, #app {
+    min-height: 100dvh;
+    height: 100%;
+  }
+
+  /* Sidebar hidden on mobile — bottom-nav pattern */
+  .sidebar {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 12px 12px 80px 12px;
+    width: 100%;
+  }
+
+  /* Page header compacto */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .page-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .page-header .page-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  /* Stats grid mobile */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.4rem;
+  }
+
+  /* Tables scroll horizontal */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 600px;
+  }
+
+  /* Forms */
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Grids colapsados */
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Modals */
+  .modal {
+    width: 95vw;
+    max-height: 90dvh;
+    margin: 5vw auto;
+    overflow-y: auto;
+  }
+
+  /* Cards */
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  /* Botões */
+  .btn-lg {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Tracker page mobile */
+  .tracker-layout,
+  .tracker-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  /* Sessões recentes — tabela mobile */
+  .sessions-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Top navbar mobile */
+  .top-nav-bar,
+  .app-topbar {
+    padding: 8px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 390px) {
+  .main-content {
+    padding: 8px 8px 80px 8px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

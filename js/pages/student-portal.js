@@ -52,6 +52,16 @@ function showPwaPopup() {
   });
 }
 
+// Push notification permission
+async function requestNotificationPermission() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    console.log('Notificações ativadas!');
+  }
+}
+
 // ── THEME ──────────────────────────────────────────────────────
 function getPortalTheme() {
   return localStorage.getItem('portal_theme') || 'dark';
@@ -79,6 +89,8 @@ export async function renderStudentPortal(rawParam) {
   portalState.trainerId = trainerId;
 
   const student = await db.get('students', studentId).catch(() => null);
+  // If name loaded from DB, save it for PWA/offline use
+  if (student?.name) localStorage.setItem(`portal_name_${studentId}`, student.name);
 
   // PIN auth
   const sessionKey = `portal_auth_${studentId}`;
@@ -106,6 +118,8 @@ export function initStudentPortal() {
   document.querySelector('.portal-root')?.setAttribute('data-theme', getPortalTheme());
   // Try PWA popup if already available
   if (deferredPrompt) setTimeout(() => showPwaPopup(), 3000);
+  // Request push notification permission after 5s
+  setTimeout(() => requestNotificationPermission(), 5000);
 }
 
 // ── PIN SCREEN ─────────────────────────────────────────────────
@@ -165,6 +179,8 @@ function initPINHandlers() {
         const correctPin = student?.portalPin || '1234';
         if (pin === String(correctPin)) {
           sessionStorage.setItem(`portal_auth_${sid}`, 'ok');
+          // Save student name so PWA/header shows it immediately
+          if (student?.name) localStorage.setItem(`portal_name_${sid}`, student.name);
           window.location.reload();
         } else {
           document.getElementById('pinError').style.display = 'block';
@@ -190,7 +206,10 @@ function updateDots(pin) {
 
 // ── PORTAL SHELL ───────────────────────────────────────────────
 function renderPortalShell(student) {
-  const name = student?.name || 'Aluno';
+  const sid = portalState.studentId;
+  // Use cached name from localStorage so PWA shows name immediately
+  const cachedName = sid ? (localStorage.getItem(`portal_name_${sid}`) || '') : '';
+  const name = student?.name || cachedName || 'Aluno';
   const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   return `
     <div class="portal-root" data-sid="${portalState.studentId}" data-tid="${portalState.trainerId}" data-theme="${getPortalTheme()}">
