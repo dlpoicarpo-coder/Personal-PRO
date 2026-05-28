@@ -221,6 +221,7 @@ function renderLiveView(students) {
           <div class="card-header">
             <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
             <div class="flex gap-xs">
+              <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar Exercício">✏️</button>
               <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
               <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
             </div>
@@ -1068,6 +1069,74 @@ export function initTracker(navigateFn) {
   document.getElementById('prevEx')?.addEventListener('click', () => { if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
   document.getElementById('nextEx')?.addEventListener('click', () => { if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
   document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
+
+  document.getElementById('editExLiveBtn')?.addEventListener('click', () => {
+    const curEx = state.session.exercises[state.exIdx];
+    if (!curEx) return;
+    openModal({
+      title: 'Editar Exercício', size: 'md',
+      content: `
+        <div class="form-group">
+          <label class="form-label">Nome do Exercício</label>
+          <input class="form-input" id="editExLiveName" value="${curEx.name||''}" />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Séries</label>
+            <input class="form-input" type="number" id="editExLiveSets" value="${curEx.sets||3}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reps</label>
+            <input class="form-input" id="editExLiveReps" value="${curEx.reps||'12'}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Carga (kg)</label>
+            <input class="form-input" type="number" step="0.5" id="editExLiveLoad" value="${curEx.load||''}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descanso (s)</label>
+            <input class="form-input" type="number" id="editExLiveRest" value="${curEx.rest||60}" />
+          </div>
+        </div>
+        <button id="delExLiveBtn" class="btn btn-danger btn-sm" style="margin-top:10px;width:100%">🗑️ Excluir Exercício</button>
+      `,
+      actions: [
+        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+        { label: 'Salvar', class: 'btn-primary', onClick: async () => {
+            curEx.name = document.getElementById('editExLiveName').value;
+            curEx.sets = parseInt(document.getElementById('editExLiveSets').value) || 3;
+            curEx.reps = document.getElementById('editExLiveReps').value;
+            curEx.load = parseFloat(document.getElementById('editExLiveLoad').value) || 0;
+            curEx.rest = parseInt(document.getElementById('editExLiveRest').value) || 60;
+            
+            state.setLog = state.setLog.filter(s => !(s.exIdx === state.exIdx && s.setIdx >= curEx.sets));
+            state.session.setLog = state.setLog;
+            
+            await db.put('sessions', state.session);
+            closeModal();
+            refreshLive();
+          }
+        }
+      ]
+    });
+
+    document.getElementById('delExLiveBtn')?.addEventListener('click', async () => {
+      if (confirm('Tem certeza que deseja excluir este exercício da sessão atual?')) {
+        state.session.exercises.splice(state.exIdx, 1);
+        
+        state.setLog = state.setLog.filter(s => s.exIdx !== state.exIdx);
+        state.setLog.forEach(s => { if (s.exIdx > state.exIdx) s.exIdx-- });
+        state.session.setLog = state.setLog;
+        
+        if (state.exIdx >= state.session.exercises.length) state.exIdx = Math.max(0, state.session.exercises.length - 1);
+        state.setIdx = 0;
+        
+        await db.put('sessions', state.session);
+        closeModal();
+        refreshLive();
+      }
+    });
+  });
 
   // Finalizar
   document.getElementById('endBtn')?.addEventListener('click', async () => {
