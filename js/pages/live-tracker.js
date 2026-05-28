@@ -868,9 +868,21 @@ export function initTracker(navigateFn) {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div>
             <div style="font-weight:700;font-size:1rem;color:#f1f5f9">Série ${i+1} concluída</div>
-            <div style="font-size:0.78rem;color:#64748b;margin-top:2px">${ex.name||'Exercício'} — ${reps||'?'} reps × ${load||'?'}kg</div>
+            <div style="font-size:0.78rem;color:#64748b;margin-top:2px">${ex.name||'Exercício'}</div>
           </div>
           <button id="closeSetModal" style="background:none;border:none;color:#64748b;font-size:1.2rem;cursor:pointer;padding:4px">✕</button>
+        </div>
+
+        <!-- Carga e Reps -->
+        <div style="display:flex;gap:12px;margin-bottom:16px">
+          <div style="flex:1">
+            <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Reps Realizadas</label>
+            <input id="modalSetReps" type="number" value="${reps||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
+          </div>
+          <div style="flex:1">
+            <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Carga (kg)</label>
+            <input id="modalSetLoad" type="number" step="0.5" value="${load||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
+          </div>
         </div>
 
         <!-- PSE -->
@@ -973,6 +985,14 @@ export function initTracker(navigateFn) {
     document.getElementById('confirmSetBtn')?.addEventListener('click', () => {
       if (!selPse) return;
       const notes = document.getElementById('modalSetNotes')?.value || '';
+      
+      const modalReps = document.getElementById('modalSetReps')?.value;
+      const modalLoad = document.getElementById('modalSetLoad')?.value;
+      const repInp = row.querySelector('.set-reps');
+      const loadInp = row.querySelector('.set-load');
+      if (repInp && modalReps !== undefined) repInp.value = modalReps;
+      if (loadInp && modalLoad !== undefined) loadInp.value = modalLoad;
+
       modal.remove();
       completeSet(btn, i, row, selPse, selRir, notes);
     });
@@ -996,12 +1016,22 @@ export function initTracker(navigateFn) {
 
       row.classList.add('set-done'); row.classList.remove('set-active');
       row.style.background = 'rgba(16,185,129,0.04)';
+      
+      const pseInp = row.querySelector('.set-pse');
+      const rirInp = row.querySelector('.set-rir');
+      if (pseInp) pseInp.value = pse;
+      if (rirInp && rir != null) rirInp.value = rir;
+
       row.querySelectorAll('input').forEach(inp => inp.disabled = true);
-      btn.replaceWith(Object.assign(document.createElement('span'), {
-        className: 'badge badge-success',
-        textContent: '✓',
-        style: 'min-width:32px;text-align:center'
-      }));
+      
+      const doneDiv = document.createElement('div');
+      doneDiv.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px';
+      doneDiv.innerHTML = `
+        ${pse ? `<span style="font-size:0.6rem;color:var(--warning)">PSE ${pse}</span>` : ''}
+        <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
+        ${rir != null ? `<span style="font-size:0.6rem;color:var(--accent)">RIR ${rir}</span>` : ''}
+      `;
+      btn.replaceWith(doneDiv);
 
       const exSets = parseInt(curEx.sets) || 3;
 
