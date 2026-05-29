@@ -430,23 +430,40 @@ export function initAnamneseForm() {
         data:       { ...data },
       };
 
-      const res = await fetch(`${ANA_SUPABASE_URL}/rest/v1/anamnesis`, {
+      let res = await fetch(`${ANA_SUPABASE_URL}/rest/v1/anamnesis`, {
         method: 'POST',
         headers: {
           'apikey':        ANA_SUPABASE_ANON,
           'Authorization': `Bearer ${ANA_SUPABASE_ANON}`,
           'Content-Type':  'application/json',
-          'Prefer':        'return=minimal,resolution=merge-duplicates',
+          'Prefer':        'return=minimal',
         },
         body: JSON.stringify(row),
       });
 
       if (!res.ok) {
         const errText = await res.text();
-        console.error('Anamnese Supabase error:', errText);
-        // Fallback: save locally if Supabase fails
-        const { default: dbM } = await import('../db.js');
-        await dbM.add('anamnesis', data);
+        if (errText.includes('23505') || errText.includes('unique_violation') || res.status === 409) {
+          // Fallback para PATCH se o registro já existir
+          res = await fetch(`${ANA_SUPABASE_URL}/rest/v1/anamnesis?id=eq.${encodeURIComponent(data.id)}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey':        ANA_SUPABASE_ANON,
+              'Authorization': `Bearer ${ANA_SUPABASE_ANON}`,
+              'Content-Type':  'application/json',
+              'Prefer':        'return=minimal',
+            },
+            body: JSON.stringify(row),
+          });
+        }
+        
+        if (!res.ok) {
+          const finalErr = await res.text();
+          console.error('Anamnese Supabase error:', finalErr);
+          // Fallback: save locally se falhar completamente
+          const { default: dbM } = await import('../db.js');
+          await dbM.add('anamnesis', data);
+        }
       }
 
       // Clear draft and remove guards on success

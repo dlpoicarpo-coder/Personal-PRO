@@ -114,12 +114,16 @@ async function publicAdd(table, data) {
         'apikey':        SUPABASE_ANON,
         'Authorization': `Bearer ${SUPABASE_ANON}`,
         'Content-Type':  'application/json',
-        'Prefer':        'return=minimal,resolution=merge-duplicates',
+        'Prefer':        'return=minimal',
       },
       body: JSON.stringify(row),
     });
     if (!res.ok) {
       const err = await res.text();
+      if (err.includes('23505') || err.includes('unique_violation') || res.status === 409) {
+        // Fallback para PATCH se o registro já existir (Upsert sem exigir SELECT permission)
+        return await publicPut(table, data);
+      }
       console.error(`publicAdd(${table}) error:`, err);
     }
   } catch(e) { console.error('publicAdd fetch error:', e); }
