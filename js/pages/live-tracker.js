@@ -1085,6 +1085,8 @@ export function initTracker(navigateFn) {
 
   // Navegar exercícios
   const refreshLive = async () => {
+    // Clear existing UI interval to prevent accumulation
+    if (state._uiInterval) { clearInterval(state._uiInterval); state._uiInterval = null; }
     const students = await db.getAll('students');
     const content  = document.getElementById('pageContent');
     if (content && state.session) { content.innerHTML = renderLiveView(students); initTracker(navigateFn); }
@@ -1212,7 +1214,13 @@ export function initTracker(navigateFn) {
           </div>
         </form>`,
       actions: [
-        { label: 'Voltar e Editar', class: 'btn-ghost', onClick: () => closeModal() },
+        { label: 'Voltar e Editar', class: 'btn-ghost', onClick: () => {
+          // Restart timers that endBtn had stopped
+          if (state.workoutTimer && !state.workoutTimer.running) state.workoutTimer.start();
+          if (state.workTimer   && !state.workTimer.running && !state.isResting) state.workTimer.start();
+          if (!state._uiInterval) state._uiInterval = setInterval(updateUI, 500);
+          closeModal();
+        }},
         { label: 'Salvar e Finalizar', class: 'btn-primary', id: 'doSave', onClick: async () => {
           const btn = document.getElementById('doSave');
           if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }

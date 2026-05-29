@@ -772,13 +772,33 @@ export function initWorkouts(navigateFn) {
         content: lastSessionBanner + workoutFormHTML(students, w, allEx, allMethods) + `<datalist id="exerciseList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-          { label: 'Salvar', class: 'btn-primary', onClick: async () => {
-            const fd   = new FormData(document.getElementById('workoutForm'));
-            const data = { ...w, studentId: fd.get('studentId'), name: fd.get('name'), date: fd.get('date'), cycle: fd.get('cycle'), notes: fd.get('notes'), exercises: collectExercises() };
-            await db.put('workouts', data);
-            notify.success('Treino atualizado!');
-            closeModal();
-            navigateFn('/treinos');
+          { label: 'Salvar', class: 'btn-primary', onClick: async (e) => {
+            const saveBtn = e?.target;
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
+            try {
+              const fd   = new FormData(document.getElementById('workoutForm'));
+              const data = { ...w,
+                studentId: fd.get('studentId'),
+                name:      fd.get('name'),
+                date:      fd.get('date'),
+                cycle:     fd.get('cycle'),
+                notes:     fd.get('notes'),
+                exercises: collectExercises(),
+              };
+              if (!data.studentId || !data.name) {
+                notify.error('Aluno e nome são obrigatórios');
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+                return;
+              }
+              await db.put('workouts', data);
+              notify.success('Treino atualizado!');
+              closeModal();
+              navigateFn('/treinos');
+            } catch(err) {
+              console.error('Workout save error:', err);
+              notify.error('Erro ao salvar: ' + (err?.message || 'tente novamente'));
+              if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+            }
           }}
         ]
       });
