@@ -341,13 +341,79 @@ export async function renderAnamneseForm() {
 }
 
 export function initAnamneseForm() {
-  document.getElementById('anamneseForm')?.addEventListener('submit', async (e) => {
+  const SAVE_KEY = 'ana_draft';
+  const form = document.getElementById('anamneseForm');
+  if (!form) return;
+
+  // ── 1. Restore saved draft ──────────────────────────────
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
+    if (Object.keys(saved).length > 0) {
+      Object.entries(saved).forEach(([name, value]) => {
+        const el = form.elements[name];
+        if (!el) return;
+        if (el.tagName === 'SELECT' || el.type === 'text' || el.type === 'email' ||
+            el.type === 'tel' || el.type === 'date' || el.tagName === 'TEXTAREA') {
+          el.value = value;
+        }
+      });
+      // Show "draft restored" banner
+      const banner = document.createElement('div');
+      banner.id = 'anaDraftBanner';
+      banner.style.cssText = 'background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:0.78rem;color:#10b981;display:flex;align-items:center;gap:8px;';
+      banner.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Rascunho restaurado — continue de onde parou!`;
+      form.insertBefore(banner, form.firstChild);
+    }
+  } catch(_) {}
+
+  // ── 2. Autosave on every field change ──────────────────
+  form.addEventListener('input', () => {
+    try {
+      const fd = new FormData(form);
+      const snapshot = Object.fromEntries(fd);
+      sessionStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
+    } catch(_) {}
+  });
+  form.addEventListener('change', () => {
+    try {
+      const fd = new FormData(form);
+      const snapshot = Object.fromEntries(fd);
+      sessionStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
+    } catch(_) {}
+  });
+
+  // ── 3. Block hash navigation while form has data ───────
+  const guardHashChange = (e) => {
+    try {
+      const draft = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
+      const hasData = Object.values(draft).some(v => v && v.trim?.());
+      if (hasData) {
+        // Restore hash to keep user on form
+        e.preventDefault?.();
+        history.pushState(null, '', window.location.href);
+      }
+    } catch(_) {}
+  };
+  window.addEventListener('hashchange', guardHashChange);
+
+  // Block accidental page close/refresh
+  const guardUnload = (e) => {
+    try {
+      const draft = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
+      const hasData = Object.values(draft).some(v => v && v.trim?.());
+      if (hasData) { e.preventDefault(); e.returnValue = ''; }
+    } catch(_) {}
+  };
+  window.addEventListener('beforeunload', guardUnload);
+
+  // ── 4. Submit ───────────────────────────────────────────
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('anamneseSubmit');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
 
     try {
-      const fd   = new FormData(e.target);
+      const fd   = new FormData(form);
       const data = Object.fromEntries(fd);
       data.submittedAt = new Date().toISOString();
       data.id = 'ana_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
@@ -383,7 +449,12 @@ export function initAnamneseForm() {
         await dbM.add('anamnesis', data);
       }
 
-      e.target.style.display = 'none';
+      // Clear draft and remove guards on success
+      sessionStorage.removeItem(SAVE_KEY);
+      window.removeEventListener('hashchange', guardHashChange);
+      window.removeEventListener('beforeunload', guardUnload);
+
+      form.style.display = 'none';
       document.getElementById('anamneseSuccess').style.display = '';
     } catch (err) {
       console.error('Anamnese submit error:', err);
