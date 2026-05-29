@@ -72,7 +72,7 @@ class Database {
   SUPABASE_TABLES = new Set([
     'students','sessions','biofeedback','workouts','assessments',
     'cycles','macrocycles','schedules','financial','finances',
-    'events','prescriptions','anamneses','settings','exercises','methods',
+    'events','prescriptions','anamnesis','settings','exercises','methods',
   ]);
 
   // ── GET ALL RECORDS ──
