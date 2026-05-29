@@ -787,6 +787,9 @@ export function initTracker(navigateFn) {
     });
   } else {
     // Já existe — apenas reconectar os callbacks ao novo DOM
+    if (!state.restTimer.running) {
+      state.restTimer.setDuration(restDur);
+    }
     state.restTimer.onTick = (rem) => {
       const c = document.getElementById('restCount');
       const l = document.getElementById('restLbl');
@@ -862,17 +865,16 @@ export function initTracker(navigateFn) {
 
     // Start rest timer immediately while the user fills the modal
     const exSets = parseInt(curEx?.sets || ex?.sets) || 3;
-    if (i + 1 < exSets) {
-      state.restTimer.reset(); state.restTimer.start();
-      state.isResting = true; state.workTimer?.stop();
-      state.workSec = state.workTimer?.getElapsed() || 0;
-      const c = document.getElementById('restCount');
-      const l = document.getElementById('restLbl');
-      const b2 = document.getElementById('goRest');
-      if (c) { c.textContent = formatTime(state.restTimer.duration); c.style.color='var(--warning)'; }
-      if (l) l.textContent = `Descansando após série ${i+1}...`;
-      if (b2) b2.textContent = '⏸ Pausar Descanso';
-    }
+    // Sempre iniciar o descanso após uma série, mesmo sendo a última
+    state.restTimer.reset(); state.restTimer.start();
+    state.isResting = true; state.workTimer?.stop();
+    state.workSec = state.workTimer?.getElapsed() || 0;
+    const c = document.getElementById('restCount');
+    const l = document.getElementById('restLbl');
+    const b2 = document.getElementById('goRest');
+    if (c) { c.textContent = formatTime(state.restTimer.duration); c.style.color='var(--warning)'; }
+    if (l) l.textContent = `Descansando após série ${i+1}...`;
+    if (b2) b2.textContent = '⏸ Pausar Descanso';
 
     const modal = document.createElement('div');
     modal.id = 'setConfirmModal';
