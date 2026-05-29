@@ -249,74 +249,146 @@ export function initAnamnesis(navigateFn) {
   });
 }
 
-// ── FORM PÚBLICO ─────────────────────────────────────────────
-export async function renderAnamneseForm(trainerId = '') {
+const ANA_SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
+const ANA_SUPABASE_ANON = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
+
+const ANAMNESE_CSS = `
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{margin:0;font-family:-apple-system,'Segoe UI',sans-serif;background:#080c12}
+  .ana-page{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;background:#080c12;padding:0 0 60px}
+  .ana-card{background:#0f1420;width:100%;max-width:580px;min-height:100vh}
+  .ana-header{padding:20px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;overflow:hidden}
+  .ana-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#059669,#10b981,#34d399)}
+  .ana-header h2{margin:0;color:#10b981;font-size:1.2rem;font-weight:800}
+  .ana-header h2 strong{color:#34d399}
+  .ana-header p{margin:6px 0 0;font-size:0.78rem;color:#475569;text-transform:uppercase;letter-spacing:0.05em;font-weight:500}
+  .ana-body{padding:24px}
+  .ana-intro{padding:10px 14px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.15);border-radius:8px;margin-bottom:20px;font-size:0.82rem;color:#64748b;line-height:1.5}
+  .ana-section{margin:22px 0 12px;color:#10b981;font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid rgba(255,255,255,0.07);padding-bottom:6px}
+  .ana-group{margin-bottom:14px}
+  .ana-label{font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:block}
+  .ana-input,.ana-select,.ana-textarea{
+    width:100%;padding:11px 13px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+    border-radius:9px;color:#e2e8f0;font-size:0.88rem;font-family:inherit;transition:border-color 0.15s;
+  }
+  .ana-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  .ana-textarea{resize:vertical;min-height:64px}
+  .ana-input:focus,.ana-select:focus,.ana-textarea:focus{outline:none;border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.04)}
+  .ana-input::placeholder,.ana-textarea::placeholder{color:#334155}
+  .ana-submit{width:100%;padding:15px;background:#10b981;color:#fff;border:none;border-radius:12px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:16px;transition:all 0.2s;box-shadow:0 4px 14px rgba(16,185,129,0.25)}
+  .ana-submit:hover{background:#0ea472;transform:translateY(-1px)}
+  .ana-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+  .ana-success{text-align:center;padding:56px 24px}
+  .ana-check{width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.15);border:2px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .ana-success h3{color:#f1f5f9;margin:0 0 8px}
+  .ana-success p{color:#64748b;margin:0;font-size:0.9rem}
+
+  /* LIGHT MODE */
+  [data-theme="light"] .ana-page{background:#f1f5f9}
+  [data-theme="light"] .ana-card{background:#ffffff;box-shadow:0 2px 16px rgba(0,0,0,0.07)}
+  [data-theme="light"] .ana-header{border-bottom-color:rgba(0,0,0,0.07)}
+  [data-theme="light"] .ana-header p{color:#64748b}
+  [data-theme="light"] .ana-intro{background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.2);color:#334155}
+  [data-theme="light"] .ana-section{color:#059669;border-bottom-color:rgba(0,0,0,0.08)}
+  [data-theme="light"] .ana-label{color:#475569}
+  [data-theme="light"] .ana-input,
+  [data-theme="light"] .ana-select,
+  [data-theme="light"] .ana-textarea{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.1);color:#0f172a}
+  [data-theme="light"] .ana-select{background-color:rgba(0,0,0,0.02)}
+  [data-theme="light"] .ana-input:focus,
+  [data-theme="light"] .ana-select:focus,
+  [data-theme="light"] .ana-textarea:focus{border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.03)}
+  [data-theme="light"] .ana-input::placeholder,
+  [data-theme="light"] .ana-textarea::placeholder{color:#94a3b8}
+  [data-theme="light"] .ana-success h3{color:#0f172a}
+  [data-theme="light"] .ana-success p{color:#64748b}
+`;
+
+export async function renderAnamneseForm() {
   return `
-    <div class="student-form-page">
-      <div class="form-card" style="max-width:580px">
-        <div class="form-card-header" style="text-align:center;padding:20px 24px">
-          <h2 style="margin:0;color:var(--primary)">Personal<strong>PRO</strong></h2>
-          <p class="text-muted text-sm" style="margin:6px 0 0">Formulário de Anamnese</p>
+    <style>${ANAMNESE_CSS}</style>
+    <div class="ana-page">
+      <div class="ana-card">
+        <div class="ana-header">
+          <h2>Personal<strong>PRO</strong></h2>
+          <p>Formulário de Anamnese</p>
         </div>
-        <div class="form-card-body" style="padding:24px">
-          <div style="padding:10px 14px;background:rgba(16,185,129,0.07);border-radius:8px;margin-bottom:20px;font-size:0.82rem;color:var(--text-secondary);line-height:1.5">
+        <div class="ana-body">
+          <div class="ana-intro">
             Preencha com atenção. Suas respostas ajudarão o treinador a criar o programa ideal para você.
           </div>
           <form id="anamneseForm">
             ${ANAMNESIS_QUESTIONS.map(sec => `
-              <h4 style="margin:22px 0 12px;color:var(--primary);border-bottom:1px solid var(--border-color);padding-bottom:6px">${sec.section}</h4>
+              <div class="ana-section">${sec.section}</div>
               ${sec.fields.map(f => {
-                if (f.type === 'select') return `<div class="form-group"><label class="form-label">${f.label}${f.required?'*':''}</label><select class="form-select" name="${f.name}" ${f.required?'required':''}><option value="">Selecione</option>${f.options.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
-                if (f.type === 'textarea') return `<div class="form-group"><label class="form-label">${f.label}</label><textarea class="form-textarea" name="${f.name}" rows="2" placeholder="Descreva..."></textarea></div>`;
-                return `<div class="form-group"><label class="form-label">${f.label}${f.required?'*':''}</label><input class="form-input" name="${f.name}" type="${f.type}" ${f.required?'required':''} /></div>`;
+                if (f.type === 'select') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><select class="ana-select" name="${f.name}" ${f.required ? 'required' : ''}><option value="">Selecione...</option>${f.options.map(o => `<option>${o}</option>`).join('')}</select></div>`;
+                if (f.type === 'textarea') return `<div class="ana-group"><label class="ana-label">${f.label}</label><textarea class="ana-textarea" name="${f.name}" rows="2" placeholder="Descreva..."></textarea></div>`;
+                return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><input class="ana-input" name="${f.name}" type="${f.type}" ${f.required ? 'required' : ''} placeholder="" /></div>`;
               }).join('')}
             `).join('')}
-            <button type="submit" id="anamneseSubmit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:16px;font-size:1rem">
-              Enviar Anamnese
-            </button>
+            <button type="submit" id="anamneseSubmit" class="ana-submit">Enviar Anamnese</button>
           </form>
-          <div id="anamneseSuccess" style="display:none;text-align:center;padding:48px 24px">
-            <div style="font-size:3rem;color:var(--primary);margin-bottom:12px">✓</div>
-            <h3>Anamnese Enviada!</h3>
-            <p class="text-muted" style="margin-top:8px">Seus dados foram enviados ao treinador. Obrigado!</p>
+          <div id="anamneseSuccess" style="display:none">
+            <div class="ana-success">
+              <div class="ana-check"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <h3>Anamnese Enviada!</h3>
+              <p>Seus dados foram enviados ao treinador. Obrigado!</p>
+            </div>
           </div>
         </div>
       </div>
     </div>`;
 }
 
-export function initAnamneseForm(trainerId = '') {
+export function initAnamneseForm() {
   document.getElementById('anamneseForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('anamneseSubmit');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
-    const fd   = new FormData(e.target);
-    const data = Object.fromEntries(fd);
-    data.submittedAt = new Date().toISOString();
-    const tid = trainerId || new URLSearchParams(window.location.hash.split('?')[1]||'').get('trainer') || '';
-    if (tid) data.trainer_id = tid;
+
     try {
-      if (tid) {
-        try {
-          const { getSupabase } = await import('../utils/auth.js');
-          const sb = getSupabase?.();
-          if (sb) {
-            const { error } = await sb.from('anamneses').insert([{ ...data, trainer_id: tid }]);
-            if (error) throw error;
-          } else throw new Error('no sb');
-        } catch {
-          const { default: dbM } = await import('../db.js');
-          await dbM.add('anamnesis', data);
-        }
-      } else {
+      const fd   = new FormData(e.target);
+      const data = Object.fromEntries(fd);
+      data.submittedAt = new Date().toISOString();
+      data.id = 'ana_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
+      // Extract trainerId from URL hash (?trainer=...)
+      const hashQuery = window.location.hash.split('?')[1] || '';
+      const tid = new URLSearchParams(hashQuery).get('trainer') || '';
+      if (tid) data.trainer_id = tid;
+
+      // Save directly to Supabase via REST API (no auth needed)
+      const row = {
+        id:         data.id,
+        trainer_id: tid || null,
+        data:       { ...data },
+      };
+
+      const res = await fetch(`${ANA_SUPABASE_URL}/rest/v1/anamnesis`, {
+        method: 'POST',
+        headers: {
+          'apikey':        ANA_SUPABASE_ANON,
+          'Authorization': `Bearer ${ANA_SUPABASE_ANON}`,
+          'Content-Type':  'application/json',
+          'Prefer':        'return=minimal,resolution=merge-duplicates',
+        },
+        body: JSON.stringify(row),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Anamnese Supabase error:', errText);
+        // Fallback: save locally if Supabase fails
         const { default: dbM } = await import('../db.js');
         await dbM.add('anamnesis', data);
       }
+
       e.target.style.display = 'none';
       document.getElementById('anamneseSuccess').style.display = '';
-    } catch {
+    } catch (err) {
+      console.error('Anamnese submit error:', err);
       if (btn) { btn.disabled = false; btn.textContent = 'Enviar Anamnese'; }
-      alert('Erro ao enviar. Tente novamente.');
+      alert('Erro ao enviar. Verifique sua conexão e tente novamente.');
     }
   });
 }
