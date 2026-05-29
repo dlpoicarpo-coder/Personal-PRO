@@ -441,6 +441,49 @@ const FORM_CSS = `
   }
   .portal-pain-chip-chk:hover { background: rgba(255,255,255,0.05); }
   .portal-pain-chip-chk.active { background: rgba(239,68,68,0.12); border-color: #ef4444; color: #fca5a5; font-weight: 600; }
+
+  /* scale item text classes */
+  .scale-label { font-size:0.85rem; font-weight:700; color:#e2e8f0; }
+  .scale-desc { font-size:0.72rem; color:#64748b; margin-top:2px; }
+  .scale-sublabel { font-size:0.72rem; color:#475569; margin:-6px 0 10px; line-height:1.4; }
+  .intro-name { color:#e2e8f0; }
+
+  /* ── LIGHT MODE OVERRIDES ── */
+  [data-theme="light"] .student-form-page { background:#f1f5f9 !important; }
+  [data-theme="light"] .form-card { background:#ffffff !important; box-shadow:0 2px 16px rgba(0,0,0,0.07); }
+  [data-theme="light"] .form-card-header { border-bottom-color:rgba(0,0,0,0.07); }
+  [data-theme="light"] .form-card-header .subtitle { color:#475569; }
+  [data-theme="light"] .student-info { background:rgba(16,185,129,0.06); border-color:rgba(16,185,129,0.18); }
+  [data-theme="light"] .student-info .name { color:#0f172a; }
+  [data-theme="light"] .student-info .date { color:#64748b; }
+  [data-theme="light"] .q-label { color:#334155; }
+  [data-theme="light"] .scale-label { color:#0f172a; }
+  [data-theme="light"] .scale-desc { color:#64748b; }
+  [data-theme="light"] .scale-sublabel { color:#64748b; }
+  [data-theme="light"] .intro-name { color:#0f172a; }
+  [data-theme="light"] .opt-label {
+    border-color:rgba(0,0,0,0.1); color:#334155; background:rgba(0,0,0,0.02);
+  }
+  [data-theme="light"] .opt-label:hover { border-color:rgba(16,185,129,0.35); background:rgba(16,185,129,0.04); }
+  [data-theme="light"] .opt-label:has(input:checked) { background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.4); color:#065f46; }
+  [data-theme="light"] .scale-opt { border-color:rgba(0,0,0,0.08) !important; background:#f8fafc !important; }
+  [data-theme="light"] .scale-opt:hover { border-color:rgba(0,0,0,0.15) !important; background:#f1f5f9 !important; transform:translateY(-1px); }
+  [data-theme="light"] .scale-opt.selected { background:var(--opt-bg) !important; border-color:var(--opt-color) !important; }
+  [data-theme="light"] .form-intro { background:rgba(16,185,129,0.05); border-color:rgba(16,185,129,0.2); color:#334155; }
+  [data-theme="light"] .doms-info { color:#92400e; background:rgba(245,158,11,0.06); border-color:rgba(245,158,11,0.2); }
+  [data-theme="light"] .pain-tag { border-color:rgba(0,0,0,0.1); color:#475569; background:rgba(0,0,0,0.02); }
+  [data-theme="light"] .pain-tag:hover { border-color:rgba(16,185,129,0.3); color:#0f172a; }
+  [data-theme="light"] .pain-tag.active { border-color:#10b981; background:rgba(16,185,129,0.08); color:#065f46; }
+  [data-theme="light"] textarea { background:rgba(0,0,0,0.02); border-color:rgba(0,0,0,0.1); color:#0f172a; }
+  [data-theme="light"] textarea::placeholder { color:#94a3b8; }
+  [data-theme="light"] .pre-card { background:rgba(16,185,129,0.04); border-color:rgba(16,185,129,0.15); }
+  [data-theme="light"] .pre-card-vals { color:#475569; }
+  [data-theme="light"] .pre-card-vals strong { color:#0f172a; }
+  [data-theme="light"] .portal-feeling-emoji-btn { background:rgba(0,0,0,0.03); border-color:rgba(0,0,0,0.08); color:#475569; }
+  [data-theme="light"] .portal-feeling-emoji-btn.active { background:rgba(16,185,129,0.1); border-color:#10b981; color:#065f46; }
+  [data-theme="light"] .portal-pain-chip-chk { background:rgba(0,0,0,0.02); border-color:rgba(0,0,0,0.08); color:#475569; }
+  [data-theme="light"] .form-success h2 { color:#0f172a; }
+  [data-theme="light"] .form-success p { color:#64748b; }
 `;
 
 
@@ -538,7 +581,7 @@ function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
   return `
     <div class="q">
       <div class="q-label">${label}</div>
-      ${sublabel?`<div style="font-size:0.72rem;color:#475569;margin:-6px 0 10px;line-height:1.4">${sublabel}</div>`:''}
+      ${sublabel?`<div class="scale-sublabel">${sublabel}</div>`:''}
       <input type="hidden" name="${id}" id="hidden_${id}" value="${defaultVal}" />
       <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;padding-right:4px;" id="scale_${id}">
         ${scale.map(s => {
@@ -562,8 +605,8 @@ function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
                 ${s.v}
               </span>
               <div style="flex:1;min-width:0;text-align:left">
-                <div style="font-size:0.85rem;font-weight:700;color:#e2e8f0">${s.label}</div>
-                <div style="font-size:0.72rem;color:#64748b;margin-top:2px">${s.desc}</div>
+                <div class="scale-label">${s.label}</div>
+                <div class="scale-desc">${s.desc}</div>
               </div>
             </label>
           `;
@@ -619,7 +662,7 @@ export async function renderPreForm(studentId) {
         </div>
         <div class="form-card-body">
           <div class="form-intro">
-            Olá, <strong style="color:#e2e8f0">${firstName}</strong>! Este check-in avalia sua recuperação para ajustar a intensidade do treino de hoje. <strong style="color:#10b981">Responda com sinceridade.</strong>
+            Olá, <strong class="intro-name">${firstName}</strong>! Este check-in avalia sua recuperação para ajustar a intensidade do treino de hoje. <strong style="color:#10b981">Responda com sinceridade.</strong>
           </div>
           <div class="student-info">
             <div class="av">${ini}</div>
