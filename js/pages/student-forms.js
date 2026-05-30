@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // PERSONAL PRO â€” Student Forms v2
 // FormulÃ¡rios pÃºblicos (sem login) para alunos
 // Acessa Supabase direto via anon key com policy pÃºblica por ID
@@ -676,7 +676,7 @@ export async function renderPreForm(studentId) {
 
             ${scalePickerHTML('tqr', TQR_SCALE, 7, 'âš¡ NÃ­vel de RecuperaÃ§Ã£o (TQR)', 'Escala de Estado de RecuperaÃ§Ã£o (KenttÃ¤ & HassmÃ©n, 1998). Selecione seu estado de recuperaÃ§Ã£o atual.')}
 
-            ${scalePickerHTML('pain', DOR_SCALE, 1, 'ðŸ©¹ Dor Articular ou Desconforto', 'Sente alguma dor ou incÃ´modo nas articulaÃ§Ãµes ou tendÃµes?')}
+            ${scalePickerHTML('pain', DOR_SCALE, 1, 'ðŸ¤• Dor Articular ou Desconforto', 'Sente alguma dor ou incÃ´modo nas articulaÃ§Ãµes ou tendÃµes?')}
             <div id="painGroup" style="display:none;margin-bottom:22px">
               <div class="q-label" style="margin-bottom:10px">Selecione a regiÃ£o</div>
               <div class="pain-tags" id="pre_pain_regions_wrap">
@@ -1051,4 +1051,3 @@ export function initPostForm() {
     }
   });
 }
-
