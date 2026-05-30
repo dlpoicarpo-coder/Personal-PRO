@@ -1,16 +1,16 @@
 // ============================================================
-// PERSONAL PRO — Student Forms v2
-// Formulários públicos (sem login) para alunos
-// Acessa Supabase direto via anon key com policy pública por ID
-// Pré-treino: simplificado + TQR
-// Pós-treino: PSE, satisfação, dor, TQR pós
+// PERSONAL PRO â€” Student Forms v2
+// FormulÃ¡rios pÃºblicos (sem login) para alunos
+// Acessa Supabase direto via anon key com policy pÃºblica por ID
+// PrÃ©-treino: simplificado + TQR
+// PÃ³s-treino: PSE, satisfaÃ§Ã£o, dor, TQR pÃ³s
 // ============================================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { notify } from '../components/toast.js';
 
-// ── Supabase direto (sem auth) ─────────────────────────────
-// Usa a chave pública (anon) + policies abertas para leitura por ID
+// â”€â”€ Supabase direto (sem auth) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Usa a chave pÃºblica (anon) + policies abertas para leitura por ID
 const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
 
@@ -21,7 +21,7 @@ async function publicGet(table, id) {
     if (item) return item;
   } catch(_) {}
 
-  // 2. Supabase anon — buscar por id direto
+  // 2. Supabase anon â€” buscar por id direto
   try {
     const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
     const res = await fetch(url, {
@@ -43,7 +43,7 @@ async function publicGet(table, id) {
     }
   } catch(e) { console.warn(`publicGet(${table}) fetch error:`, e?.message); }
 
-  // 3. Fallback — buscar via data JSONB (formato antigo)
+  // 3. Fallback â€” buscar via data JSONB (formato antigo)
   try {
     const url2 = `${SUPABASE_URL}/rest/v1/${table}?data->>id=eq.${encodeURIComponent(id)}&select=*&limit=1`;
     const res2 = await fetch(url2, {
@@ -78,7 +78,7 @@ async function publicGet(table, id) {
 
 async function publicAdd(table, data) {
   const id = data.id || crypto.randomUUID();
-  // trainer_id deve ser UUID válido ou null — string vazia quebra a FK
+  // trainer_id deve ser UUID vÃ¡lido ou null â€” string vazia quebra a FK
   const isUUID = v => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
   const trainerId = isUUID(data.trainerId) ? data.trainerId
                   : isUUID(data.trainer_id) ? data.trainer_id
@@ -121,7 +121,7 @@ async function publicAdd(table, data) {
     if (!res.ok) {
       const err = await res.text();
       if (err.includes('23505') || err.includes('unique_violation') || res.status === 409) {
-        // Fallback para PATCH se o registro já existir (Upsert sem exigir SELECT permission)
+        // Fallback para PATCH se o registro jÃ¡ existir (Upsert sem exigir SELECT permission)
         return await publicPut(table, data);
       }
       console.error(`publicAdd(${table}) error:`, err);
@@ -138,7 +138,7 @@ async function publicPut(table, data) {
     // Corpo: atualiza a coluna JSONB 'data' + 'updatedAt'
     const body = { data, updatedAt: now };
 
-    // Para biofeedback: atualizar também colunas diretas
+    // Para biofeedback: atualizar tambÃ©m colunas diretas
     if (table === 'biofeedback') {
       Object.assign(body, {
         studentId:    data.studentId    || null,
@@ -179,14 +179,14 @@ async function publicPut(table, data) {
   }
 }
 
-// ── Regiões de dor ─────────────────────────────────────────
+// â”€â”€ RegiÃµes de dor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PAIN_REGIONS = [
-  { id:'cabeca',      label:'Cabeça' },       { id:'pescoco',    label:'Pescoço' },
+  { id:'cabeca',      label:'CabeÃ§a' },       { id:'pescoco',    label:'PescoÃ§o' },
   { id:'ombro_d',     label:'Ombro Dir.' },   { id:'ombro_e',    label:'Ombro Esq.' },
   { id:'costas_sup',  label:'Costas Sup.' },  { id:'lombar',     label:'Lombar' },
   { id:'quadril',     label:'Quadril' },      { id:'joelho_d',   label:'Joelho Dir.' },
   { id:'joelho_e',    label:'Joelho Esq.' },  { id:'tornozelo_d',label:'Tornozelo Dir.' },
-  { id:'panturrilha', label:'Panturrilha' },  { id:'abdomen',    label:'Abdômen' },
+  { id:'panturrilha', label:'Panturrilha' },  { id:'abdomen',    label:'AbdÃ´men' },
 ];
 
 function painTagsHTML(prefix) {
@@ -200,7 +200,7 @@ function painTagsHTML(prefix) {
     </div>`;
 }
 
-// ── CSS injetado uma vez ───────────────────────────────────
+// â”€â”€ CSS injetado uma vez â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const FORM_CSS = `
   *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
   body{margin:0;font-family:-apple-system,'Segoe UI',sans-serif}
@@ -271,7 +271,7 @@ const FORM_CSS = `
     margin-bottom:10px;display:flex;align-items:center;gap:6px;
   }
 
-  /* Opções de seleção */
+  /* OpÃ§Ãµes de seleÃ§Ã£o */
   .opt-group{display:flex;flex-direction:column;gap:7px}
   .opt-label{
     display:flex;align-items:center;gap:11px;
@@ -366,7 +366,7 @@ const FORM_CSS = `
   textarea::placeholder{color:#334155}
   textarea:focus{outline:none;border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.03)}
 
-  /* Botão enviar */
+  /* BotÃ£o enviar */
   .submit-btn{
     width:100%;padding:16px;
     background:#10b981;color:#fff;border:none;
@@ -452,7 +452,7 @@ const FORM_CSS = `
   .scale-sublabel { font-size:0.72rem; color:#475569; margin:-6px 0 10px; line-height:1.4; }
   .intro-name { color:#e2e8f0; }
 
-  /* ── LIGHT MODE OVERRIDES ── */
+  /* â”€â”€ LIGHT MODE OVERRIDES â”€â”€ */
   [data-theme="light"] .student-form-page { background:#f1f5f9 !important; }
   [data-theme="light"] .form-card { background:#ffffff !important; box-shadow:0 2px 16px rgba(0,0,0,0.07); }
   [data-theme="light"] .form-card-header { border-bottom-color:rgba(0,0,0,0.07); }
@@ -491,94 +491,83 @@ const FORM_CSS = `
 `;
 
 
-// ── Escala TQR — Kenttä & Hassmén (1998) ──────────────────
+// â”€â”€ Escala TQR â€” KenttÃ¤ & HassmÃ©n (1998) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TQR_SCALE = [
-  { v:1,  color:'#ef4444', label:'Muito, muito mal recuperado',  desc:'Dor muscular intensa, exaustão total' },
-  { v:2,  color:'#ef4444', label:'Muito mal recuperado',         desc:'Cansaço extremo, sem disposição' },
+  { v:1,  color:'#ef4444', label:'Muito, muito mal recuperado',  desc:'Dor muscular intensa, exaustÃ£o total' },
+  { v:2,  color:'#ef4444', label:'Muito mal recuperado',         desc:'CansaÃ§o extremo, sem disposiÃ§Ã£o' },
   { v:3,  color:'#f97316', label:'Mal recuperado',               desc:'Pernas pesadas, sono excessivo' },
-  { v:4,  color:'#f97316', label:'Razoavelmente mal recuperado', desc:'Cansado, motivação baixa' },
+  { v:4,  color:'#f97316', label:'Razoavelmente mal recuperado', desc:'Cansado, motivaÃ§Ã£o baixa' },
   { v:5,  color:'#f59e0b', label:'Nem bem nem mal',              desc:'Neutro, energia moderada' },
   { v:6,  color:'#f59e0b', label:'Razoavelmente bem recuperado', desc:'Descansado, sem dores relevantes' },
   { v:7,  color:'#84cc16', label:'Bem recuperado',               desc:'Disposto, animado para treinar' },
-  { v:8,  color:'#22c55e', label:'Muito bem recuperado',         desc:'Leve, energético, foco alto' },
-  { v:9,  color:'#10b981', label:'Muito, muito bem recuperado',  desc:'Descansado ao máximo' },
-  { v:10, color:'#10b981', label:'Completamente recuperado',     desc:'100% — Pronto para superar limites' },
+  { v:8,  color:'#22c55e', label:'Muito bem recuperado',         desc:'Leve, energÃ©tico, foco alto' },
+  { v:9,  color:'#10b981', label:'Muito, muito bem recuperado',  desc:'Descansado ao mÃ¡ximo' },
+  { v:10, color:'#10b981', label:'Completamente recuperado',     desc:'100% â€” Pronto para superar limites' },
 ];
 
-// ── Escala PSE — Borg CR10 adaptada por Foster (1996) ──────
+// â”€â”€ Escala PSE â€” Borg CR10 adaptada por Foster (1996) â”€â”€â”€â”€â”€â”€
 const PSE_SCALE = [
-  { v:0,  color:'#64748b', label:'Repouso',                      desc:'Sem esforço algum' },
-  { v:1,  color:'#22c55e', label:'Muito, muito leve',            desc:'Mal percebe o esforço' },
-  { v:2,  color:'#84cc16', label:'Leve',                         desc:'Fácil, poderia continuar por horas' },
-  { v:3,  color:'#84cc16', label:'Moderado',                     desc:'Confortável, respiração levemente aumentada' },
-  { v:4,  color:'#f59e0b', label:'Um pouco intenso',             desc:'Começa a sentir o esforço' },
-  { v:5,  color:'#f59e0b', label:'Intenso',                      desc:'Difícil manter conversa' },
-  { v:6,  color:'#f97316', label:'Intenso +',                    desc:'Fôlego reduzido, exige concentração' },
-  { v:7,  color:'#f97316', label:'Muito intenso',                desc:'Muito difícil, perto do limite' },
-  { v:8,  color:'#ef4444', label:'Muito intenso +',              desc:'Quase máximo, sustentável por pouco tempo' },
-  { v:9,  color:'#ef4444', label:'Extremamente intenso',         desc:'Quase impossível de manter' },
-  { v:10, color:'#dc2626', label:'Máximo absoluto',              desc:'Esforço total — 100% do limite' },
+  { v:0,  color:'#64748b', label:'Repouso',                      desc:'Sem esforÃ§o algum' },
+  { v:1,  color:'#22c55e', label:'Muito, muito leve',            desc:'Mal percebe o esforÃ§o' },
+  { v:2,  color:'#84cc16', label:'Leve',                         desc:'FÃ¡cil, poderia continuar por horas' },
+  { v:3,  color:'#84cc16', label:'Moderado',                     desc:'ConfortÃ¡vel, respiraÃ§Ã£o levemente aumentada' },
+  { v:4,  color:'#f59e0b', label:'Um pouco intenso',             desc:'ComeÃ§a a sentir o esforÃ§o' },
+  { v:5,  color:'#f59e0b', label:'Intenso',                      desc:'DifÃ­cil manter conversa' },
+  { v:6,  color:'#f97316', label:'Intenso +',                    desc:'FÃ´lego reduzido, exige concentraÃ§Ã£o' },
+  { v:7,  color:'#f97316', label:'Muito intenso',                desc:'Muito difÃ­cil, perto do limite' },
+  { v:8,  color:'#ef4444', label:'Muito intenso +',              desc:'Quase mÃ¡ximo, sustentÃ¡vel por pouco tempo' },
+  { v:9,  color:'#ef4444', label:'Extremamente intenso',         desc:'Quase impossÃ­vel de manter' },
+  { v:10, color:'#dc2626', label:'MÃ¡ximo absoluto',              desc:'EsforÃ§o total â€” 100% do limite' },
 ];
 
 const SONO_SCALE = [
-  { v:1,  color:'#ef4444', label:'1 - Péssimo', desc:'Insônia / Noite em claro' },
-  { v:2,  color:'#ef4444', label:'2 - Péssimo', desc:'Insônia / Noite em claro' },
-  { v:3,  color:'#fb923c', label:'3 - Ruim', desc:'Acordei várias vezes / Agitado' },
-  { v:4,  color:'#fb923c', label:'4 - Ruim', desc:'Acordei várias vezes / Agitado' },
+  { v:1,  color:'#ef4444', label:'1 - PÃ©ssimo', desc:'InsÃ´nia / Noite em claro' },
+  { v:2,  color:'#ef4444', label:'2 - PÃ©ssimo', desc:'InsÃ´nia / Noite em claro' },
+  { v:3,  color:'#fb923c', label:'3 - Ruim', desc:'Acordei vÃ¡rias vezes / Agitado' },
+  { v:4,  color:'#fb923c', label:'4 - Ruim', desc:'Acordei vÃ¡rias vezes / Agitado' },
   { v:5,  color:'#eab308', label:'5 - Regular', desc:'Dormi o suficiente, mas acordei cansado' },
   { v:6,  color:'#eab308', label:'6 - Regular', desc:'Dormi o suficiente, mas acordei cansado' },
-  { v:7,  color:'#10b981', label:'7 - Bom', desc:'Sono contínuo e revigorante' },
-  { v:8,  color:'#10b981', label:'8 - Bom', desc:'Sono contínuo e revigorante' },
+  { v:7,  color:'#10b981', label:'7 - Bom', desc:'Sono contÃ­nuo e revigorante' },
+  { v:8,  color:'#10b981', label:'8 - Bom', desc:'Sono contÃ­nuo e revigorante' },
   { v:9,  color:'#06b6d4', label:'9 - Excelente', desc:'Sono profundo e muito reparador' },
   { v:10, color:'#06b6d4', label:'10 - Excelente', desc:'Sono profundo e muito reparador' }
 ];
 
 const ALIMENTACAO_SCALE = [
-  { v:5, color:'#06b6d4', label:'5 - Excelente', desc:'Bati todas as metas nutricionais e hidratação' },
-  { v:4, color:'#10b981', label:'4 - Boa', desc:'Alimentação majoritariamente saudável / poucos furos' },
-  { v:3, color:'#eab308', label:'3 - Regular', desc:'Alimentação na média / algumas escapadas' },
-  { v:2, color:'#fb923c', label:'2 - Ruim', desc:'Pulei refeições ou comi alimentos pouco nutritivos' },
-  { v:1, color:'#ef4444', label:'1 - Péssima', desc:'Fast food excessivo ou quase sem comer nada' }
+  { v:5, color:'#06b6d4', label:'5 - Excelente', desc:'Bati todas as metas nutricionais e hidrataÃ§Ã£o' },
+  { v:4, color:'#10b981', label:'4 - Boa', desc:'AlimentaÃ§Ã£o majoritariamente saudÃ¡vel / poucos furos' },
+  { v:3, color:'#eab308', label:'3 - Regular', desc:'AlimentaÃ§Ã£o na mÃ©dia / algumas escapadas' },
+  { v:2, color:'#fb923c', label:'2 - Ruim', desc:'Pulei refeiÃ§Ãµes ou comi alimentos pouco nutritivos' },
+  { v:1, color:'#ef4444', label:'1 - PÃ©ssima', desc:'Fast food excessivo ou quase sem comer nada' }
 ];
 
 const ESTRESSE_SCALE = [
   { v:1,  color:'#10b981', label:'1 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
-  { v:2,  color:'#10b981', label:'2 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
-  { v:3,  color:'#10b981', label:'3 - Tranquilo', desc:'Pouco estresse na rotina diária' },
-  { v:4,  color:'#10b981', label:'4 - Tranquilo', desc:'Pouco estresse na rotina diária' },
-  { v:5,  color:'#eab308', label:'5 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
-  { v:6,  color:'#eab308', label:'6 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
-  { v:7,  color:'#fb923c', label:'7 - Estressado', desc:'Rotina de trabalho/estudos pesada' },
-  { v:8,  color:'#fb923c', label:'8 - Estressado', desc:'Rotina de trabalho/estudos pesada' },
-  { v:9,  color:'#ef4444', label:'9 - Muito Estressado', desc:'Mente no limite, exaustão mental' },
-  { v:10, color:'#ef4444', label:'10 - Muito Estressado', desc:'Mente no limite, exaustão mental' }
+  { v:2,  color:'#10b981', label:'2 - Tranquilo', desc:'Pouco estresse na rotina diÃ¡ria' },
+  { v:3,  color:'#eab308', label:'3 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
+  { v:4,  color:'#fb923c', label:'4 - Estressado', desc:'Rotina de trabalho/estudos pesada' },
+  { v:5,  color:'#ef4444', label:'5 - Muito Estressado', desc:'Mente no limite, exaustÃ£o mental' }
 ];
 
 const DOR_SCALE = [
-  { v:0,  color:'#10b981', label:'0 - Sem Dor', desc:'Articulações e tendões 100% confortáveis' },
-  { v:1,  color:'#10b981', label:'1 - Leve', desc:'Desconforto muscular leve residual pós-treino' },
-  { v:2,  color:'#10b981', label:'2 - Leve', desc:'Desconforto muscular leve residual pós-treino' },
-  { v:3,  color:'#eab308', label:'3 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
-  { v:4,  color:'#eab308', label:'4 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
-  { v:5,  color:'#fb923c', label:'5 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
-  { v:6,  color:'#fb923c', label:'6 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
-  { v:7,  color:'#ef4444', label:'7 - Forte', desc:'Dificulta a execução de movimentos específicos' },
-  { v:8,  color:'#ef4444', label:'8 - Forte', desc:'Dificulta a execução de movimentos específicos' },
-  { v:9,  color:'#ef4444', label:'9 - Intensa', desc:'Dor muito forte, impede ou dificulta treinar' },
-  { v:10, color:'#dc2626', label:'10 - Intensa / Lesão', desc:'Dor severa, risco de lesão ou incapacidade' }
+  { v:1,  color:'#10b981', label:'1 - Sem Dor / Muito Leve', desc:'ArticulaÃ§Ãµes e tendÃµes 100% confortÃ¡veis' },
+  { v:2,  color:'#10b981', label:'2 - Leve', desc:'Desconforto muscular leve residual pÃ³s-treino' },
+  { v:3,  color:'#eab308', label:'3 - Moderada', desc:'Dor suportÃ¡vel, mas incomoda em movimentos' },
+  { v:4,  color:'#fb923c', label:'4 - Forte', desc:'Dificulta a execuÃ§Ã£o de movimentos especÃ­ficos' },
+  { v:5,  color:'#ef4444', label:'5 - Intensa / LesÃ£o', desc:'Dor muito forte, impede ou dificulta treinar' }
 ];
 
 const MOTIVACAO_SCALE = [
   { v:1,  color:'#ef4444', label:'1 - Muito Baixa', desc:'Sem nenhuma vontade de treinar hoje' },
   { v:2,  color:'#ef4444', label:'2 - Muito Baixa', desc:'Sem nenhuma vontade de treinar hoje' },
-  { v:3,  color:'#fb923c', label:'3 - Baixa', desc:'Desanimado, vou treinar por pura obrigação' },
-  { v:4,  color:'#fb923c', label:'4 - Baixa', desc:'Desanimado, vou treinar por pura obrigação' },
+  { v:3,  color:'#fb923c', label:'3 - Baixa', desc:'Desanimado, vou treinar por pura obrigaÃ§Ã£o' },
+  { v:4,  color:'#fb923c', label:'4 - Baixa', desc:'Desanimado, vou treinar por pura obrigaÃ§Ã£o' },
   { v:5,  color:'#eab308', label:'5 - Moderada', desc:'Foco mediano, treino mantido por disciplina' },
   { v:6,  color:'#eab308', label:'6 - Moderada', desc:'Foco mediano, treino mantido por disciplina' },
   { v:7,  color:'#10b981', label:'7 - Alta', desc:'Focado, animado e com boa energia mental' },
   { v:8,  color:'#10b981', label:'8 - Alta', desc:'Focado, animado e com boa energia mental' },
-  { v:9,  color:'#06b6d4', label:'9 - Muito Alta', desc:'Energia máxima, sedento por treinar pesado' },
-  { v:10, color:'#06b6d4', label:'10 - Muito Alta', desc:'Energia máxima, sedento por treinar pesado' }
+  { v:9,  color:'#06b6d4', label:'9 - Muito Alta', desc:'Energia mÃ¡xima, sedento por treinar pesado' },
+  { v:10, color:'#06b6d4', label:'10 - Muito Alta', desc:'Energia mÃ¡xima, sedento por treinar pesado' }
 ];
 
 function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
@@ -619,12 +608,12 @@ function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
     </div>`;
 }
 
-// ══════════════════════════════════════════════════════════
-//  PRÉ-TREINO
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  PRÃ‰-TREINO
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export async function renderPreForm(studentId) {
-  // Limpar parâmetros extras do ID (links antigos tinham ?t=...&n=...)
+  // Limpar parÃ¢metros extras do ID (links antigos tinham ?t=...&n=...)
   const cleanId = (studentId || '').split('?')[0].split('&')[0].trim();
   const student = await publicGet('students', cleanId);
 
@@ -635,9 +624,9 @@ export async function renderPreForm(studentId) {
           <div class="form-card-header"><h2>Personal<strong class="logo-pro">PRO</strong></h2></div>
           <div class="form-card-body" style="text-align:center;padding:48px 24px">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" style="margin-bottom:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <h3>Aluno não encontrado</h3>
+            <h3>Aluno nÃ£o encontrado</h3>
             <p style="color:var(--text-muted);margin-top:8px;font-size:0.9rem">
-              O link pode estar desatualizado. Peça um novo link ao seu personal.
+              O link pode estar desatualizado. PeÃ§a um novo link ao seu personal.
             </p>
           </div>
         </div>
@@ -662,11 +651,11 @@ export async function renderPreForm(studentId) {
       <div class="form-card">
         <div class="form-card-header">
           <div class="logo">Personal<strong>PRO</strong></div>
-          <p class="subtitle">Check-in Pré-Treino</p>
+          <p class="subtitle">Check-in PrÃ©-Treino</p>
         </div>
         <div class="form-card-body">
           <div class="form-intro">
-            Olá, <strong class="intro-name">${firstName}</strong>! Este check-in avalia sua recuperação para ajustar a intensidade do treino de hoje. <strong style="color:#10b981">Responda com sinceridade.</strong>
+            OlÃ¡, <strong class="intro-name">${firstName}</strong>! Este check-in avalia sua recuperaÃ§Ã£o para ajustar a intensidade do treino de hoje. <strong style="color:#10b981">Responda com sinceridade.</strong>
           </div>
           <div class="student-info">
             <div class="av">${ini}</div>
@@ -677,29 +666,29 @@ export async function renderPreForm(studentId) {
             <input type="hidden" name="studentId" value="${cleanId}" />
             <input type="hidden" name="trainerId" value="${student.trainer_id||student.trainerId||''}" />
 
-            ${scalePickerHTML('sleep', SONO_SCALE, 7, '😴 Qualidade do Sono 🌙', 'Selecione o descritor que melhor representa sua última noite de sono.')}
+            ${scalePickerHTML('sleep', SONO_SCALE, 7, 'ðŸ˜´ Qualidade do Sono ðŸŒ™', 'Selecione o descritor que melhor representa sua Ãºltima noite de sono.')}
 
-            ${scalePickerHTML('food', ALIMENTACAO_SCALE, 4, '🍎 Alimentação nas últimas 24h', 'Como foi sua ingestão de alimentos e hidratação nas últimas 24h?')}
+            ${scalePickerHTML('food', ALIMENTACAO_SCALE, 4, 'ðŸŽ AlimentaÃ§Ã£o nas Ãºltimas 24h', 'Como foi sua ingestÃ£o de alimentos e hidrataÃ§Ã£o nas Ãºltimas 24h?')}
 
-            ${scalePickerHTML('motivation', MOTIVACAO_SCALE, 7, '🔥 Motivação para o Treino', 'Como está sua disposição e motivação para o treino de hoje?')}
+            ${scalePickerHTML('motivation', MOTIVACAO_SCALE, 7, 'ðŸ”¥ MotivaÃ§Ã£o para o Treino', 'Como estÃ¡ sua disposiÃ§Ã£o e motivaÃ§Ã£o para o treino de hoje?')}
 
-            ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, '🤯 Nível de Estresse Mental', 'Como está sua mente e seu nível de estresse hoje?')}
+            ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, 'ðŸ¤¯ NÃ­vel de Estresse Mental', 'Como estÃ¡ sua mente e seu nÃ­vel de estresse hoje?')}
 
-            ${scalePickerHTML('tqr', TQR_SCALE, 7, '⚡ Nível de Recuperação (TQR)', 'Escala de Estado de Recuperação (Kenttä & Hassmén, 1998). Selecione seu estado de recuperação atual.')}
+            ${scalePickerHTML('tqr', TQR_SCALE, 7, 'âš¡ NÃ­vel de RecuperaÃ§Ã£o (TQR)', 'Escala de Estado de RecuperaÃ§Ã£o (KenttÃ¤ & HassmÃ©n, 1998). Selecione seu estado de recuperaÃ§Ã£o atual.')}
 
-            ${scalePickerHTML('pain', DOR_SCALE, 0, '🩹 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo nas articulações ou tendões?')}
+            ${scalePickerHTML('pain', DOR_SCALE, 1, 'ðŸ©¹ Dor Articular ou Desconforto', 'Sente alguma dor ou incÃ´modo nas articulaÃ§Ãµes ou tendÃµes?')}
             <div id="painGroup" style="display:none;margin-bottom:22px">
-              <div class="q-label" style="margin-bottom:10px">Selecione a região</div>
+              <div class="q-label" style="margin-bottom:10px">Selecione a regiÃ£o</div>
               <div class="pain-tags" id="pre_pain_regions_wrap">
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="pernas" style="display:none"/>Pernas</label>
-                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="bracos" style="display:none"/>Braços</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="bracos" style="display:none"/>BraÃ§os</label>
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="costas" style="display:none"/>Costas</label>
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="ombros" style="display:none"/>Ombros</label>
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="peito" style="display:none"/>Peito</label>
-                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="abdomen" style="display:none"/>Abdômen</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="abdomen" style="display:none"/>AbdÃ´men</label>
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="lombar" style="display:none"/>Lombar</label>
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="tornozelo" style="display:none"/>Tornozelo</label>
-                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="gluteos" style="display:none"/>Glúteos</label>
+                <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="gluteos" style="display:none"/>GlÃºteos</label>
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="coxas" style="display:none"/>Coxas</label>
                 <label class="pain-tag"><input type="checkbox" name="pre_pain_regions" value="joelhos" style="display:none"/>Joelhos</label>
               </div>
@@ -707,15 +696,15 @@ export async function renderPreForm(studentId) {
 
             ${student.gender==='F'||student.gender==='Feminino'?`
             <div class="q">
-              <div class="q-label">Está no período do ciclo menstrual? <span style="color:#ef4444">*</span></div>
+              <div class="q-label">EstÃ¡ no perÃ­odo do ciclo menstrual? <span style="color:#ef4444">*</span></div>
               <div class="opt-group">
                 <label class="opt-label"><input type="radio" name="menstrual" value="sim" />Sim</label>
-                <label class="opt-label"><input type="radio" name="menstrual" value="nao" checked />Não</label>
+                <label class="opt-label"><input type="radio" name="menstrual" value="nao" checked />NÃ£o</label>
               </div>
             </div>`:'<input type="hidden" name="menstrual" value="nao" />'}
 
             <div class="q">
-              <div class="q-label">Alguma observação a acrescentar?</div>
+              <div class="q-label">Alguma observaÃ§Ã£o a acrescentar?</div>
               <textarea name="notes" rows="2" placeholder="Opcional"></textarea>
             </div>
 
@@ -726,7 +715,7 @@ export async function renderPreForm(studentId) {
             <div class="form-success">
               <div class="check"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
               <h2>Enviado, ${firstName}!</h2>
-              <p>Seu personal já recebeu. Bom treino! 💪</p>
+              <p>Seu personal jÃ¡ recebeu. Bom treino! ðŸ’ª</p>
             </div>
           </div>
         </div>
@@ -771,7 +760,7 @@ export function initPreForm() {
       data.formType    = 'pre';
       data.date        = Calc.nowISO();
 
-      // Normalizar numéricos
+      // Normalizar numÃ©ricos
       ['sleep','tqr','stress','pain','food','motivation'].forEach(k => {
         data[k] = parseInt(data[k]) || (k==='pain'?0:(k==='motivation'?7:5));
       });
@@ -783,14 +772,14 @@ export function initPreForm() {
       // Garantir trainerId
       data.trainerId = data.trainerId || '';
 
-      // ID determinístico para permitir mesclagem de check-ins do mesmo dia
+      // ID determinÃ­stico para permitir mesclagem de check-ins do mesmo dia
       data.id = 'bf_' + data.studentId + '_' + data.date.substring(0, 10);
 
       await publicAdd('biofeedback', data);
       e.target.classList.add('hidden');
       document.getElementById('preSuccess')?.classList.remove('hidden');
     } catch(err) {
-      console.error('Erro pré submit:', err?.message || err);
+      console.error('Erro prÃ© submit:', err?.message || err);
       if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
       // Mostrar erro real para debug
       const msg = err?.message || String(err) || 'Erro desconhecido';
@@ -799,9 +788,9 @@ export function initPreForm() {
   });
 }
 
-// ══════════════════════════════════════════════════════════
-//  PÓS-TREINO
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  PÃ“S-TREINO
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export async function renderPostForm(sessionId) {
   const cleanSessionId = (sessionId || '').split('?')[0].split('&')[0].trim();
@@ -815,9 +804,9 @@ export async function renderPostForm(sessionId) {
           <div class="form-card-header"><h2>Personal<strong class="logo-pro">PRO</strong></h2></div>
           <div class="form-card-body" style="text-align:center;padding:48px 24px">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" style="margin-bottom:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <h3>Sessão não encontrada</h3>
+            <h3>SessÃ£o nÃ£o encontrada</h3>
             <p style="color:var(--text-muted);margin-top:8px;font-size:0.9rem">
-              O link pode estar expirado. Peça um novo link ao seu personal.
+              O link pode estar expirado. PeÃ§a um novo link ao seu personal.
             </p>
           </div>
         </div>
@@ -828,10 +817,10 @@ export async function renderPostForm(sessionId) {
   const firstName  = student?.name?.split(' ')[0] || 'Aluno';
   const ini        = student?.name?.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() || '?';
 
-  // Buscar pré-treino do mesmo dia
+  // Buscar prÃ©-treino do mesmo dia
   let preBf = null;
   try {
-    const allBf  = await db.getAll('biofeedback');
+    const allBf  = await db.getAllForStudent('biofeedback', session.studentId);
     const dayStr = new Date(session.date||Date.now()).toDateString();
     preBf = allBf.find(b => b.studentId===session.studentId && b.formType==='pre' && new Date(b.date).toDateString()===dayStr);
   } catch(_) {}
@@ -842,7 +831,7 @@ export async function renderPostForm(sessionId) {
       <div class="form-card">
         <div class="form-card-header">
           <div class="logo">Personal<strong>PRO</strong></div>
-          <p class="subtitle">Check-in Pós-Treino</p>
+          <p class="subtitle">Check-in PÃ³s-Treino</p>
         </div>
         <div class="form-card-body">
 
@@ -850,7 +839,7 @@ export async function renderPostForm(sessionId) {
             <div class="av">${ini}</div>
             <div>
               <div class="name">${student?.name||'Aluno'}</div>
-              <div class="date">${session.workoutName||'Treino'} · ${new Date().toLocaleDateString('pt-BR')}</div>
+              <div class="date">${session.workoutName||'Treino'} Â· ${new Date().toLocaleDateString('pt-BR')}</div>
             </div>
           </div>
 
@@ -859,7 +848,7 @@ export async function renderPostForm(sessionId) {
             <div class="pre-card-title">Check-in de entrada</div>
             <div class="pre-card-vals">
               <span>Sono <strong>${preBf.sleep}/10</strong></span>
-              <span>TQR <strong>${preBf.tqr||preBf.energy||'—'}/10</strong></span>
+              <span>TQR <strong>${preBf.tqr||preBf.energy||'â€”'}/10</strong></span>
               <span>Est. Mental <strong>${preBf.stress}/10</strong></span>
               ${preBf.pain>2?`<span>Dor <strong>${preBf.pain}/10</strong></span>`:''}
             </div>
@@ -872,39 +861,39 @@ export async function renderPostForm(sessionId) {
 
             <!-- 1. PSE com descritores completos -->
             ${scalePickerHTML('pse', PSE_SCALE, 5,
-              'Qual a intensidade do seu treino de hoje? ⚡',
-              'PSE — Percepção Subjetiva de Esforço (Borg CR10, adaptada por Foster 1996). Selecione o descritor que melhor representa como foi o treino.'
+              'Qual a intensidade do seu treino de hoje? âš¡',
+              'PSE â€” PercepÃ§Ã£o Subjetiva de EsforÃ§o (Borg CR10, adaptada por Foster 1996). Selecione o descritor que melhor representa como foi o treino.'
             )}
 
-            <!-- 2. Feeling / Humores pós-treino (emoji buttons) -->
+            <!-- 2. Feeling / Humores pÃ³s-treino (emoji buttons) -->
             <div class="q">
-              <div class="q-label">😊 Sensação pós-treino (Recuperação/Humor)</div>
+              <div class="q-label">ðŸ˜Š SensaÃ§Ã£o pÃ³s-treino (RecuperaÃ§Ã£o/Humor)</div>
               <div class="portal-feeling-row">
                 <button type="button" class="portal-feeling-emoji-btn" data-val="1">
-                  <span>😩</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
+                  <span>ðŸ˜©</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn" data-val="2">
-                  <span>🥱</span><span class="portal-feeling-emoji-lbl">Cansado</span>
+                  <span>ðŸ¥±</span><span class="portal-feeling-emoji-lbl">Cansado</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn active" data-val="3">
-                  <span>🙂</span><span class="portal-feeling-emoji-lbl">Ok</span>
+                  <span>ðŸ™‚</span><span class="portal-feeling-emoji-lbl">Ok</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn" data-val="4">
-                  <span>😁</span><span class="portal-feeling-emoji-lbl">Bem</span>
+                  <span>ðŸ˜</span><span class="portal-feeling-emoji-lbl">Bem</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn" data-val="5">
-                  <span>🔥</span><span class="portal-feeling-emoji-lbl">Excelente</span>
+                  <span>ðŸ”¥</span><span class="portal-feeling-emoji-lbl">Excelente</span>
                 </button>
               </div>
               <input type="hidden" name="feeling" id="hidden_feeling" value="3" />
             </div>
 
             <!-- 3. Articular Pain post-workout -->
-            ${scalePickerHTML('postPain', DOR_SCALE, 0, '🩹 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo articular pós-treino?')}
+            ${scalePickerHTML('postPain', DOR_SCALE, 1, 'ðŸ©¹ Dor Articular ou Desconforto', 'Sente alguma dor ou incÃ´modo articular pÃ³s-treino?')}
 
             <!-- 4. Pain regions container -->
             <div id="postPainGroup" style="display:none;margin-bottom:22px">
-              <div class="q-label" style="margin-bottom:10px">Selecione a região da dor</div>
+              <div class="q-label" style="margin-bottom:10px">Selecione a regiÃ£o da dor</div>
               <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; padding:6px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:12px">
                 ${[
                   { id: 'joelho_e', label: 'Joelho Esq.' },
@@ -914,7 +903,7 @@ export async function renderPostForm(sessionId) {
                   { id: 'lombar', label: 'Coluna Lombar' },
                   { id: 'cervical', label: 'Coluna Cervical' },
                   { id: 'quadril', label: 'Quadril' },
-                  { id: 'tornozelo', label: 'Tornozelo/Pé' },
+                  { id: 'tornozelo', label: 'Tornozelo/PÃ©' },
                   { id: 'cotovelo', label: 'Cotovelo/Punho' }
                 ].map(c => `
                   <label class="portal-pain-chip-chk">
@@ -924,17 +913,17 @@ export async function renderPostForm(sessionId) {
                 `).join('')}
               </div>
               <div style="margin-top: 10px;">
-                <input type="text" name="postPainDescription" placeholder="Descreva brevemente o incômodo (opcional)..." class="portal-textarea" style="padding: 8px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.05); text-align: left; width: 100%;">
+                <input type="text" name="postPainDescription" placeholder="Descreva brevemente o incÃ´modo (opcional)..." class="portal-textarea" style="padding: 8px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.05); text-align: left; width: 100%;">
               </div>
             </div>
 
             <!-- 5. Notes -->
             <div class="q">
-              <div class="q-label">Alguma observação a acrescentar?</div>
-              <textarea name="notes" placeholder="Opcional — dificuldade em algum exercício, dor, algo diferente..."></textarea>
+              <div class="q-label">Alguma observaÃ§Ã£o a acrescentar?</div>
+              <textarea name="notes" placeholder="Opcional â€” dificuldade em algum exercÃ­cio, dor, algo diferente..."></textarea>
             </div>
 
-            <button type="submit" id="postSubmitBtn" class="submit-btn">Enviar avaliação</button>
+            <button type="submit" id="postSubmitBtn" class="submit-btn">Enviar avaliaÃ§Ã£o</button>
           </form>
 
           <div id="postSuccess" class="hidden">
@@ -942,7 +931,7 @@ export async function renderPostForm(sessionId) {
               <div class="check">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
               </div>
-              <h2>Parabéns, ${firstName}!</h2>
+              <h2>ParabÃ©ns, ${firstName}!</h2>
               <p>Treino registrado. Continue evoluindo.</p>
             </div>
           </div>
@@ -998,11 +987,11 @@ export function initPostForm() {
       const postPainRegions = fd.getAll('post_pain_regions');
       const session = await publicGet('sessions', data.sessionId);
 
-      if (!session) throw new Error('Sessão não encontrada. O link pode ter expirado.');
+      if (!session) throw new Error('SessÃ£o nÃ£o encontrada. O link pode ter expirado.');
       {
         const dur = session.totalDuration ? Math.round(session.totalDuration/60) : 60;
         const pse = parseInt(data.pse) || 7;
-        const tqrPost = 7; // TQR pós removido do formulário — usar neutro
+        const tqrPost = 7; // TQR pÃ³s removido do formulÃ¡rio â€” usar neutro
         const postPain = parseInt(data.postPain) || 0;
         const feeling = parseInt(data.feeling) || 3;
         const satisfaction = feeling * 2; // Map 1-5 to 2-10
@@ -1055,10 +1044,11 @@ export function initPostForm() {
       e.target.classList.add('hidden');
       document.getElementById('postSuccess')?.classList.remove('hidden');
     } catch(err) {
-      console.error('Erro pós submit:', err?.message || err);
+      console.error('Erro pÃ³s submit:', err?.message || err);
       if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
       const msg = err?.message || String(err) || 'Erro desconhecido';
       alert('Erro ao enviar:\n' + msg.slice(0, 200));
     }
   });
 }
+
