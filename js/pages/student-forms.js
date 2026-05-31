@@ -543,18 +543,28 @@ const ALIMENTACAO_SCALE = [
 
 const ESTRESSE_SCALE = [
   { v:1,  color:'#10b981', label:'1 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
-  { v:2,  color:'#10b981', label:'2 - Tranquilo', desc:'Pouco estresse na rotina diária' },
-  { v:3,  color:'#eab308', label:'3 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
-  { v:4,  color:'#fb923c', label:'4 - Estressado', desc:'Rotina de trabalho/estudos pesada' },
-  { v:5,  color:'#ef4444', label:'5 - Muito Estressado', desc:'Mente no limite, exaustão mental' }
+  { v:2,  color:'#10b981', label:'2 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
+  { v:3,  color:'#10b981', label:'3 - Tranquilo', desc:'Pouco estresse na rotina diária' },
+  { v:4,  color:'#10b981', label:'4 - Tranquilo', desc:'Pouco estresse na rotina diária' },
+  { v:5,  color:'#eab308', label:'5 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
+  { v:6,  color:'#eab308', label:'6 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
+  { v:7,  color:'#fb923c', label:'7 - Estressado', desc:'Rotina de trabalho/estudos pesada e desgastante' },
+  { v:8,  color:'#fb923c', label:'8 - Estressado', desc:'Rotina de trabalho/estudos pesada e desgastante' },
+  { v:9,  color:'#ef4444', label:'9 - Muito Estressado', desc:'Mente no limite, exaustão mental e ansiedade' },
+  { v:10, color:'#ef4444', label:'10 - Muito Estressado', desc:'Mente no limite, exaustão mental e ansiedade' }
 ];
 
 const DOR_SCALE = [
-  { v:1,  color:'#10b981', label:'1 - Sem Dor', desc:'Articulações e tendões 100% confortáveis' },
+  { v:1,  color:'#10b981', label:'1 - Nenhuma Dor', desc:'Músculos e articulações 100% livres de dores' },
   { v:2,  color:'#10b981', label:'2 - Leve', desc:'Desconforto muscular leve residual pós-treino' },
   { v:3,  color:'#eab308', label:'3 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
-  { v:4,  color:'#fb923c', label:'4 - Incômoda / Forte', desc:'Dor persistente nas articulações, dificulta execução' },
-  { v:5,  color:'#dc2626', label:'5 - Intensa / Lesão', desc:'Dor severa, risco de lesão ou incapacidade' }
+  { v:4,  color:'#eab308', label:'4 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
+  { v:5,  color:'#fb923c', label:'5 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
+  { v:6,  color:'#fb923c', label:'6 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
+  { v:7,  color:'#ef4444', label:'7 - Forte', desc:'Dificulta a execução de movimentos específicos' },
+  { v:8,  color:'#ef4444', label:'8 - Forte', desc:'Dificulta a execução de movimentos específicos' },
+  { v:9,  color:'#ef4444', label:'9 - Intensa', desc:'Dor muito forte, impede ou dificulta treinar' },
+  { v:10, color:'#ef4444', label:'10 - Intensa / Lesão', desc:'Dor severa, risco de lesão ou incapacidade física' }
 ];
 
 const MOTIVACAO_SCALE = [

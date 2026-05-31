@@ -76,15 +76,20 @@ class Database {
   ]);
 
   // â”€â”€ GET ALL RECORDS â”€â”€
-    async getStudentByEmail(email) {
+  async getStudentByEmail(email) {
+    const trainerId = await this._getTrainerId();
+    const local = this._getLocal('students', trainerId) || [];
+    const localMatch = local.find(s => s.email?.toLowerCase().trim() === email);
+    if (localMatch) return localMatch;
     if (!this.supabase) return null;
     try {
       const { data, error } = await this.supabase
         .from('students')
         .select('*')
         .filter('data->>email', 'eq', email);
-      if (data && data.length > 0) {
-        return { ...data[0].data, id: data[0].id };
+      if (!error && data && data.length > 0) {
+        const r = data[0];
+        return r.data ? { ...r.data, id: r.id } : r;
       }
     } catch (e) {
       console.error('getStudentByEmail error:', e);
