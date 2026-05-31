@@ -550,11 +550,11 @@ const ESTRESSE_SCALE = [
 ];
 
 const DOR_SCALE = [
-  { v:1,  color:'#10b981', label:'1 - Sem Dor / Muito Leve', desc:'Articulações e tendões 100% confortáveis' },
+  { v:1,  color:'#10b981', label:'1 - Sem Dor', desc:'Articulações e tendões 100% confortáveis' },
   { v:2,  color:'#10b981', label:'2 - Leve', desc:'Desconforto muscular leve residual pós-treino' },
   { v:3,  color:'#eab308', label:'3 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
-  { v:4,  color:'#fb923c', label:'4 - Forte', desc:'Dificulta a execução de movimentos específicos' },
-  { v:5,  color:'#ef4444', label:'5 - Intensa / Lesão', desc:'Dor muito forte, impede ou dificulta treinar' }
+  { v:4,  color:'#fb923c', label:'4 - Incômoda / Forte', desc:'Dor persistente nas articulações, dificulta execução' },
+  { v:5,  color:'#dc2626', label:'5 - Intensa / Lesão', desc:'Dor severa, risco de lesão ou incapacidade' }
 ];
 
 const MOTIVACAO_SCALE = [
@@ -672,11 +672,11 @@ export async function renderPreForm(studentId) {
 
             ${scalePickerHTML('motivation', MOTIVACAO_SCALE, 7, '🔥 Motivação para o Treino', 'Como está sua disposição e motivação para o treino de hoje?')}
 
-            ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, '🤯 Nível de Estresse Mental', 'Como está sua mente e seu nível de estresse hoje?')}
+            ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, '🧠 Nível de Estresse Mental', 'Como está sua mente e seu nível de estresse hoje?')}
 
             ${scalePickerHTML('tqr', TQR_SCALE, 7, '⚡ Nível de Recuperação (TQR)', 'Escala de Estado de Recuperação (Kenttä & Hassmén, 1998). Selecione seu estado de recuperação atual.')}
 
-            ${scalePickerHTML('pain', DOR_SCALE, 1, '🤕 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo nas articulações ou tendões?')}
+            ${scalePickerHTML('pain', DOR_SCALE, 1, '🤕 Nível de Dor Articular/Muscular', 'Você está sentindo alguma dor atípica (não a dor muscular do treino anterior)?')}
             <div id="painGroup" style="display:none;margin-bottom:22px">
               <div class="q-label" style="margin-bottom:10px">Selecione a região</div>
               <div class="pain-tags" id="pre_pain_regions_wrap">
@@ -889,7 +889,7 @@ export async function renderPostForm(sessionId) {
             </div>
 
             <!-- 3. Articular Pain post-workout -->
-            ${scalePickerHTML('postPain', DOR_SCALE, 1, '🤕 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo articular pós-treino?')}
+            ${scalePickerHTML('postPain', DOR_SCALE, 0, '🩹 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo articular pós-treino?')}
 
             <!-- 4. Pain regions container -->
             <div id="postPainGroup" style="display:none;margin-bottom:22px">

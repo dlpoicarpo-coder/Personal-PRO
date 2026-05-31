@@ -1,6 +1,6 @@
-﻿// ========================================
-// PERSONAL PRO Ã¢â‚¬â€ Live Tracker (v3)
-// Timers conectados Ã‚Â· Design limpo Ã‚Â· PDF Ã‚Â· Excluir sessÃƒÂ£o
+// ========================================
+// PERSONAL PRO — Live Tracker (v3)
+// Timers conectados · Design limpo · PDF · Excluir sessão
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
@@ -8,7 +8,7 @@ import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ STATE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── STATE ────────────────────────────────────────────────────
 const state = {
   session: null,
   workoutTimer: null,
@@ -36,7 +36,7 @@ function totalVolume() {
   return state.setLog.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ RENDER SETUP Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── RENDER SETUP ─────────────────────────────────────────────
 export async function renderTracker() {
   const students = await db.getAll('students');
   const active   = students.filter(s => s.status === 'Ativo');
@@ -66,7 +66,7 @@ export async function renderTracker() {
 
     <div class="grid-2">
       <div class="card">
-        <div class="card-header"><span class="card-title">Iniciar SessÃƒÂ£o</span></div>
+        <div class="card-header"><span class="card-title">Iniciar Sessão</span></div>
         <div class="form-group">
           <label class="form-label">Aluno *</label>
           <select class="form-select" id="trkStudent">
@@ -87,23 +87,23 @@ export async function renderTracker() {
         </div>
         <button class="btn btn-primary" id="startBtn" disabled
           style="width:100%;padding:14px;font-size:1rem;margin-top:8px">
-          Ã¢â€“Â¶ Iniciar Treino ao Vivo
+          ▶ Iniciar Treino ao Vivo
         </button>
         <div id="macroBanner" style="display:none;margin-top:10px"></div>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Check-in PrÃƒÂ©-Treino</span>
+          <span class="card-title">Check-in Pré-Treino</span>
           <button class="btn btn-ghost btn-sm" id="genPreLinkBtn">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             Link para aluno
           </button>
         </div>
         <div id="preBioStatus" style="padding:12px;background:rgba(16,185,129,0.06);border-radius:8px;border:1px solid rgba(16,185,129,0.15);text-align:center">
-          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:6px">O check-in ÃƒÂ© preenchido pelo aluno via link</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:6px">O check-in é preenchido pelo aluno via link</div>
           <div id="preBioLoaded" style="display:none">
-            <div style="font-size:0.75rem;font-weight:600;color:var(--success);margin-bottom:6px">Ã¢Å“â€œ Dados do aluno carregados</div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--success);margin-bottom:6px">✓ Dados do aluno carregados</div>
             <div id="preBioValues" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font-size:0.72rem"></div>
           </div>
           <div id="preBioEmpty">
@@ -117,7 +117,7 @@ export async function renderTracker() {
     ${completed.length ? `
     <div class="card mt-lg">
       <div class="card-header" style="justify-content:space-between">
-        <span class="card-title">SessÃƒÂµes Recentes</span>
+        <span class="card-title">Sessões Recentes</span>
         <select id="filterRecentStudent" class="form-select form-select-sm" style="width:auto; max-width:200px">
           <option value="">Todos os alunos</option>
           ${active.map(s => `<option value="${s.id}">${s.name.split(' ')[0]}</option>`).join('')}
@@ -129,9 +129,9 @@ export async function renderTracker() {
             <th>Aluno</th>
             <th>Treino</th>
             <th>Data</th>
-            <th>DuraÃƒÂ§ÃƒÂ£o</th>
+            <th>Duração</th>
             <th>Volume</th>
-            <th>SÃƒÂ©ries</th>
+            <th>Séries</th>
             <th>PSE</th>
             <th>Carga</th>
             <th>Obs.</th>
@@ -158,7 +158,7 @@ export async function renderTracker() {
               </td>
               <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
               <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
-                ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'Ã¢â‚¬Â¦':'') : '-'}
+                ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
               </td>
               <td style="white-space:nowrap;text-align:right;padding-right:8px">
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver"
@@ -182,7 +182,7 @@ export async function renderTracker() {
   `;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ RENDER LIVE VIEW Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── RENDER LIVE VIEW ─────────────────────────────────────────
 function renderLiveView(students) {
   const s   = state.session;
   const st  = students.find(x => x.id === s.studentId);
@@ -211,7 +211,7 @@ function renderLiveView(students) {
       </div>
 
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
-        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DURAÃƒâ€¡ÃƒÆ’O</div><div class="stat-value text-gradient" id="liveTotal" style="font-size:1.3rem">00:00</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DURAÇÃO</div><div class="stat-value text-gradient" id="liveTotal" style="font-size:1.3rem">00:00</div></div>
         <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">TRABALHO</div><div class="stat-value" id="liveWork" style="font-size:1.3rem;color:var(--success)">00:00</div></div>
         <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DESCANSO</div><div class="stat-value" id="liveRest" style="font-size:1.3rem;color:var(--warning)">00:00</div></div>
         <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DENSIDADE</div><div class="stat-value" id="liveDens" style="font-size:1.3rem;color:var(--accent)">0.00</div></div>
@@ -221,25 +221,25 @@ function renderLiveView(students) {
       <div class="progress-bar mb-xs" style="height:6px;border-radius:3px">
         <div class="progress-fill" style="width:${pct}%;border-radius:3px"></div>
       </div>
-      <div class="text-center text-xs text-muted mb-md">${doneSets}/${totalSets} sÃƒÂ©ries Ã‚Â· ${pct}% concluÃƒÂ­do</div>
+      <div class="text-center text-xs text-muted mb-md">${doneSets}/${totalSets} séries · ${pct}% concluído</div>
 
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">ExercÃƒÂ­cio ${state.exIdx + 1} / ${exs.length}</span>
+            <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
             <div class="flex gap-xs">
-              <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar ExercÃƒÂ­cio" style="display:flex;align-items:center;justify-content:center">
+              <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar Exercício" style="display:flex;align-items:center;justify-content:center">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </button>
-              <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>Ã¢â€ Â</button>
-              <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>Ã¢â€ â€™</button>
+              <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
+              <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
             </div>
           </div>
 
           <div style="margin-bottom:12px">
-            <div style="font-size:1.15rem;font-weight:700;color:var(--primary);margin-bottom:4px">${ex.name || 'Ã¢â‚¬â€'}</div>
+            <div style="font-size:1.15rem;font-weight:700;color:var(--primary);margin-bottom:4px">${ex.name || '—'}</div>
             <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
-              <span>${exSets} sÃƒÂ©ries</span>
+              <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
               ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}kg</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
@@ -265,33 +265,33 @@ function renderLiveView(students) {
                   color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
                   <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
-                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="Ã¢â‚¬â€" value="${repsVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
                   <span style="font-size:0.55rem;color:var(--text-muted)">kg</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="Ã¢â‚¬â€" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE Ã¢â‚¬â€ PercepÃƒÂ§ÃƒÂ£o Subjetiva de EsforÃƒÂ§o (1=muito leve, 10=mÃƒÂ¡ximo)">
+                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
-                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="Ã¢â‚¬â€" value="${pseVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR Ã¢â‚¬â€ Reps in Reserve: quantas repetiÃƒÂ§ÃƒÂµes ainda sobravam no tanque (0=falha, 1=1 rep sobrando...)">
+                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR — Reps in Reserve: quantas repetições ainda sobravam no tanque (0=falha, 1=1 rep sobrando...)">
                   <span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span>
-                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="Ã¢â‚¬â€" value="${rirVal}" ${done ? 'disabled' : ''} />
+                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
                 </div>
                 ${done
                   ? `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px">
                       ${done.pse ? `<span style="font-size:0.6rem;color:var(--warning)">PSE ${done.pse}</span>` : ''}
-                      <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">Ã¢Å“â€œ</span>
+                      <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
                       ${done.rir != null ? `<span style="font-size:0.6rem;color:var(--accent)">RIR ${done.rir}</span>` : ''}
                     </div>`
-                  : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:36px;align-self:flex-end">Ã¢Å“â€œ</button>`}
+                  : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:36px;align-self:flex-end">✓</button>`}
               </div>`;
             }).join('')}
           </div>
 
           <div style="border-top:1px solid var(--border-color);margin-top:12px;padding-top:10px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;letter-spacing:0.06em;text-transform:uppercase">Todos os exercÃƒÂ­cios</div>
+            <div class="text-xs text-muted mb-xs" style="font-weight:600;letter-spacing:0.06em;text-transform:uppercase">Todos os exercícios</div>
             ${exs.map((e, i) => {
               const done = state.setLog.filter(l => l.exIdx === i).length >= (parseInt(e.sets) || 3);
               const isCur = i === state.exIdx;
@@ -299,7 +299,7 @@ function renderLiveView(students) {
                 display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;
                 background:${isCur ? 'rgba(16,185,129,0.08)' : 'transparent'};
                 color:${done ? 'var(--success)' : isCur ? 'var(--primary)' : 'var(--text-secondary)'}">
-                <span style="font-size:0.7rem;min-width:12px">${done ? 'Ã¢Å“â€œ' : isCur ? 'Ã¢â€”Â' : 'Ã¢â€”â€¹'}</span>
+                <span style="font-size:0.7rem;min-width:12px">${done ? '✓' : isCur ? '●' : '○'}</span>
                 <span style="font-size:0.82rem;font-weight:${isCur ? 600 : 400}">${e.name}</span>
                 ${e.load ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto">${e.load}kg</span>` : ''}
               </div>`;
@@ -311,7 +311,7 @@ function renderLiveView(students) {
           <div class="card-header">
             <span class="card-title">Descanso</span>
             <div class="flex items-center gap-sm">
-              <span id="restStateTag" style="font-size:0.72rem;font-weight:700;color:var(--success)">Ã¢â€“Â¶ TRABALHANDO</span>
+              <span id="restStateTag" style="font-size:0.72rem;font-weight:700;color:var(--success)">▶ TRABALHANDO</span>
               <label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;cursor:pointer">
                 <input type="checkbox" id="sndToggle" ${s.soundEnabled !== false ? 'checked' : ''} /> Som
               </label>
@@ -326,8 +326,8 @@ function renderLiveView(students) {
           </div>
 
           <div class="flex gap-sm" style="justify-content:center;margin-bottom:12px">
-            <button class="btn btn-primary" id="goRest" style="min-width:140px">Ã¢â€“Â¶ Iniciar Descanso</button>
-            <button class="btn btn-secondary btn-sm" id="rstRest">Ã¢â€ Âº Reset</button>
+            <button class="btn btn-primary" id="goRest" style="min-width:140px">▶ Iniciar Descanso</button>
+            <button class="btn btn-secondary btn-sm" id="rstRest">↺ Reset</button>
           </div>
 
           <div class="flex gap-xs" style="justify-content:center;flex-wrap:wrap;margin-bottom:16px">
@@ -338,13 +338,13 @@ function renderLiveView(students) {
           </div>
 
           <div style="border-top:1px solid var(--border-color);padding-top:12px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">AnotaÃƒÂ§ÃƒÂµes</div>
-            <textarea id="setNotes" class="form-textarea" rows="2" placeholder="ObservaÃƒÂ§ÃƒÂµes tÃƒÂ©cnicas..." style="font-size:0.82rem"></textarea>
+            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Anotações</div>
+            <textarea id="setNotes" class="form-textarea" rows="2" placeholder="Observações técnicas..." style="font-size:0.82rem"></textarea>
           </div>
 
           ${s.preBiofeedback ? `
           <div style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:10px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">PrÃƒÂ©-treino do aluno</div>
+            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Pré-treino do aluno</div>
             <div class="flex gap-md text-xs" style="flex-wrap:wrap">
               <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep||'-'}</strong></span>
               <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
@@ -358,13 +358,13 @@ function renderLiveView(students) {
   `;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ INIT Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── INIT ─────────────────────────────────────────────────────
 export function initTracker(navigateFn) {
   const sSel = document.getElementById('trkStudent');
   const wSel = document.getElementById('trkWorkout');
   const sBtn = document.getElementById('startBtn');
 
-  // Filtro de sessÃƒÂµes recentes
+  // Filtro de sessões recentes
   const filterRecentSel = document.getElementById('filterRecentStudent');
   if (filterRecentSel) {
     filterRecentSel.addEventListener('change', (e) => {
@@ -379,17 +379,17 @@ export function initTracker(navigateFn) {
     });
   }
 
-  // Excluir sessÃƒÂ£o
+  // Excluir sessão
   document.querySelectorAll('.delete-session').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!window.confirm('Excluir esta sessÃƒÂ£o permanentemente?')) return;
+      if (!window.confirm('Excluir esta sessão permanentemente?')) return;
       await db.delete('sessions', btn.dataset.id);
-      notify.success('SessÃƒÂ£o excluÃƒÂ­da.');
+      notify.success('Sessão excluída.');
       navigateFn('/tracker');
     });
   });
 
-  // Ver sessÃƒÂ£o
+  // Ver sessão
   document.querySelectorAll('.view-session').forEach(btn => {
     btn.addEventListener('click', async () => {
       const session  = await db.get('sessions', btn.dataset.id);
@@ -400,7 +400,7 @@ export function initTracker(navigateFn) {
     });
   });
 
-  // Editar sessÃƒÂ£o
+  // Editar sessão
   document.querySelectorAll('.edit-session').forEach(btn => {
     btn.addEventListener('click', async () => {
       const session  = await db.get('sessions', btn.dataset.id);
@@ -409,7 +409,7 @@ export function initTracker(navigateFn) {
       const student  = students.find(x => x.id === session.studentId);
       const workouts = await db.getAll('workouts');
 
-      // Montar linhas de exercÃƒÂ­cios editÃƒÂ¡veis
+      // Montar linhas de exercícios editáveis
       const exs    = session.exercises || [];
       const setLog = session.setLog    || [];
 
@@ -439,13 +439,13 @@ export function initTracker(navigateFn) {
                 <div>
                   <label style="font-size:0.6rem;color:var(--text-muted);display:block">PSE</label>
                   <input type="number" class="form-input set-pse" data-ei="${ei}" data-si="${si}"
-                    value="${s.pse||''}" min="1" max="10" placeholder="Ã¢â‚¬â€"
+                    value="${s.pse||''}" min="1" max="10" placeholder="—"
                     style="padding:5px 8px;font-size:0.85rem;text-align:center" />
                 </div>
                 <div>
                   <label style="font-size:0.6rem;color:var(--text-muted);display:block">RIR</label>
                   <input type="number" class="form-input set-rir" data-ei="${ei}" data-si="${si}"
-                    value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="Ã¢â‚¬â€"
+                    value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="—"
                     style="padding:5px 8px;font-size:0.85rem;text-align:center" />
                 </div>
               </div>`).join('')}
@@ -460,7 +460,7 @@ export function initTracker(navigateFn) {
         .join('');
 
       openModal({
-        title: `Editar SessÃƒÂ£o Ã¢â‚¬â€ ${student?.name||'Aluno'}`,
+        title: `Editar Sessão — ${student?.name||'Aluno'}`,
         size: 'xl',
         content: `
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
@@ -471,7 +471,7 @@ export function initTracker(navigateFn) {
             <div class="form-group">
               <label class="form-label">Treino</label>
               <select class="form-select" id="editSessWorkout">
-                <option value="">Ã¢â‚¬â€ manter atual Ã¢â‚¬â€</option>
+                <option value="">— manter atual —</option>
                 ${wkOptions}
               </select>
             </div>
@@ -482,16 +482,16 @@ export function initTracker(navigateFn) {
           </div>
           <div style="margin-bottom:8px">
             <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px">
-              SÃƒÂ©ries por exercÃƒÂ­cio <span style="color:var(--accent);font-weight:400">(edite reps, carga, PSE e RIR)</span>
+              Séries por exercício <span style="color:var(--accent);font-weight:400">(edite reps, carga, PSE e RIR)</span>
             </div>
             <div style="max-height:55vh;overflow-y:auto;padding-right:4px">
-              ${exRows || '<p style="color:var(--text-muted);font-size:0.85rem">Nenhum exercÃƒÂ­cio registrado</p>'}
+              ${exRows || '<p style="color:var(--text-muted);font-size:0.85rem">Nenhum exercício registrado</p>'}
             </div>
           </div>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-          { label: 'Salvar alteraÃƒÂ§ÃƒÂµes', class: 'btn-primary', onClick: async () => {
-            // Coletar ediÃƒÂ§ÃƒÂµes das sÃƒÂ©ries
+          { label: 'Salvar alterações', class: 'btn-primary', onClick: async () => {
+            // Coletar edições das séries
             const newSetLog = [...setLog];
             document.querySelectorAll('.set-reps').forEach(inp => {
               const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
@@ -539,7 +539,7 @@ export function initTracker(navigateFn) {
             };
 
             await db.put('sessions', updated);
-            notify.success('SessÃƒÂ£o atualizada!');
+            notify.success('Sessão atualizada!');
             closeModal();
             navigateFn('/tracker');
           }},
@@ -563,8 +563,8 @@ export function initTracker(navigateFn) {
         .sort((a, b) => new Date(b.date) - new Date(a.date));
       wSel.disabled = false;
       wSel.innerHTML = '<option value="">Selecione o treino</option>' +
-        wks.map(w => `<option value="${w.id}">${w.name}${w.phase ? ' Ã¢â‚¬â€ ' + w.phase : ''} (${Calc.formatDate(w.date)})</option>`).join('');
-      // Verificar se aluno jÃƒÂ¡ fez check-in hoje
+        wks.map(w => `<option value="${w.id}">${w.name}${w.phase ? ' — ' + w.phase : ''} (${Calc.formatDate(w.date)})</option>`).join('');
+      // Verificar se aluno já fez check-in hoje
       await checkPreBioStatus(sid);
       await checkMacroAlert(sid);
     });
@@ -576,7 +576,7 @@ export function initTracker(navigateFn) {
       }
     });
 
-    // FunÃƒÂ§ÃƒÂ£o para verificar e exibir status do check-in do aluno
+    // Função para verificar e exibir status do check-in do aluno
     // Alerta de macrociclo encerrando
     async function checkMacroAlert(sid) {
       if (!sid) return;
@@ -598,23 +598,23 @@ export function initTracker(navigateFn) {
       const m = active[0];
       const color = m.daysLeft <= 1 ? '#ef4444' : m.daysLeft <= 3 ? '#f97316' : '#8b5cf6';
       const label = m.daysLeft === 0 ? 'Encerra hoje!'
-                  : m.daysLeft === 1 ? 'Encerra amanhÃƒÂ£'
+                  : m.daysLeft === 1 ? 'Encerra amanhã'
                   : `${m.daysLeft} dias restantes`;
       banner.style.display = '';
       banner.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
           background:${color}15;border:1px solid ${color}40;border-radius:8px">
-          <span style="font-size:1.2rem">Ã¢ÂÂ°</span>
+          <span style="font-size:1.2rem">⏰</span>
           <div style="flex:1">
-            <div style="font-weight:700;font-size:0.88rem;color:${color}">Macrociclo encerrando Ã¢â‚¬â€ ${label}</div>
-            <div style="font-size:0.75rem;color:var(--text-muted)">${m.name||'Macrociclo'} Ã‚Â· ${m.totalWeeks} sem Ã‚Â· Planeje a reavaliaÃƒÂ§ÃƒÂ£o</div>
+            <div style="font-weight:700;font-size:0.88rem;color:${color}">Macrociclo encerrando — ${label}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted)">${m.name||'Macrociclo'} · ${m.totalWeeks} sem · Planeje a reavaliação</div>
           </div>
-          <a href="#/periodizacao" style="font-size:0.75rem;font-weight:600;color:${color};text-decoration:none">Ver Ã¢â€ â€™</a>
+          <a href="#/periodizacao" style="font-size:0.75rem;font-weight:600;color:${color};text-decoration:none">Ver →</a>
         </div>`;
     }
 
     async function checkPreBioStatus(sid) {
-      // Usar getAllForStudent para pegar tambÃƒÂ©m formulÃƒÂ¡rios pÃƒÂºblicos
+      // Usar getAllForStudent para pegar também formulários públicos
       const allBf = await db.getAllForStudent('biofeedback', sid);
       // Data local YYYY-MM-DD (sem UTC offset)
       const _d = new Date();
@@ -641,14 +641,14 @@ export function initTracker(navigateFn) {
             ['TQR',         (todayPre.tqr??todayPre.energy),  false],
             ['Mental',      todayPre.stress,                  true],
             ['Dor',         todayPre.pain,                    true],
-            ['MotivaÃƒÂ§ÃƒÂ£o',   todayPre.motivation,             false],
-            todayPre.menstrualCycle ? ['Ciclo', 'Ã°Å¸â€Â´', false] : null,
+            ['Motivação',   todayPre.motivation,             false],
+            todayPre.menstrualCycle ? ['Ciclo', '🔴', false] : null,
           ];
           valuesEl.innerHTML = vals.filter(Boolean).map(([l,v,inv])=>`
             <span style="padding:3px 8px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-color);color:${
               v==null?'var(--text-muted)':inv?(v>=7?'var(--danger)':v>=5?'var(--warning)':'var(--success)'):(v<=3?'var(--danger)':v<=5?'var(--warning)':'var(--success)')
             }">
-              ${l} <strong>${v??'Ã¢â‚¬â€'}</strong>
+              ${l} <strong>${v??'—'}</strong>
             </span>`).join('');
         }
       } else {
@@ -680,15 +680,15 @@ export function initTracker(navigateFn) {
     if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
     const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}`;
     navigator.clipboard?.writeText(url);
-    notify.success('Link prÃƒÂ©-treino copiado!');
+    notify.success('Link pré-treino copiado!');
     openModal({
-      title: 'Link PrÃƒÂ©-Treino', size: 'sm',
+      title: 'Link Pré-Treino', size: 'sm',
       content: `<p class="text-muted text-sm mb-md">Envie para o aluno preencher:</p>
         <div style="display:flex;gap:8px">
           <input class="form-input" value="${url}" readonly onclick="this.select()" style="font-size:0.78rem;flex:1" />
-          <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='Ã¢Å“â€œ'">Copiar</button>
+          <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='✓'">Copiar</button>
         </div>
-        <a href="https://wa.me/?text=${encodeURIComponent('Check-in prÃƒÂ©-treino: ' + url)}" target="_blank" class="btn btn-secondary btn-sm mt-sm">WhatsApp</a>`,
+        <a href="https://wa.me/?text=${encodeURIComponent('Check-in pré-treino: ' + url)}" target="_blank" class="btn btn-secondary btn-sm mt-sm">WhatsApp</a>`,
       actions: [{ label: 'Fechar', class: 'btn-primary', onClick: () => closeModal() }]
     });
   });
@@ -697,7 +697,7 @@ export function initTracker(navigateFn) {
     const wk = await db.get('workouts', wSel.value);
     if (!wk) return;
     const preBf = { sleep:5, tqr:5, energy:5, stress:5, pain:0 }; // defaults neutros
-    // Carregar check-in do aluno via getAllForStudent (pega formulÃƒÂ¡rios pÃƒÂºblicos)
+    // Carregar check-in do aluno via getAllForStudent (pega formulários públicos)
     const _d2 = new Date();
     const todayStr2 = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2,'0')}-${String(_d2.getDate()).padStart(2,'0')}`;
     const allBf = await db.getAllForStudent('biofeedback', wk.studentId);
@@ -714,13 +714,13 @@ export function initTracker(navigateFn) {
         stress: todayPre.stress,
         pain:   todayPre.pain,
       });
-      notify.success('Dados prÃƒÂ©-treino do aluno carregados!');
+      notify.success('Dados pré-treino do aluno carregados!');
     }
     const session = { studentId: wk.studentId, workoutId: wk.id, workoutName: wk.name, exercises: JSON.parse(JSON.stringify(wk.exercises || [])), date: Calc.nowISO(), startTime: Date.now(), status: 'running', soundEnabled: document.getElementById('trkSound')?.checked !== false, preBiofeedback: preBf, setLog: [] };
     const saved = await db.add('sessions', session);
     resetState();
     state.session = { ...session, id: saved.id };
-    notify.success('SessÃƒÂ£o iniciada!');
+    notify.success('Sessão iniciada!');
     navigateFn('/tracker');
   });
 
@@ -756,12 +756,12 @@ export function initTracker(navigateFn) {
     if (w) { w.textContent = formatTime(work); w.style.color = state.isResting ? 'var(--text-muted)' : 'var(--success)'; }
     if (r) { r.textContent = formatTime(Math.max(0, tot - work)); r.style.color = state.isResting ? 'var(--warning)' : 'var(--text-muted)'; }
     if (d) d.textContent = tot > 0 ? (work / tot).toFixed(2) : '0.00';
-    if (tag) { tag.textContent = state.isResting ? 'Ã¢ÂÂ¸ DESCANSANDO' : 'Ã¢â€“Â¶ TRABALHANDO'; tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)'; }
+    if (tag) { tag.textContent = state.isResting ? '⏸ DESCANSANDO' : '▶ TRABALHANDO'; tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)'; }
   };
   state._uiInterval = setInterval(updateUI, 500);
   updateUI();
 
-  // Rest timer Ã¢â‚¬â€ sÃƒÂ³ cria se nÃƒÂ£o existir ainda
+  // Rest timer — só cria se não existir ainda
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
   const restDur = parseInt(curEx.rest) || 60;
   if (!state.restTimer) {
@@ -781,14 +781,14 @@ export function initTracker(navigateFn) {
         const b = document.getElementById('goRest');
         if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
         if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
-        if (b) b.textContent = 'Ã¢â€“Â¶ Iniciar Descanso';
+        if (b) b.textContent = '▶ Iniciar Descanso';
         state.isResting = false;
         state.workTimer?.start();
         notify.success('Descanso finalizado!');
       }
     });
   } else {
-    // JÃƒÂ¡ existe Ã¢â‚¬â€ apenas reconectar os callbacks ao novo DOM
+    // Já existe — apenas reconectar os callbacks ao novo DOM
     if (!state.restTimer.running) {
       state.restTimer.setDuration(restDur);
     }
@@ -804,7 +804,7 @@ export function initTracker(navigateFn) {
       const b = document.getElementById('goRest');
       if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
       if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
-      if (b) b.textContent = 'Ã¢â€“Â¶ Iniciar Descanso';
+      if (b) b.textContent = '▶ Iniciar Descanso';
       state.isResting = false;
       state.workTimer?.start();
       notify.success('Descanso finalizado!');
@@ -816,7 +816,7 @@ export function initTracker(navigateFn) {
       const rem = state.restTimer.running ? state.restTimer.getRemaining?.() : state.restTimer.duration;
       if (rem != null) { c.textContent = formatTime(rem); }
     }
-    if (b) b.textContent = state.restTimer.running ? 'Ã¢ÂÂ¸ Pausar Descanso' : 'Ã¢â€“Â¶ Iniciar Descanso';
+    if (b) b.textContent = state.restTimer.running ? '⏸ Pausar Descanso' : '▶ Iniciar Descanso';
   }
 
   document.getElementById('goRest')?.addEventListener('click', () => {
@@ -824,11 +824,11 @@ export function initTracker(navigateFn) {
     const btn = document.getElementById('goRest');
     if (state.restTimer.running) {
       state.restTimer.stop(); state.isResting = false; state.workTimer?.start();
-      if (btn) btn.textContent = 'Ã¢â€“Â¶ Iniciar Descanso';
+      if (btn) btn.textContent = '▶ Iniciar Descanso';
     } else {
       state.restTimer.reset(); state.restTimer.start();
       state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
-      if (btn) btn.textContent = 'Ã¢ÂÂ¸ Pausar Descanso';
+      if (btn) btn.textContent = '⏸ Pausar Descanso';
       const l = document.getElementById('restLbl');
       if (l) { l.textContent = 'Descansando...'; l.style.color = ''; }
     }
@@ -842,7 +842,7 @@ export function initTracker(navigateFn) {
     const b = document.getElementById('goRest');
     if (c) { c.textContent = formatTime(state.restTimer.duration); c.style.color = 'var(--accent)'; }
     if (l) { l.textContent = 'Pronto para descansar'; l.style.color = ''; }
-    if (b) b.textContent = 'Ã¢â€“Â¶ Iniciar Descanso';
+    if (b) b.textContent = '▶ Iniciar Descanso';
   });
 
   document.querySelectorAll('.rp').forEach(b => b.addEventListener('click', () => {
@@ -854,7 +854,7 @@ export function initTracker(navigateFn) {
 
   document.getElementById('sndToggle')?.addEventListener('change', e => { state.restTimer.soundEnabled = e.target.checked; });
 
-  // Modal de confirmaÃƒÂ§ÃƒÂ£o de sÃƒÂ©rie com PSE e RIR
+  // Modal de confirmação de série com PSE e RIR
   function showSetModal(btn) {
     const i    = parseInt(btn.dataset.i);
     const row  = btn.closest('.set-row');
@@ -867,7 +867,7 @@ export function initTracker(navigateFn) {
 
     // Start rest timer immediately while the user fills the modal
     const exSets = parseInt(curEx?.sets || ex?.sets) || 3;
-    // Sempre iniciar o descanso apÃƒÂ³s uma sÃƒÂ©rie, mesmo sendo a ÃƒÂºltima
+    // Sempre iniciar o descanso após uma série, mesmo sendo a última
     state.restTimer.reset(); state.restTimer.start();
     state.isResting = true; state.workTimer?.stop();
     state.workSec = state.workTimer?.getElapsed() || 0;
@@ -875,8 +875,8 @@ export function initTracker(navigateFn) {
     const l = document.getElementById('restLbl');
     const b2 = document.getElementById('goRest');
     if (c) { c.textContent = formatTime(state.restTimer.duration); c.style.color='var(--warning)'; }
-    if (l) l.textContent = `Descansando apÃƒÂ³s sÃƒÂ©rie ${i+1}...`;
-    if (b2) b2.textContent = 'Ã¢ÂÂ¸ Pausar Descanso';
+    if (l) l.textContent = `Descansando após série ${i+1}...`;
+    if (b2) b2.textContent = '⏸ Pausar Descanso';
 
     const modal = document.createElement('div');
     modal.id = 'setConfirmModal';
@@ -895,10 +895,10 @@ export function initTracker(navigateFn) {
         <style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div>
-            <div style="font-weight:700;font-size:1rem;color:#f1f5f9">SÃƒÂ©rie ${i+1} concluÃƒÂ­da</div>
-            <div style="font-size:0.78rem;color:#64748b;margin-top:2px">${ex.name||'ExercÃƒÂ­cio'}</div>
+            <div style="font-weight:700;font-size:1rem;color:#f1f5f9">Série ${i+1} concluída</div>
+            <div style="font-size:0.78rem;color:#64748b;margin-top:2px">${ex.name||'Exercício'}</div>
           </div>
-          <button id="closeSetModal" style="background:none;border:none;color:#64748b;font-size:1.2rem;cursor:pointer;padding:4px">Ã¢Å“â€¢</button>
+          <button id="closeSetModal" style="background:none;border:none;color:#64748b;font-size:1.2rem;cursor:pointer;padding:4px">✕</button>
         </div>
 
         <!-- Carga e Reps -->
@@ -916,12 +916,12 @@ export function initTracker(navigateFn) {
         <!-- PSE -->
         <div style="margin-bottom:16px">
           <div style="font-size:0.7rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
-            PSE Ã¢â‚¬â€ PercepÃƒÂ§ÃƒÂ£o de EsforÃƒÂ§o
+            PSE — Percepção de Esforço
           </div>
           <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:6px">
             ${[1,2,3,4,5,6,7,8,9,10].map(n => {
               const color = n<=3?'#10b981':n<=5?'#22c55e':n<=7?'#f59e0b':n<=9?'#ef4444':'#dc2626';
-              const labels = {1:'MÃƒÂ­nimo',2:'M. FÃƒÂ¡cil',3:'FÃƒÂ¡cil',4:'Moderado',5:'P. DifÃƒÂ­cil',6:'DifÃƒÂ­cil',7:'M. DifÃƒÂ­cil',8:'V. DifÃƒÂ­cil',9:'Extremo',10:'MÃƒÂ¡ximo'};
+              const labels = {1:'Mínimo',2:'M. Fácil',3:'Fácil',4:'Moderado',5:'P. Difícil',6:'Difícil',7:'M. Difícil',8:'V. Difícil',9:'Extremo',10:'Máximo'};
               return `<button class="pse-btn" data-v="${n}" style="
                 padding:6px 2px;display:flex;flex-direction:column;align-items:center;
                 background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
@@ -938,7 +938,7 @@ export function initTracker(navigateFn) {
         <!-- RIR -->
         <div style="margin-bottom:20px">
           <div style="font-size:0.7rem;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
-            RIR Ã¢â‚¬â€ Reps sobrando no tanque
+            RIR — Reps sobrando no tanque
           </div>
           <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px">
             ${[0,1,2,3,4,5].map(n => {
@@ -958,7 +958,7 @@ export function initTracker(navigateFn) {
 
         <!-- Notas -->
         <div style="margin-bottom:16px">
-          <input id="modalSetNotes" type="text" placeholder="ObservaÃƒÂ§ÃƒÂ£o (opcional)"
+          <input id="modalSetNotes" type="text" placeholder="Observação (opcional)"
             style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);
             border:1px solid rgba(255,255,255,0.08);border-radius:8px;
             color:#e2e8f0;font-size:0.85rem;font-family:inherit" />
@@ -968,15 +968,15 @@ export function initTracker(navigateFn) {
           width:100%;padding:14px;background:#10b981;color:#fff;border:none;
           border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;
           opacity:0.5;pointer-events:none;
-        ">Confirmar sÃƒÂ©rie</button>
+        ">Confirmar série</button>
       </div>
     `;
 
     document.body.appendChild(modal);
 
     let selPse = 0, selRir = null;
-    const pseLabels = {1:'Repouso',2:'Muito fÃƒÂ¡cil',3:'FÃƒÂ¡cil',4:'Moderado',5:'Um pouco difÃƒÂ­cil',6:'DifÃƒÂ­cil',7:'Muito difÃƒÂ­cil',8:'Muito difÃƒÂ­cil',9:'Extenuante',10:'MÃƒÂ¡ximo absoluto'};
-    const rirLbls  = {0:'Falha Ã¢â‚¬â€ nÃƒÂ£o conseguiria mais nenhuma',1:'1 repetiÃƒÂ§ÃƒÂ£o sobrando',2:'2 repetiÃƒÂ§ÃƒÂµes sobrando',3:'3 repetiÃƒÂ§ÃƒÂµes sobrando',4:'4 repetiÃƒÂ§ÃƒÂµes sobrando',5:'5 ou mais sobrando'};
+    const pseLabels = {1:'Repouso',2:'Muito fácil',3:'Fácil',4:'Moderado',5:'Um pouco difícil',6:'Difícil',7:'Muito difícil',8:'Muito difícil',9:'Extenuante',10:'Máximo absoluto'};
+    const rirLbls  = {0:'Falha — não conseguiria mais nenhuma',1:'1 repetição sobrando',2:'2 repetições sobrando',3:'3 repetições sobrando',4:'4 repetições sobrando',5:'5 ou mais sobrando'};
 
     modal.querySelectorAll('.pse-btn').forEach(b => {
       b.addEventListener('click', () => {
@@ -1031,7 +1031,7 @@ export function initTracker(navigateFn) {
       const load  = parseFloat(row.querySelector('.set-load')?.value) || 0;
 
       if (rir === 0 && pse > 0 && pse < 7) {
-        notify.warning('RIR 0 (falha) com PSE baixo Ã¢â‚¬â€ verifique os valores.');
+        notify.warning('RIR 0 (falha) com PSE baixo — verifique os valores.');
       }
 
       const ex = (state.session?.exercises || [])[state.exIdx] || {};
@@ -1056,7 +1056,7 @@ export function initTracker(navigateFn) {
       doneDiv.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px';
       doneDiv.innerHTML = `
         ${pse ? `<span style="font-size:0.6rem;color:var(--warning)">PSE ${pse}</span>` : ''}
-        <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">Ã¢Å“â€œ</span>
+        <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
         ${rir != null ? `<span style="font-size:0.6rem;color:var(--accent)">RIR ${rir}</span>` : ''}
       `;
       btn.replaceWith(doneDiv);
@@ -1064,9 +1064,9 @@ export function initTracker(navigateFn) {
       const exSets = parseInt(curEx.sets) || 3;
 
       const rirTxt = rir != null ? ` RIR ${rir}` : '';
-      notify.info(`SÃƒÂ©rie ${i+1} Ã¢Å“â€œ Ã¢â‚¬â€ ${reps}Ãƒâ€”${load}kg PSE ${pse}${rirTxt}`);
+      notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg PSE ${pse}${rirTxt}`);
 
-      // AvanÃƒÂ§ar para prÃƒÂ³xima sÃƒÂ©rie
+      // Avançar para próxima série
       state.setIdx = i + 1;
       const nr = document.querySelector(`[data-si="${i+1}"]`);
       if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
@@ -1082,15 +1082,34 @@ export function initTracker(navigateFn) {
       renderProgress();
   }
 
-  // Completar sÃƒÂ©rie Ã¢â‚¬â€ abre modal
+  // Completar série — abre modal
   document.querySelectorAll('.do-set').forEach(btn => {
     btn.addEventListener('click', () => showSetModal(btn));
   });
 
-  // Navegar exercÃƒÂ­cios
+  // Navegar exercícios
   const refreshLive = async () => {
     // Clear existing UI interval to prevent accumulation
     if (state._uiInterval) { clearInterval(state._uiInterval); state._uiInterval = null; }
+    
+    // Save current inputs to tempSets before refreshing
+    if (state.session && document.getElementById('pageContent')) {
+      if (!state.tempSets[state.exIdx]) state.tempSets[state.exIdx] = {};
+      document.querySelectorAll('.set-row:not(.set-done)').forEach(row => {
+        const si = parseInt(row.dataset.si);
+        const reps = row.querySelector('.set-reps')?.value;
+        const load = row.querySelector('.set-load')?.value;
+        const pse  = row.querySelector('.set-pse')?.value;
+        const rir  = row.querySelector('.set-rir')?.value;
+        state.tempSets[state.exIdx][si] = {
+          reps: reps ? parseInt(reps) : undefined,
+          load: load ? parseFloat(load) : undefined,
+          pse:  pse  ? parseInt(pse)  : undefined,
+          rir:  rir  ? parseInt(rir)  : undefined,
+        };
+      });
+    }
+
     const students = await db.getAll('students');
     const content  = document.getElementById('pageContent');
     if (content && state.session) { content.innerHTML = renderLiveView(students); initTracker(navigateFn); }
@@ -1103,15 +1122,15 @@ export function initTracker(navigateFn) {
     const curEx = state.session.exercises[state.exIdx];
     if (!curEx) return;
     openModal({
-      title: 'Editar ExercÃƒÂ­cio', size: 'md',
+      title: 'Editar Exercício', size: 'md',
       content: `
         <div class="form-group">
-          <label class="form-label">Nome do ExercÃƒÂ­cio</label>
+          <label class="form-label">Nome do Exercício</label>
           <input class="form-input" id="editExLiveName" value="${curEx.name||''}" />
         </div>
         <div class="grid-2">
           <div class="form-group">
-            <label class="form-label">SÃƒÂ©ries</label>
+            <label class="form-label">Séries</label>
             <input class="form-input" type="number" id="editExLiveSets" value="${curEx.sets||3}" />
           </div>
           <div class="form-group">
@@ -1129,7 +1148,7 @@ export function initTracker(navigateFn) {
         </div>
         <button id="delExLiveBtn" class="btn btn-danger btn-sm" style="margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-          Excluir ExercÃƒÂ­cio
+          Excluir Exercício
         </button>
       `,
       actions: [
@@ -1153,7 +1172,7 @@ export function initTracker(navigateFn) {
     });
 
     document.getElementById('delExLiveBtn')?.addEventListener('click', async () => {
-      if (confirm('Tem certeza que deseja excluir este exercÃƒÂ­cio da sessÃƒÂ£o atual?')) {
+      if (confirm('Tem certeza que deseja excluir este exercício da sessão atual?')) {
         state.session.exercises.splice(state.exIdx, 1);
         
         state.setLog = state.setLog.filter(s => s.exIdx !== state.exIdx);
@@ -1172,7 +1191,7 @@ export function initTracker(navigateFn) {
 
   // Finalizar
   document.getElementById('endBtn')?.addEventListener('click', async () => {
-    if (!window.confirm('Finalizar e salvar a sessÃƒÂ£o?')) return;
+    if (!window.confirm('Finalizar e salvar a sessão?')) return;
     if (state._uiInterval) { clearInterval(state._uiInterval); state._uiInterval = null; }
     if (state.workoutTimer) state.workoutTimer.stop();
     if (state.restTimer)    state.restTimer.stop();
@@ -1182,10 +1201,10 @@ export function initTracker(navigateFn) {
     const dens = dur > 0 ? state.workSec / dur : 0;
 
     openModal({
-      title: 'Finalizar SessÃƒÂ£o', size: 'md',
+      title: 'Finalizar Sessão', size: 'md',
       content: `
         <div style="display:flex;justify-content:center;gap:12px;margin-bottom:16px">
-          ${[['DuraÃƒÂ§ÃƒÂ£o',Math.round(dur/60)+'min'],['Volume',vol+'kg'],['SÃƒÂ©ries',state.setLog.length]].map(([l,v])=>
+          ${[['Duração',Math.round(dur/60)+'min'],['Volume',vol+'kg'],['Séries',state.setLog.length]].map(([l,v])=>
             `<div style="text-align:center;padding:10px 14px;background:var(--bg-page);border-radius:8px">
               <div class="text-xs text-muted">${l}</div>
               <div style="font-size:1.2rem;font-weight:700;color:var(--primary)">${v}</div>
@@ -1194,27 +1213,27 @@ export function initTracker(navigateFn) {
         <form id="postF">
           <div class="form-group">
             <div class="flex items-center justify-between mb-xs">
-              <label class="form-label" style="margin:0">PSE Ã¢â‚¬â€ O quanto o treino foi puxado?</label>
+              <label class="form-label" style="margin:0">PSE — O quanto o treino foi puxado?</label>
               <span style="font-size:1.2rem;font-weight:700;color:var(--primary)" id="pseV">7</span>
             </div>
             <input name="pse" type="range" min="1" max="10" value="7" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('pseV').textContent=this.value" />
-            <div class="flex justify-between text-xs text-muted"><span>1 Ã¢â‚¬â€ Muito leve</span><span>10 Ã¢â‚¬â€ MÃƒÂ¡ximo</span></div>
+            <div class="flex justify-between text-xs text-muted"><span>1 — Muito leve</span><span>10 — Máximo</span></div>
           </div>
           <div class="form-group">
             <div class="flex items-center justify-between mb-xs">
-              <label class="form-label" style="margin:0">Como o aluno ficou apÃƒÂ³s o treino?</label>
+              <label class="form-label" style="margin:0">Como o aluno ficou após o treino?</label>
               <span style="font-size:1.2rem;font-weight:700;color:var(--primary)" id="satV">8</span>
             </div>
             <input name="satisfaction" type="range" min="1" max="10" value="8" style="width:100%;accent-color:var(--primary)" oninput="document.getElementById('satV').textContent=this.value" />
-            <div class="flex justify-between text-xs text-muted"><span>1 Ã¢â‚¬â€ PÃƒÂ©ssimo</span><span>10 Ã¢â‚¬â€ Excelente</span></div>
+            <div class="flex justify-between text-xs text-muted"><span>1 — Péssimo</span><span>10 — Excelente</span></div>
           </div>
           <div class="form-group">
-            <label class="form-label">ObservaÃƒÂ§ÃƒÂµes</label>
+            <label class="form-label">Observações</label>
             <textarea class="form-textarea" name="notes" rows="2" placeholder="Como foi o treino?"></textarea>
           </div>
           <div style="padding:8px 10px;background:rgba(37,211,102,0.07);border-radius:8px;border:1px solid rgba(37,211,102,0.2);font-size:0.75rem;color:var(--text-muted)">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#25d366" style="vertical-align:-1px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            O formulÃƒÂ¡rio pÃƒÂ³s-treino serÃƒÂ¡ enviado automaticamente ao aluno via WhatsApp ao salvar.
+            O formulário pós-treino será enviado automaticamente ao aluno via WhatsApp ao salvar.
           </div>
         </form>`,
       actions: [
@@ -1240,10 +1259,10 @@ export function initTracker(navigateFn) {
     });
   });
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ FINISH SESSION Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── FINISH SESSION ───────────────────────────────────────────
 async function finishSession(dur, vol, dens, post, navigateFn) {
   const s = state.session;
-  if (!s) { notify.error('SessÃƒÂ£o nÃƒÂ£o encontrada'); return; }
+  if (!s) { notify.error('Sessão não encontrada'); return; }
 
   const sessionData = {
     ...s, status: 'completed', endTime: Date.now(),
@@ -1270,7 +1289,7 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   const students = await db.getAll('students');
   const student  = students.find(x => x.id === s.studentId);
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Enviar formulÃƒÂ¡rio pÃƒÂ³s-treino automaticamente via WhatsApp Ã¢â€â‚¬
+  // ── Enviar formulário pós-treino automaticamente via WhatsApp ─
   if (student?.phone) {
     try {
       const settings  = await db.get('settings','trainer').catch(()=>({}));
@@ -1280,11 +1299,11 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
       const nome      = student.name.split(' ')[0];
       const trainerName = settings?.trainerName || '';
       const msg = [
-        `Ã°Å¸Ââ€¹Ã¯Â¸Â *Personal PRO*`,``,
-        `ParabÃƒÂ©ns pelo treino, ${nome}! Ã°Å¸Å½â€°`,``,
-        `Ã°Å¸â€œÅ  *Avalie como foi a sessÃƒÂ£o* (leva ~30 segundos):`,
+        `🏋️ *Personal PRO*`,``,
+        `Parabéns pelo treino, ${nome}! 🎉`,``,
+        `📊 *Avalie como foi a sessão* (leva ~30 segundos):`,
         postLink,``,
-        `Seu feedback ajuda a ajustar o prÃƒÂ³ximo treino. Ã°Å¸â€™Âª`,``,
+        `Seu feedback ajuda a ajustar o próximo treino. 💪`,``,
         trainerName ? `_Personal: ${trainerName}_` : `_Personal PRO_`,
       ].join('\n');
       const num = student.phone.replace(/\D/g,'');
@@ -1295,10 +1314,10 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
 
   const summary = buildSessionSummary(sessionData, student);
   resetState();
-  closeModal(() => { notify.success('SessÃƒÂ£o salva!'); showSessionSummary(summary, sessionData, student, navigateFn); });
+  closeModal(() => { notify.success('Sessão salva!'); showSessionSummary(summary, sessionData, student, navigateFn); });
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ BUILD SUMMARY Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── BUILD SUMMARY ────────────────────────────────────────────
 function buildSessionSummary(session, student) {
   const durMin = Math.round((session.totalDuration || 0) / 60);
   const exSummary = (session.exercises||[]).map((ex, i) => {
@@ -1307,10 +1326,10 @@ function buildSessionSummary(session, student) {
     return `${ex.name}: ${sets.length}x (${sets.reduce((t,s)=>t+(s.reps||0),0)} reps, ${Math.max(...sets.map(s=>s.load||0))}kg)`;
   }).filter(Boolean);
 
-  return [`PERSONAL PRO Ã¢â‚¬â€ Resumo da SessÃƒÂ£o`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${new Date(session.date).toLocaleDateString('pt-BR')}`,`DuraÃƒÂ§ÃƒÂ£o: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`SÃƒÂ©ries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- ExercÃƒÂ­cios ---`,...exSummary,``,`Bom treino!`].join('\n');
+  return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${new Date(session.date).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ SHOW SUMMARY Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── SHOW SUMMARY ─────────────────────────────────────────────
 function showSessionSummary(summaryText, session, student, navigateFn) {
   const durMin  = Math.round((session.totalDuration||0)/60);
   const exs     = session.exercises||[];
@@ -1318,32 +1337,32 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
   const vol     = Math.round(session.totalVolume||0);
   const ini     = (student?.name||'?').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase();
 
-  // Gasto calÃƒÂ³rico estimado (MET musculaÃƒÂ§ÃƒÂ£o 5.0 Ã‚Â· CompÃƒÂªndio ACSM 2011)
+  // Gasto calórico estimado (MET musculação 5.0 · Compêndio ACSM 2011)
   const peso    = student?.weight || session.preBiofeedback?.peso || null;
   const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
 
   // PSE / Densidade
-  const pse    = session.postBiofeedback?.pse || 'Ã¢â‚¬â€';
-  const densModal = (vol && durMin) ? Math.round(vol / durMin) + ' kg/m' : 'Ã¢â‚¬â€';
+  const pse    = session.postBiofeedback?.pse || '—';
+  const densModal = (vol && durMin) ? Math.round(vol / durMin) + ' kg/m' : '—';
   const pseC   = typeof pse==='number'?(pse>=9?'var(--danger)':pse>=7?'var(--warning)':'var(--success)'):'inherit';
 
-  // Linha por exercÃƒÂ­cio
+  // Linha por exercício
   const exRows = exs.map((ex,i) => {
     const sets    = setLog.filter(l=>l.exIdx===i);
-    if (!sets.length) return `<tr style="opacity:0.35"><td colspan="8" style="font-size:0.78rem">${ex.name} Ã¢â‚¬â€ nÃƒÂ£o realizado</td></tr>`;
+    if (!sets.length) return `<tr style="opacity:0.35"><td colspan="8" style="font-size:0.78rem">${ex.name} — não realizado</td></tr>`;
     const maxLoad   = Math.max(...sets.map(s=>s.load||0));
     const totalReps = sets.reduce((t,s)=>t+(s.reps||0),0);
     const exVol     = sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
-    const avgPse    = sets.filter(s=>s.pse).length ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : 'Ã¢â‚¬â€';
-    const avgRir    = sets.filter(s=>s.rir!=null).length ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : 'Ã¢â‚¬â€';
+    const avgPse    = sets.filter(s=>s.pse).length ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : '—';
+    const avgRir    = sets.filter(s=>s.rir!=null).length ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
     const rm1Est    = sets.find(s=>s.rm1Estimated)?.rm1Estimated;
     const pseColor  = parseFloat(avgPse)>8?'var(--danger)':parseFloat(avgPse)>6?'var(--warning)':'var(--success)';
-    const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}Ãƒâ€”${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:''}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:''}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:''}${s.notes?` <span style="color:var(--text-muted);font-style:italic">"${s.notes}"</span>`:''}</div>`).join('');
+    const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:''}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:''}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:''}${s.notes?` <span style="color:var(--text-muted);font-style:italic">"${s.notes}"</span>`:''}</div>`).join('');
     return `<tr>
       <td>
         <div style="font-weight:600;font-size:0.85rem">${ex.name}</div>
         ${ex.method?`<div style="font-size:0.68rem;color:var(--accent)">${ex.method}</div>`:''}
-        <button onclick="const d=this.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none'" style="font-size:0.62rem;color:var(--primary);background:none;border:none;cursor:pointer">Ã¢â€“Â¸ sÃƒÂ©ries</button>
+        <button onclick="const d=this.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none'" style="font-size:0.62rem;color:var(--primary);background:none;border:none;cursor:pointer">▸ séries</button>
         <div style="display:none">${detail}</div>
       </td>
       <td style="text-align:center">${sets.length}</td>
@@ -1352,43 +1371,43 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
       <td style="text-align:center;color:var(--primary);font-weight:600">${exVol}kg</td>
       <td style="text-align:center;color:${pseColor};font-weight:600">${avgPse}</td>
       <td style="text-align:center;color:var(--accent)">${avgRir}</td>
-      <td style="text-align:center;color:var(--success);font-weight:600">${rm1Est?rm1Est+'kg':'Ã¢â‚¬â€'}</td>
+      <td style="text-align:center;color:var(--success);font-weight:600">${rm1Est?rm1Est+'kg':'—'}</td>
     </tr>`;
   }).join('');
 
   openModal({
-    title: 'Resumo da SessÃƒÂ£o', size: 'xl',
+    title: 'Resumo da Sessão', size: 'xl',
     content: `
       <div style="background:var(--bg-page);border-radius:10px;padding:16px;margin-bottom:14px">
         <div class="flex items-center gap-md mb-md">
           <div class="avatar">${ini}</div>
           <div>
             <div style="font-weight:700;font-size:1.05rem">${student?.name||'Aluno'}</div>
-            <div class="text-muted text-sm">${session.workoutName||'Treino'} Ã‚Â· ${new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>
+            <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px">
-          ${[['DuraÃƒÂ§ÃƒÂ£o',durMin+'min','var(--primary)'],['Volume',vol.toLocaleString('pt-BR')+'kg','var(--primary)'],['SÃƒÂ©ries',String(session.totalSets||0),'var(--primary)'],['PSE',String(pse)+'/10',pseC],['Densid.',densModal,'var(--accent)'],['Kcal est.',kcalEst?kcalEst+'kcal':'Ã¢â‚¬â€','var(--warning)']].map(([l,v,c])=>`
+          ${[['Duração',durMin+'min','var(--primary)'],['Volume',vol.toLocaleString('pt-BR')+'kg','var(--primary)'],['Séries',String(session.totalSets||0),'var(--primary)'],['PSE',String(pse)+'/10',pseC],['Densid.',densModal,'var(--accent)'],['Kcal est.',kcalEst?kcalEst+'kcal':'—','var(--warning)']].map(([l,v,c])=>`
             <div style="text-align:center;padding:9px 5px;background:var(--bg-card);border-radius:8px">
               <div style="font-size:0.56rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:3px">${l}</div>
               <div style="font-size:1.05rem;font-weight:800;color:${c}">${v}</div>
             </div>`).join('')}
         </div>
-        ${kcalEst?`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,0.06);border-radius:6px;font-size:0.68rem;color:var(--text-muted)">MET 5.0 (musculaÃƒÂ§ÃƒÂ£o) Ã‚Â· ACSM Compendium (Ainsworth et al. 2011)${peso?' Ã‚Â· Peso: '+peso+'kg':''}</div>`:''}
+        ${kcalEst?`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,0.06);border-radius:6px;font-size:0.68rem;color:var(--text-muted)">MET 5.0 (musculação) · ACSM Compendium (Ainsworth et al. 2011)${peso?' · Peso: '+peso+'kg':''}</div>`:''}
       </div>
       ${session.preBiofeedback||session.postBiofeedback?`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
         ${session.preBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
-          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in PrÃƒÂ©</div>
+          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pré</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
-            <span>Sono <strong>${session.preBiofeedback.sleep||'Ã¢â‚¬â€'}/10</strong></span>
-            <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'Ã¢â‚¬â€'}/10</strong></span>
-            <span>Est. Mental <strong>${session.preBiofeedback.stress||'Ã¢â‚¬â€'}/10</strong></span>
+            <span>Sono <strong>${session.preBiofeedback.sleep||'—'}/10</strong></span>
+            <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
+            <span>Est. Mental <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
             ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain}/10</strong></span>`:''}
           </div>
         </div>`:''}
         ${session.postBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
-          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in PÃƒÂ³s</div>
+          <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pós</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
             <span>PSE <strong style="color:${pseC}">${pse}/10</strong></span>
             <span>Densid. <strong>${densModal}</strong></span>
@@ -1409,27 +1428,27 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
           byEx[key].push(`S${s.setIdx+1}: ${s.notes}`);
         });
         return `<div style="margin-bottom:12px;padding:12px 14px;background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.15);border-radius:8px">
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:8px">Ã°Å¸â€œÂ ObservaÃƒÂ§ÃƒÂµes do Treino</div>
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:8px">📝 Observações do Treino</div>
           ${Object.entries(byEx).map(([ex,notes])=>`
             <div style="margin-bottom:5px">
               <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary)">${ex}</div>
-              ${notes.map(n=>`<div style="font-size:0.75rem;color:var(--text-muted);padding-left:8px;font-style:italic">Ã‚Â· ${n}</div>`).join('')}
+              ${notes.map(n=>`<div style="font-size:0.75rem;color:var(--text-muted);padding-left:8px;font-style:italic">· ${n}</div>`).join('')}
             </div>`).join('')}
         </div>`;
       })()}
 
       <div style="margin-bottom:6px;display:flex;gap:14px;font-size:0.67rem;color:var(--text-muted);flex-wrap:wrap">
-        <span style="color:var(--warning)">Ã¢â€“Â  PSE Ã¢â‚¬â€ esforÃƒÂ§o percebido</span>
-        <span style="color:var(--accent)">Ã¢â€“Â  RIR Ã¢â‚¬â€ reps no tanque</span>
-        <span style="color:var(--success)">Ã¢â€“Â  1RM Ã¢â‚¬â€ estimativa Epley</span>
+        <span style="color:var(--warning)">■ PSE — esforço percebido</span>
+        <span style="color:var(--accent)">■ RIR — reps no tanque</span>
+        <span style="color:var(--success)">■ 1RM — estimativa Epley</span>
       </div>
       <div class="table-container">
         <table class="data-table" style="font-size:0.82rem">
           <thead><tr>
-            <th>ExercÃƒÂ­cio</th>
-            <th style="text-align:center">SÃƒÂ©ries</th>
+            <th>Exercício</th>
+            <th style="text-align:center">Séries</th>
             <th style="text-align:center">Reps</th>
-            <th style="text-align:center">Carga mÃƒÂ¡x</th>
+            <th style="text-align:center">Carga máx</th>
             <th style="text-align:center">Volume</th>
             <th style="text-align:center;color:var(--warning)">PSE</th>
             <th style="text-align:center;color:var(--accent)">RIR</th>
@@ -1454,7 +1473,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
 function generateSessionPDF(session, student) {
   try {
     const { jsPDF } = window.jspdf;
-    if (!jsPDF) { notify.error('jsPDF nÃƒÂ£o disponÃƒÂ­vel'); return; }
+    if (!jsPDF) { notify.error('jsPDF não disponível'); return; }
     const doc    = new jsPDF({ unit:'mm', format:'a4' });
     const G      = [16,185,129], DK=[15,23,42], MU=[100,116,139], LI=[241,245,249], WA=[245,158,11], AC=[6,182,212];
     const durMin = Math.round((session.totalDuration||0)/60);
@@ -1464,36 +1483,36 @@ function generateSessionPDF(session, student) {
     const dateL  = new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const peso   = student?.weight || session.preBiofeedback?.peso || null;
     const kcal   = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
-    const pse    = session.postBiofeedback?.pse || 'Ã¢â‚¬â€';
+    const pse    = session.postBiofeedback?.pse || '—';
     const densVal= (vol && durMin) ? Math.round(vol/durMin) : 0;
 
-    // CabeÃƒÂ§alho compacto
+    // Cabeçalho compacto
     doc.setFillColor(...G); doc.rect(0,0,210,22,'F');
     doc.setTextColor(255,255,255);
     doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text('Personal PRO',14,10);
     doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('RelatÃƒÂ³rio de SessÃƒÂ£o Ã‚Â· '+dateL,14,17);
+    doc.text('Relatório de Sessão · '+dateL,14,17);
     doc.text(student?.name||'Aluno',196,10,{align:'right'});
     doc.text(session.workoutName||'Treino',196,17,{align:'right'});
 
-    // Stats Ã¢â‚¬â€ 2 linhas de 4 cards (mais legÃƒÂ­vel)
+    // Stats — 2 linhas de 4 cards (mais legível)
     let y=28;
     const dens       = vol && durMin ? Math.round(vol/durMin) : 0;
     const cargaSess  = session.trainingLoad || session.postBiofeedback?.trainingLoad
                      || (pse && durMin ? pse * durMin : 0);
     const stats1 = [
-      ['DuraÃƒÂ§ÃƒÂ£o',  durMin+'min',                     G],
+      ['Duração',  durMin+'min',                     G],
       ['Volume',   vol.toLocaleString('pt-BR')+'kg', G],
-      ['SÃƒÂ©ries',   String(session.totalSets||0),      G],
+      ['Séries',   String(session.totalSets||0),      G],
       ['PSE',      String(pse)+'/10',                 WA],
     ];
     const stats2 = [
-      ['Carga',    cargaSess ? cargaSess+' u.a.' : 'Ã¢â‚¬â€', AC],
-      ['Densid.',  dens ? dens+' kg/m' : 'Ã¢â‚¬â€',           AC],
-      ['Kcal est.',kcal ? kcal+' kcal' : 'Ã¢â‚¬â€',           WA],
-      ['TQR entr.',String((session.preBiofeedback?.tqr??session.preBiofeedback?.energy)||'Ã¢â‚¬â€')+'/10', G],
+      ['Carga',    cargaSess ? cargaSess+' u.a.' : '—', AC],
+      ['Densid.',  dens ? dens+' kg/m' : '—',           AC],
+      ['Kcal est.',kcal ? kcal+' kcal' : '—',           WA],
+      ['TQR entr.',String((session.preBiofeedback?.tqr??session.preBiofeedback?.energy)||'—')+'/10', G],
     ];
-    const sw = 43; // 4 cards Ãƒâ€” 43mm + 3 gaps Ãƒâ€” 2mm = 178mm (cabe em 182mm)
+    const sw = 43; // 4 cards × 43mm + 3 gaps × 2mm = 178mm (cabe em 182mm)
     [stats1, stats2].forEach((row, ri) => {
       row.forEach(([l,v,c], i) => {
         const x  = 14 + i*(sw+2);
@@ -1507,12 +1526,12 @@ function generateSessionPDF(session, student) {
     });
     y+=44;
 
-    // Nota calÃƒÂ³rica + biofeedback prÃƒÂ© Ã¢â‚¬â€ numa linha
+    // Nota calórica + biofeedback pré — numa linha
     if (session.preBiofeedback || kcal) {
       const pre=session.preBiofeedback||{};
       doc.setFillColor(240,253,244); doc.roundedRect(14,y,182,9,1.5,1.5,'F');
       doc.setFillColor(...G); doc.rect(14,y,2,9,'F');
-      doc.setTextColor(...G); doc.setFontSize(5.5); doc.setFont('helvetica','bold'); doc.text('CHECK-IN PRÃƒâ€°',17,y+3.5);
+      doc.setTextColor(...G); doc.setFontSize(5.5); doc.setFont('helvetica','bold'); doc.text('CHECK-IN PRÉ',17,y+3.5);
       doc.setFont('helvetica','normal'); doc.setTextColor(...MU); doc.setFontSize(6.5);
       const preInfo = [
         pre.sleep?`Sono ${pre.sleep}/10`:'',
@@ -1520,17 +1539,17 @@ function generateSessionPDF(session, student) {
         pre.stress?`Est.Mental ${pre.stress}/10`:'',
         (pre.pain||0)>=3?`Dor ${pre.pain}/10`:'',
         kcal?`Kcal est. ${kcal}`:'',
-      ].filter(Boolean).join('  Ã‚Â·  ');
-      doc.text(preInfo||'Ã¢â‚¬â€',63,y+5.5);
+      ].filter(Boolean).join('  ·  ');
+      doc.text(preInfo||'—',63,y+5.5);
       y+=13;
     }
 
-    // Tabela exercÃƒÂ­cios
+    // Tabela exercícios
     y+=2;
-    doc.setTextColor(...DK); doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text('ExercÃƒÂ­cios Realizados',14,y); y+=5;
+    doc.setTextColor(...DK); doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.text('Exercícios Realizados',14,y); y+=5;
     doc.setFillColor(...G); doc.rect(14,y,182,7,'F');
     doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
-    [['ExercÃƒÂ­cio',14],['S',88],['Reps',98],['MÃƒÂ¡x',110],['Vol',126],['PSE',142],['RIR',154],['1RM',166]].forEach(([h,x])=>doc.text(h,x+1,y+4.8));
+    [['Exercício',14],['S',88],['Reps',98],['Máx',110],['Vol',126],['PSE',142],['RIR',154],['1RM',166]].forEach(([h,x])=>doc.text(h,x+1,y+4.8));
     y+=7;
 
     exs.forEach((ex,i)=>{
@@ -1539,13 +1558,13 @@ function generateSessionPDF(session, student) {
       const maxLoad=Math.max(...sets.map(s=>s.load||0));
       const tReps=sets.reduce((t,s)=>t+(s.reps||0),0);
       const exVol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
-      const avgPse=sets.filter(s=>s.pse).length?(sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1):'Ã¢â‚¬â€';
-      const avgRir=sets.filter(s=>s.rir!=null).length?(sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1):'Ã¢â‚¬â€';
+      const avgPse=sets.filter(s=>s.pse).length?(sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1):'—';
+      const avgRir=sets.filter(s=>s.rir!=null).length?(sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1):'—';
       const rm1=sets.find(s=>s.rm1Estimated)?.rm1Estimated;
       const rowH=ex.method?10:8;
       if(y>265){doc.addPage();y=20;}
       doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255); doc.rect(14,y,182,rowH,'F');
-      doc.setTextColor(...DK); doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.text(ex.name||'Ã¢â‚¬â€',15,y+5);
+      doc.setTextColor(...DK); doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.text(ex.name||'—',15,y+5);
       if(ex.method){doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...AC);doc.text(ex.method,15,y+8.5);}
       doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...DK);
       doc.text(String(sets.length),89,y+5);
@@ -1556,23 +1575,23 @@ function generateSessionPDF(session, student) {
       doc.setTextColor(pc>8?220:pc>6?200:16,pc>8?50:pc>6?120:185,pc>8?50:pc>6?20:129);
       doc.text(String(avgPse),143,y+5);
       doc.setTextColor(...AC); doc.setFont('helvetica','normal'); doc.text(String(avgRir),155,y+5);
-      doc.setTextColor(...G); doc.text(rm1?rm1+'kg':'Ã¢â‚¬â€',167,y+5);
+      doc.setTextColor(...G); doc.text(rm1?rm1+'kg':'—',167,y+5);
       y+=rowH;
-      // Sub-sÃƒÂ©ries sÃƒÂ³ se tiver notas (economiza espaÃƒÂ§o)
+      // Sub-séries só se tiver notas (economiza espaço)
       const setsWithNotes = sets.filter(s=>s.notes);
       if (setsWithNotes.length) {
         setsWithNotes.forEach(s=>{
           if(y>270){doc.addPage();y=20;}
           doc.setFillColor(250,252,255); doc.rect(18,y,178,4.5,'F');
           doc.setTextColor(...MU); doc.setFontSize(5.5); doc.setFont('helvetica','italic');
-          doc.text(`S${s.setIdx+1} (${s.reps}Ãƒâ€”${s.load}kg): ${s.notes}`,22,y+3.2);
+          doc.text(`S${s.setIdx+1} (${s.reps}×${s.load}kg): ${s.notes}`,22,y+3.2);
           y+=4.5;
         });
       }
       y+=1;
     });
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Bloco de observaÃƒÂ§ÃƒÂµes compacto Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ── Bloco de observações compacto ──────────────────────
     const allNotes = setLog.filter(s=>s.notes);
     const postNotes = session.postBiofeedback?.notes;
 
@@ -1580,7 +1599,7 @@ function generateSessionPDF(session, student) {
       if(y>255){doc.addPage();y=20;}
       y+=4;
 
-      // Agrupar por exercÃƒÂ­cio primeiro para calcular altura real
+      // Agrupar por exercício primeiro para calcular altura real
       const byEx = {};
       allNotes.forEach(s=>{
         const ex  = exs[s.exIdx];
@@ -1595,7 +1614,7 @@ function generateSessionPDF(session, student) {
       doc.setFillColor(240,249,255); doc.roundedRect(14,y,182,notesH,1.5,1.5,'F');
       doc.setFillColor(...AC); doc.rect(14,y,2,notesH,'F');
       doc.setTextColor(...AC); doc.setFontSize(6.2); doc.setFont('helvetica','bold');
-      doc.text('OBSERVAÃƒâ€¡Ãƒâ€¢ES DO TREINO',17,y+5);
+      doc.text('OBSERVAÇÕES DO TREINO',17,y+5);
       let ny = y+9.5;
 
       Object.entries(byEx).forEach(([exName, notes])=>{
@@ -1604,8 +1623,8 @@ function generateSessionPDF(session, student) {
         const labelW = doc.getTextWidth(exName+': ');
         doc.text(exName+':',17,ny);
         doc.setFont('helvetica','normal'); doc.setTextColor(...MU);
-        // Wrap longo em mÃƒÂºltiplas notas
-        const notesText = notes.join('  Ã‚Â·  ');
+        // Wrap longo em múltiplas notas
+        const notesText = notes.join('  ·  ');
         const maxW = 182 - labelW - 5;
         if (doc.getTextWidth(notesText) > maxW) {
           doc.text(notesText.slice(0, Math.floor(notesText.length * maxW / doc.getTextWidth(notesText))), 17+labelW, ny);
@@ -1618,8 +1637,8 @@ function generateSessionPDF(session, student) {
       if(postNotes){
         if(ny>272){doc.addPage();ny=20;}
         doc.setTextColor(...DK); doc.setFontSize(6); doc.setFont('helvetica','bold');
-        const lw = doc.getTextWidth('PÃƒÂ³s-treino: ');
-        doc.text('PÃƒÂ³s-treino:',17,ny);
+        const lw = doc.getTextWidth('Pós-treino: ');
+        doc.text('Pós-treino:',17,ny);
         doc.setFont('helvetica','normal'); doc.setTextColor(...MU);
         doc.text(postNotes,17+lw,ny);
         ny+=5.5;
@@ -1627,14 +1646,14 @@ function generateSessionPDF(session, student) {
       y = ny + 4;
     }
 
-    // RodapÃƒÂ© em todas as pÃƒÂ¡ginas
+    // Rodapé em todas as páginas
     const pages=doc.getNumberOfPages();
     for(let p=1;p<=pages;p++){
       doc.setPage(p);
       doc.setFillColor(...DK); doc.rect(0,287,210,10,'F');
       doc.setTextColor(255,255,255); doc.setFontSize(6.5); doc.setFont('helvetica','normal');
-      doc.text('Personal PRO Ã¢â‚¬â€ Sistema Profissional de Personal Trainer',105,293,{align:'center'});
-      doc.text(`PÃƒÂ¡g ${p}/${pages}`,196,293);
+      doc.text('Personal PRO — Sistema Profissional de Personal Trainer',105,293,{align:'center'});
+      doc.text(`Pág ${p}/${pages}`,196,293);
     }
 
     doc.save(`sessao_${(student?.name||'aluno').replace(/\s/g,'_')}_${date.replace(/\//g,'-')}.pdf`);
@@ -1643,5 +1662,3 @@ function generateSessionPDF(session, student) {
 }
 
 }
-
-
