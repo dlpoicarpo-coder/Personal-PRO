@@ -63,7 +63,7 @@ export async function navigateTo(path) {
     initAnamneseForm();
     return;
   }
-  if (path.startsWith('/portal/')) {
+  if (path.startsWith('/portal')) {
     // Inject custom PWA Mobile student portal stylesheet
     if (!document.getElementById('studentPortalStylesheet')) {
       const link = document.createElement('link');
@@ -72,10 +72,19 @@ export async function navigateTo(path) {
       link.href = 'css/student-portal.css';
       document.head.appendChild(link);
     }
-    const rawParam = path.split('/portal/')[1];
+    let rawParam = path.split('/portal/')[1] || path.split('/portal')[1];
+    if (rawParam && rawParam.startsWith('/')) rawParam = rawParam.substring(1);
+    
+    const loggedId = localStorage.getItem('portal_logged_student_id');
+    
+    // If no ID is provided in URL, try using the logged one
+    if (!rawParam && loggedId) {
+      rawParam = loggedId;
+    }
+    
     appContainer.className = '';
     appContainer.innerHTML = await renderStudentPortal(rawParam);
-    initStudentPortal();
+    initStudentPortal(rawParam);
     return;
   } else {
     // Remove student portal stylesheet if on trainer routes
