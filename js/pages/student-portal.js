@@ -3304,9 +3304,11 @@ function initEmailLoginScreen() {
     err.style.display = 'none';
 
     try {
-      const student = await db.getStudentByEmail(email);
+      const students = await db.getAll('students');
+      const student = students.find(s => s.email?.toLowerCase().trim() === email);
       if (student) {
-        window.location.hash = \`/portal/\${student.id}\`;
+        window.location.hash = `#/${student.id}`;
+        window.location.reload();
       } else {
         err.textContent = 'E-mail não encontrado. Verifique ou fale com seu treinador.';
         err.style.display = 'block';
