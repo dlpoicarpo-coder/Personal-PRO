@@ -76,6 +76,22 @@ class Database {
   ]);
 
   // â”€â”€ GET ALL RECORDS â”€â”€
+    async getStudentByEmail(email) {
+    if (!this.supabase) return null;
+    try {
+      const { data, error } = await this.supabase
+        .from('students')
+        .select('*')
+        .filter('data->>email', 'eq', email);
+      if (data && data.length > 0) {
+        return { ...data[0].data, id: data[0].id };
+      }
+    } catch (e) {
+      console.error('getStudentByEmail error:', e);
+    }
+    return null;
+  }
+
   async getAll(storeName) {
     const trainerId = await this._getTrainerId();
     const local     = this._getLocal(storeName, trainerId) || [];

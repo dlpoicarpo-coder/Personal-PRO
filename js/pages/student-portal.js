@@ -2509,17 +2509,12 @@ const ESTRESSE_OPTIONS = [
 ];
 
 const DOR_OPTIONS = [
-  { value: '1', label: '1 - Nenhuma Dor', desc: 'MÃºsculos e articulaÃ§Ãµes 100% livres de dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '2', label: '2 - Leve', desc: 'Desconforto muscular leve residual pÃ³s-treino', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '3', label: '3 - Moderada', desc: 'Dor suportÃ¡vel, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '4', label: '4 - Moderada', desc: 'Dor suportÃ¡vel, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '5', label: '5 - IncÃ´moda', desc: 'Dor persistente nas articulaÃ§Ãµes ou tendÃµes', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '6', label: '6 - IncÃ´moda', desc: 'Dor persistente nas articulaÃ§Ãµes ou tendÃµes', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '7', label: '7 - Forte', desc: 'Dificulta a execuÃ§Ã£o de movimentos especÃ­ficos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '8', label: '8 - Forte', desc: 'Dificulta a execuÃ§Ã£o de movimentos especÃ­ficos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '9', label: '9 - Intensa', desc: 'Dor muito forte, impede ou dificulta treinar', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '10', label: '10 - Intensa / LesÃ£o', desc: 'Dor severa, risco de lesÃ£o ou incapacidade fÃ­sica', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
-];
+    { value: '1', label: '1 - Nenhuma Dor', desc: 'Músculos e articulações 100% livres de dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+    { value: '2', label: '2 - Leve', desc: 'Desconforto muscular leve residual pós-treino', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+    { value: '3', label: '3 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+    { value: '4', label: '4 - Incômoda / Forte', desc: 'Dor persistente nas articulações, dificulta execução', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+    { value: '5', label: '5 - Intensa / Lesão', desc: 'Dor severa, risco de lesão ou incapacidade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+  ];
 
 const DOR_OPTIONS_0 = [
   { value: '0', label: '0 - Sem Dor', desc: 'ArticulaÃ§Ãµes e tendÃµes 100% confortÃ¡veis', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
@@ -3299,8 +3294,7 @@ function initEmailLoginScreen() {
     err.style.display = 'none';
 
     try {
-      const students = await db.getAll('students');
-      const student = students.find(s => s.email?.toLowerCase().trim() === email);
+      const student = await db.getStudentByEmail(email);
       if (student) {
         window.location.hash = `#/${student.id}`;
         window.location.reload();
