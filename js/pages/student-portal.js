@@ -1,4 +1,4 @@
-﻿// ========================================
+// ========================================
 // PERSONAL PRO â€” Student Portal (PWA Mobile)
 // Portal do Aluno Â· Glass UI Â· PIN Auth
 // v2 â€” Check-in reminders, Series Colors,
@@ -585,7 +585,20 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         </div>`}
 
       <!-- Macrociclo atual -->
-      ${renderMacrocycleInfo(student, workouts)}
+      <!-- Macrociclo atual -->
+      ${currentMacro ? `
+        <div class="glass-card portal-macro-card">
+          <div class="portal-card-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Macrociclo Atual
+          </div>
+          <div class="portal-macro-name">${currentMacro.name || 'Macrociclo'}</div>
+          <div class="portal-macro-progress-bar">
+            <div class="portal-macro-progress-fill" style="width:${macroProgress}%"></div>
+          </div>
+          <div class="portal-macro-pct">${macroProgress}% concluído &middot; ${macroSessionsCount} sessões no ciclo</div>
+          ${currentMacro.endDate ? `<div class="text-xs" style="color:var(--portal-text-muted);margin-top:4px">Termina em: ${new Date(currentMacro.endDate).toLocaleDateString('pt-BR')}</div>` : ''}
+        </div>` : ''}
 
       <!-- BotÃ£o Mensagem -->
       <button class="portal-btn-wa" id="portalMsgBtn">
