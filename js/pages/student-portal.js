@@ -3080,18 +3080,6 @@ function showPortalCheckoutModal(session) {
             ${session.workoutName || 'Treino'} &middot; ${new Date(session.date).toLocaleDateString('pt-BR')}
           </div>
         </div>
-    <div id="portalCheckoutSheet">
-      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
-        <div style="width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15);"></div>
-      </div>
-
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-        <div>
-          <span style="font-size: 1.1rem; font-weight: 800; color: var(--portal-text, #f1f5f9);">Checkout do Treino</span>
-          <div style="font-size: 0.75rem; color: var(--portal-text-muted, #94a3b8); margin-top: 2px;">
-            ${session.workoutName || 'Treino'} &middot; ${new Date(session.date).toLocaleDateString('pt-BR')}
-          </div>
-        </div>
         <button id="closePortalCheckoutBtn" style="background: rgba(255,255,255,0.08); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--portal-text, #fff);">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -3126,32 +3114,7 @@ function showPortalCheckoutModal(session) {
           </div>
         </div>
 
-        <!-- 3. ARTICULAR PAIN INLINE CARDS -->
-        <div class="portal-checkout-field">
-          <label class="portal-checkout-label">🩹 Dor Articular ou Desconforto</label>
-          ${renderInlineCardSelector('pain', DOR_OPTIONS_0, currentPain, 'window.onCheckoutPainChange')}
-        </div>
-
-        <!-- 4. PAIN LOCATION CHIPS -->
-        <div id="chkModalPainGrp" style="display:${currentPain >= 1 ? 'block' : 'none'}; margin-bottom:16px;">
-          <label class="portal-checkout-label" style="font-size:0.8rem">Locais de dor <span class="portal-checkout-desc" style="display:inline;margin-left:4px">(selecione um ou mais)</span></label>
-          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; padding:6px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:12px">
-            ${PAIN_CHIPS.map(c => {
-              const active = currentPainRegions.includes(c.id);
-              return `
-                <label class="portal-pain-chip-chk ${active ? 'active' : ''}">
-                  <input type="checkbox" name="chkPainRegions" value="${c.id}" ${active ? 'checked' : ''} style="display:none">
-                  ${c.label}
-                </label>
-              `;
-            }).join('')}
-          </div>
-          <div style="margin-top: 10px;">
-            <input type="text" id="chkModalPainDescription" value="${session.postBiofeedback?.painDescription || ''}" placeholder="Descreva brevemente o incômodo (opcional)..." class="portal-textarea" style="padding: 8px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.05); text-align: left;">
-          </div>
-        </div>
-
-        <!-- 5. NOTES -->
+        <!-- 3. NOTES -->
         <div class="portal-checkout-field">
           <label class="portal-checkout-label">📝 Observações do Treino</label>
           <textarea id="chkModalNotes" class="portal-textarea" rows="2" placeholder="Ex: RIR em agachamento foi menor, me senti muito forte hoje...">${currentNotes}</textarea>
@@ -3162,14 +3125,8 @@ function showPortalCheckoutModal(session) {
     </div>
   `;
 
+  overlay.innerHTML = html;
   container.appendChild(overlay);
-
-  // Global callback to toggle articular pain location chips dynamic displays
-  window.onCheckoutPainChange = (val) => {
-    const painVal = parseInt(val) || 0;
-    const grp = document.getElementById('chkModalPainGrp');
-    if (grp) grp.style.display = painVal >= 1 ? 'block' : 'none';
-  };
 
   // Feeling buttons
   let selectedFeeling = currentFeeling;
@@ -3178,18 +3135,6 @@ function showPortalCheckoutModal(session) {
       overlay.querySelectorAll('.portal-feeling-emoji-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedFeeling = parseInt(btn.dataset.val);
-    });
-  });
-
-  // Pain location chips
-  overlay.querySelectorAll('.portal-pain-chip-chk').forEach(lbl => {
-    const input = lbl.querySelector('input');
-    input.addEventListener('change', () => {
-      if (input.checked) {
-        lbl.classList.add('active');
-      } else {
-        lbl.classList.remove('active');
-      }
     });
   });
 
@@ -3208,22 +3153,12 @@ function showPortalCheckoutModal(session) {
   // Submit Handler
   document.getElementById('chkModalSubmitBtn').addEventListener('click', async () => {
     const pse = parseInt(document.getElementById('portal_pse')?.value) || 5;
-    const pain = parseInt(document.getElementById('portal_pain')?.value) || 0;
     const notes = document.getElementById('chkModalNotes').value || '';
-    const painDescription = document.getElementById('chkModalPainDescription')?.value || '';
-
-    const painRegions = [];
-    overlay.querySelectorAll('input[name="chkPainRegions"]:checked').forEach(input => {
-      painRegions.push(input.value);
-    });
 
     const postBiofeedback = {
       pse,
       feeling: selectedFeeling,
       satisfaction: selectedFeeling * 2, // Map 1-5 feeling to 2-10 satisfaction
-      pain,
-      painRegions,
-      painDescription,
       notes,
       date: new Date().toISOString(),
       submittedAt: new Date().toISOString(),
@@ -3257,9 +3192,9 @@ function showPortalCheckoutModal(session) {
           food: preBf.food || session.preBiofeedback?.food || 5,
           motivation: preBf.motivation || session.preBiofeedback?.motivation || 7,
           menstrualCycle: preBf.menstrualCycle || session.preBiofeedback?.menstrualCycle || '',
-          pain: pain !== undefined ? pain : (preBf.pain || 1),
-          painRegions: painRegions || preBf.painRegions || [],
-          painDescription: painDescription || preBf.painDescription || '',
+          pain: preBf.pain || session.preBiofeedback?.pain || 1,
+          painRegions: preBf.painRegions || session.preBiofeedback?.painRegions || [],
+          painDescription: preBf.painDescription || session.preBiofeedback?.painDescription || '',
           pse,
           feeling: selectedFeeling,
           satisfaction: selectedFeeling * 2,

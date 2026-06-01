@@ -898,36 +898,7 @@ export async function renderPostForm(sessionId) {
               <input type="hidden" name="feeling" id="hidden_feeling" value="3" />
             </div>
 
-            <!-- 3. Articular Pain post-workout -->
-            ${scalePickerHTML('postPain', DOR_SCALE, 0, '🩹 Dor Articular ou Desconforto', 'Sente alguma dor ou incômodo articular pós-treino?')}
-
-            <!-- 4. Pain regions container -->
-            <div id="postPainGroup" style="display:none;margin-bottom:22px">
-              <div class="q-label" style="margin-bottom:10px">Selecione a região da dor</div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; padding:6px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:12px">
-                ${[
-                  { id: 'joelho_e', label: 'Joelho Esq.' },
-                  { id: 'joelho_d', label: 'Joelho Dir.' },
-                  { id: 'ombro_e', label: 'Ombro Esq.' },
-                  { id: 'ombro_d', label: 'Ombro Dir.' },
-                  { id: 'lombar', label: 'Coluna Lombar' },
-                  { id: 'cervical', label: 'Coluna Cervical' },
-                  { id: 'quadril', label: 'Quadril' },
-                  { id: 'tornozelo', label: 'Tornozelo/Pé' },
-                  { id: 'cotovelo', label: 'Cotovelo/Punho' }
-                ].map(c => `
-                  <label class="portal-pain-chip-chk">
-                    <input type="checkbox" name="post_pain_regions" value="${c.id}" style="display:none">
-                    ${c.label}
-                  </label>
-                `).join('')}
-              </div>
-              <div style="margin-top: 10px;">
-                <input type="text" name="postPainDescription" placeholder="Descreva brevemente o incômodo (opcional)..." class="portal-textarea" style="padding: 8px 12px; font-size: 0.8rem; background: rgba(255,255,255,0.05); text-align: left; width: 100%;">
-              </div>
-            </div>
-
-            <!-- 5. Notes -->
+            <!-- 3. Notes -->
             <div class="q">
               <div class="q-label">Alguma observação a acrescentar?</div>
               <textarea name="notes" placeholder="Opcional — dificuldade em algum exercício, dor, algo diferente..."></textarea>
@@ -952,18 +923,8 @@ export async function renderPostForm(sessionId) {
 }
 
 export function initPostForm() {
-  // Bind global pain change handler
-  window.onPostPainChange = (val) => {
-    const painVal = parseInt(val) || 0;
-    const grp = document.getElementById('postPainGroup');
-    if (grp) grp.style.display = painVal >= 1 ? 'block' : 'none';
-  };
-
   // Trigger initial state
   setTimeout(() => {
-    const initPain = parseInt(document.getElementById('hidden_postPain')?.value) || 0;
-    window.onPostPainChange(initPain);
-
     // Feeling buttons
     document.querySelectorAll('#postStudentForm .portal-feeling-emoji-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -971,17 +932,6 @@ export function initPostForm() {
         btn.classList.add('active');
         const hiddenFeeling = document.getElementById('hidden_feeling');
         if (hiddenFeeling) hiddenFeeling.value = btn.dataset.val;
-      });
-    });
-
-    // Pain location chips
-    document.querySelectorAll('#postStudentForm .portal-pain-chip-chk').forEach(lbl => {
-      lbl.addEventListener('click', () => {
-        const input = lbl.querySelector('input');
-        if (input) {
-          input.checked = !input.checked;
-          lbl.classList.toggle('active', input.checked);
-        }
       });
     });
   }, 100);
@@ -994,7 +944,6 @@ export function initPostForm() {
     try {
       const fd      = new FormData(e.target);
       const data    = Object.fromEntries(fd);
-      const postPainRegions = fd.getAll('post_pain_regions');
       const session = await publicGet('sessions', data.sessionId);
 
       if (!session) throw new Error('Sessão não encontrada. O link pode ter expirado.');
@@ -1002,7 +951,6 @@ export function initPostForm() {
         const dur = session.totalDuration ? Math.round(session.totalDuration/60) : 60;
         const pse = parseInt(data.pse) || 7;
         const tqrPost = 7; // TQR pós removido do formulário — usar neutro
-        const postPain = parseInt(data.postPain) || 0;
         const feeling = parseInt(data.feeling) || 3;
         const satisfaction = feeling * 2; // Map 1-5 to 2-10
 
@@ -1011,9 +959,6 @@ export function initPostForm() {
           tqrPost,
           feeling,
           satisfaction,
-          postPain,
-          painRegions: postPainRegions,
-          painDescription: data.postPainDescription || '',
           notes: data.notes||'',
           submittedByStudent: true,
           submittedAt: Calc.nowISO(),
@@ -1027,11 +972,8 @@ export function initPostForm() {
             await publicPut('biofeedback', {
               ...preBf, pse, tqrPost, duration: dur,
               trainingLoad: pse * dur,
-              postPain,
-              postPainRegions,
               satisfaction,
               postNotes: data.notes||'',
-              postPainDescription: data.postPainDescription || '',
               formType: 'complete',
               sessionId: data.sessionId, completedAt: Calc.nowISO(),
             });
@@ -1042,10 +984,8 @@ export function initPostForm() {
             studentId: session.studentId, trainerId: data.trainerId||session.trainerId||'',
             date: session.date||Calc.nowISO(),
             pse, tqrPost, duration: dur, trainingLoad: pse*dur,
-            postPain, postPainRegions,
             satisfaction,
             notes: data.notes||'',
-            painDescription: data.postPainDescription || '',
             formType:'post', sessionId: data.sessionId,
           });
         }
