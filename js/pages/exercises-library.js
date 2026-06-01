@@ -420,6 +420,12 @@ export function initExercisesLibrary(navigateFn) {
         const fd = new FormData(document.getElementById('exForm'));
         const d = Object.fromEntries(fd);
         if (!d.name) { notify.error('Nome obrigatório'); return; }
+        const allEx = await db.getAll('exercises');
+        const cleanName = d.name.toLowerCase().trim();
+        if (allEx.some(ex => ex.name.toLowerCase().trim() === cleanName)) {
+          notify.error('Já existe um exercício com este nome nesta biblioteca.');
+          return;
+        }
         await db.add('exercises', d);
         notify.success('Exercício criado!');
         closeModal(); navigateFn('/exercicios');
@@ -466,7 +472,15 @@ export function initExercisesLibrary(navigateFn) {
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: 'Salvar', class: 'btn-primary', onClick: async () => {
             const fd = new FormData(document.getElementById('exForm'));
-            await db.put('exercises', { ...ex, ...Object.fromEntries(fd) });
+            const d = Object.fromEntries(fd);
+            if (!d.name) { notify.error('Nome obrigatório'); return; }
+            const allEx = await db.getAll('exercises');
+            const cleanName = d.name.toLowerCase().trim();
+            if (allEx.some(otherEx => otherEx.id !== ex.id && otherEx.name.toLowerCase().trim() === cleanName)) {
+              notify.error('Já existe outro exercício com este nome nesta biblioteca.');
+              return;
+            }
+            await db.put('exercises', { ...ex, ...d });
             notify.success('Atualizado!'); closeModal(); navigateFn('/exercicios');
           }}
         ]
