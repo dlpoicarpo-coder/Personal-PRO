@@ -3128,7 +3128,6 @@ function showPortalCheckoutModal(session) {
     </div>
   `;
 
-  overlay.innerHTML = html;
   container.appendChild(overlay);
 
   // Feeling buttons
