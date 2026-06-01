@@ -480,6 +480,7 @@ class Database {
       { name: 'SÃ©rie de RepetiÃ§Ã£o (VO2max)', category: 'Cardio', description: 'Intervalos de 3-5min a 95-100% VO2max.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforÃ§o' },
       { name: 'Steady State',    category: 'Cardio',      description: 'Ritmo constante e moderado. Zona 2-3. Base aerÃ³bica.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
       { name: 'Progressivo',     category: 'Cardio',      description: 'Aumentar velocidade/intensidade a cada bloco. Ex: +0.5km/h a cada 5min.', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
+    ];
     const existing = await this.getAll('methods');
     
     // Clean up legacy non-deterministic default methods for this trainer
