@@ -542,16 +542,16 @@ const ALIMENTACAO_SCALE = [
 ];
 
 const ESTRESSE_SCALE = [
-  { v:1,  color:'#10b981', label:'1 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
-  { v:2,  color:'#10b981', label:'2 - Muito Relaxado', desc:'Sem nenhum estresse mental, mente tranquila' },
-  { v:3,  color:'#10b981', label:'3 - Tranquilo', desc:'Pouco estresse na rotina diária' },
+  { v:1,  color:'#10b981', label:'1 - Sem Estresse', desc:'Mente totalmente calma, relaxamento profundo' },
+  { v:2,  color:'#10b981', label:'2 - Muito Relaxado', desc:'Mente tranquila, sem estresse perceptível' },
+  { v:3,  color:'#10b981', label:'3 - Relaxado', desc:'Pequenas preocupações normais, mas bem tranquilo' },
   { v:4,  color:'#10b981', label:'4 - Tranquilo', desc:'Pouco estresse na rotina diária' },
-  { v:5,  color:'#eab308', label:'5 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
-  { v:6,  color:'#eab308', label:'6 - Moderado', desc:'Estresse sob controle, rotina equilibrada' },
-  { v:7,  color:'#fb923c', label:'7 - Estressado', desc:'Rotina de trabalho/estudos pesada e desgastante' },
+  { v:5,  color:'#eab308', label:'5 - Sob Controle', desc:'Estresse mínimo, rotina equilibrada' },
+  { v:6,  color:'#eab308', label:'6 - Moderado', desc:'Estresse sob controle, mas mente ativa e cansada' },
+  { v:7,  color:'#fb923c', label:'7 - Um Pouco Estressado', desc:'Cansaço acumulando, momentos de desgaste' },
   { v:8,  color:'#fb923c', label:'8 - Estressado', desc:'Rotina de trabalho/estudos pesada e desgastante' },
-  { v:9,  color:'#ef4444', label:'9 - Muito Estressado', desc:'Mente no limite, exaustão mental e ansiedade' },
-  { v:10, color:'#ef4444', label:'10 - Muito Estressado', desc:'Mente no limite, exaustão mental e ansiedade' }
+  { v:9,  color:'#ef4444', label:'9 - Muito Estressado', desc:'Alto estresse, cansaço constante e mente cheia' },
+  { v:10, color:'#ef4444', label:'10 - Extremamente Estressado', desc:'Mente no limite, exaustão mental e ansiedade' }
 ];
 
 const DOR_SCALE = [

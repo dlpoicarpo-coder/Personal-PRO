@@ -2603,16 +2603,16 @@ const ALIMENTACAO_OPTIONS = [
 ];
 
 const ESTRESSE_OPTIONS = [
-  { value: '1', label: '1 - Muito Relaxado', desc: 'Sem nenhum estresse mental, mente tranquila', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '2', label: '2 - Muito Relaxado', desc: 'Sem nenhum estresse mental, mente tranquila', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '3', label: '3 - Tranquilo', desc: 'Pouco estresse na rotina diária', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '1', label: '1 - Sem Estresse', desc: 'Mente totalmente calma, relaxamento profundo', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '2', label: '2 - Muito Relaxado', desc: 'Mente tranquila, sem estresse perceptível', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Relaxado', desc: 'Pequenas preocupações normais, mas bem tranquilo', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   { value: '4', label: '4 - Tranquilo', desc: 'Pouco estresse na rotina diária', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '5', label: '5 - Moderado', desc: 'Estresse sob controle, rotina equilibrada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '6', label: '6 - Moderado', desc: 'Estresse sob controle, rotina equilibrada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '7', label: '7 - Estressado', desc: 'Rotina de trabalho/estudos pesada e desgastante', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '5', label: '5 - Sob Controle', desc: 'Estresse mínimo, rotina equilibrada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Moderado', desc: 'Estresse sob controle, mas mente ativa e cansada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '7', label: '7 - Um Pouco Estressado', desc: 'Cansaço acumulando, momentos de desgaste', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
   { value: '8', label: '8 - Estressado', desc: 'Rotina de trabalho/estudos pesada e desgastante', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '9', label: '9 - Muito Estressado', desc: 'Mente no limite, exaustão mental e ansiedade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '10', label: '10 - Muito Estressado', desc: 'Mente no limite, exaustão mental e ansiedade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+  { value: '9', label: '9 - Muito Estressado', desc: 'Alto estresse, cansaço constante e mente cheia', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', label: '10 - Extremamente Estressado', desc: 'Mente no limite, exaustão mental e ansiedade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
 ];
 
 const DOR_OPTIONS = [
