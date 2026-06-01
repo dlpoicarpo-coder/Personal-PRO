@@ -527,8 +527,14 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         </div>`;
   }
 
-  // Checkout reminder
-  const needsCheckout = sessions.filter(s => s.status === 'completed' && (!s.postBiofeedback || !s.postBiofeedback.submittedByStudent));
+  // Checkout reminder: only sessions completed in the last 3 days
+  const needsCheckout = sessions.filter(s => {
+    if (s.status !== 'completed') return false;
+    if (s.postBiofeedback && s.postBiofeedback.submittedByStudent) return false;
+    if (!s.date) return false;
+    const daysAgo = (now - new Date(s.date + 'T12:00')) / 86400000;
+    return daysAgo <= 3;
+  });
   let checkoutBanner = '';
   if (needsCheckout.length > 0) {
     const s = needsCheckout[0];
@@ -1435,8 +1441,15 @@ function renderSessoes(sessions, schedules) {
 
   const allCompleted = sessions.filter(s => s.status === 'completed');
   const completed = allCompleted.sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,20);
-  // Sessions needing checkout (no student checkout)
-  const needsCheckout = allCompleted.filter(s => !s.postBiofeedback || !s.postBiofeedback.submittedByStudent).slice(0,3);
+  // Sessions needing checkout (no student checkout, completed in the last 3 days)
+  const needsCheckout = allCompleted.filter(s => {
+    if (!s.postBiofeedback || !s.postBiofeedback.submittedByStudent) {
+      if (!s.date) return false;
+      const daysAgo = (now - new Date(s.date + 'T12:00')) / 86400000;
+      return daysAgo <= 3;
+    }
+    return false;
+  }).slice(0,3);
 
   return `
     <div class="portal-section">
