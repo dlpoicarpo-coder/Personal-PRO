@@ -99,6 +99,11 @@ export async function navigateTo(path) {
     initLogin(() => navigateTo('/'));
     return;
   }
+
+  // Asynchronously seed templates once the trainer is authenticated
+  import('./db.js').then(({ default: db }) => {
+    db.seedTemplates().catch(console.error);
+  });
   
   // 2. Create layout if missing
   appContainer.className = 'app-layout';

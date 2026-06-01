@@ -588,19 +588,56 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         </div>`}
 
       <!-- Macrociclo atual -->
-      ${currentMacro ? `
-        <div class="glass-card portal-macro-card">
-          <div class="portal-card-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Macrociclo Atual
+      ${(() => {
+        if (!currentMacro) return '';
+        
+        let weekTimelineHtml = '';
+        if (currentMacro.weeks && currentMacro.weeks.length) {
+          const macroStart = new Date(currentMacro.startDate).getTime();
+          const currentWeek = Math.ceil((Date.now() - macroStart) / (7 * 86400000));
+          
+          weekTimelineHtml = `
+            <div class="week-timeline" style="margin: 14px 0 8px; display: flex; gap: 4px; align-items: flex-end; min-height: 60px;">
+              ${currentMacro.weeks.map((w, i) => {
+                const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
+                return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; min-width:20px; border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label} — Vol: ${w.volumePct}% | Int: ${w.intensityPct}%">
+                  <div class="week-num" style="font-size:0.6rem; font-weight:600; color:${intColor}">S${w.week}</div>
+                  <div class="week-bar-int" style="height:${w.intensityPct * 0.3}px; background:${intColor}; width:100%; max-width:16px; border-radius:2px; min-height:2px;"></div>
+                </div>`;
+              }).join('')}
+            </div>
+            <div class="flex gap-md mt-xs text-xs text-muted" style="flex-wrap:wrap; display:flex; gap:8px; margin-bottom:12px;">
+              <span style="color:#22c55e; font-size:0.65rem;">● Leve</span>
+              <span style="color:#eab308; font-size:0.65rem;">● Mod</span>
+              <span style="color:#f97316; font-size:0.65rem;">● Alta</span>
+              <span style="color:#ef4444; font-size:0.65rem;">● M.Alta</span>
+              <span style="color:#3b82f6; font-size:0.65rem;">● Deload</span>
+            </div>
+          `;
+        } else {
+          // Fallback to simple progress bar
+          weekTimelineHtml = `
+            <div class="portal-macro-progress-bar">
+              <div class="portal-macro-progress-fill" style="width:${macroProgress}%"></div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="glass-card portal-macro-card">
+            <div class="portal-card-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Macrociclo Atual
+            </div>
+            <div class="portal-macro-name">${currentMacro.name || 'Macrociclo'}</div>
+            
+            ${weekTimelineHtml}
+
+            <div class="portal-macro-pct" style="text-align:left; margin-top:6px;">${macroProgress}% concluído &middot; ${macroSessionsCount} sessões no ciclo</div>
+            ${currentMacro.endDate ? `<div class="text-xs" style="color:var(--portal-text-muted);margin-top:4px">Termina em: ${new Date(currentMacro.endDate).toLocaleDateString('pt-BR')}</div>` : ''}
           </div>
-          <div class="portal-macro-name">${currentMacro.name || 'Macrociclo'}</div>
-          <div class="portal-macro-progress-bar">
-            <div class="portal-macro-progress-fill" style="width:${macroProgress}%"></div>
-          </div>
-          <div class="portal-macro-pct">${macroProgress}% concluído &middot; ${macroSessionsCount} sessões no ciclo</div>
-          ${currentMacro.endDate ? `<div class="text-xs" style="color:var(--portal-text-muted);margin-top:4px">Termina em: ${new Date(currentMacro.endDate).toLocaleDateString('pt-BR')}</div>` : ''}
-        </div>` : ''}
+        `;
+      })()}
 
       <!-- Botão Mensagem -->
       <button class="portal-btn-wa" id="portalMsgBtn">
@@ -618,6 +655,46 @@ function initHomeSection(student, tid, sessions, biofeedbacks) {
     const url = phone ? `https://wa.me/${phone.startsWith('55')?phone:'55'+phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
     window.open(url, '_blank');
   });
+}
+
+function getWorkoutSVG(name) {
+  const norm = (name || '').toLowerCase();
+  
+  if (norm.includes('cardio') || norm.includes('corrida') || norm.includes('esteira') || norm.includes('bike') || norm.includes('aerob') || norm.includes('caminh') || norm.includes('pedal') || norm.includes('hiit')) {
+    return `
+      <svg class="portal-workout-pick-svg icon-cardio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      </svg>
+    `;
+  }
+  
+  if (norm.includes('core') || norm.includes('funcional') || norm.includes('abd') || norm.includes('along') || norm.includes('mobil') || norm.includes('recup') || norm.includes('regen') || norm.includes('estabil')) {
+    return `
+      <svg class="portal-workout-pick-svg icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    `;
+  }
+  
+  if (norm.includes('livre') || !norm) {
+    return `
+      <svg class="portal-workout-pick-svg icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="6" />
+        <circle cx="12" cy="12" r="2" />
+      </svg>
+    `;
+  }
+  
+  return `
+    <svg class="portal-workout-pick-svg icon-dumbbell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="6" y1="12" x2="18" y2="12" />
+      <rect x="3" y="8" width="3" height="8" rx="1" />
+      <rect x="18" y="8" width="3" height="8" rx="1" />
+      <rect x="1" y="10" width="2" height="4" rx="0.5" />
+      <rect x="21" y="10" width="2" height="4" rx="0.5" />
+    </svg>
+  `;
 }
 
 // ── TREINAR (Smart) ────────────────────────────────────────────────
@@ -656,13 +733,13 @@ function renderTreinar(workouts, schedules) {
       <div class="portal-bio-field">
         <div class="portal-workout-picker" id="soloWorkoutPicker">
           <div class="portal-workout-pick-item selected" data-wid="">
-            <div class="portal-workout-pick-icon">🎯</div>
+            <div class="portal-workout-pick-icon">${getWorkoutSVG('Livre')}</div>
             <div class="portal-workout-pick-name">Livre</div>
             <div class="portal-workout-pick-sub">Sem base</div>
           </div>
           ${workouts.slice(0,6).map(w => `
             <div class="portal-workout-pick-item" data-wid="${w.id}">
-              <div class="portal-workout-pick-icon">💪</div>
+              <div class="portal-workout-pick-icon">${getWorkoutSVG(w.name)}</div>
               <div class="portal-workout-pick-name">${(w.name||'Treino').substring(0,18)}${(w.name||'').length>18?'…':''}</div>
               <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
             </div>
@@ -1623,12 +1700,24 @@ function initBio() {
     e.preventDefault();
     const fd = new FormData(e.target);
     const painVal = parseInt(fd.get('pain')) || 1;
+    
+    const todayYMD = new Date().toISOString().slice(0, 10);
+    const bfId = `bf_${portalState.studentId}_${todayYMD}`;
+    let existingBf = {};
+    try {
+      existingBf = await db.get('biofeedback', bfId) || {};
+    } catch (e) {
+      console.warn('Erro ao obter biofeedback existente:', e);
+    }
+
     const data = {
+      ...existingBf,
+      id: bfId,
       studentId: portalState.studentId,
       trainerId: portalState.trainerId,
       trainer_id: portalState.trainerId,
-      formType: 'pre',
-      date: new Date().toISOString(),
+      formType: existingBf.formType === 'complete' ? 'complete' : 'pre',
+      date: existingBf.date || new Date().toISOString(),
       sleep: parseInt(fd.get('sleep')),
       tqr: parseInt(fd.get('tqr')),
       stress: parseInt(fd.get('stress')),
@@ -1638,25 +1727,15 @@ function initBio() {
       food: parseInt(fd.get('food')) || 5,
       motivation: parseInt(fd.get('motivation')) || 7,
       menstrualCycle: fd.get('menstrualCycle') || '',
-      notes: fd.get('notes'),
+      notes: fd.get('notes') || existingBf.notes || '',
     };
 
     // Mapeamento para retrocompatibilidade
     data.mood = data.tqr;
     data.energy = data.tqr;
 
-    // Sempre salvar localmente primeiro (Offline-first & feedback instantâneo no portal local)
-    await db.add('biofeedback', data);
-
-    try {
-      const { getSupabase } = await import('../utils/auth.js');
-      const sb = getSupabase?.();
-      if (sb && data.trainerId) {
-        await sb.from('biofeedback').insert([data]);
-      }
-    } catch (sbErr) {
-      console.warn('Erro ao inserir no Supabase, mantido em local DB:', sbErr);
-    }
+    // Sempre salvar localmente e sincronizar via db.put (que cuida do Supabase com o wrapper correto)
+    await db.put('biofeedback', data);
 
     e.target.innerHTML = `<div class="portal-success">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -3144,53 +3223,43 @@ function showPortalCheckoutModal(session) {
 
       // Sincronizar com tabela biofeedback
       try {
-        const allBf = await db.getAll('biofeedback');
-        let bfEntry = allBf.find(b => b.sessionId === session.id);
         const sessDateStr = (session.date || new Date().toISOString()).slice(0, 10);
-        if (!bfEntry) {
-          bfEntry = allBf.find(b => 
-            b.studentId === session.studentId && 
-            b.formType === 'complete' && 
-            (b.date || '').slice(0, 10) === sessDateStr
-          );
-        }
-        // Busca check-in do mesmo dia para mesclar dados pre/pos
-        const preBf = allBf.find(b =>
-          b.studentId === session.studentId &&
-          b.formType === 'pre' &&
-          (b.date || '').slice(0, 10) === sessDateStr
-        ) || {};
+        const bfId = `bf_${session.studentId}_${sessDateStr}`;
+        const preBf = await db.get('biofeedback', bfId) || {};
         
         const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
         const trainingLoad = Calc.cargaTreino ? Calc.cargaTreino(pse, durMin) : (pse * durMin);
         
         const newBfData = {
+          ...preBf,
+          id: bfId,
           studentId: session.studentId,
-          date: session.date || new Date().toISOString(),
+          trainerId: session.trainerId || portalState.trainerId,
+          trainer_id: session.trainerId || portalState.trainerId,
+          date: session.date || preBf.date || new Date().toISOString(),
           sleep: preBf.sleep || session.preBiofeedback?.sleep || 7,
-          tqr: preBf.tqr || preBf.energy || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
-          energy: preBf.energy || preBf.tqr || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 7,
+          tqr: preBf.tqr || preBf.energy || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
+          energy: preBf.energy || preBf.tqr || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
           stress: preBf.stress || session.preBiofeedback?.stress || 5,
-          pain,
-          painRegions,
-          painDescription,
+          food: preBf.food || session.preBiofeedback?.food || 5,
+          motivation: preBf.motivation || session.preBiofeedback?.motivation || 7,
+          menstrualCycle: preBf.menstrualCycle || session.preBiofeedback?.menstrualCycle || '',
+          pain: pain !== undefined ? pain : (preBf.pain || 1),
+          painRegions: painRegions || preBf.painRegions || [],
+          painDescription: painDescription || preBf.painDescription || '',
           pse,
           feeling: selectedFeeling,
           satisfaction: selectedFeeling * 2,
           duration: durMin,
           trainingLoad,
-          notes,
+          notes: notes || preBf.notes || '',
           sessionId: session.id,
           formType: 'complete',
           submittedAt: new Date().toISOString(),
           submittedByStudent: true
         };
         
-        if (bfEntry) {
-          await db.put('biofeedback', { ...bfEntry, ...newBfData });
-        } else {
-          await db.add('biofeedback', newBfData);
-        }
+        await db.put('biofeedback', newBfData);
       } catch (bfErr) {
         console.error('Erro ao sincronizar biofeedback:', bfErr);
       }

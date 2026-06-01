@@ -1,4 +1,4 @@
-﻿// ========================================
+// ========================================
 // PERSONAL PRO â€” Database (v3)
 // Supabase Auth + Multi-Tenant Isolation
 // All records scoped to trainer_id (user.id)
@@ -8,6 +8,18 @@ import { getSupabase, getCurrentUser } from './utils/auth.js';
 
 const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
+
+function slugify(text) {
+  return (text || '')
+    .toString()
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 -]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/-+/g, '_');
+}
 
 class Database {
   constructor() {
@@ -187,16 +199,19 @@ class Database {
     return all.filter(item => item && item[indexName] === value);
   }
 
-  // â”€â”€ PUT (UPSERT) â”€â”€
+  // ── PUT (UPSERT) ──
   async put(storeName, item) {
-    const trainerId = await this._getTrainerId();
+    const trainerId = await this._getTrainerId() || item.trainer_id || item.trainerId;
 
     // Normalize id
     if (!item.id && item.key) item.id = item.key;
     if (!item.id) item.id = crypto.randomUUID();
     item.updatedAt = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000),s=o<=0?'+':'-',h=String(Math.floor(Math.abs(o)/60)).padStart(2,'0'),m=String(Math.abs(o)%60).padStart(2,'0'); return l.toISOString().slice(0,-1)+s+h+':'+m; })();
     if (!item.createdAt) item.createdAt = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000),s=o<=0?'+':'-',h=String(Math.floor(Math.abs(o)/60)).padStart(2,'0'),m=String(Math.abs(o)%60).padStart(2,'0'); return l.toISOString().slice(0,-1)+s+h+':'+m; })();
-    if (trainerId) item.trainer_id = trainerId;
+    if (trainerId) {
+      item.trainer_id = trainerId;
+      item.trainerId = trainerId;
+    }
 
     // Save locally first (offline-first)
     const all = this._getLocal(storeName, trainerId);
@@ -267,9 +282,12 @@ class Database {
     this._currentUser = user;
   }
 
-  // â”€â”€ SEED INITIAL TEMPLATES â”€â”€
+  // ── SEED INITIAL TEMPLATES ──
   async seedTemplates() {
-    // Sempre verificar mÃ©todos independente do seed de exercÃ­cios
+    const trainerId = await this._getTrainerId();
+    if (!trainerId) return;
+
+    // Sempre verificar métodos independente do seed de exercícios
     await this.seedMethods();
 
     const exercisesCount = await this.count('exercises');
@@ -409,26 +427,26 @@ class Database {
         { name: 'Abertura de Quadril com Haltere', muscleGroup: 'GlÃºteos',       category: 'Mobilidade', equipment: 'Halteres',       loadType: 'weight',     description: 'Fortalecimento e mobilidade do glÃºteo mÃ©dio.' },
       ];
 
-      // Salvar mÃ©todos â€” delegado para seedMethods() que jÃ¡ rodou antes
-      // Adicionar apenas exercÃ­cios que nÃ£o existem ainda
       const existing = await this.getAll('exercises');
-      const existingNames = new Set(existing.map(e => e.name.toLowerCase()));
-      for (const ex of exercises) {
-        if (!existingNames.has(ex.name.toLowerCase())) {
-          await this.add('exercises', { ...ex, is_default: true });
-        }
+      
+      // Clean up legacy non-deterministic default templates for this trainer
+      const defaultToClean = existing.filter(e => e.is_default && !e.id.startsWith('ex_'));
+      for (const ex of defaultToClean) {
+        await this.delete('exercises', ex.id);
       }
 
-      // Marcar exercÃ­cios existentes sem is_default como padrÃ£o
-      const toMark = existing.filter(e => !e.is_default);
-      for (const e of toMark) {
-        await this.put('exercises', { ...e, is_default: true });
+      // Seed exercises deterministically
+      for (const ex of exercises) {
+        const id = 'ex_' + slugify(ex.name) + '_' + trainerId;
+        await this.put('exercises', { ...ex, id, is_default: true, trainer_id: trainerId });
       }
     }
   }
 
-  // â”€â”€ SEED MÃ‰TODOS (sempre verifica, independente do seed de exercÃ­cios) â”€â”€
+  // ── SEED MÉTODOS ──
   async seedMethods() {
+    const trainerId = await this._getTrainerId();
+    if (!trainerId) return;
     const methods = [
       // ForÃ§a / Hipertrofia
       { name: 'Drop-set',       category: 'Hipertrofia', description: 'Executar atÃ© a falha, reduzir carga ~20% e continuar sem descanso. Repetir 2-3x.', sets: '3+drops', repsHint: '8-12 + drops', restHint: '120-180s entre drop-sets completos' },
@@ -462,18 +480,18 @@ class Database {
       { name: 'SÃ©rie de RepetiÃ§Ã£o (VO2max)', category: 'Cardio', description: 'Intervalos de 3-5min a 95-100% VO2max.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforÃ§o' },
       { name: 'Steady State',    category: 'Cardio',      description: 'Ritmo constante e moderado. Zona 2-3. Base aerÃ³bica.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
       { name: 'Progressivo',     category: 'Cardio',      description: 'Aumentar velocidade/intensidade a cada bloco. Ex: +0.5km/h a cada 5min.', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
-    ];
     const existing = await this.getAll('methods');
-    const existingNames = new Set(existing.map(m => m.name));
-    for (const m of methods) {
-      if (!existingNames.has(m.name)) {
-        await this.add('methods', { ...m, is_default: true });
-      }
+    
+    // Clean up legacy non-deterministic default methods for this trainer
+    const defaultToClean = existing.filter(m => m.is_default && !m.id.startsWith('met_'));
+    for (const m of defaultToClean) {
+      await this.delete('methods', m.id);
     }
-    // Marcar mÃ©todos existentes sem is_default como padrÃ£o
-    const toMark = existing.filter(m => !m.is_default);
-    for (const m of toMark) {
-      await this.put('methods', { ...m, is_default: true });
+
+    // Seed methods deterministically
+    for (const m of methods) {
+      const id = 'met_' + slugify(m.name) + '_' + trainerId;
+      await this.put('methods', { ...m, id, is_default: true, trainer_id: trainerId });
     }
   }
 

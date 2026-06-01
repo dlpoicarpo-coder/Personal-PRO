@@ -5,8 +5,8 @@
 export const ALERT_THRESHOLDS = {
   sleep: { green: 7, yellow: 5, metric: 'Sono', lowAction: 'Reduzir volume e intensidade. Priorizar qualidade do sono.', highAction: null },
   mood: { green: 7, yellow: 4, metric: 'Humor', lowAction: 'Avaliar motivação e fatores externos de estresse.', highAction: null },
-  energy: { green: 7, yellow: 4, metric: 'Disposição', lowAction: 'Considerar deload ou treino regenerativo.', highAction: null },
-  stress: { green: 3, yellow: 6, metric: 'Estresse', lowAction: null, highAction: 'Priorizar exercícios de recuperação e mobilidade. Reduzir carga.' },
+  energy: { green: 7, yellow: 3, metric: 'Disposição', lowAction: 'Considerar deload ou treino regenerativo.', highAction: null },
+  stress: { green: 3, yellow: 8, metric: 'Estresse', lowAction: null, highAction: 'Priorizar exercícios de recuperação e mobilidade. Reduzir carga.' },
   pain: { green: 2, yellow: 5, metric: 'Dor', lowAction: null, highAction: 'ATENÇÃO: Avaliar região da dor. Evitar exercícios que recrutem a área afetada.' },
 };
 

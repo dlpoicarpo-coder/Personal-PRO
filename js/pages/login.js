@@ -22,12 +22,16 @@ export function renderLogin() {
         <div class="login-body" id="loginBody">
           <!-- Login Form -->
           <div id="panelLogin">
+            <div class="role-selector" style="display:flex;background:rgba(255,255,255,0.05);padding:4px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border-color)">
+              <button type="button" class="role-tab active" id="roleTrainer" style="flex:1;padding:8px 0;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s">Treinador</button>
+              <button type="button" class="role-tab" id="roleStudent" style="flex:1;padding:8px 0;background:transparent;color:var(--text-muted);border:none;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s">Aluno</button>
+            </div>
             <form id="loginForm" autocomplete="on">
               <div class="form-group">
                 <label class="form-label">E-mail</label>
                 <input class="form-input" name="email" type="email" autocomplete="email" required placeholder="seu@email.com" />
               </div>
-              <div class="form-group">
+              <div class="form-group" id="loginPasswordGroup">
                 <label class="form-label">Senha</label>
                 <div style="position:relative">
                   <input class="form-input" name="password" type="password" autocomplete="current-password" required placeholder="Sua senha" id="loginPasswordInput" />
@@ -126,6 +130,40 @@ function showPanel(name) {
 }
 
 export async function initLogin(onSuccess) {
+  let activeRole = 'trainer';
+
+  const roleTrainerBtn = document.getElementById('roleTrainer');
+  const roleStudentBtn = document.getElementById('roleStudent');
+  const passwordGroup = document.getElementById('loginPasswordGroup');
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+  const loginPassInput = document.getElementById('loginPasswordInput');
+
+  roleTrainerBtn?.addEventListener('click', () => {
+    activeRole = 'trainer';
+    roleTrainerBtn.classList.add('active');
+    roleTrainerBtn.style.background = 'var(--primary)';
+    roleTrainerBtn.style.color = '#fff';
+    roleStudentBtn.classList.remove('active');
+    roleStudentBtn.style.background = 'transparent';
+    roleStudentBtn.style.color = 'var(--text-muted)';
+    if (passwordGroup) passwordGroup.style.display = '';
+    if (loginPassInput) loginPassInput.required = true;
+    if (loginSubmitBtn) loginSubmitBtn.textContent = 'Entrar no Sistema';
+  });
+
+  roleStudentBtn?.addEventListener('click', () => {
+    activeRole = 'student';
+    roleStudentBtn.classList.add('active');
+    roleStudentBtn.style.background = 'var(--primary)';
+    roleStudentBtn.style.color = '#fff';
+    roleTrainerBtn.classList.remove('active');
+    roleTrainerBtn.style.background = 'transparent';
+    roleTrainerBtn.style.color = 'var(--text-muted)';
+    if (passwordGroup) passwordGroup.style.display = 'none';
+    if (loginPassInput) loginPassInput.required = false;
+    if (loginSubmitBtn) loginSubmitBtn.textContent = 'Acessar Portal';
+  });
+
   // Tab switching
   document.getElementById('tabLogin')?.addEventListener('click', () => {
     document.getElementById('tabLogin').classList.add('active');
@@ -160,11 +198,36 @@ export async function initLogin(onSuccess) {
     const btn = document.getElementById('loginSubmitBtn');
     const errEl = document.getElementById('loginError');
     btn.disabled = true;
-    btn.textContent = 'Entrando...';
+    btn.textContent = activeRole === 'trainer' ? 'Entrando...' : 'Acessando...';
     errEl.style.display = 'none';
 
     const fd = new FormData(e.target);
     const { email, password } = Object.fromEntries(fd);
+
+    if (activeRole === 'student') {
+      try {
+        const { default: db } = await import('../db.js');
+        const cleanEmail = email.trim().toLowerCase();
+        const student = await db.getStudentByEmail(cleanEmail);
+        if (!student) {
+          errEl.textContent = 'Nenhum aluno cadastrado com este e-mail.';
+          errEl.style.display = '';
+          btn.disabled = false;
+          btn.textContent = 'Acessar Portal';
+          return;
+        }
+        notify.success(`Olá, ${student.name}! Redirecionando para seu portal...`);
+        localStorage.setItem('portal_logged_student_id', student.id);
+        window.location.hash = `#/portal/${student.id}`;
+      } catch (err) {
+        errEl.textContent = 'Erro ao buscar aluno: ' + err.message;
+        errEl.style.display = '';
+        btn.disabled = false;
+        btn.textContent = 'Acessar Portal';
+      }
+      return;
+    }
+
     const result = await signIn(email, password);
 
     if (result.error) {
