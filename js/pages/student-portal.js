@@ -431,7 +431,8 @@ function checkSessionReminders(schedules, sessions) {
     if (s.status !== 'completed') return false;
     if (s.postBiofeedback && s.postBiofeedback.submittedByStudent) return false;
     if (!s.date) return false;
-    const daysAgo = (now - new Date(s.date + 'T12:00')) / 86400000;
+    const dateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date;
+    const daysAgo = (now - new Date(dateStr + 'T12:00')) / 86400000;
     return daysAgo <= 3; // only recent ones
   });
   if (needsCheckout.length > 0) {
@@ -532,7 +533,8 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     if (s.status !== 'completed') return false;
     if (s.postBiofeedback && s.postBiofeedback.submittedByStudent) return false;
     if (!s.date) return false;
-    const daysAgo = (now - new Date(s.date + 'T12:00')) / 86400000;
+    const dateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date;
+    const daysAgo = (now - new Date(dateStr + 'T12:00')) / 86400000;
     return daysAgo <= 3;
   });
   let checkoutBanner = '';
@@ -1445,7 +1447,8 @@ function renderSessoes(sessions, schedules) {
   const needsCheckout = allCompleted.filter(s => {
     if (!s.postBiofeedback || !s.postBiofeedback.submittedByStudent) {
       if (!s.date) return false;
-      const daysAgo = (now - new Date(s.date + 'T12:00')) / 86400000;
+      const dateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date;
+      const daysAgo = (now - new Date(dateStr + 'T12:00')) / 86400000;
       return daysAgo <= 3;
     }
     return false;
