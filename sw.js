@@ -36,6 +36,11 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // Ignorar requisições que não sejam GET (ex: POST de login) ou que vão para o Supabase
+  if (e.request.method !== 'GET' || e.request.url.includes('supabase.co')) {
+    return; // Deixa o navegador tratar nativamente
+  }
+
   // CDN — cache first
   if (e.request.url.includes('cdn.jsdelivr.net') || e.request.url.includes('fonts.googleapis') || e.request.url.includes('cdnjs.cloudflare.com')) {
     e.respondWith(
@@ -51,7 +56,11 @@ self.addEventListener('fetch', (e) => {
   } else {
     // Network first, cache fallback
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
+      fetch(e.request).catch(async () => {
+        const cached = await caches.match(e.request);
+        if (cached) return cached;
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      })
     );
   }
 });
