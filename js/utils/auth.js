@@ -26,16 +26,31 @@ export function getSupabase() {
 export async function getCurrentUser() {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data: { user } } = await sb.auth.getUser();
-  return user;
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    return user;
+  } catch (err) {
+    console.warn('getCurrentUser failed:', err);
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      return session?.user || null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 // Get current session
 export async function getSession() {
   const sb = getSupabase();
   if (!sb) return null;
-  const { data: { session } } = await sb.auth.getSession();
-  return session;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    return session;
+  } catch (err) {
+    console.warn('getSession failed:', err);
+    return null;
+  }
 }
 
 // Register new trainer with email + password
@@ -47,23 +62,28 @@ export async function signUp(email, password, trainerName, cref) {
   // Get the app URL for redirect after email confirmation
   const redirectTo = `${window.location.origin}${window.location.pathname}#/`;
 
-  const { data, error } = await sb.auth.signUp({
-    email: email.trim().toLowerCase(),
-    password,
-    options: {
-      emailRedirectTo: redirectTo,
-      data: {
-        trainer_name: trainerName,
-        cref: cref || '',
+  try {
+    const { data, error } = await sb.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        emailRedirectTo: redirectTo,
+        data: {
+          trainer_name: trainerName,
+          cref: cref || '',
+        }
       }
-    }
-  });
+    });
 
-  if (error) return { error: error.message };
+    if (error) return { error: error.message };
 
-  // If user is returned but no session, email confirmation is required
-  const needsConfirmation = data.user && !data.session;
-  return { user: data.user, session: data.session, needsConfirmation };
+    // If user is returned but no session, email confirmation is required
+    const needsConfirmation = data.user && !data.session;
+    return { user: data.user, session: data.session, needsConfirmation };
+  } catch (err) {
+    console.error('signUp failed:', err);
+    return { error: 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.' };
+  }
 }
 
 // Login with email + password
@@ -71,13 +91,18 @@ export async function signIn(email, password) {
   const sb = getSupabase();
   if (!sb) return { error: 'Supabase não disponível' };
 
-  const { data, error } = await sb.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  });
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
 
-  if (error) return { error: error.message };
-  return { user: data.user, session: data.session };
+    if (error) return { error: error.message };
+    return { user: data.user, session: data.session };
+  } catch (err) {
+    console.error('signIn failed:', err);
+    return { error: 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.' };
+  }
 }
 
 // Logout
@@ -87,7 +112,11 @@ export async function signOut() {
     localStorage.removeItem('pp_session');
     return;
   }
-  await sb.auth.signOut();
+  try {
+    await sb.auth.signOut();
+  } catch (err) {
+    console.warn('signOut failed:', err);
+  }
   localStorage.removeItem('pp_session');
 }
 
@@ -95,10 +124,15 @@ export async function signOut() {
 export async function sendPasswordReset(email) {
   const sb = getSupabase();
   if (!sb) return { error: 'Supabase não disponível' };
-  const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-    redirectTo: `${window.location.origin}${window.location.pathname}#/reset-password`,
-  });
-  return error ? { error: error.message } : { success: true };
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}${window.location.pathname}#/reset-password`,
+    });
+    return error ? { error: error.message } : { success: true };
+  } catch (err) {
+    console.error('sendPasswordReset failed:', err);
+    return { error: 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.' };
+  }
 }
 
 // Listen to auth state changes
