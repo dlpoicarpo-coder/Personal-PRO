@@ -366,16 +366,41 @@ async function loadSection(section) {
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
 
-  const [student, sessionsRaw, workouts, biofeedbacks, assessments, schedules, macrocycles, finances] = await Promise.all([
+  const [student, sessionsRaw, workoutsRaw, biofeedbacks, assessments, schedules, macrocycles, finances] = await Promise.all([
     db.get('students', sid).catch(() => null),
     db.getAll('sessions').then(all => all.filter(s => s.studentId === sid)).catch(() => []),
-    db.getAll('workouts').then(all => all.filter(w => w.studentId === sid)).catch(() => []),
+    db.getAll('workouts').catch(() => []),
     db.getAll('biofeedback').then(all => all.filter(b => b.studentId === sid).sort((a,b) => new Date(b.date)-new Date(a.date))).catch(() => []),
     db.getAll('assessments').then(all => all.filter(a => a.studentId === sid).sort((a,b) => new Date(b.date)-new Date(a.date))).catch(() => []),
     db.getAll('schedules').then(all => all.filter(s => s.studentId === sid)).catch(() => []),
     db.getAll('macrocycles').then(all => all.filter(m => m.studentId === sid)).catch(() => []),
     db.getAll('finances').then(all => all.filter(f => f.studentId === sid)).catch(() => []),
   ]);
+
+  // Filtrar treinos por studentId — com fallback por trainerId
+  // Garante que treinos apareçam mesmo que o studentId tenha sido salvo
+  // de forma levemente diferente (ex.: com ou sem trainerId no escopo)
+  let workouts = workoutsRaw.filter(w => w.studentId === sid);
+  if (workouts.length === 0 && tid) {
+    // Fallback: buscar treinos do mesmo treinador que tenham este aluno
+    workouts = workoutsRaw.filter(w =>
+      (w.trainerId === tid || w.trainer_id === tid) && w.studentId === sid
+    );
+  }
+  if (workouts.length === 0 && tid) {
+    // Fallback mais amplo: qualquer treino cujo trainerId bate (caso studentId esteja errado)
+    const byTrainer = workoutsRaw.filter(w => w.trainerId === tid || w.trainer_id === tid);
+    // Tentar match parcial de studentId (primeiros 8 chars)
+    const sidShort = sid.substring(0, 8);
+    workouts = byTrainer.filter(w => w.studentId?.startsWith(sidShort));
+    if (workouts.length === 0) {
+      // Último recurso: pegar todos treinos do treinador filtrados
+      // somente se o aluno existe e é deste treinador
+      if (student && (student.trainerId === tid || student.trainer_id === tid)) {
+        workouts = byTrainer.filter(w => w.studentId === sid);
+      }
+    }
+  }
 
   // Normalize sessions: unify field names from trainer live-tracker vs solo portal
   const sessions = sessionsRaw.map(s => {

@@ -738,30 +738,65 @@ export function initWorkouts(navigateFn) {
 
       let lastSessionBanner = '';
       if (lastSession) {
+        const durMin = Math.round((lastSession.totalDuration || 0) / 60);
+        const lsPse = lastSession.postBiofeedback?.pse;
+        const pseColor = lsPse ? (lsPse >= 9 ? 'var(--danger)' : lsPse >= 7 ? 'var(--warning)' : 'var(--success)') : 'var(--text-muted)';
+        const exDetails = (lastSession.exercises || []).map((e, i) => {
+          const sets = (lastSession.setLog || []).filter(l => l.exIdx === i);
+          if (!sets.length) return `
+            <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px;opacity:0.5">
+              <div style="font-weight:600;font-size:0.82rem;color:var(--text-secondary)">${e.name}</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Não realizado</div>
+            </div>`;
+          const maxLoad = Math.max(...sets.map(s => s.load || 0));
+          const totalReps = sets.reduce((sum, s) => sum + (s.reps || 0), 0);
+          const totalVol = sets.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
+          const avgPse = sets.filter(s => s.pse).length
+            ? (sets.reduce((t, s) => t + (s.pse || 0), 0) / sets.filter(s => s.pse).length).toFixed(1)
+            : null;
+          const setsHTML = sets.map(s => {
+            const pColor = s.pse ? (s.pse >= 9 ? 'var(--danger)' : s.pse >= 7 ? 'var(--warning)' : 'var(--success)') : '';
+            return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(148,163,184,0.08);font-size:0.72rem">
+              <span style="min-width:24px;color:var(--text-muted);font-weight:600">S${s.setIdx != null ? s.setIdx + 1 : '?'}</span>
+              <span style="font-weight:700;color:var(--text-primary)">${s.reps || 0} × ${s.load || 0}kg</span>
+              ${s.pse ? `<span style="color:${pColor};font-size:0.68rem;font-weight:600">PSE ${s.pse}</span>` : ''}
+              ${s.rir != null ? `<span style="color:var(--accent);font-size:0.68rem">RIR ${s.rir}</span>` : ''}
+              ${s.rm1Estimated ? `<span style="color:var(--success);font-size:0.65rem">~${s.rm1Estimated}kg</span>` : ''}
+              ${s.notes ? `<span style="color:var(--text-muted);font-style:italic;font-size:0.65rem">"${s.notes}"</span>` : ''}
+            </div>`;
+          }).join('');
+          return `
+            <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;padding:10px 12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <div style="font-weight:600;font-size:0.82rem;color:var(--text-primary)">${e.name}</div>
+                <div style="display:flex;gap:8px;font-size:0.7rem;color:var(--text-muted)">
+                  <span>${sets.length} sér.</span>
+                  <span>${totalReps} reps</span>
+                  <span style="color:var(--primary);font-weight:600">Máx: ${maxLoad}kg</span>
+                  <span style="color:var(--accent)">${totalVol}kg vol.</span>
+                  ${avgPse ? `<span style="color:var(--warning)">PSE ${avgPse}</span>` : ''}
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:0">${setsHTML}</div>
+            </div>`;
+        }).join('');
+
         lastSessionBanner = `
-          <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); padding:12px; border-radius:8px; margin-bottom:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <div style="font-weight:600; color:var(--success); font-size:0.9rem;">
-                Última realização deste treino: ${new Date(lastSession.date).toLocaleDateString('pt-BR')}
+          <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;margin-bottom:16px;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none" onclick="const d=this.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.ls-chevron').style.transform=d.style.display==='none'?'':'rotate(180deg)'">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:0.85rem;font-weight:700;color:var(--success)">📊 Último treino: ${new Date(lastSession.date).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' })}</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <span style="font-size:0.72rem;background:var(--bg-card);padding:2px 8px;border-radius:10px;border:1px solid var(--border-color)">⏱ ${durMin}min</span>
+                  <span style="font-size:0.72rem;background:var(--bg-card);padding:2px 8px;border-radius:10px;border:1px solid var(--border-color)">🏋️ ${lastSession.totalVolume || 0}kg</span>
+                  <span style="font-size:0.72rem;background:var(--bg-card);padding:2px 8px;border-radius:10px;border:1px solid var(--border-color)">📊 ${lastSession.totalSets || 0} séries</span>
+                  ${lsPse ? `<span style="font-size:0.72rem;background:var(--bg-card);padding:2px 8px;border-radius:10px;border:1px solid var(--border-color);color:${pseColor}">PSE ${lsPse}/10</span>` : ''}
+                </div>
               </div>
-              <div style="font-size:0.75rem; color:var(--text-muted); background:var(--bg-card); padding:2px 8px; border-radius:12px; border:1px solid var(--border-color);">
-                ⏱ ${Math.round((lastSession.totalDuration||0)/60)}m &nbsp;|&nbsp; 🏋️ ${lastSession.totalVolume||0}kg &nbsp;|&nbsp; 🥵 PSE ${lastSession.postBiofeedback?.pse || '-'}
-              </div>
+              <svg class="ls-chevron" style="transition:transform 0.2s;color:var(--text-muted)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:6px; font-size:0.75rem;">
-              ${(lastSession.exercises || []).map((e, i) => {
-                const sets = lastSession.setLog?.filter(l => l.exIdx === i) || [];
-                if (!sets.length) return '';
-                const maxLoad = Math.max(...sets.map(s => s.load || 0));
-                const totalReps = sets.reduce((sum, s) => sum + (s.reps || 0), 0);
-                return `<div style="background:var(--bg-card); padding:6px 8px; border-radius:6px; border:1px solid var(--border-color);">
-                  <div style="font-weight:600; color:var(--text-primary); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.name}</div>
-                  <div style="color:var(--text-muted); display:flex; justify-content:space-between;">
-                    <span>${sets.length} sér. / ${totalReps} reps</span>
-                    <span>Máx: <strong style="color:var(--primary)">${maxLoad}kg</strong></span>
-                  </div>
-                </div>`;
-              }).join('')}
+            <div style="padding:0 14px 14px;border-top:1px solid rgba(16,185,129,0.15)">
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${exDetails}</div>
             </div>
           </div>
         `;

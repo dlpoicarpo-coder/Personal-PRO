@@ -745,17 +745,19 @@ export function initTracker(navigateFn) {
   const updateUI = () => {
     if (!state.session) return;
     const tot  = state.workoutTimer?.getElapsed() || 0;
-    const work = state.workTimer?.getElapsed()   || 0;
-    state.workSec = work;
+    // workSec acumulado: soma do tempo de trabalho de todas as séries anteriores
+    // + tempo atual do workTimer (se estiver rodando)
+    const currentWork = state.isResting ? 0 : (state.workTimer?.getElapsed() || 0);
+    const totalWork = state.workSec + currentWork;
     const t = document.getElementById('liveTotal');
     const w = document.getElementById('liveWork');
     const r = document.getElementById('liveRest');
     const d = document.getElementById('liveDens');
     const tag = document.getElementById('restStateTag');
     if (t) t.textContent = formatTime(tot);
-    if (w) { w.textContent = formatTime(work); w.style.color = state.isResting ? 'var(--text-muted)' : 'var(--success)'; }
-    if (r) { r.textContent = formatTime(Math.max(0, tot - work)); r.style.color = state.isResting ? 'var(--warning)' : 'var(--text-muted)'; }
-    if (d) d.textContent = tot > 0 ? (work / tot).toFixed(2) : '0.00';
+    if (w) { w.textContent = formatTime(totalWork); w.style.color = state.isResting ? 'var(--text-muted)' : 'var(--success)'; }
+    if (r) { r.textContent = formatTime(Math.max(0, tot - totalWork)); r.style.color = state.isResting ? 'var(--warning)' : 'var(--text-muted)'; }
+    if (d) d.textContent = tot > 0 ? (totalWork / tot).toFixed(2) : '0.00';
     if (tag) { tag.textContent = state.isResting ? '⏸ DESCANSANDO' : '▶ TRABALHANDO'; tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)'; }
   };
   state._uiInterval = setInterval(updateUI, 500);
@@ -827,7 +829,10 @@ export function initTracker(navigateFn) {
       if (btn) btn.textContent = '▶ Iniciar Descanso';
     } else {
       state.restTimer.reset(); state.restTimer.start();
-      state.isResting = true; state.workTimer?.stop(); state.workSec = state.workTimer?.getElapsed() || 0;
+      state.isResting = true;
+      // Acumular tempo de trabalho ANTES de parar e resetar o workTimer
+      state.workSec = (state.workSec || 0) + (state.workTimer?.getElapsed() || 0);
+      state.workTimer?.stop(); state.workTimer?.reset();
       if (btn) btn.textContent = '⏸ Pausar Descanso';
       const l = document.getElementById('restLbl');
       if (l) { l.textContent = 'Descansando...'; l.style.color = ''; }
@@ -869,8 +874,10 @@ export function initTracker(navigateFn) {
     const exSets = parseInt(curEx?.sets || ex?.sets) || 3;
     // Sempre iniciar o descanso após uma série, mesmo sendo a última
     state.restTimer.reset(); state.restTimer.start();
-    state.isResting = true; state.workTimer?.stop();
-    state.workSec = state.workTimer?.getElapsed() || 0;
+    state.isResting = true;
+    // Acumular tempo de trabalho ANTES de parar e resetar o workTimer
+    state.workSec = (state.workSec || 0) + (state.workTimer?.getElapsed() || 0);
+    state.workTimer?.stop(); state.workTimer?.reset();
     const c = document.getElementById('restCount');
     const l = document.getElementById('restLbl');
     const b2 = document.getElementById('goRest');
@@ -1195,7 +1202,11 @@ export function initTracker(navigateFn) {
     if (state._uiInterval) { clearInterval(state._uiInterval); state._uiInterval = null; }
     if (state.workoutTimer) state.workoutTimer.stop();
     if (state.restTimer)    state.restTimer.stop();
-    if (state.workTimer)    { state.workTimer.stop(); state.workSec = state.workTimer.getElapsed(); }
+    // Acumular tempo de trabalho restante antes de finalizar
+    if (state.workTimer && !state.isResting) {
+      state.workSec = (state.workSec || 0) + (state.workTimer.getElapsed() || 0);
+    }
+    if (state.workTimer)    state.workTimer.stop();
     const dur  = state.workoutTimer?.getElapsed() || 0;
     const vol  = totalVolume();
     const dens = dur > 0 ? state.workSec / dur : 0;
@@ -1275,7 +1286,9 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   await db.put('sessions', sessionData);
   const bfId = 'bf_' + s.studentId + '_' + s.date.substring(0, 10);
   const existingBf = await db.get('biofeedback', bfId) || {};
-  await db.add('biofeedback', {
+  // Usar db.put (upsert) em vez de db.add para evitar falha silenciosa
+  // quando já existe um registro de check-in pré-treino com o mesmo ID
+  await db.put('biofeedback', {
     ...existingBf,
     id: bfId,
     studentId: s.studentId, date: s.date,

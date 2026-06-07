@@ -17,15 +17,26 @@ const PAYMENT_METHODS = ['Pix','Cartão de Crédito','Cartão de Débito','Dinhe
 
 function fmtBRL(v) { return 'R$ ' + Number(v||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
 
+// ── Estado do filtro de data (módulo) ──────────────────────────
+const finState = {
+  month: new Date().getMonth(),
+  year:  new Date().getFullYear(),
+};
+
 export async function renderFinancial() {
   const students = await db.getAll('students');
   const records  = await db.getAll('financial');
   const sessions = await db.getAll('sessions');
   const active   = students.filter(s => s.status === 'Ativo');
 
-  const now       = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear  = now.getFullYear();
+  const now        = new Date();
+  const selMonth   = finState.month;
+  const selYear    = finState.year;
+  const isCurrentMonth = selMonth === now.getMonth() && selYear === now.getFullYear();
+
+  // Label do mês selecionado
+  const selDate = new Date(selYear, selMonth, 1);
+  const monthLabel = selDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   records.sort((a, b) => {
     const order   = { overdue: 0, pending: 1, paid: 2 };
@@ -35,42 +46,40 @@ export async function renderFinancial() {
     return new Date(b.dueDate) - new Date(a.dueDate);
   });
 
-  const inThisMonth = (dateStr) => {
+  const inSelMonth = (dateStr) => {
     if (!dateStr) return false;
     const d = new Date(dateStr);
-    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    return d.getMonth() === selMonth && d.getFullYear() === selYear;
   };
 
-  // ESPERADO: todos com vencimento neste mês
-  const monthRecs   = records.filter(r => inThisMonth(r.dueDate));
+  // ESPERADO: todos com vencimento no mês selecionado
+  const monthRecs   = records.filter(r => inSelMonth(r.dueDate));
   const totalExpect = monthRecs.reduce((t, r) => t + (r.amount||0), 0);
 
-  // RECEBIDO: pagos cuja paidDate OU dueDate cai neste mês
-  // Se não tiver paidDate mas foi pago, conta pelo dueDate (data de referência)
+  // RECEBIDO: pagos cuja paidDate OU dueDate cai no mês selecionado
   const paidThisMonth = records.filter(r => {
     if (r.status !== 'paid') return false;
-    // Prioridade: paidDate → dueDate
     const refDate = r.paidDate || r.dueDate;
-    return inThisMonth(refDate);
+    return inSelMonth(refDate);
   });
   const totalPaid = paidThisMonth.reduce((t, r) => t + (r.amount||0), 0);
 
-  // PENDENTE: registros deste mês ainda não pagos
+  // PENDENTE: registros do mês selecionado ainda não pagos
   const totalPend  = monthRecs.filter(r => r.status !== 'paid').reduce((t, r) => t + (r.amount||0), 0);
 
   // VENCIDOS: pendentes com vencimento passado (qualquer mês)
   const overdue    = records.filter(r => r.status === 'pending' && new Date(r.dueDate) < now);
   const overdueAmt = overdue.reduce((t, r) => t + (r.amount||0), 0);
 
-  // Taxa de coleta: sobre todos os registros pagos existentes vs esperados do mês
+  // Taxa de coleta
   const collRate = monthRecs.length > 0
     ? Math.round((monthRecs.filter(r=>r.status==='paid').length / monthRecs.length) * 100)
     : (paidThisMonth.length > 0 ? 100 : 0);
 
-  // Receita dos últimos 6 meses
+  // Receita dos últimos 6 meses (sempre relativo ao mês atual — gráfico histórico)
   const monthlyData = [];
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(thisYear, thisMonth - i, 1);
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const mo = d.getMonth(); const yr = d.getFullYear();
     const paid = records.filter(r => r.status==='paid' && new Date(r.paidDate||r.dueDate).getMonth()===mo && new Date(r.paidDate||r.dueDate).getFullYear()===yr).reduce((t,r) => t+(r.amount||0), 0);
     const expected = records.filter(r => { const dd = new Date(r.dueDate); return dd.getMonth()===mo && dd.getFullYear()===yr; }).reduce((t,r) => t+(r.amount||0), 0);
@@ -80,21 +89,31 @@ export async function renderFinancial() {
   // Inadimplentes
   const defaulters = active.filter(s => overdue.some(r => r.studentId === s.id));
 
-  // Sessões do mês
+  // Sessões do mês selecionado
   const monthSessions = sessions.filter(x => {
     const d = new Date(x.date);
-    return x.status==='completed' && d.getMonth()===thisMonth && d.getFullYear()===thisYear;
+    return x.status==='completed' && d.getMonth()===selMonth && d.getFullYear()===selYear;
   });
 
-  const tabFilter = '';
-
+  // Registros para a tabela — filtra pelo mês selecionado se não for "Todos"
+  // Por padrão, mostrar todos os registros mas com data-month para filtro client-side
   return `
     <div class="page-header">
-      <div><h1>Gestão Financeira</h1><p class="subtitle">${now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p></div>
+      <div><h1>Gestão Financeira</h1></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <button class="btn btn-secondary btn-sm" id="genMonthlyBtn">Gerar Mensalidades</button>
         <button class="btn btn-primary btn-sm" id="addFinancialBtn">+ Novo Registro</button>
       </div>
+    </div>
+
+    <!-- Seletor de Mês -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px">
+      <button id="finPrevMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="Mês anterior">◀</button>
+      <div style="text-align:center;min-width:180px">
+        <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);text-transform:capitalize">${monthLabel}</div>
+        ${isCurrentMonth ? '<div style="font-size:0.7rem;color:var(--primary);font-weight:600">Mês Atual</div>' : ''}
+      </div>
+      <button id="finNextMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="Próximo mês" ${isCurrentMonth ? 'disabled style="opacity:0.3;cursor:default"' : ''}>▶</button>
     </div>
 
     <!-- Stats -->
@@ -102,7 +121,7 @@ export async function renderFinancial() {
       <div class="stat-card" style="text-align:center;padding:12px">
         <div class="stat-label">ESPERADO</div>
         <div class="stat-value text-gradient" style="font-size:1.2rem">${fmtBRL(totalExpect)}</div>
-        <div class="stat-change">este mês</div>
+        <div class="stat-change">${monthLabel}</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
         <div class="stat-label">RECEBIDO</div>
@@ -170,6 +189,7 @@ export async function renderFinancial() {
     <!-- Tabs filtro -->
     <div class="tabs" id="finTabs">
       <button class="tab active" data-filter="all">Todos (${records.length})</button>
+      <button class="tab" data-filter="month">Mês Selecionado (${monthRecs.length})</button>
       <button class="tab" data-filter="pending">Pendentes (${records.filter(r=>r.status==='pending').length})</button>
       <button class="tab" data-filter="overdue">Vencidos (${overdue.length})</button>
       <button class="tab" data-filter="paid">Pagos (${records.filter(r=>r.status==='paid').length})</button>
@@ -205,7 +225,9 @@ export async function renderFinancial() {
               const isOverdue = r.status==='pending' && due < now;
               const statusLabel = r.status==='paid' ? 'Pago' : isOverdue ? 'Vencido' : 'Pendente';
               const statusBadge = r.status==='paid' ? 'success' : isOverdue ? 'danger' : 'warning';
-              return `<tr data-status="${isOverdue?'overdue':r.status}" data-student-id="${r.studentId}" data-name="${(st?.name||'').toLowerCase()}">
+              const rMonth = due.getMonth(); const rYear = due.getFullYear();
+              const isInSelMonth = rMonth === selMonth && rYear === selYear;
+              return `<tr data-status="${isOverdue?'overdue':r.status}" data-student-id="${r.studentId}" data-name="${(st?.name||'').toLowerCase()}" data-in-month="${isInSelMonth?'1':'0'}">
                 <td>
                   <div class="flex items-center gap-sm">
                     <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
@@ -246,7 +268,7 @@ export async function renderFinancial() {
 
     <!-- Sessões do mês -->
     <div class="card mt-lg">
-      <div class="card-header"><span class="card-title">Sessões Realizadas — ${now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</span></div>
+      <div class="card-header"><span class="card-title">Sessões Realizadas — ${monthLabel}</span></div>
       <div class="table-container">
         <table class="data-table">
           <thead><tr><th>Aluno</th><th>Realizadas</th><th>Esperadas</th><th>Progresso</th><th title="Mensalidade ÷ sessões esperadas">Custo/sessão</th><th title="Custo por sessão × sessões realizadas">Valor proporcional</th></tr></thead>
@@ -288,6 +310,20 @@ export async function renderFinancial() {
 }
 
 export function initFinancial(navigateFn) {
+  // ── Navegação de mês ──────────────────────────────────────────
+  document.getElementById('finPrevMonth')?.addEventListener('click', () => {
+    finState.month--;
+    if (finState.month < 0) { finState.month = 11; finState.year--; }
+    navigateFn('/financeiro');
+  });
+  document.getElementById('finNextMonth')?.addEventListener('click', () => {
+    const now = new Date();
+    if (finState.month === now.getMonth() && finState.year === now.getFullYear()) return;
+    finState.month++;
+    if (finState.month > 11) { finState.month = 0; finState.year++; }
+    navigateFn('/financeiro');
+  });
+
   // Função helper para pegar a chave Pix das configurações
   async function getPixKey() {
     try {
@@ -349,10 +385,11 @@ export function initFinancial(navigateFn) {
 
   function applyFinFilters() {
     document.querySelectorAll('#finTable tbody tr').forEach(row => {
-      const st  = row.dataset.status || '';
-      const nm  = row.dataset.name   || '';
-      const sid = row.dataset.studentId || '';
-      const matchTab     = activeTabFilter === 'all' || st === activeTabFilter;
+      const st      = row.dataset.status    || '';
+      const nm      = row.dataset.name      || '';
+      const sid     = row.dataset.studentId || '';
+      const inMonth = row.dataset.inMonth   === '1';
+      const matchTab     = activeTabFilter === 'all' || st === activeTabFilter || (activeTabFilter === 'month' && inMonth);
       const matchSearch  = !activeSearch || nm.includes(activeSearch);
       const matchStudent = !activeStudent || sid === activeStudent;
       row.style.display = matchTab && matchSearch && matchStudent ? '' : 'none';
