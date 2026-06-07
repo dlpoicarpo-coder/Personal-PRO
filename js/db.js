@@ -6,6 +6,45 @@
 
 import { getSupabase, getCurrentUser } from './utils/auth.js';
 
+/**
+ * Corrige strings com double-encoding UTF-8 (Latin-1 interpretado como UTF-8).
+ * Ex: 'PrÃ©-exaustÃo' → 'Pré-exaustão'
+ */
+export function fixEncoding(str) {
+  if (!str || typeof str !== 'string') return str;
+  // Heuristic: se contém sequências Latin-1 típicas de UTF-8 mal decodificado
+  if (!/[\xC0-\xC3\xC5-\xCB\xCD-\xCF\xD1-\xD4\xD6-\xD9\xDB-\xDF]/.test(str)) return str;
+  try {
+    // Recodificar de Latin-1 para bytes e decodificar como UTF-8
+    return decodeURIComponent(escape(str));
+  } catch {
+    return str;
+  }
+}
+
+/**
+ * Recursivamente corrige strings em objetos e arrays com double-encoding UTF-8.
+ */
+export function fixObjectEncoding(obj) {
+  if (!obj) return obj;
+  if (typeof obj === 'string') {
+    return fixEncoding(obj);
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(fixObjectEncoding);
+  }
+  if (typeof obj === 'object') {
+    const res = {};
+    for (const k in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        res[k] = fixObjectEncoding(obj[k]);
+      }
+    }
+    return res;
+  }
+  return obj;
+}
+
 const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
 
@@ -65,7 +104,7 @@ class Database {
   async get(storeName, id) {
     const trainerId = await this._getTrainerId();
     const local = (this._getLocal(storeName, trainerId) || []).find(i => i.id === id) || null;
-    if (!this.supabase) return local;
+    if (!this.supabase) return fixObjectEncoding(local);
 
     try {
       let q = this.supabase.from(storeName).select('*').eq('id', id);
@@ -74,10 +113,11 @@ class Database {
         q = q.eq('trainer_id', trainerId);
       }
       const { data, error } = await q.maybeSingle();
-      if (error) { console.warn(`get(${storeName}) error:`, error.message); return local; }
-      if (!data) return local;
-      return data.data && typeof data.data === 'object' ? { ...data.data, id: data.id } : data;
-    } catch(e) { console.warn(`get(${storeName}) exception:`, e?.message); return local; }
+      if (error) { console.warn(`get(${storeName}) error:`, error.message); return fixObjectEncoding(local); }
+      if (!data) return fixObjectEncoding(local);
+      const res = data.data && typeof data.data === 'object' ? { ...data.data, id: data.id } : data;
+      return fixObjectEncoding(res);
+    } catch(e) { console.warn(`get(${storeName}) exception:`, e?.message); return fixObjectEncoding(local); }
   }
 
   // Tabelas que existem no Supabase (as demais ficam só em localStorage)
@@ -92,7 +132,7 @@ class Database {
     const trainerId = await this._getTrainerId();
     const local = this._getLocal('students', trainerId) || [];
     const localMatch = local.find(s => s.email?.toLowerCase().trim() === email);
-    if (localMatch) return localMatch;
+    if (localMatch) return fixObjectEncoding(localMatch);
     if (!this.supabase) return null;
     try {
       const { data, error } = await this.supabase
@@ -101,7 +141,8 @@ class Database {
         .filter('data->>email', 'eq', email);
       if (!error && data && data.length > 0) {
         const r = data[0];
-        return r.data ? { ...r.data, id: r.id } : r;
+        const res = r.data ? { ...r.data, id: r.id } : r;
+        return fixObjectEncoding(res);
       }
     } catch (e) {
       console.error('getStudentByEmail error:', e);
@@ -113,7 +154,7 @@ class Database {
     const trainerId = await this._getTrainerId();
     const local     = this._getLocal(storeName, trainerId) || [];
 
-    if (!this.supabase || !this.SUPABASE_TABLES.has(storeName)) return local;
+    if (!this.supabase || !this.SUPABASE_TABLES.has(storeName)) return fixObjectEncoding(local);
 
     try {
       let data, error;
@@ -138,10 +179,10 @@ class Database {
 
       if (error) {
         console.warn(`getAll(${storeName}) Supabase error:`, error.message);
-        return local;
+        return fixObjectEncoding(local);
       }
 
-      if (!data) return local;
+      if (!data) return fixObjectEncoding(local);
 
       // Mapear: usar r.data (JSONB) se existir, senão usar a row direta
       const remote = data.map(r => {
@@ -158,10 +199,10 @@ class Database {
       const result = [...merged.values()];
 
       this._saveLocal(storeName, result, trainerId);
-      return result;
+      return fixObjectEncoding(result);
     } catch (e) {
       console.warn(`getAll(${storeName}) exception:`, e?.message || e);
-      return local;
+      return fixObjectEncoding(local);
     }
   }
 
@@ -171,7 +212,7 @@ class Database {
     const local = (this._getLocal(storeName, trainerId) || [])
       .filter(r => r?.studentId === studentId);
 
-    if (!this.supabase) return local;
+    if (!this.supabase) return fixObjectEncoding(local);
 
     try {
       // Busca 1: pelo trainer_id (registros do personal + formulários com trainer correto)
@@ -183,13 +224,14 @@ class Database {
 
       const all  = [...(r1.data||[]), ...(r2.data||[])];
       const seen = new Set();
-      return all
+      const res = all
         .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
         .map(r => r.data ? { ...r.data, id: r.id } : r)
         .filter(r => r?.studentId === studentId);
+      return fixObjectEncoding(res);
     } catch (e) {
       console.warn('getAllForStudent error:', e);
-      return local;
+      return fixObjectEncoding(local);
     }
   }
 
@@ -518,13 +560,13 @@ class Database {
           .from(storeName)
           .select('data')
           .eq('is_default', true);
-        if (!error && data?.length) return data.map(r => r.data);
+        if (!error && data?.length) return fixObjectEncoding(data.map(r => r.data));
       } catch(_) {}
     }
     // Fallback: LocalStorage global (sem trainer_id)
     try {
       const raw = localStorage.getItem(`pp_global_${storeName}`);
-      return raw ? JSON.parse(raw) : [];
+      return fixObjectEncoding(raw ? JSON.parse(raw) : []);
     } catch { return []; }
   }
 

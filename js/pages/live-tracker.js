@@ -331,7 +331,7 @@ function renderLiveView(students) {
           </div>
 
           <div class="flex gap-xs" style="justify-content:center;flex-wrap:wrap;margin-bottom:16px">
-            ${[30, 45, 60, 90, 120, 180].map(t => `
+            ${[15, 30, 45, 60, 90, 120, 180].map(t => `
               <button class="btn btn-ghost btn-sm rp" data-t="${t}" style="font-size:0.75rem;padding:4px 8px">
                 ${t >= 60 ? (t/60) + 'min' : t + 's'}
               </button>`).join('')}
@@ -1094,29 +1094,34 @@ export function initTracker(navigateFn) {
     btn.addEventListener('click', () => showSetModal(btn));
   });
 
+  // Salvar entradas temporárias conforme o usuário digita
+  document.querySelectorAll('.set-row:not(.set-done)').forEach(row => {
+    const si = parseInt(row.dataset.si);
+    const repsInp = row.querySelector('.set-reps');
+    const loadInp = row.querySelector('.set-load');
+    const pseInp  = row.querySelector('.set-pse');
+    const rirInp  = row.querySelector('.set-rir');
+
+    const updateTemp = () => {
+      if (!state.tempSets[state.exIdx]) state.tempSets[state.exIdx] = {};
+      const existing = state.tempSets[state.exIdx][si] || {};
+      state.tempSets[state.exIdx][si] = {
+        reps: repsInp?.value ? parseInt(repsInp.value) : existing.reps,
+        load: loadInp?.value ? parseFloat(loadInp.value) : existing.load,
+        pse:  pseInp?.value  ? parseInt(pseInp.value)  : existing.pse,
+        rir:  rirInp?.value  ? parseInt(rirInp.value)  : existing.rir,
+      };
+    };
+
+    repsInp?.addEventListener('input', updateTemp);
+    loadInp?.addEventListener('input', updateTemp);
+    pseInp?.addEventListener('input', updateTemp);
+    rirInp?.addEventListener('input', updateTemp);
+  });
+
   // Navegar exercícios
   const refreshLive = async () => {
-    // Clear existing UI interval to prevent accumulation
     if (state._uiInterval) { clearInterval(state._uiInterval); state._uiInterval = null; }
-    
-    // Save current inputs to tempSets before refreshing
-    if (state.session && document.getElementById('pageContent')) {
-      if (!state.tempSets[state.exIdx]) state.tempSets[state.exIdx] = {};
-      document.querySelectorAll('.set-row:not(.set-done)').forEach(row => {
-        const si = parseInt(row.dataset.si);
-        const reps = row.querySelector('.set-reps')?.value;
-        const load = row.querySelector('.set-load')?.value;
-        const pse  = row.querySelector('.set-pse')?.value;
-        const rir  = row.querySelector('.set-rir')?.value;
-        state.tempSets[state.exIdx][si] = {
-          reps: reps ? parseInt(reps) : undefined,
-          load: load ? parseFloat(load) : undefined,
-          pse:  pse  ? parseInt(pse)  : undefined,
-          rir:  rir  ? parseInt(rir)  : undefined,
-        };
-      });
-    }
-
     const students = await db.getAll('students');
     const content  = document.getElementById('pageContent');
     if (content && state.session) { content.innerHTML = renderLiveView(students); initTracker(navigateFn); }

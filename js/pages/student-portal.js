@@ -492,13 +492,38 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
   const lastSession = completedSessions.sort((a,b) => new Date(b.date)-new Date(a.date))[0];
 
   // Mensalidade
-  const paymentDue = student?.paymentDue;
   let paymentDays = null, paymentColor = 'var(--portal-success)', paymentLabel = 'Em dia';
-  if (paymentDue) {
-    const diff = Math.ceil((new Date(paymentDue) - now) / 86400000);
+  
+  // Encontrar se há algum pagamento pendente ou vencido em finances
+  const activePending = (finances || []).filter(f => f.status === 'pending');
+  const overdueFinances = activePending.filter(f => new Date(f.dueDate + 'T12:00') < now);
+  
+  if (overdueFinances.length > 0) {
+    overdueFinances.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    const oldestDue = new Date(overdueFinances[0].dueDate + 'T12:00');
+    const diff = Math.ceil((oldestDue - now) / 86400000);
     paymentDays = diff;
-    paymentColor = diff < 0 ? 'var(--portal-danger)' : diff <= 5 ? 'var(--portal-warning)' : 'var(--portal-success)';
-    paymentLabel = diff < 0 ? `Venceu há ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
+    paymentColor = 'var(--portal-danger)';
+    paymentLabel = `Venceu há ${Math.abs(diff)}d`;
+  } else if (activePending.length > 0) {
+    activePending.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    const nextDue = new Date(activePending[0].dueDate + 'T12:00');
+    const diff = Math.ceil((nextDue - now) / 86400000);
+    paymentDays = diff;
+    paymentColor = diff <= 5 ? 'var(--portal-warning)' : 'var(--portal-success)';
+    paymentLabel = diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
+  } else {
+    // Fallback para o campo do aluno se finances estiver vazio
+    const paymentDue = student?.paymentDue;
+    if (paymentDue) {
+      const diff = Math.ceil((new Date(paymentDue + 'T12:00') - now) / 86400000);
+      paymentDays = diff;
+      paymentColor = diff < 0 ? 'var(--portal-danger)' : diff <= 5 ? 'var(--portal-warning)' : 'var(--portal-success)';
+      paymentLabel = diff < 0 ? `Venceu há ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
+    } else {
+      paymentLabel = 'Em dia';
+      paymentColor = 'var(--portal-success)';
+    }
   }
 
   // Backfill macrocycle endDate dynamically if not present in DB
