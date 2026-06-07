@@ -36,6 +36,27 @@ function totalVolume() {
   return state.setLog.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
 }
 
+function saveCurrentInputs() {
+  document.querySelectorAll('.set-row:not(.set-done)').forEach(row => {
+    const si = parseInt(row.dataset.si);
+    const repsInp = row.querySelector('.set-reps');
+    const loadInp = row.querySelector('.set-load');
+    const pseInp  = row.querySelector('.set-pse');
+    const rirInp  = row.querySelector('.set-rir');
+
+    if (!state.tempSets[state.exIdx]) state.tempSets[state.exIdx] = {};
+    const existing = state.tempSets[state.exIdx][si] || {};
+    
+    // Only update if input exists and has a value, otherwise keep existing
+    if (repsInp && repsInp.value !== '') existing.reps = parseInt(repsInp.value);
+    if (loadInp && loadInp.value !== '') existing.load = parseFloat(loadInp.value);
+    if (pseInp && pseInp.value !== '') existing.pse = parseInt(pseInp.value);
+    if (rirInp && rirInp.value !== '') existing.rir = parseInt(rirInp.value);
+    
+    state.tempSets[state.exIdx][si] = existing;
+  });
+}
+
 // ── RENDER SETUP ─────────────────────────────────────────────
 export async function renderTracker() {
   const students = await db.getAll('students');
@@ -1126,9 +1147,9 @@ export function initTracker(navigateFn) {
     const content  = document.getElementById('pageContent');
     if (content && state.session) { content.innerHTML = renderLiveView(students); initTracker(navigateFn); }
   };
-  document.getElementById('prevEx')?.addEventListener('click', () => { if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
-  document.getElementById('nextEx')?.addEventListener('click', () => { if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
-  document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
+  document.getElementById('prevEx')?.addEventListener('click', () => { saveCurrentInputs(); if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
+  document.getElementById('nextEx')?.addEventListener('click', () => { saveCurrentInputs(); if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
+  document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { saveCurrentInputs(); state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
 
   document.getElementById('editExLiveBtn')?.addEventListener('click', () => {
     const curEx = state.session.exercises[state.exIdx];
