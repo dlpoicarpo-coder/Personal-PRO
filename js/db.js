@@ -167,9 +167,17 @@ class Database {
         const q2 = this.supabase.from(storeName).select('*').eq('is_default', true);
         const [r1, r2] = await Promise.all([q1, q2]);
         const all = [...(r1.data||[]), ...(r2.data||[])];
-        // Deduplicar por id
-        const seen = new Set();
-        data  = all.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+        // Deduplicar por id e por nome (evita duplicatas de global vs personal)
+        const seenId = new Set();
+        const seenName = new Set();
+        data  = all.filter(r => { 
+          if (!r) return false;
+          const rName = r.data && r.data.name ? String(r.data.name).toLowerCase().trim() : '';
+          if (seenId.has(r.id) || (rName && seenName.has(rName))) return false; 
+          seenId.add(r.id);
+          if (rName) seenName.add(rName);
+          return true; 
+        });
         error = r1.error;
       } else {
         let q = this.supabase.from(storeName).select('*');
