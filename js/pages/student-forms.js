@@ -84,28 +84,15 @@ async function publicAdd(table, data) {
                   : isUUID(data.trainer_id) ? data.trainer_id
                   : null;
 
+  const now = new Date().toISOString();
+  data.createdAt = data.createdAt || now;
+  data.updatedAt = now;
+
   const row = {
     id,
     trainer_id: trainerId,
     data: { ...data, id },
   };
-
-  // Incluir colunas diretas para biofeedback
-  if (table === 'biofeedback') {
-    Object.assign(row, {
-      studentId:    data.studentId    || null,
-      sleep:        parseFloat(data.sleep)     || null,
-      mood:         parseFloat(data.mood)      || null,
-      energy:       parseFloat(data.energy)    || null,
-      stress:       parseFloat(data.stress)    || null,
-      pain:         parseFloat(data.pain)      || null,
-      pse:          parseFloat(data.pse)       || null,
-      duration:     parseFloat(data.duration)  || null,
-      trainingLoad: parseFloat(data.trainingLoad) || null,
-      food:         parseFloat(data.food)      || null,
-      motivation:   parseFloat(data.motivation) || null,
-    });
-  }
 
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
@@ -134,26 +121,10 @@ async function publicAdd(table, data) {
 async function publicPut(table, data) {
   try {
     const now = new Date().toISOString();
+    data.updatedAt = now;
 
-    // Corpo: atualiza a coluna JSONB 'data' + 'updatedAt'
-    const body = { data, updatedAt: now };
-
-    // Para biofeedback: atualizar também colunas diretas
-    if (table === 'biofeedback') {
-      Object.assign(body, {
-        studentId:    data.studentId    || null,
-        sleep:        parseFloat(data.sleep)        || null,
-        mood:         parseFloat(data.mood)         || null,
-        energy:       parseFloat(data.energy)       || null,
-        stress:       parseFloat(data.stress)       || null,
-        pain:         parseFloat(data.pain)         || null,
-        pse:          parseFloat(data.pse)          || null,
-        duration:     parseFloat(data.duration)     || null,
-        trainingLoad: parseFloat(data.trainingLoad) || null,
-        food:         parseFloat(data.food)         || null,
-        motivation:   parseFloat(data.motivation)   || null,
-      });
-    }
+    // Corpo: atualiza a coluna JSONB 'data'
+    const body = { data };
 
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(data.id)}`,
@@ -178,6 +149,7 @@ async function publicPut(table, data) {
     console.warn('publicPut error:', e);
   }
 }
+
 
 // ── Regiões de dor ─────────────────────────────────────────
 const PAIN_REGIONS = [
