@@ -726,10 +726,13 @@ export function initWorkouts(navigateFn) {
       
       const targetCleanName = cleanWorkoutName(w.name);
       const allSessions = await db.getAll('sessions');
+      const allWorkouts = await db.getAll('workouts');
       const lastSession = allSessions
         .filter(s => {
           if (s.status !== 'completed' || s.studentId !== w.studentId) return false;
-          const sessionWorkoutName = s.workoutName || '';
+          // Tenta obter o nome do treino via workoutId primeiro, depois workoutName
+          const linkedWorkout = allWorkouts.find(xw => xw.id === s.workoutId);
+          const sessionWorkoutName = linkedWorkout ? linkedWorkout.name : (s.workoutName || '');
           if (!sessionWorkoutName) return false;
           const cleanSessName = cleanWorkoutName(sessionWorkoutName);
           return cleanSessName === targetCleanName || cleanSessName.includes(targetCleanName) || targetCleanName.includes(cleanSessName);
