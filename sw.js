@@ -1,4 +1,4 @@
-const CACHE_NAME = 'personal-pro-v3';
+const CACHE_NAME = 'personal-pro-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -36,13 +36,40 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Ignorar requisições que não sejam GET (ex: POST de login) ou que vão para o Supabase
-  if (e.request.method !== 'GET' || e.request.url.includes('supabase.co')) {
-    return; // Deixa o navegador tratar nativamente
+  const url = e.request.url;
+
+  // Nunca interceptar: não-GET, extensões, data URIs
+  if (e.request.method !== 'GET' ||
+      url.startsWith('chrome-extension://') ||
+      url.startsWith('data:') ||
+      url.startsWith('blob:')) {
+    return;
+  }
+
+  // Supabase: tenta rede primeiro, se falhar serve do cache (mantém sessão offline)
+  if (url.includes('supabase.co')) {
+    e.respondWith(
+      fetch(e.request).then((res) => {
+        // Cachear apenas respostas GET bem-sucedidas (ex: getUser)
+        if (res.ok && e.request.method === 'GET') {
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, resClone));
+        }
+        return res;
+      }).catch(async () => {
+        // Rede falhou: servir do cache se disponível
+        const cached = await caches.match(e.request);
+        return cached || new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      })
+    );
+    return;
   }
 
   // CDN — cache first
-  if (e.request.url.includes('cdn.jsdelivr.net') || e.request.url.includes('fonts.googleapis') || e.request.url.includes('cdnjs.cloudflare.com')) {
+  if (url.includes('cdn.jsdelivr.net') || url.includes('fonts.googleapis') || url.includes('cdnjs.cloudflare.com')) {
     e.respondWith(
       caches.match(e.request).then((cached) => {
         return cached || fetch(e.request).then((res) => {
@@ -54,7 +81,7 @@ self.addEventListener('fetch', (e) => {
       })
     );
   } else {
-    // Network first, cache fallback
+    // App files — network first, cache fallback
     e.respondWith(
       fetch(e.request).catch(async () => {
         const cached = await caches.match(e.request);
