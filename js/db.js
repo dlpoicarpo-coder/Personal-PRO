@@ -185,7 +185,24 @@ class Database {
       const { data, error } = await q.maybeSingle();
       if (error) { console.warn(`get(${storeName}) error:`, error.message); return fixObjectEncoding(local); }
       if (!data) return fixObjectEncoding(local);
-      const res = data.data && typeof data.data === 'object' ? { ...data.data, id: data.id } : data;
+      const res = data.data && typeof data.data === 'object' ? { 
+        ...data.data, 
+        id: data.id,
+        updatedAt: data.data.updatedAt || data.updated_at,
+        createdAt: data.data.createdAt || data.created_at
+      } : {
+        ...data,
+        updatedAt: data.updatedAt || data.updated_at,
+        createdAt: data.createdAt || data.created_at
+      };
+      
+      if (local) {
+        const localTime = new Date(local.updatedAt || local.createdAt || 0).getTime();
+        const remoteTime = new Date(res.updatedAt || res.createdAt || 0).getTime();
+        if (localTime > remoteTime) {
+          return fixObjectEncoding(local);
+        }
+      }
       return fixObjectEncoding(res);
     } catch(e) { console.warn(`get(${storeName}) exception:`, e?.message); return fixObjectEncoding(local); }
   }
@@ -193,7 +210,7 @@ class Database {
   // Tabelas que existem no Supabase (as demais ficam só em localStorage)
   SUPABASE_TABLES = new Set([
     'students','sessions','biofeedback','workouts','assessments',
-    'cycles','macrocycles','schedules','financial','finances',
+    'cycles','macrocycles','schedules','financial',
     'events','prescriptions','anamnesis','settings','exercises','methods',
   ]);
 
@@ -265,15 +282,37 @@ class Database {
       // Mapear: usar r.data (JSONB) se existir, senão usar a row direta
       const remote = data.map(r => {
         if (r.data && typeof r.data === 'object') {
-          return { ...r.data, id: r.id }; // id da row sempre prevalece
+          return { 
+            ...r.data, 
+            id: r.id,
+            updatedAt: r.data.updatedAt || r.updated_at,
+            createdAt: r.data.createdAt || r.created_at
+          };
         }
-        return { ...r };
+        return { 
+          ...r,
+          updatedAt: r.updatedAt || r.updated_at,
+          createdAt: r.createdAt || r.created_at
+        };
       });
 
-      // Mesclar com local (local pode ter registros offline)
+      // Mesclar com local (local pode ter registros offline) mantendo o registro com updatedAt mais recente
       const merged = new Map();
       local.forEach(r => { if (r?.id) merged.set(r.id, r); });
-      remote.forEach(r => { if (r?.id) merged.set(r.id, r); });
+      remote.forEach(r => {
+        if (r?.id) {
+          const localItem = merged.get(r.id);
+          if (localItem) {
+            const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+            const remoteTime = new Date(r.updatedAt || r.createdAt || 0).getTime();
+            if (remoteTime >= localTime) {
+              merged.set(r.id, r);
+            }
+          } else {
+            merged.set(r.id, r);
+          }
+        }
+      });
       let result = [...merged.values()];
 
       // Deduplicar por nome para exercises e methods

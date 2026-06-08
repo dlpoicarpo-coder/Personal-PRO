@@ -17,6 +17,12 @@ const PAYMENT_METHODS = ['Pix','Cartão de Crédito','Cartão de Débito','Dinhe
 
 function fmtBRL(v) { return 'R$ ' + Number(v||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
 
+// Helper para evitar problemas de fuso horário com strings de data YYYY-MM-DD
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  return new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));
+}
+
 // ── Estado do filtro de data (módulo) ──────────────────────────
 const finState = {
   month: new Date().getMonth(),
@@ -40,15 +46,15 @@ export async function renderFinancial() {
 
   records.sort((a, b) => {
     const order   = { overdue: 0, pending: 1, paid: 2 };
-    const aStatus = (a.status === 'pending' && new Date(a.dueDate) < now) ? 'overdue' : a.status;
-    const bStatus = (b.status === 'pending' && new Date(b.dueDate) < now) ? 'overdue' : b.status;
+    const aStatus = (a.status === 'pending' && parseLocalDate(a.dueDate) < now) ? 'overdue' : a.status;
+    const bStatus = (b.status === 'pending' && parseLocalDate(b.dueDate) < now) ? 'overdue' : b.status;
     if (order[aStatus] !== order[bStatus]) return order[aStatus] - order[bStatus];
-    return new Date(b.dueDate) - new Date(a.dueDate);
+    return parseLocalDate(b.dueDate) - parseLocalDate(a.dueDate);
   });
 
   const inSelMonth = (dateStr) => {
     if (!dateStr) return false;
-    const d = new Date(dateStr);
+    const d = parseLocalDate(dateStr);
     return d.getMonth() === selMonth && d.getFullYear() === selYear;
   };
 
@@ -68,7 +74,7 @@ export async function renderFinancial() {
   const totalPend  = monthRecs.filter(r => r.status !== 'paid').reduce((t, r) => t + (r.amount||0), 0);
 
   // VENCIDOS: pendentes com vencimento passado (qualquer mês)
-  const overdue    = records.filter(r => r.status === 'pending' && new Date(r.dueDate) < now);
+  const overdue    = records.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) < now);
   const overdueAmt = overdue.reduce((t, r) => t + (r.amount||0), 0);
 
   // Taxa de coleta
@@ -81,8 +87,8 @@ export async function renderFinancial() {
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const mo = d.getMonth(); const yr = d.getFullYear();
-    const paid = records.filter(r => r.status==='paid' && new Date(r.paidDate||r.dueDate).getMonth()===mo && new Date(r.paidDate||r.dueDate).getFullYear()===yr).reduce((t,r) => t+(r.amount||0), 0);
-    const expected = records.filter(r => { const dd = new Date(r.dueDate); return dd.getMonth()===mo && dd.getFullYear()===yr; }).reduce((t,r) => t+(r.amount||0), 0);
+    const paid = records.filter(r => r.status==='paid' && parseLocalDate(r.paidDate||r.dueDate).getMonth()===mo && parseLocalDate(r.paidDate||r.dueDate).getFullYear()===yr).reduce((t,r) => t+(r.amount||0), 0);
+    const expected = records.filter(r => { const dd = parseLocalDate(r.dueDate); return dd.getMonth()===mo && dd.getFullYear()===yr; }).reduce((t,r) => t+(r.amount||0), 0);
     monthlyData.push({ label: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), paid, expected });
   }
 
@@ -91,7 +97,7 @@ export async function renderFinancial() {
 
   // Sessões do mês selecionado
   const monthSessions = sessions.filter(x => {
-    const d = new Date(x.date);
+    const d = parseLocalDate(x.date);
     return x.status==='completed' && d.getMonth()===selMonth && d.getFullYear()===selYear;
   });
 
@@ -167,8 +173,8 @@ export async function renderFinancial() {
         ${defaulters.length ? defaulters.map(s => {
           const sOverdue = overdue.filter(r=>r.studentId===s.id);
           const total = sOverdue.reduce((t,r)=>t+(r.amount||0),0);
-          const oldest = sOverdue.sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate))[0];
-          const days   = Math.floor((now-new Date(oldest.dueDate))/86400000);
+          const oldest = sOverdue.sort((a,b)=>parseLocalDate(a.dueDate)-parseLocalDate(b.dueDate))[0];
+          const days   = Math.floor((now-parseLocalDate(oldest.dueDate))/86400000);
           return `
           <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color)">
             <div class="avatar avatar-sm">${s.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
@@ -221,7 +227,7 @@ export async function renderFinancial() {
           <tbody>
             ${records.map(r => {
               const st = students.find(s => s.id === r.studentId);
-              const due = new Date(r.dueDate);
+              const due = parseLocalDate(r.dueDate);
               const isOverdue = r.status==='pending' && due < now;
               const statusLabel = r.status==='paid' ? 'Pago' : isOverdue ? 'Vencido' : 'Pendente';
               const statusBadge = r.status==='paid' ? 'success' : isOverdue ? 'danger' : 'warning';
@@ -343,7 +349,7 @@ export function initFinancial(navigateFn) {
           const mo = d.getMonth(), yr = d.getFullYear();
           const inMonth = (ds) => {
             if (!ds) return false;
-            const dd = new Date(ds);
+            const dd = parseLocalDate(ds);
             return dd.getMonth() === mo && dd.getFullYear() === yr;
           };
           labels.push(d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
@@ -435,7 +441,7 @@ export function initFinancial(navigateFn) {
     const students = await db.getAll('students');
     const records  = await db.getAll('financial');
     const now      = new Date();
-    const overdue  = records.filter(r => r.status==='pending' && new Date(r.dueDate)<now);
+    const overdue  = records.filter(r => r.status==='pending' && parseLocalDate(r.dueDate)<now);
     const byStudent= {};
     overdue.forEach(r => { byStudent[r.studentId]=(byStudent[r.studentId]||[]).concat(r); });
     let count=0;
@@ -443,7 +449,7 @@ export function initFinancial(navigateFn) {
       const st = students.find(s=>s.id===sid);
       if (!st?.phone) continue;
       const total = recs.reduce((t,r)=>t+(r.amount||0),0);
-      const days  = Math.floor((now-new Date(recs[0].dueDate))/86400000);
+      const days  = Math.floor((now-parseLocalDate(recs[0].dueDate))/86400000);
       const msg   = `Olá ${st.name.split(' ')[0]}! 👋\n\nIdentificamos *${recs.length} parcela(s)* em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: ${await getPixKey()}\n\nQualquer dúvida estou à disposição! 💪`;
       sendWhatsApp(st.phone, msg);
       count++;
