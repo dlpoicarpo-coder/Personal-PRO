@@ -623,8 +623,12 @@ function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
 // ══════════════════════════════════════════════════════════
 
 export async function renderPreForm(studentId) {
-  // Limpar parâmetros extras do ID (links antigos tinham ?t=...&n=...)
-  const cleanId = (studentId || '').split('?')[0].split('&')[0].trim();
+  // Extrair parâmetros extras do ID (links contêm ?t=...&n=...)
+  const rawSplit = (studentId || '').split('?');
+  const cleanId = rawSplit[0].trim();
+  const urlParams = new URLSearchParams(rawSplit.length > 1 ? '?' + rawSplit[1] : '');
+  const urlTrainerId = urlParams.get('t');
+
   const student = await publicGet('students', cleanId);
 
   if (!student) {    return `
@@ -674,7 +678,7 @@ export async function renderPreForm(studentId) {
 
           <form id="preStudentForm" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();}">
             <input type="hidden" name="studentId" value="${cleanId}" />
-            <input type="hidden" name="trainerId" value="${student.trainer_id||student.trainerId||''}" />
+            <input type="hidden" name="trainerId" value="${urlTrainerId||student.trainer_id||student.trainerId||''}" />
 
             ${scalePickerHTML('sleep', SONO_SCALE, 7, '😴 Qualidade do Sono 🌙', 'Selecione o descritor que melhor representa sua última noite de sono.')}
 
