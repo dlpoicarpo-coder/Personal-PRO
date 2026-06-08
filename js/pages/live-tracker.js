@@ -1367,7 +1367,7 @@ function buildSessionSummary(session, student) {
     return `${ex.name}: ${sets.length}x (${sets.reduce((t,s)=>t+(s.reps||0),0)} reps, ${Math.max(...sets.map(s=>s.load||0))}kg)`;
   }).filter(Boolean);
 
-  return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${new Date(session.date).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
+  return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${(session.date.includes('T') ? new Date(session.date) : new Date(session.date + 'T12:00')).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
 }
 
 // ── SHOW SUMMARY ─────────────────────────────────────────────
@@ -1424,7 +1424,7 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
           <div class="avatar">${ini}</div>
           <div>
             <div style="font-weight:700;font-size:1.05rem">${student?.name||'Aluno'}</div>
-            <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>
+            <div class="text-muted text-sm">${session.workoutName||'Treino'} · ${(session.date.includes('T') ? new Date(session.date) : new Date(session.date + 'T12:00')).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px">
@@ -1520,8 +1520,9 @@ function generateSessionPDF(session, student) {
     const durMin = Math.round((session.totalDuration||0)/60);
     const vol    = Math.round(session.totalVolume||0);
     const exs    = session.exercises||[], setLog = session.setLog||[];
-    const date   = new Date(session.date).toLocaleDateString('pt-BR');
-    const dateL  = new Date(session.date).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const dateObj = session.date.includes('T') ? new Date(session.date) : new Date(session.date + 'T12:00');
+    const date   = dateObj.toLocaleDateString('pt-BR');
+    const dateL  = dateObj.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const peso   = student?.weight || session.preBiofeedback?.peso || null;
     const kcal   = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : null;
     const pse    = session.postBiofeedback?.pse || '—';

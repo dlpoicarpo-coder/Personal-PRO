@@ -841,7 +841,7 @@ export async function initReports(navigateFn) {
             const summaryStr = exSummary.join(' • ');
 
             return `<tr>
-              <td>${new Date(se.date).toLocaleDateString('pt-BR')}</td>
+              <td>${(se.date.includes('T') ? new Date(se.date) : new Date(se.date + 'T12:00')).toLocaleDateString('pt-BR')}</td>
               <td><strong>${se.workoutName||'-'}</strong></td>
               <td>${durMin?durMin+'min':'-'}</td>
               <td>${vol?vol+' kg':'-'}</td>
@@ -1256,16 +1256,24 @@ async function loadPeriodizationForReport(studentId, selectedMacroId = null) {
   
   let active = selectedMacroId ? macros.find(m => m.id === selectedMacroId) : (macros.find(m => m.status === 'active') || macros[0]);
   
-  const currentWeek = Math.ceil((Date.now() - new Date(active.startDate).getTime()) / (7 * 86400000));
+  const getDaysDifference = (d1, d2) => {
+    const t1 = new Date(d1.includes('T') ? d1 : d1 + 'T12:00');
+    const t2 = new Date(d2.includes('T') ? d2 : d2 + 'T12:00');
+    const s1 = new Date(t1.getFullYear(), t1.getMonth(), t1.getDate());
+    const s2 = new Date(t2.getFullYear(), t2.getMonth(), t2.getDate());
+    return Math.round((s1 - s2) / 86400000);
+  };
+  const elapsedDays = getDaysDifference(new Date().toISOString().split('T')[0], active.startDate);
+  const currentWeek = Math.floor(Math.abs(elapsedDays) / 7) + 1;
   
   container.innerHTML = `
     <div style="margin-bottom:12px">
       <select class="form-select" id="reportMacroSelect" style="max-width:300px;font-size:0.85rem">
-        ${macros.map(m => `<option value="${m.id}" ${m.id === active.id ? 'selected' : ''}>${m.name} (${new Date(m.startDate).toLocaleDateString('pt-BR')})</option>`).join('')}
+        ${macros.map(m => `<option value="${m.id}" ${m.id === active.id ? 'selected' : ''}>${m.name} (${(m.startDate.includes('T') ? new Date(m.startDate) : new Date(m.startDate + 'T12:00')).toLocaleDateString('pt-BR')})</option>`).join('')}
       </select>
     </div>
     ${active.weeks ? `
-    <div class="text-sm text-muted mb-sm"><strong>${active.name}</strong> · ${active.totalWeeks} semanas · Início: ${new Date(active.startDate).toLocaleDateString('pt-BR')}</div>
+    <div class="text-sm text-muted mb-sm"><strong>${active.name}</strong> · ${active.totalWeeks} semanas · Início: ${(active.startDate.includes('T') ? new Date(active.startDate) : new Date(active.startDate + 'T12:00')).toLocaleDateString('pt-BR')}</div>
     <div class="week-timeline" style="min-height:60px">
       ${active.weeks.map((w, i) => {
         const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';

@@ -71,6 +71,22 @@ function setPortalTheme(theme) {
   document.querySelector('.portal-root')?.setAttribute('data-theme', theme);
 }
 
+// Utility helpers for timezone-safe date operations
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  return new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00');
+}
+
+function getDaysDifference(targetDateStr) {
+  if (!targetDateStr) return 0;
+  const target = parseLocalDate(targetDateStr);
+  const targetStart = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((targetStart - todayStart) / 86400000);
+}
+
 // ── STATE ──────────────────────────────────────────────────────
 const portalState = {
   studentId: null,
@@ -520,19 +536,17 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
   
   // Encontrar se há algum pagamento pendente ou vencido em finances
   const activePending = (finances || []).filter(f => f.status === 'pending');
-  const overdueFinances = activePending.filter(f => new Date(f.dueDate + 'T12:00') < now);
+  const overdueFinances = activePending.filter(f => getDaysDifference(f.dueDate) < 0);
   
   if (overdueFinances.length > 0) {
     overdueFinances.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-    const oldestDue = new Date(overdueFinances[0].dueDate + 'T12:00');
-    const diff = Math.ceil((oldestDue - now) / 86400000);
+    const diff = getDaysDifference(overdueFinances[0].dueDate);
     paymentDays = diff;
     paymentColor = 'var(--portal-danger)';
     paymentLabel = `Venceu há ${Math.abs(diff)}d`;
   } else if (activePending.length > 0) {
     activePending.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-    const nextDue = new Date(activePending[0].dueDate + 'T12:00');
-    const diff = Math.ceil((nextDue - now) / 86400000);
+    const diff = getDaysDifference(activePending[0].dueDate);
     paymentDays = diff;
     paymentColor = diff <= 5 ? 'var(--portal-warning)' : 'var(--portal-success)';
     paymentLabel = diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
@@ -540,7 +554,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     // Fallback para o campo do aluno se finances estiver vazio
     const paymentDue = student?.paymentDue;
     if (paymentDue) {
-      const diff = Math.ceil((new Date(paymentDue + 'T12:00') - now) / 86400000);
+      const diff = getDaysDifference(paymentDue);
       paymentDays = diff;
       paymentColor = diff < 0 ? 'var(--portal-danger)' : diff <= 5 ? 'var(--portal-warning)' : 'var(--portal-success)';
       paymentLabel = diff < 0 ? `Venceu há ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
@@ -608,7 +622,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     if (s.postBiofeedback && s.postBiofeedback.submittedByStudent) return false;
     if (!s.date) return false;
     const dateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date;
-    const daysAgo = (now - new Date(dateStr + 'T12:00')) / 86400000;
+    const daysAgo = -getDaysDifference(dateStr);
     return daysAgo <= 3;
   });
   let checkoutBanner = '';
@@ -633,7 +647,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
           <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]} 👋</div>
           <div class="portal-greeting-date">${now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' })}</div>
         </div>
-        ${lastSession ? `<div class="portal-last-session">Último treino: ${Math.floor((now - new Date(lastSession.date))/86400000)}d atrás</div>` : ''}
+        ${lastSession ? `<div class="portal-last-session">Último treino: ${Math.abs(getDaysDifference(lastSession.date))}d atrás</div>` : ''}
       </div>
 
       <!-- Stats rápidas -->
@@ -675,8 +689,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         
         let weekTimelineHtml = '';
         if (currentMacro.weeks && currentMacro.weeks.length) {
-          const macroStart = new Date(currentMacro.startDate).getTime();
-          const currentWeek = Math.ceil((Date.now() - macroStart) / (7 * 86400000));
+          const currentWeek = Math.floor(Math.abs(getDaysDifference(currentMacro.startDate)) / 7) + 1;
           
           weekTimelineHtml = `
             <div class="week-timeline" style="margin: 14px 0 8px; display: flex; gap: 4px; align-items: flex-end; min-height: 60px;">
@@ -716,7 +729,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
             ${weekTimelineHtml}
 
             <div class="portal-macro-pct" style="text-align:left; margin-top:6px;">${macroProgress}% concluído &middot; ${macroSessionsCount} sessões no ciclo</div>
-            ${currentMacro.endDate ? `<div class="text-xs" style="color:var(--portal-text-muted);margin-top:4px">Termina em: ${new Date(currentMacro.endDate).toLocaleDateString('pt-BR')}</div>` : ''}
+            ${currentMacro.endDate ? `<div class="text-xs" style="color:var(--portal-text-muted);margin-top:4px">Termina em: ${parseLocalDate(currentMacro.endDate).toLocaleDateString('pt-BR')}</div>` : ''}
           </div>
         `;
       })()}
@@ -1720,7 +1733,7 @@ function renderBio(biofeedbacks, sid, tid) {
         <div class="portal-section-sub" style="margin-top:20px">Histórico recente</div>
         ${last7.map(b => `
           <div class="glass-card portal-bio-history">
-            <div class="portal-bio-date">${new Date(b.date).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}</div>
+            <div class="portal-bio-date">${parseLocalDate(b.date).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}</div>
             <div class="portal-bio-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
               ${b.sleep!=null?`
                 <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.2);color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">

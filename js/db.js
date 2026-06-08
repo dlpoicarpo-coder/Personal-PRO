@@ -74,8 +74,78 @@ class Database {
   async _getTrainerId() {
     if (this._currentUser?.id) return this._currentUser.id;
     const user = await getCurrentUser();
-    if (user) this._currentUser = user;
+    if (user) {
+      this._currentUser = user;
+      if (user.id && !user._offline) {
+        this.syncLocalToRemote(user.id).catch(err => console.warn('Sync failed:', err));
+      }
+    }
     return user?.id || null;
+  }
+
+  async syncLocalToRemote(trainerId) {
+    if (!this.supabase || !trainerId) return;
+    if (this._syncing) return;
+    this._syncing = true;
+    console.log(`[Sync] Starting database sync for trainer: ${trainerId}`);
+    try {
+      for (const storeName of this.SUPABASE_TABLES) {
+        const localItems = this._getLocal(storeName, trainerId) || [];
+        if (localItems.length === 0) continue;
+
+        const { data: remoteRows, error } = await this.supabase
+          .from(storeName)
+          .select('id, updated_at')
+          .eq('trainer_id', trainerId);
+
+        if (error) {
+          console.warn(`[Sync] Failed to fetch remote keys for ${storeName}:`, error.message);
+          continue;
+        }
+
+        const remoteMap = new Map(remoteRows.map(r => [r.id, r.updated_at]));
+        const toUpload = [];
+
+        for (const localItem of localItems) {
+          if (!localItem.id) continue;
+          const remoteUpdatedAt = remoteMap.get(localItem.id);
+
+          if (!remoteUpdatedAt) {
+            toUpload.push(localItem);
+          } else {
+            const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+            const remoteTime = new Date(remoteUpdatedAt).getTime();
+            if (localTime > remoteTime + 1000) {
+              toUpload.push(localItem);
+            }
+          }
+        }
+
+        if (toUpload.length > 0) {
+          console.log(`[Sync] Uploading ${toUpload.length} items to ${storeName}...`);
+          const chunkSize = 50;
+          for (let i = 0; i < toUpload.length; i += chunkSize) {
+            const chunk = toUpload.slice(i, i + chunkSize);
+            const payloads = chunk.map(item => ({
+              id: item.id,
+              trainer_id: trainerId,
+              data: item
+            }));
+            const { error: upsertError } = await this.supabase
+              .from(storeName)
+              .upsert(payloads);
+            if (upsertError) {
+              console.warn(`[Sync] Failed to upload chunk to ${storeName}:`, upsertError.message);
+            }
+          }
+        }
+      }
+      console.log(`[Sync] Sync completed successfully!`);
+    } catch (err) {
+      console.warn(`[Sync] Error during sync:`, err);
+    } finally {
+      this._syncing = false;
+    }
   }
 
   // ── LOCAL STORAGE HELPERS (scoped per trainer_id) ──
