@@ -87,11 +87,16 @@ export async function renderStudentPortal(rawParam) {
   }
   const [studentId, query] = rawParam.split('?');
   const params = new URLSearchParams(query || '');
-  const trainerId = params.get('t') || '';
+  let trainerId = params.get('t') || '';
+
+  const student = await db.get('students', studentId).catch(() => null);
+  if (student && !trainerId) {
+    trainerId = student.trainerId || student.trainer_id || '';
+  }
+
   portalState.studentId = studentId;
   portalState.trainerId = trainerId;
 
-  const student = await db.get('students', studentId).catch(() => null);
   // If name loaded from DB, save it for PWA/offline use
   if (student?.name) {
     localStorage.setItem(`portal_name_${studentId}`, student.name);
@@ -393,7 +398,7 @@ async function loadSection(section) {
     fetchForStudent('assessments').then(all => all.sort((a,b) => new Date(b.date)-new Date(a.date))),
     fetchForStudent('schedules'),
     fetchForStudent('macrocycles'),
-    fetchForStudent('finances'),
+    fetchForStudent('financial'),
   ]);
 
   // Filtrar treinos por studentId — com fallback por trainerId

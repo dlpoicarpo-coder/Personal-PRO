@@ -75,6 +75,15 @@ CREATE TABLE IF NOT EXISTS macrocycles (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Agenda / Agendamentos de treinos da periodização
+CREATE TABLE IF NOT EXISTS schedules (
+  id          TEXT PRIMARY KEY,
+  trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  data        JSONB NOT NULL DEFAULT '{}',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Ciclos de Treinamento
 CREATE TABLE IF NOT EXISTS cycles (
   id          TEXT PRIMARY KEY,
@@ -138,6 +147,7 @@ CREATE INDEX IF NOT EXISTS idx_events_trainer      ON events(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_assessments_trainer ON assessments(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_biofeedback_trainer ON biofeedback(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_macrocycles_trainer ON macrocycles(trainer_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_trainer   ON schedules(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_cycles_trainer      ON cycles(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_exercises_trainer   ON exercises(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_settings_trainer    ON settings(trainer_id);
@@ -157,6 +167,7 @@ ALTER TABLE events      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE assessments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE biofeedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE macrocycles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE schedules   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cycles      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exercises   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings    ENABLE ROW LEVEL SECURITY;
@@ -211,6 +222,12 @@ CREATE POLICY "macrocycles_select" ON macrocycles FOR SELECT USING (auth.uid() =
 CREATE POLICY "macrocycles_insert" ON macrocycles FOR INSERT WITH CHECK (auth.uid() = trainer_id);
 CREATE POLICY "macrocycles_update" ON macrocycles FOR UPDATE USING (auth.uid() = trainer_id);
 CREATE POLICY "macrocycles_delete" ON macrocycles FOR DELETE USING (auth.uid() = trainer_id);
+
+-- SCHEDULES
+CREATE POLICY "schedules_select" ON schedules FOR SELECT USING (auth.uid() = trainer_id);
+CREATE POLICY "schedules_insert" ON schedules FOR INSERT WITH CHECK (auth.uid() = trainer_id);
+CREATE POLICY "schedules_update" ON schedules FOR UPDATE USING (auth.uid() = trainer_id);
+CREATE POLICY "schedules_delete" ON schedules FOR DELETE USING (auth.uid() = trainer_id);
 
 -- CYCLES
 CREATE POLICY "cycles_select" ON cycles FOR SELECT USING (auth.uid() = trainer_id);
@@ -268,6 +285,9 @@ CREATE POLICY "assessments_select_anonymous" ON assessments FOR SELECT TO anon U
 -- 4. Macrociclos de Periodização: permitir leitura anônima
 CREATE POLICY "macrocycles_select_anonymous" ON macrocycles FOR SELECT TO anon USING (true);
 
+-- Agendamentos/Schedules: permitir leitura anônima
+CREATE POLICY "schedules_select_anonymous" ON schedules FOR SELECT TO anon USING (true);
+
 -- 5. Sessões de Treino: permitir leitura, gravação e atualização anônima (necessário para upsert)
 CREATE POLICY "sessions_select_anonymous" ON sessions FOR SELECT TO anon USING (true);
 CREATE POLICY "sessions_insert_anonymous" ON sessions FOR INSERT TO anon WITH CHECK (true);
@@ -298,7 +318,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'students','workouts','sessions','events','assessments',
-    'biofeedback','macrocycles','cycles','exercises','settings',
+    'biofeedback','macrocycles','schedules','cycles','exercises','settings',
     'financial','anamneses'
   ]
   LOOP
