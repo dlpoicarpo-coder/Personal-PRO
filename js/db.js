@@ -204,7 +204,22 @@ class Database {
       const merged = new Map();
       local.forEach(r => { if (r?.id) merged.set(r.id, r); });
       remote.forEach(r => { if (r?.id) merged.set(r.id, r); });
-      const result = [...merged.values()];
+      let result = [...merged.values()];
+
+      // Deduplicar por nome para exercises e methods
+      if (storeName === 'exercises' || storeName === 'methods') {
+        const seenName = new Set();
+        const deduped = [];
+        for (const item of result) {
+          const name = item.name ? String(item.name).toLowerCase().trim() : '';
+          if (name) {
+            if (seenName.has(name)) continue;
+            seenName.add(name);
+          }
+          deduped.push(item);
+        }
+        result = deduped;
+      }
 
       this._saveLocal(storeName, result, trainerId);
       return fixObjectEncoding(result);

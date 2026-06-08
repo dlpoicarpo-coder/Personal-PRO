@@ -35,7 +35,7 @@ async function publicGet(table, id) {
       const rows = await res.json();
       if (rows?.length) {
         const row = rows[0];
-        const obj = row.data ? { ...row.data, id: row.id } : { ...row };
+        const obj = row.data ? { ...row.data, id: row.id, trainer_id: row.trainer_id || row.data.trainer_id } : { ...row };
         if (obj.id || obj.name) return obj;
       }
     } else {
@@ -57,7 +57,7 @@ async function publicGet(table, id) {
       const rows2 = await res2.json();
       if (rows2?.length) {
         const row = rows2[0];
-        return row.data ? { ...row.data, id: row.data.id || row.id } : { ...row };
+        return row.data ? { ...row.data, id: row.data.id || row.id, trainer_id: row.trainer_id || row.data.trainer_id } : { ...row };
       }
     }
   } catch(_) {}
