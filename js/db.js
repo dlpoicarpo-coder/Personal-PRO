@@ -138,7 +138,7 @@ class Database {
       const { data, error } = await this.supabase
         .from('students')
         .select('*')
-        .filter('data->>email', 'eq', email);
+        .ilike('data->>email', email);
       if (!error && data && data.length > 0) {
         const r = data[0];
         const res = r.data ? { ...r.data, id: r.id } : r;
