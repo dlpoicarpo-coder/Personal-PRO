@@ -366,15 +366,34 @@ async function loadSection(section) {
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
 
+  // Função auxiliar para buscar do Supabase focado no aluno atual e evitar limites de 1000 linhas
+  const fetchForStudent = async (table) => {
+    if (!db.supabase) return [];
+    try {
+      let q = db.supabase.from(table).select('*');
+      if (table === 'workouts' && tid) {
+        q = q.eq('trainer_id', tid); // Puxar os treinos do personal
+      } else {
+        q = q.filter('data->>studentId', 'eq', sid); // Resto atrelado ao aluno
+      }
+      const { data } = await q;
+      if (!data) return [];
+      return data.map(r => (r.data ? { ...r.data, id: r.id } : { ...r }));
+    } catch (e) {
+      console.warn(`Erro portal fetchForStudent(${table}):`, e);
+      return [];
+    }
+  };
+
   const [student, sessionsRaw, workoutsRaw, biofeedbacks, assessments, schedules, macrocycles, finances] = await Promise.all([
     db.get('students', sid).catch(() => null),
-    db.getAll('sessions').then(all => all.filter(s => s.studentId === sid)).catch(() => []),
-    db.getAll('workouts').catch(() => []),
-    db.getAll('biofeedback').then(all => all.filter(b => b.studentId === sid).sort((a,b) => new Date(b.date)-new Date(a.date))).catch(() => []),
-    db.getAll('assessments').then(all => all.filter(a => a.studentId === sid).sort((a,b) => new Date(b.date)-new Date(a.date))).catch(() => []),
-    db.getAll('schedules').then(all => all.filter(s => s.studentId === sid)).catch(() => []),
-    db.getAll('macrocycles').then(all => all.filter(m => m.studentId === sid)).catch(() => []),
-    db.getAll('finances').then(all => all.filter(f => f.studentId === sid)).catch(() => []),
+    fetchForStudent('sessions'),
+    fetchForStudent('workouts'),
+    fetchForStudent('biofeedback').then(all => all.sort((a,b) => new Date(b.date)-new Date(a.date))),
+    fetchForStudent('assessments').then(all => all.sort((a,b) => new Date(b.date)-new Date(a.date))),
+    fetchForStudent('schedules'),
+    fetchForStudent('macrocycles'),
+    fetchForStudent('finances'),
   ]);
 
   // Filtrar treinos por studentId — com fallback por trainerId
