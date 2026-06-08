@@ -234,6 +234,27 @@ export async function initLogin(onSuccess) {
       let msg = result.error;
       if (msg.includes('Invalid login')) msg = 'E-mail ou senha incorretos.';
       if (msg.includes('Email not confirmed')) msg = 'E-mail ainda não confirmado. Verifique sua caixa de entrada.';
+      if (msg.includes('Failed to fetch') || msg.includes('fetch') || msg.includes('ERR_NAME') || msg.includes('timeout') || msg.includes('network')) {
+        msg = '⚠️ Sem conexão com o servidor. Verifique sua internet e tente novamente.';
+        errEl.innerHTML = `
+          <div style="line-height:1.6">
+            <strong>Não foi possível conectar ao servidor.</strong><br>
+            <span style="font-size:0.82rem;color:var(--text-muted)">Possíveis causas:</span>
+            <ul style="font-size:0.8rem;margin:6px 0 10px 16px;color:var(--text-muted);text-align:left">
+              <li>Internet instável ou roteador travado</li>
+              <li>Bloqueador de anúncios/VPN interferindo</li>
+            </ul>
+            <button id="retryLoginBtn" class="btn btn-primary btn-sm" style="width:100%;margin-top:4px">🔄 Tentar novamente</button>
+          </div>`;
+        errEl.style.display = '';
+        btn.disabled = false;
+        btn.textContent = 'Entrar no Sistema';
+        document.getElementById('retryLoginBtn')?.addEventListener('click', () => {
+          errEl.style.display = 'none';
+          document.getElementById('loginForm')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        });
+        return;
+      }
       errEl.textContent = msg;
       errEl.style.display = '';
       btn.disabled = false;

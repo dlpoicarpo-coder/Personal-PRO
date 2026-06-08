@@ -109,16 +109,23 @@ export async function signIn(email, password) {
   if (!sb) return { error: 'Supabase não disponível' };
 
   try {
-    const { data, error } = await sb.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
+    const { data, error } = await withTimeout(
+      sb.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }),
+      10000
+    );
     if (error) return { error: error.message };
+    // Cache UID on successful login
+    if (data?.user?.id) {
+      try { localStorage.setItem('pp_cached_uid', data.user.id); } catch(_) {}
+    }
     return { user: data.user, session: data.session };
   } catch (err) {
     console.error('signIn failed:', err);
-    return { error: 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.' };
+    const isNetworkErr = err.message === 'timeout' || err.message?.includes('fetch') || err.message?.includes('network');
+    return { error: isNetworkErr
+      ? 'Failed to fetch'
+      : 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.'
+    };
   }
 }
 
