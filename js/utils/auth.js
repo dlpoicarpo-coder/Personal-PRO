@@ -22,21 +22,38 @@ export function getSupabase() {
   return _client;
 }
 
+// Helper: wraps a promise with a timeout
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+  ]);
+}
+
 // Get current authenticated user (null if not logged in)
 export async function getCurrentUser() {
   const sb = getSupabase();
   if (!sb) return null;
   try {
-    const { data: { user } } = await sb.auth.getUser();
+    const { data: { user } } = await withTimeout(sb.auth.getUser(), 5000);
+    if (user) {
+      // Cache session locally for offline fallback
+      try { localStorage.setItem('pp_cached_uid', user.id); } catch(_) {}
+    }
     return user;
   } catch (err) {
-    console.warn('getCurrentUser failed:', err);
+    console.warn('getCurrentUser remote failed, trying local session:', err.message);
     try {
-      const { data: { session } } = await sb.auth.getSession();
-      return session?.user || null;
-    } catch {
-      return null;
+      const { data: { session } } = await withTimeout(sb.auth.getSession(), 3000);
+      if (session?.user) return session.user;
+    } catch (_) {}
+    // Fallback: use cached UID from localStorage to keep app usable offline
+    const cachedUid = localStorage.getItem('pp_cached_uid');
+    if (cachedUid) {
+      console.warn('Supabase unreachable — using cached offline session');
+      return { id: cachedUid, email: '', _offline: true };
     }
+    return null;
   }
 }
 
@@ -179,8 +196,10 @@ export async function syncTrainerProfile() {
 export async function isAuthenticated() {
   const user = await getCurrentUser();
   if (user) {
-    // Sincroniza o perfil em segundo plano para garantir que os dados existem
-    await syncTrainerProfile();
+    // Se offline, pula sync (evita travar)
+    if (!user._offline) {
+      syncTrainerProfile().catch(() => {}); // fire-and-forget, não bloqueia
+    }
     return true;
   }
   return false;
