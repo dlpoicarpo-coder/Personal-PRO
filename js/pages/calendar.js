@@ -310,7 +310,7 @@ function bindDayActions(navigateFn) {
       if (!st?.phone) { notify.warning('Sem telefone'); return; }
       const sessions = await db.getAll('sessions');
       const last = sessions.filter(s => s.studentId === ev.studentId && s.status === 'completed').sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      sendWhatsApp(st.phone, postFormMsg(st.name.split(' ')[0], `${location.origin}${location.pathname}#/form/post/${last?.id || 'none'}`));
+      sendWhatsApp(st.phone, postFormMsg(st.name.split(' ')[0], `${location.origin}${location.pathname}#/form/post/${last?.id || 'none'}?t=${st.trainerId||st.trainer_id||''}`));
     });
   });
 
@@ -554,7 +554,7 @@ async function checkReminders() {
       const diffMin = (eventMs - now) / 60_000;
 
       const base    = window.location.href.split('#')[0];
-      const preLink = `${base}#/form/pre/${ev.studentId}?t=${ev.trainerId||ev.trainer_id||''}&n=${encodeURIComponent(ev.studentName)}`;
+      const preLink = `${base}#/form/pre/${ev.studentId}?t=${st.trainerId||st.trainer_id||ev.trainerId||ev.trainer_id||''}&n=${encodeURIComponent(st.name)}`;
 
       // ── 10h antes ──────────────────────────────────────────
       const id10h = `${ev.id}_10h`;

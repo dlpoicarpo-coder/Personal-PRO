@@ -696,10 +696,12 @@ export function initTracker(navigateFn) {
     }
   }
 
-  document.getElementById('genPreLinkBtn')?.addEventListener('click', () => {
+  document.getElementById('genPreLinkBtn')?.addEventListener('click', async () => {
     const sid = sSel?.value;
     if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
-    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}`;
+    const students = await db.getAll('students');
+    const st = students.find(x => x.id === sid) || {};
+    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}?t=${st.trainerId||st.trainer_id||''}&n=${encodeURIComponent(st.name||'')}`;
     navigator.clipboard?.writeText(url);
     notify.success('Link pré-treino copiado!');
     openModal({
@@ -1334,7 +1336,7 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
       const settings  = await db.get('settings','trainer').catch(()=>({}));
       const base      = window.location.href.split('#')[0];
       const sessionId = sessionData.id || s.id;
-      const postLink  = `${base}#/form/post/${sessionId}`;
+      const postLink  = `${base}#/form/post/${sessionId}?t=${student?.trainerId||student?.trainer_id||''}`;
       const nome      = student.name.split(' ')[0];
       const trainerName = settings?.trainerName || '';
       const msg = [
