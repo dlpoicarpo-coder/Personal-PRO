@@ -127,6 +127,7 @@ export async function renderStudentPortal(rawParam) {
 
   portalState.studentId = studentId;
   portalState.trainerId = trainerId;
+  db.studentPortalTrainerId = trainerId;
 
   // If name loaded from DB, save it for PWA/offline use
   if (student?.name) {
@@ -335,6 +336,7 @@ function initPortalNav() {
   const root = document.querySelector('.portal-root');
   portalState.studentId = root?.dataset.sid;
   portalState.trainerId = root?.dataset.tid;
+  db.studentPortalTrainerId = root?.dataset.tid;
 
   document.querySelectorAll('.portal-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -402,14 +404,29 @@ async function loadSection(section) {
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
 
-  // Função auxiliar para buscar do Supabase focado no aluno atual e evitar limites de 1000 linhas
+  // Função auxiliar para buscar do Supabase focado no aluno atual e evitar limites de 1000 linhas, mesclando com o local storage offline
   const fetchForStudent = async (table) => {
-    if (!db.supabase) return [];
+    let localItems = [];
+    try {
+      localItems = db._getLocal(table, tid) || [];
+    } catch (_) {}
+
+    const studentLocal = table === 'workouts'
+      ? localItems
+      : localItems.filter(r => r && (r.studentId === sid || r.student_id === sid));
+
+    if (!db.supabase) {
+      return studentLocal;
+    }
+
     try {
       // Primary query: filter by studentId inside JSON data column
-      const q1 = db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
-      const { data: d1, error: e1 } = await q1;
-      let rows = d1 || [];
+      let rows = [];
+      if (table !== 'workouts') {
+        const q1 = db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
+        const { data: d1, error: e1 } = await q1;
+        if (d1) rows = d1;
+      }
 
       // Fallback for sessions: also fetch by trainer_id and filter client-side
       // This catches sessions created via the trainer's live-tracker that may not
@@ -434,17 +451,57 @@ async function loadSection(section) {
       // Special case: workouts are indexed by trainer_id (top-level column)
       if (table === 'workouts' && tid) {
         const { data: wd } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
-        return (wd || []).map(r => (r.data ? { ...r.data, id: r.id } : { ...r }));
+        rows = wd || [];
       }
 
-      if (e1 && rows.length === 0) {
-        console.warn(`Erro portal fetchForStudent(${table}):`, e1.message);
-        return [];
+      const remote = rows.map(r => {
+        if (r.data && typeof r.data === 'object') {
+          return { 
+            ...r.data, 
+            id: r.id,
+            updatedAt: r.data.updatedAt || r.updated_at,
+            createdAt: r.data.createdAt || r.created_at
+          };
+        }
+        return { 
+          ...r,
+          updatedAt: r.updatedAt || r.updated_at,
+          createdAt: r.createdAt || r.created_at
+        };
+      });
+
+      // Mesclar mantendo o mais atualizado (segundo updatedAt)
+      const merged = new Map();
+      studentLocal.forEach(r => { if (r && r.id) merged.set(r.id, r); });
+      remote.forEach(r => {
+        if (r && r.id) {
+          const localItem = merged.get(r.id);
+          if (localItem) {
+            const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+            const remoteTime = new Date(r.updatedAt || r.createdAt || 0).getTime();
+            if (remoteTime >= localTime) {
+              merged.set(r.id, r);
+            }
+          } else {
+            merged.set(r.id, r);
+          }
+        }
+      });
+
+      const result = [...merged.values()];
+
+      // Se obtivemos dados do servidor, atualizar cache local mesclado
+      if (rows.length > 0) {
+        const allLocal = db._getLocal(table, tid) || [];
+        const localMap = new Map(allLocal.map(x => [x.id, x]));
+        result.forEach(r => localMap.set(r.id, r));
+        db._saveLocal(table, [...localMap.values()], tid);
       }
-      return rows.map(r => (r.data ? { ...r.data, id: r.id } : { ...r }));
+
+      return result;
     } catch (e) {
       console.warn(`Erro portal fetchForStudent(${table}):`, e);
-      return [];
+      return studentLocal;
     }
   };
 
@@ -1423,6 +1480,18 @@ function initTreinar(workouts, schedules, student) {
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         <div>Treino salvo! Duração: ${durationMin} min</div>
       </div>`;
+
+    setTimeout(async () => {
+      document.getElementById('soloActiveSession').style.display = 'none';
+      document.getElementById('soloActiveSession').innerHTML = '';
+      document.getElementById('soloStartBtn').style.display = 'block';
+      document.getElementById('soloWorkoutPicker').style.display = 'block';
+      
+      document.querySelectorAll('.portal-nav-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.section === 'home');
+      });
+      await loadSection('home');
+    }, 1500);
   });
 }
 

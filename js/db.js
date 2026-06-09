@@ -72,6 +72,7 @@ class Database {
 
   // Get current user id (trainer_id used in all records)
   async _getTrainerId() {
+    if (this.studentPortalTrainerId) return this.studentPortalTrainerId;
     if (this._currentUser?.id) return this._currentUser.id;
     const user = await getCurrentUser();
     if (user) {
