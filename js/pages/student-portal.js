@@ -2729,7 +2729,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         options:{ responsive:true, maintainAspectRatio:false,
           plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
           scales:{y:{position:'left',ticks:{color:'#10b981',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:9}},grid:{display:false}},x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}}
-        });
+        }});
     }
   };
 
