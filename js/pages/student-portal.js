@@ -2696,6 +2696,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
           }
         }
       });
+    };
     // Multivariable Exercise Analysis Chart elements
     const exAnalysisSel = document.getElementById('portalExerciseAnalysisSel');
     const exAnalysisCtx = document.getElementById('portalExerciseAnalysisChart');
