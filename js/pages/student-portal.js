@@ -96,6 +96,21 @@ const portalState = {
   selectedReportMacroId: 'all',
 };
 
+// ── CHART REGISTRY (prevent 'Canvas already in use' errors) ────
+const _portalCharts = {};
+function destroyPortalChart(id) {
+  if (_portalCharts[id]) {
+    try { _portalCharts[id].destroy(); } catch(_) {}
+    delete _portalCharts[id];
+  }
+}
+function createPortalChart(id, canvas, config) {
+  destroyPortalChart(id);
+  const chart = new Chart(canvas, config);
+  _portalCharts[id] = chart;
+  return chart;
+}
+
 // ── RENDER ENTRY ───────────────────────────────────────────────
 export async function renderStudentPortal(rawParam) {
   if (!rawParam || rawParam === 'undefined') {
@@ -391,15 +406,42 @@ async function loadSection(section) {
   const fetchForStudent = async (table) => {
     if (!db.supabase) return [];
     try {
-      let q = db.supabase.from(table).select('*');
-      if (table === 'workouts' && tid) {
-        q = q.eq('trainer_id', tid); // Puxar os treinos do personal
-      } else {
-        q = q.filter('data->>studentId', 'eq', sid); // Resto atrelado ao aluno
+      // Primary query: filter by studentId inside JSON data column
+      const q1 = db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
+      const { data: d1, error: e1 } = await q1;
+      let rows = d1 || [];
+
+      // Fallback for sessions: also fetch by trainer_id and filter client-side
+      // This catches sessions created via the trainer's live-tracker that may not
+      // have studentId indexed as a top-level column
+      if (table === 'sessions' && tid) {
+        try {
+          const { data: d2 } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
+          if (d2 && d2.length > 0) {
+            const seenIds = new Set(rows.map(r => r.id));
+            for (const r of d2) {
+              const parsed = r.data ? { ...r.data, id: r.id } : r;
+              const rSid = parsed.studentId || parsed.student_id;
+              if (rSid === sid && !seenIds.has(r.id)) {
+                rows.push(r);
+                seenIds.add(r.id);
+              }
+            }
+          }
+        } catch(_) {}
       }
-      const { data } = await q;
-      if (!data) return [];
-      return data.map(r => (r.data ? { ...r.data, id: r.id } : { ...r }));
+
+      // Special case: workouts are indexed by trainer_id (top-level column)
+      if (table === 'workouts' && tid) {
+        const { data: wd } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
+        return (wd || []).map(r => (r.data ? { ...r.data, id: r.id } : { ...r }));
+      }
+
+      if (e1 && rows.length === 0) {
+        console.warn(`Erro portal fetchForStudent(${table}):`, e1.message);
+        return [];
+      }
+      return rows.map(r => (r.data ? { ...r.data, id: r.id } : { ...r }));
     } catch (e) {
       console.warn(`Erro portal fetchForStudent(${table}):`, e);
       return [];
@@ -2039,22 +2081,30 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   const metaRes = tdeeRes ? Calc.metaCalorica(tdeeRes.valor, obj) : null;
   const macrosRes = metaRes && lastComp?.peso ? Calc.macros(metaRes.kcal, lastComp.peso, obj) : null;
 
-  // Exercise load sparklines
+  // Exercise load progression — full table (same as trainer reports)
   const exMap = {};
   completed.forEach(s => {
     (s.setLog||[]).forEach(x => {
       if (!x.exerciseName || !x.load || x.load<=0) return;
       if (!exMap[x.exerciseName]) exMap[x.exerciseName] = [];
-      exMap[x.exerciseName].push({ date: s.date, load: parseFloat(x.load)||0 });
+      exMap[x.exerciseName].push({
+        date: s.date,
+        load: parseFloat(x.load)||0,
+        reps: parseFloat(x.reps)||0,
+        vol:  (parseFloat(x.load)||0) * (parseFloat(x.reps)||1),
+      });
     });
   });
   const topEx = Object.entries(exMap).filter(([,sets])=>sets.length>=2)
     .map(([name,sets])=>{
       const sorted=sets.sort((a,b)=>new Date(a.date)-new Date(b.date));
-      const first=sorted[0],last=sorted[sorted.length-1];
+      const first=sorted[0], last=sorted[sorted.length-1];
+      const maxLoad=Math.max(...sorted.map(s=>s.load));
       const delta=last.load-first.load;
-      return {name,first,last,delta,pct:first.load>0?Math.round((delta/first.load)*100):0,sets:sorted};
-    }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct)).slice(0,6);
+      const pct=first.load>0?Math.round((delta/first.load)*100):0;
+      const totalVol=sorted.reduce((t,s)=>t+s.vol,0);
+      return {name,first,last,maxLoad,delta,pct,totalVol,series:sorted.length,sets:sorted};
+    }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct)).slice(0,8);
 
   // Caloric card
   let caloricHtml = '';
@@ -2085,37 +2135,54 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   else if (sleepNum>=7) feedTxt+=' Otima qualidade de sono!';
   if (completed.length>0) feedTxt+=` ${completed.length} sessoes concluidas. Incrivel!`;
 
-  // Exercise progression
+  // Exercise progression — full table card
   const exHtml = topEx.length>0 ? `<div class="glass-card" style="margin-bottom:12px">
-    <div class="portal-card-label" style="margin-bottom:12px">Progressao de Carga por Exercicio</div>
-    ${topEx.map(ex=>{
-      const col=ex.delta>=0?'#10b981':'#ef4444';
-      const W=280,H=40,pad=4;
-      const lo=Math.min(...ex.sets.map(s=>s.load)),hi=Math.max(...ex.sets.map(s=>s.load));
-      const r=hi-lo||1;
-      const xs=ex.sets.map((_,i)=>pad+(i/(ex.sets.length-1))*(W-pad*2));
-      const ys=ex.sets.map(s=>H-pad-((s.load-lo)/r)*(H-pad*2));
-      const path=xs.map((x,i)=>`${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-      const area=`${path} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
-      return `<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06)">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:0.8rem;font-weight:700">${ex.name}</span>
-          <span style="font-size:0.85rem;font-weight:800;color:${col}">${ex.delta>=0?'+':''}${ex.delta.toFixed(1)}kg (${ex.delta>=0?'+':''}${ex.pct}%)</span>
-        </div>
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:40px">
-          <defs><linearGradient id="sg${ex.name.replace(/\W/g,'')}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${col}" stop-opacity="0.2"/><stop offset="100%" stop-color="${col}" stop-opacity="0"/>
-          </linearGradient></defs>
-          <path d="${area}" fill="url(#sg${ex.name.replace(/\W/g,'')})"/>
-          <path d="${path}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round"/>
-          ${xs.map((x,i)=>`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="2.5" fill="${col}"/>`).join('')}
-        </svg>
-        <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--portal-text-muted)">
-          <span>${safeFormatDate(ex.first.date)}: ${ex.first.load}kg</span>
-          <span>${safeFormatDate(ex.last.date)}: ${ex.last.load}kg</span>
-        </div>
-      </div>`;
-    }).join('')}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div class="portal-card-label" style="margin:0">📈 Progressão de Carga</div>
+      <span style="font-size:0.68rem;color:var(--portal-text-muted)">${topEx.length} exercícios</span>
+    </div>
+    <p style="font-size:0.68rem;color:var(--portal-text-muted);margin:4px 0 10px">Verde = progresso · Vermelho = regressão</p>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:0.72rem">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.1)">
+          <th style="text-align:left;padding:4px 4px 6px;color:var(--portal-text-muted);font-weight:600">Exercício</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">1ª</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Atual</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Máx</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Δ</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">%</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Vol</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">S</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${topEx.map(ex=>{
+          const col=ex.delta>0?'#10b981':ex.delta<0?'#ef4444':'#94a3b8';
+          const arrow=ex.delta>0?'↑':ex.delta<0?'↓':'=';
+          const barW=Math.min(100,Math.abs(ex.pct));
+          return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+            <td style="padding:5px 4px;font-weight:700;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ex.name}</td>
+            <td style="text-align:center;padding:5px 4px;color:var(--portal-text-muted)">${ex.first.load}kg</td>
+            <td style="text-align:center;padding:5px 4px;font-weight:600">${ex.last.load}kg</td>
+            <td style="text-align:center;padding:5px 4px;color:#f59e0b;font-weight:600">${ex.maxLoad}kg</td>
+            <td style="text-align:center;padding:5px 4px;color:${col};font-weight:700">${ex.delta>0?'+':''}${ex.delta.toFixed(1)}</td>
+            <td style="text-align:center;padding:5px 4px;min-width:60px">
+              <div style="display:flex;align-items:center;gap:3px;justify-content:center">
+                <div style="width:28px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden">
+                  <div style="height:100%;width:${barW}%;background:${col};border-radius:3px"></div>
+                </div>
+                <span style="color:${col};font-weight:700">${arrow}${Math.abs(ex.pct)}%</span>
+              </div>
+            </td>
+            <td style="text-align:center;padding:5px 4px;color:var(--portal-text-secondary)">${(ex.totalVol/1000).toFixed(1)}t</td>
+            <td style="text-align:center;padding:5px 4px;color:var(--portal-text-muted)">${ex.series}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div style="height:180px;position:relative;margin-top:12px"><canvas id="portalLoadProgressChart"></canvas></div>
   </div>` : '';
 
   // Group workouts by base name for comparative chart
@@ -2350,11 +2417,16 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
   });
   const comparableBases = Object.keys(workoutsByName).filter(base => workoutsByName[base].length >= 2);
 
+  // Destroy all existing charts before redrawing (prevents 'Canvas already in use')
+  ['portalWellnessChart','portalPseChart','portalVolChart','portalLoadChart','portalKcalChart',
+   'portalDensityChart','portalFreqChart','portalRadarChart','portalCompareChart',
+   'portalExerciseAnalysisChart','portalMeasuresChart','portalLoadProgressChart'].forEach(destroyPortalChart);
+
   const drawAll = () => {
     // Wellness
     const wCtx = document.getElementById('portalWellnessChart');
     if (wCtx && bf.length>=2) {
-      new Chart(wCtx, { type:'line', data:{ labels:bf.map(b=>fmtDate(b.date)), datasets:[
+      createPortalChart('portalWellnessChart', wCtx, { type:'line', data:{ labels:bf.map(b=>fmtDate(b.date)), datasets:[
         {label:'Sono', data:bf.map(b=>b.sleep||null), borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,0.08)', tension:0.3, fill:true, pointRadius:3},
         {label:'TQR',  data:bf.map(b=>b.tqr||null),   borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',  tension:0.3, fill:true, pointRadius:3},
         {label:'Estresse', data:bf.map(b=>b.stress||null), borderColor:'#f59e0b', borderDash:[5,3], tension:0.3, fill:false, pointRadius:3},
@@ -2366,54 +2438,56 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
 
     // PSE per session
     const pseCtx = document.getElementById('portalPseChart');
-    if (pseCtx && completed.length>=2) {
-      new Chart(pseCtx, { type:'line', data:{ labels:completed.map(s=>fmtDate(s.date)), datasets:[
+    if (pseCtx && completed.length>=1) {
+      createPortalChart('portalPseChart', pseCtx, { type:'line', data:{ labels:completed.map(s=>fmtDate(s.date)), datasets:[
         {label:'PSE', data:completed.map(s=>s.postBiofeedback?.pse||null), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.15)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#ef4444'}
       ]}, options:{...co, plugins:{legend:{display:false}}, scales:{...co.scales, y:{...co.scales.y,min:0,max:10}}} });
     }
 
     // Volume
     const volCtx = document.getElementById('portalVolChart');
-    if (volCtx && completed.length>=2) {
+    if (volCtx && completed.length>=1) {
       const recent=completed.slice(-12);
-      new Chart(volCtx, { type:'bar', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
+      createPortalChart('portalVolChart', volCtx, { type:'bar', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
         {label:'Volume (kg)', data:recent.map(s=>Math.round((s.setLog||[]).reduce((t,x)=>t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0))),
           backgroundColor:'rgba(99,102,241,0.6)', borderColor:'#6366f1', borderWidth:1, borderRadius:4}
       ]}, options:{...co, plugins:{legend:{display:false}}} });
     }
 
-    // Weekly load
+    // Weekly load (PSE × min)
     const loadCtx = document.getElementById('portalLoadChart');
-    if (loadCtx && completed.length>=2) {
+    if (loadCtx && completed.length>=1) {
       const wc={};
       completed.forEach(s=>{
         const d=new Date(s.date.includes('T')?s.date:s.date+'T12:00');
         const mon=new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
         const key=mon.toISOString().split('T')[0];
-        wc[key]=(wc[key]||0)+(s.postBiofeedback?.pse||5)*(s.durationMin||0);
+        const pse = (s.postBiofeedback?.pse || 5);
+        const dur = (s.durationMin || 0);
+        wc[key]=(wc[key]||0)+pse*dur;
       });
       const wKeys=Object.keys(wc).sort().slice(-8);
-      new Chart(loadCtx, { type:'bar', data:{ labels:wKeys.map(k=>fmtDate(k)), datasets:[
-        {label:'Carga', data:wKeys.map(k=>wc[k]), backgroundColor:'rgba(16,185,129,0.5)', borderColor:'#10b981', borderWidth:1, borderRadius:4}
+      createPortalChart('portalLoadChart', loadCtx, { type:'bar', data:{ labels:wKeys.map(k=>fmtDate(k)), datasets:[
+        {label:'Carga', data:wKeys.map(k=>wc[k]||0), backgroundColor:'rgba(16,185,129,0.5)', borderColor:'#10b981', borderWidth:1, borderRadius:4}
       ]}, options:{...co, plugins:{legend:{display:false}}} });
     }
 
     // Kcal
     const peso = compAss[compAss.length-1]?.peso || student?.weight || 70;
     const kcalCtx = document.getElementById('portalKcalChart');
-    if (kcalCtx && completed.length>=2) {
+    if (kcalCtx && completed.length>=1) {
       const recent=completed.slice(-12);
-      new Chart(kcalCtx, { type:'bar', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
+      createPortalChart('portalKcalChart', kcalCtx, { type:'bar', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
         {label:'Kcal', data:recent.map(s=>s.durationMin?Math.round(Calc.caloriasAtividade(peso,s.durationMin,'musculacao')):null),
           backgroundColor:'rgba(249,115,22,0.6)', borderColor:'#f97316', borderWidth:1, borderRadius:4}
       ]}, options:{...co, plugins:{legend:{display:false}}} });
     }
 
-    // Density
+    // Density (kg/min)
     const denCtx = document.getElementById('portalDensityChart');
-    if (denCtx && completed.length>=2) {
+    if (denCtx && completed.length>=1) {
       const recent=completed.slice(-12);
-      new Chart(denCtx, { type:'line', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
+      createPortalChart('portalDensityChart', denCtx, { type:'line', data:{ labels:recent.map(s=>fmtDate(s.date)), datasets:[
         {label:'kg/min', data:recent.map(s=>{
           const vol=(s.setLog||[]).reduce((t,x)=>t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
           return s.durationMin>0?parseFloat((vol/s.durationMin).toFixed(1)):null;
@@ -2421,7 +2495,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       ]}, options:{...co, plugins:{legend:{display:false}}} });
     }
 
-    // Frequency
+    // Weekly frequency
     const freqCtx = document.getElementById('portalFreqChart');
     if (freqCtx && completed.length>=1) {
       const fc={};
@@ -2432,17 +2506,17 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         fc[key]=(fc[key]||0)+1;
       });
       const fKeys=Object.keys(fc).sort().slice(-8);
-      new Chart(freqCtx, { type:'bar', data:{ labels:fKeys.map(k=>fmtDate(k)), datasets:[
+      createPortalChart('portalFreqChart', freqCtx, { type:'bar', data:{ labels:fKeys.map(k=>fmtDate(k)), datasets:[
         {label:'Sessoes', data:fKeys.map(k=>fc[k]), backgroundColor:'rgba(6,182,212,0.5)', borderColor:'#06b6d4', borderWidth:1, borderRadius:4}
       ]}, options:{...co, plugins:{legend:{display:false}}, scales:{...co.scales, y:{...co.scales.y,min:0,ticks:{stepSize:1,color:'#94a3b8',font:{size:9}}}}} });
     }
 
-    // Radar
+    // Radar de Wellness
     const radCtx = document.getElementById('portalRadarChart');
     if (radCtx && bf.length>=1) {
       const r5=bf.slice(-5);
       const avg=arr=>arr.length?parseFloat((arr.reduce((t,v)=>t+v,0)/arr.length).toFixed(1)):0;
-      new Chart(radCtx, { type:'radar', data:{ labels:['Sono','TQR','Motivacao','Alimentacao','Anti-Estresse'],
+      createPortalChart('portalRadarChart', radCtx, { type:'radar', data:{ labels:['Sono','TQR','Motivacao','Alimentacao','Anti-Estresse'],
         datasets:[{ label:'Wellness', data:[
           avg(r5.map(b=>b.sleep||0)), avg(r5.map(b=>b.tqr||0)),
           avg(r5.map(b=>b.motivation||0)), avg(r5.map(b=>(b.food||0)*2)),
@@ -2454,17 +2528,45 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       }});
     }
 
+    // Load Progression Chart (top 3 exercises)
+    const lpCtx = document.getElementById('portalLoadProgressChart');
+    if (lpCtx && topEx.length >= 1) {
+      const colors = ['#10b981','#06b6d4','#f59e0b'];
+      const top3 = topEx.slice(0, 3);
+      const allDates = [...new Set(top3.flatMap(ex => ex.sets.map(s => s.date)))].sort();
+      const fmtD = d => { try { return new Date(d.includes('T')?d:d+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); } catch{return d;} };
+      createPortalChart('portalLoadProgressChart', lpCtx, {
+        type: 'line',
+        data: {
+          labels: allDates.map(fmtD),
+          datasets: top3.map((ex, i) => ({
+            label: ex.name,
+            data: allDates.map(d => {
+              const pts = ex.sets.filter(s => s.date === d);
+              return pts.length ? Math.max(...pts.map(s => s.load)) : null;
+            }),
+            borderColor: colors[i], backgroundColor: colors[i]+'20',
+            tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true,
+          }))
+        },
+        options: { ...co,
+          scales: {
+            x: { ticks:{color:'#94a3b8',font:{size:9}}, grid:{display:false} },
+            y: { ticks:{color:'#64748b',font:{size:9}, callback: v=>v+'kg'}, grid:{color:'rgba(255,255,255,0.04)'} }
+          },
+          plugins: { legend:{ labels:{color:'#94a3b8',font:{size:10},boxWidth:12} } }
+        }
+      });
+    }
+
     // Identical Sessions comparison
     const compSel = document.getElementById('portalCompareWorkoutSel');
     const compCtx = document.getElementById('portalCompareChart');
-    let compareChart = null;
 
     const drawCompareChart = () => {
       if (!compCtx || !compSel) return;
       const base = compSel.value;
       const sessList = (workoutsByName[base] || []).sort((a,b) => new Date(a.date) - new Date(b.date));
-
-      if (compareChart) compareChart.destroy();
       
       const labels = sessList.map(s => {
         const dStr = fmtDate(s.date);
@@ -2472,7 +2574,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         return wkMatch ? `Sem ${wkMatch[1]} (${dStr})` : dStr;
       });
 
-      compareChart = new Chart(compCtx, {
+      createPortalChart('portalCompareChart', compCtx, {
         type: 'line',
         data: {
           labels,
@@ -2520,6 +2622,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     };
 
     if (compSel) {
+      compSel.removeEventListener('change', drawCompareChart);
       compSel.addEventListener('change', drawCompareChart);
       drawCompareChart();
     }
@@ -2527,7 +2630,6 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     // Multivariable Exercise Analysis Chart
     const exAnalysisSel = document.getElementById('portalExerciseAnalysisSel');
     const exAnalysisCtx = document.getElementById('portalExerciseAnalysisChart');
-    let exAnalysisChart = null;
 
     const drawExAnalysisChart = () => {
       if (!exAnalysisCtx || !exAnalysisSel) return;
@@ -2539,30 +2641,21 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         const matchingSets = (s.setLog || []).filter(x => x.exerciseName === exerciseName);
         if (matchingSets.length > 0) {
           const avgLoad = matchingSets.reduce((t, x) => t + (parseFloat(x.load) || 0), 0) / matchingSets.length;
-          
           const sessionPse = s.postBiofeedback?.pse;
           const setPses = matchingSets.filter(x => x.pse != null).map(x => parseFloat(x.pse));
           const avgPse = setPses.length > 0 ? (setPses.reduce((t, v) => t + v, 0) / setPses.length) : (sessionPse || null);
-
           const rirs = matchingSets.filter(x => x.rir != null && x.rir !== '').map(x => parseFloat(x.rir));
           const avgRir = rirs.length > 0 ? (rirs.reduce((t, v) => t + v, 0) / rirs.length) : null;
-
-          history.push({
-            date: s.date,
-            load: avgLoad,
-            pse: avgPse,
-            rir: avgRir
-          });
+          history.push({ date: s.date, load: avgLoad, pse: avgPse, rir: avgRir });
         }
       });
 
       history.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (exAnalysisChart) exAnalysisChart.destroy();
+      if (history.length === 0) return;
 
       const labels = history.map(h => fmtDate(h.date));
 
-      exAnalysisChart = new Chart(exAnalysisCtx, {
+      createPortalChart('portalExerciseAnalysisChart', exAnalysisCtx, {
         type: 'line',
         data: {
           labels,
@@ -2621,6 +2714,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     };
 
     if (exAnalysisSel) {
+      exAnalysisSel.removeEventListener('change', drawExAnalysisChart);
       exAnalysisSel.addEventListener('change', drawExAnalysisChart);
       drawExAnalysisChart();
     }
@@ -2631,11 +2725,11 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       const ds=[];
       if (compAss.some(a=>a.peso)) ds.push({label:'Peso (kg)', data:compAss.map(a=>a.peso||null), borderColor:'#10b981', tension:0.3, yAxisID:'y'});
       if (compAss.some(a=>a.percentualGordura)) ds.push({label:'BF %', data:compAss.map(a=>a.percentualGordura||null), borderColor:'#f59e0b', tension:0.3, yAxisID:'y1'});
-      if (ds.length) new Chart(measCtx, { type:'line', data:{ labels:compAss.map(a=>fmtDate(a.date)), datasets:ds },
+      if (ds.length) createPortalChart('portalMeasuresChart', measCtx, { type:'line', data:{ labels:compAss.map(a=>fmtDate(a.date)), datasets:ds },
         options:{ responsive:true, maintainAspectRatio:false,
           plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
           scales:{y:{position:'left',ticks:{color:'#10b981',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:9}},grid:{display:false}},x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}}
-        }});
+        });
     }
   };
 
