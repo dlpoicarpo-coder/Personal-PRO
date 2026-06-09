@@ -2257,7 +2257,13 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   // Group workouts by base name for comparative chart
   const getBaseWorkoutName = name => {
     if (!name) return 'Treino Avulso';
-    return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+    return name
+      .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+      .replace(/\s*Semana\s*\d+/i, '')
+      .replace(/\s*Sem\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*$/g, '')
+      .trim();
   };
 
   const workoutsByName = {};
@@ -2267,7 +2273,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
     if (!workoutsByName[base]) workoutsByName[base] = [];
     workoutsByName[base].push(s);
   });
-  const comparableBases = Object.keys(workoutsByName).filter(base => workoutsByName[base].length >= 2);
+  const comparableBases = Object.keys(workoutsByName).filter(base => base !== 'Treino Avulso' && workoutsByName[base].length >= 2);
 
   let compareSessionsHtml = '';
   if (comparableBases.length > 0) {
@@ -2333,6 +2339,8 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
     </div>
 
     ${caloricHtml}
+
+    ${exHtml}
 
     <!-- Evolução IA -->
     <div class="glass-card" style="border:1px solid rgba(139, 92, 246, 0.4); position: relative; overflow: hidden; margin-bottom:12px">
@@ -2688,25 +2696,58 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
           }
         }
       });
-    };
-
-    if (compSel) {
-      compSel.removeEventListener('change', drawCompareChart);
-      compSel.addEventListener('change', drawCompareChart);
-      drawCompareChart();
-    }
-
-    // Multivariable Exercise Analysis Chart
+    // Multivariable Exercise Analysis Chart elements
     const exAnalysisSel = document.getElementById('portalExerciseAnalysisSel');
     const exAnalysisCtx = document.getElementById('portalExerciseAnalysisChart');
+
+    const updateExerciseAnalysisSelector = () => {
+      if (!exAnalysisSel || !compSel) return;
+      const base = compSel.value;
+      const sessList = workoutsByName[base] || [];
+
+      // Find exercises that were performed in this workout
+      const exSet = new Set();
+      sessList.forEach(s => {
+        (s.setLog || []).forEach(x => {
+          if (x.exerciseName) exSet.add(x.exerciseName);
+        });
+      });
+      const filteredEx = Array.from(exSet).sort();
+      const currentSel = exAnalysisSel.value;
+
+      if (filteredEx.length > 0) {
+        exAnalysisSel.innerHTML = filteredEx.map(ex => `<option value="${ex}" ${ex === currentSel ? 'selected' : ''}>${ex}</option>`).join('');
+        if (!filteredEx.includes(currentSel)) {
+          exAnalysisSel.selectedIndex = 0;
+        }
+        exAnalysisSel.disabled = false;
+        if (exAnalysisSel.parentElement) exAnalysisSel.parentElement.style.opacity = '1';
+      } else {
+        exAnalysisSel.innerHTML = '<option value="">Sem exercícios registrados</option>';
+        exAnalysisSel.disabled = true;
+        if (exAnalysisSel.parentElement) exAnalysisSel.parentElement.style.opacity = '0.6';
+      }
+    };
 
     const drawExAnalysisChart = () => {
       if (!exAnalysisCtx || !exAnalysisSel) return;
       const exerciseName = exAnalysisSel.value;
+      const baseWorkout = compSel?.value || '';
+
+      if (!exerciseName) {
+        destroyPortalChart('portalExerciseAnalysisChart');
+        return;
+      }
 
       // Group sets of this exercise chronologically
       const history = [];
       completed.forEach(s => {
+        // Only include if session belongs to the selected base workout!
+        if (baseWorkout) {
+          const sBase = getBaseWorkoutName(s.workoutName);
+          if (sBase !== baseWorkout) return;
+        }
+
         const matchingSets = (s.setLog || []).filter(x => x.exerciseName === exerciseName);
         if (matchingSets.length > 0) {
           const avgLoad = matchingSets.reduce((t, x) => t + (parseFloat(x.load) || 0), 0) / matchingSets.length;
@@ -2720,7 +2761,11 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       });
 
       history.sort((a, b) => new Date(a.date) - new Date(b.date));
-      if (history.length === 0) return;
+      
+      if (history.length === 0) {
+        destroyPortalChart('portalExerciseAnalysisChart');
+        return;
+      }
 
       const labels = history.map(h => fmtDate(h.date));
 
@@ -2782,11 +2827,26 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       });
     };
 
+    const onWorkoutChange = () => {
+      drawCompareChart();
+      updateExerciseAnalysisSelector();
+      drawExAnalysisChart();
+    };
+
+    if (compSel) {
+      compSel.removeEventListener('change', onWorkoutChange);
+      compSel.addEventListener('change', onWorkoutChange);
+    }
+
     if (exAnalysisSel) {
       exAnalysisSel.removeEventListener('change', drawExAnalysisChart);
       exAnalysisSel.addEventListener('change', drawExAnalysisChart);
-      drawExAnalysisChart();
     }
+
+    // Initial draw
+    drawCompareChart();
+    updateExerciseAnalysisSelector();
+    drawExAnalysisChart();
 
     // Body composition
     const measCtx = document.getElementById('portalMeasuresChart');

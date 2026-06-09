@@ -160,7 +160,13 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   // Group workouts by base name for comparative chart (trainer side)
   const getBaseWorkoutName = name => {
     if (!name) return 'Treino Avulso';
-    return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+    return name
+      .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+      .replace(/\s*Semana\s*\d+/i, '')
+      .replace(/\s*Sem\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*$/g, '')
+      .trim();
   };
 
   const workoutsByName = {};
@@ -170,7 +176,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     if (!workoutsByName[base]) workoutsByName[base] = [];
     workoutsByName[base].push(s);
   });
-  const comparableBases = Object.keys(workoutsByName).filter(base => workoutsByName[base].length >= 2);
+  const comparableBases = Object.keys(workoutsByName).filter(base => base !== 'Treino Avulso' && workoutsByName[base].length >= 2);
 
   let compareSessionsHtml = '';
   if (comparableBases.length > 0) {
@@ -1170,7 +1176,13 @@ async function initReportCharts(studentId, cycleFilter = '') {
   if (compSel && compCtx && sortedSes.length > 0) {
     const getBaseWorkoutName = name => {
       if (!name) return 'Treino Avulso';
-      return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+      return name
+        .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
+        .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+        .replace(/\s*Semana\s*\d+/i, '')
+        .replace(/\s*Sem\s*\d+/i, '')
+        .replace(/\s*[\-—–]\s*$/g, '')
+        .trim();
     };
 
     const workoutsByName = {};
