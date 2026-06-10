@@ -1153,10 +1153,10 @@ function initTreinar(workouts, schedules, student) {
           `).join('')}`;
         // Bind info tap
         exBlock.querySelectorAll('.portal-ex-pick-card').forEach(card => {
-          card.addEventListener('click', () => {
+          card.addEventListener('click', async () => {
             const ei = parseInt(card.dataset.ei);
             const ex = w.exercises[ei];
-            if (ex) showExerciseModal(ex);
+            if (ex) await showExerciseModal(ex);
           });
         });
       } else { exBlock.innerHTML = ''; }
@@ -1329,11 +1329,11 @@ function initTreinar(workouts, schedules, student) {
     // Bind info buttons
     if (w?.exercises) {
       exLogEl.querySelectorAll('.portal-ex-info-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const ei = parseInt(btn.dataset.ei);
           const ex = w.exercises[ei];
-          if (ex) showExerciseModal(ex);
+          if (ex) await showExerciseModal(ex);
         });
       });
     }
@@ -1542,9 +1542,22 @@ function safeFormatDate(dStr, timeStr = '') {
 }
 
 // -- EXERCISE DETAIL MODAL -------------------------------------
-function showExerciseModal(ex) {
+async function showExerciseModal(ex) {
   // Remove any existing modal
   document.getElementById('exDetailModal')?.remove();
+
+  let methodDesc = '';
+  if (ex.method) {
+    try {
+      const allMethods = await db.getAll('methods');
+      const method = allMethods.find(m => m.name.toLowerCase().trim() === ex.method.toLowerCase().trim());
+      if (method && method.description) {
+        methodDesc = method.description;
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar método para modal:', e);
+    }
+  }
 
   const muscleIcons = {
     'peito': '#f97316', 'chest': '#f97316',
@@ -1651,9 +1664,13 @@ function showExerciseModal(ex) {
           <p style="font-size:0.82rem;line-height:1.7;color:#64748b;margin:0">Mantenha a postura correta durante todo o movimento. Controle a fase excêntrica (descida) em 2-3 segundos. Respire corretamente: expire no esforço, inspire no retorno.</p>
         </div>`}
 
-        ${ex.method ? `<div style="margin-top:10px;background:rgba(139,92,246,0.1);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><polygon points="12 2 2 7 12 22 22 7 12 2"/></svg>
-          <span style="font-size:0.8rem;color:#a78bfa;font-weight:600">${ex.method}</span>
+        ${ex.method ? `
+        <div style="margin-top:10px;background:rgba(139,92,246,0.1);border-radius:10px;padding:12px 14px;border:1px solid rgba(139,92,246,0.2)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.5"><polygon points="12 2 2 7 12 22 22 7 12 2"/></svg>
+            <span style="font-size:0.8rem;color:#a78bfa;font-weight:700">${ex.method}</span>
+          </div>
+          ${methodDesc ? `<div style="font-size:0.75rem;color:rgba(255,255,255,0.75);line-height:1.45;margin-top:4px">${methodDesc}</div>` : ''}
         </div>` : ''}
       </div>
     </div>

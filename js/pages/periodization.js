@@ -841,7 +841,7 @@ export function initPeriodization(navigateFn) {
                   <input class="form-input" name="wk_${idx}_rest_0" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
                   <select class="form-select" name="wk_${idx}_method_0" style="width:150px;font-size:0.75rem;padding:4px">
                     <option value="">— Método —</option>
-                    ${allMet.map(m=>`<option value="${m.name}">${m.name}</option>`).join('')}
+                    ${allMet.map(m=>`<option value="${m.name}" data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}">${m.name}</option>`).join('')}
                   </select>
                   <input class="form-input load-input" name="wk_${idx}_1rm_0" type="number" step="0.5" value="60" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM Estimado (kg)" />
                   <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
@@ -872,12 +872,14 @@ export function initPeriodization(navigateFn) {
                 <input class="form-input" name="wk_${wi}_rest_${ei}" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
                 <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem;padding:4px">
                   <option value="">— Método —</option>
-                  ${allMet.map(m=>`<option value="${m.name}">${m.name}</option>`).join('')}
+                  ${allMet.map(m=>`<option value="${m.name}" data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}">${m.name}</option>`).join('')}
                 </select>
                 <input class="form-input load-input" name="wk_${wi}_1rm_${ei}" type="number" step="0.5" value="60" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM Estimado (kg)" />
                 <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
               </div>
             `);
+            const lastRow = cnt.lastElementChild;
+            if (lastRow) bindPeriodoMethodAutoFill(lastRow);
             customBuilderContainer.querySelectorAll('.rm-tpl-ex').forEach(b => {
               b.onclick = () => b.closest('.tpl-ex-row')?.remove();
             });
@@ -887,6 +889,8 @@ export function initPeriodization(navigateFn) {
         customBuilderContainer.querySelectorAll('.rm-tpl-ex').forEach(b => {
           b.onclick = () => b.closest('.tpl-ex-row')?.remove();
         });
+        
+        customBuilderContainer.querySelectorAll('.tpl-ex-row').forEach(row => bindPeriodoMethodAutoFill(row));
       }
     };
 
@@ -1245,5 +1249,27 @@ async function initMacroCharts() {
         }
       }
     });
+  });
+}
+
+function bindPeriodoMethodAutoFill(row) {
+  const methodSelect = row.querySelector('select[name*="_method_"]');
+  if (!methodSelect) return;
+  methodSelect.addEventListener('change', () => {
+    const opt = methodSelect.selectedOptions[0];
+    const setsEl = row.querySelector('input[name*="_sets_"]');
+    const repsEl = row.querySelector('input[name*="_reps_"]');
+    const restEl = row.querySelector('input[name*="_rest_"]');
+    
+    const sets = opt?.dataset.sets;
+    const reps = opt?.dataset.reps;
+    const rest = opt?.dataset.rest;
+    
+    if (sets && setsEl) setsEl.value = sets.replace(/[^0-9]/g, '') || '3';
+    if (reps && repsEl) repsEl.value = reps;
+    if (rest && restEl) {
+      const match = rest.match(/(\d+)/);
+      if (match) restEl.value = match[1];
+    }
   });
 }

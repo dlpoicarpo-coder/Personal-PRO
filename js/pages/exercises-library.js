@@ -683,12 +683,14 @@ export function initExercisesLibrary(navigateFn) {
         const ei  = cnt.querySelectorAll('.tpl-ex-row').length;
         cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods));
         bindRemoveTplExEdit();
+        bindMethodAutoFill(cnt.lastElementChild);
       };
     });
     document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-workout').forEach(btn => {
       btn.onclick = () => btn.closest('.tpl-workout')?.remove();
     });
     bindRemoveTplExEdit();
+    document.querySelectorAll('#tplWorkoutsEdit .tpl-ex-row').forEach(row => bindMethodAutoFill(row));
   }
 
   function bindRemoveTplExEdit() {
@@ -801,7 +803,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null) {
       <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" />
       <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem">
         <option value="">— Método —</option>
-        ${allMethods.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''}>${m.name}</option>`).join('')}
+        ${allMethods.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
       </select>
       <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">✕</button>
     </div>`;
@@ -816,12 +818,14 @@ function bindTplEvents(allMethods = []) {
       const ei  = cnt.querySelectorAll('.tpl-ex-row').length;
       cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods));
       bindRemoveTplEx();
+      bindMethodAutoFill(cnt.lastElementChild);
     };
   });
   document.querySelectorAll('.rm-tpl-workout').forEach(btn => {
     btn.onclick = () => btn.closest('.tpl-workout')?.remove();
   });
   bindRemoveTplEx();
+  document.querySelectorAll('#tplWorkouts .tpl-ex-row').forEach(row => bindMethodAutoFill(row));
 }
 
 function bindRemoveTplEx() {
@@ -868,5 +872,27 @@ async function showApplyTemplateModal(tpl, navigateFn) {
         closeModal(); navigateFn('/treinos');
       }}
     ]
+  });
+}
+
+function bindMethodAutoFill(row) {
+  const methodSelect = row.querySelector('select[name*="_method_"]');
+  if (!methodSelect) return;
+  methodSelect.addEventListener('change', () => {
+    const opt = methodSelect.selectedOptions[0];
+    const setsEl = row.querySelector('input[name*="_sets_"]');
+    const repsEl = row.querySelector('input[name*="_reps_"]');
+    const restEl = row.querySelector('input[name*="_rest_"]');
+    
+    const sets = opt?.dataset.sets;
+    const reps = opt?.dataset.reps;
+    const rest = opt?.dataset.rest;
+    
+    if (sets && setsEl) setsEl.value = sets.replace(/[^0-9]/g, '') || '3';
+    if (reps && repsEl) repsEl.value = reps;
+    if (rest && restEl) {
+      const match = rest.match(/(\d+)/);
+      if (match) restEl.value = match[1];
+    }
   });
 }
