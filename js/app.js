@@ -242,7 +242,7 @@ function initApp() {
 
     // Database deduplication and methods repair
     setTimeout(async () => {
-      if (localStorage.getItem('fixed_db_v7')) return;
+      if (localStorage.getItem('fixed_db_v8')) return;
       try {
         // Dedup exercises
         const exs = await db.getAll('exercises');
@@ -311,11 +311,12 @@ function initApp() {
           { name: 'Endurance (Resistência)', description: 'Foco na resistência muscular (cargas leves, altas repetições)', category: 'Resistência', is_default: true, sets: '3-4', repsHint: '15-20+', restHint: '30-45s' },
           { name: 'Pirâmide Completa', description: 'Sobe carga e desce rep, depois desce carga e sobe rep', category: 'Hipertrofia', is_default: true, sets: '6', repsHint: '12-10-8-8-10-12', restHint: '60-90s' },
           { name: 'Pirâmide', description: 'Variação de pirâmide com ajuste de carga por série', category: 'Hipertrofia', is_default: true, sets: '4', repsHint: '12-10-8-6', restHint: '60-90s' },
+          { name: 'Unilateral', description: 'Executar o exercício de um lado de cada vez para correção de assimetrias e equilíbrio muscular', category: 'Geral', is_default: true, sets: '3-4', repsHint: '10-12', restHint: '60s' },
         ];
         for (const m of defaultMethods) {
           if (!freshMethods.find(x => x.name === m.name)) await db.add('methods', m);
         }
-        localStorage.setItem('fixed_db_v7', '1');
+        localStorage.setItem('fixed_db_v8', '1');
         window.location.reload();
       } catch(e) { console.error('DB repair error:', e); }
     }, 2000);

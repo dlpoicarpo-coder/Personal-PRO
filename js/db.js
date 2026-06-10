@@ -619,6 +619,7 @@ class Database {
     if (!trainerId) return;
     const methods = [
       // Força / Hipertrofia
+      { name: 'Unilateral',     category: 'Geral',        description: 'Executar o exercício de um lado de cada vez para correção de assimetrias e equilíbrio muscular.', sets: '3-4', repsHint: '10-12', restHint: '60s' },
       { name: 'Drop-set',       category: 'Hipertrofia', description: 'Executar até a falha, reduzir carga ~20% e continuar sem descanso. Repetir 2-3x.', sets: '3+drops', repsHint: '8-12 + drops', restHint: '120-180s entre drop-sets completos' },
       { name: 'Pirâmide Crescente',  category: 'Força',        description: 'Aumentar carga a cada série, reduzir reps: 15→12→10→8. Boa para progressão de força.', sets: '4', repsHint: '15→12→10→8', restHint: '90-120s' },
       { name: 'Pirâmide Decrescente',category: 'Força',        description: 'Inicia pesado e reduz carga: 8→10→12→15. Trabalha força e resistência na mesma sessão.', sets: '4', repsHint: '8→10→12→15', restHint: '90-120s' },

@@ -295,7 +295,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const isBW     = loadType === 'bodyweight';
   return `
     <div class="exercise-row" style="
-      display:grid;grid-template-columns:2fr 56px 68px 72px 60px 100px 90px 28px;
+      display:grid;grid-template-columns:2fr 50px 60px 68px 55px 90px 135px 28px;
       gap:5px;align-items:end;padding:8px 10px;border-radius:8px;
       background:var(--bg-page);margin-bottom:6px" data-index="${index}">
       <div>

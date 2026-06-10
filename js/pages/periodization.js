@@ -839,7 +839,7 @@ export function initPeriodization(navigateFn) {
                   <input class="form-input" name="wk_${idx}_sets_0" type="number" value="3" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Séries" />
                   <input class="form-input" name="wk_${idx}_reps_0" value="12" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="Reps" />
                   <input class="form-input" name="wk_${idx}_rest_0" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
-                  <select class="form-select" name="wk_${idx}_method_0" style="width:110px;font-size:0.75rem;padding:4px">
+                  <select class="form-select" name="wk_${idx}_method_0" style="width:150px;font-size:0.75rem;padding:4px">
                     <option value="">— Método —</option>
                     ${allMet.map(m=>`<option value="${m.name}">${m.name}</option>`).join('')}
                   </select>
@@ -870,7 +870,7 @@ export function initPeriodization(navigateFn) {
                 <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="3" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Séries" />
                 <input class="form-input" name="wk_${wi}_reps_${ei}" value="12" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="Reps" />
                 <input class="form-input" name="wk_${wi}_rest_${ei}" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
-                <select class="form-select" name="wk_${wi}_method_${ei}" style="width:110px;font-size:0.75rem;padding:4px">
+                <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem;padding:4px">
                   <option value="">— Método —</option>
                   ${allMet.map(m=>`<option value="${m.name}">${m.name}</option>`).join('')}
                 </select>

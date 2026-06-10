@@ -799,7 +799,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null) {
       <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" />
       <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Reps/Tempo" />
       <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" />
-      <select class="form-select" name="wk_${wi}_method_${ei}" style="width:120px;font-size:0.75rem">
+      <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem">
         <option value="">— Método —</option>
         ${allMethods.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''}>${m.name}</option>`).join('')}
       </select>
