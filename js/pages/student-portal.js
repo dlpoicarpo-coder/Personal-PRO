@@ -1417,8 +1417,17 @@ function initTreinar(workouts, schedules, student) {
 
     // Collect setLog
     const setLog = [];
+    const exercisesList = [];
+
     if (w && w.exercises?.length) {
       w.exercises.forEach((ex, ei) => {
+        exercisesList.push({
+          name: ex.name,
+          sets: ex.sets || '3',
+          reps: ex.reps || '10',
+          load: parseFloat(ex.load) || 0,
+          method: ex.method || ''
+        });
         const sets = parseInt(ex.sets) || 3;
         for (let si = 0; si < sets; si++) {
           const reps = document.getElementById(`sr_${ei}_${si}_reps`)?.value;
@@ -1426,12 +1435,18 @@ function initTreinar(workouts, schedules, student) {
           const psei = document.getElementById(`sr_${ei}_${si}_pse`)?.value;
           const rir = document.getElementById(`sr_${ei}_${si}_rir`)?.value;
           const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
-          // Save even if empty so we don't lose the exercise grouping
-          setLog.push({ exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
-            reps: parseInt(reps)||0, load: parseFloat(load)||0,
+          
+          setLog.push({
+            exIdx: ei,
+            exerciseIdx: ei,
+            exerciseName: ex.name,
+            setIdx: si,
+            reps: parseInt(reps)||0,
+            load: parseFloat(load)||0,
             pse: psei ? parseInt(psei) : null,
             rir: rir !== '' && rir != null ? parseInt(rir) : null,
-            notes: exNotes });
+            notes: exNotes
+          });
         }
       });
     } else {
@@ -1444,7 +1459,16 @@ function initTreinar(workouts, schedules, student) {
         const psei = document.getElementById(`fex_${ei}_pse`)?.value;
         const rir = document.getElementById(`fex_${ei}_rir`)?.value;
         
+        exercisesList.push({
+          name: name,
+          sets: '1',
+          reps: reps || '10',
+          load: parseFloat(load) || 0,
+          method: ''
+        });
+
         setLog.push({
+          exIdx: ei,
           exerciseIdx: ei,
           exerciseName: name,
           setIdx: 0,
@@ -1457,16 +1481,24 @@ function initTreinar(workouts, schedules, student) {
       });
     }
 
+    const totalVolume = setLog.reduce((t, x) => t + (x.load || 0) * (x.reps || 0), 0);
+    const totalSets = setLog.length;
+    const localDate = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000); return l.toISOString().split('T')[0]; })();
+
     const sessionData = {
       studentId: sid,
       trainerId: tid,
       trainer_id: tid,
       workoutId: wid || null,
       workoutName: w?.name || 'Treino Autônomo',
-      date: new Date().toISOString().split('T')[0],
+      date: localDate,
       status: 'completed',
       isSolo: true,
       durationMin,
+      totalDuration: durationMin * 60,
+      totalVolume,
+      totalSets,
+      exercises: exercisesList,
       setLog,
       postBiofeedback: { pse, notes },
     };
