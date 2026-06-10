@@ -7,6 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
+import { METHOD_PROGRESSIONS } from './workouts.js';
 
 // ── STATE ────────────────────────────────────────────────────
 const state = {
@@ -274,16 +275,50 @@ function renderLiveView(students) {
               const done     = state.setLog.find(l => l.exIdx === state.exIdx && l.setIdx === i);
               const isActive = !done && i === state.setIdx;
               const temp     = state.tempSets[state.exIdx]?.[i] || {};
-              const repsVal  = done ? done.reps : (temp.reps !== undefined ? temp.reps : (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12);
-              const loadVal  = done ? done.load : (temp.load !== undefined ? temp.load : ex.load || '');
+
+              let defaultReps = (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
+              let defaultLoad = ex.load || '';
+              let setLabel = '';
+
+              let progression = ex.seriesProgression;
+              if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
+                const progDef = METHOD_PROGRESSIONS[ex.method];
+                const baseLoad = parseFloat(ex.load) || 0;
+                progression = progDef.series.map((s, si) => ({
+                  set: si + 1,
+                  reps: s.reps,
+                  load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
+                  rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
+                  label: s.label || `Série ${si + 1}`
+                }));
+              }
+
+              if (progression && progression[i]) {
+                const sp = progression[i];
+                if (sp.reps) {
+                  const match = String(sp.reps).match(/(\d+)/);
+                  defaultReps = match ? parseInt(match[1]) : 10;
+                }
+                if (sp.load !== undefined) {
+                  defaultLoad = sp.load;
+                }
+                if (sp.label) {
+                  setLabel = sp.label;
+                }
+              }
+
+              const repsVal  = done ? done.reps : (temp.reps !== undefined ? temp.reps : defaultReps);
+              const loadVal  = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
               const pseVal   = done ? done.pse  : (temp.pse !== undefined ? temp.pse : '');
               const rirVal   = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
               return `
               <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
                 style="display:flex;align-items:center;gap:7px;padding:8px;border-radius:8px;
                 background:${isActive ? 'rgba(16,185,129,0.08)' : done ? 'rgba(16,185,129,0.04)' : 'var(--bg-page)'}">
-                <span style="font-size:0.85rem;font-weight:700;min-width:18px;
-                  color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
+                <div style="display:flex;flex-direction:column;gap:1px;align-items:flex-start;min-width:48px">
+                  <span style="font-size:0.85rem;font-weight:700;color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
+                  ${setLabel ? `<span style="font-size:0.55rem;color:var(--text-muted);white-space:nowrap">${setLabel}</span>` : ''}
+                </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
                   <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
                   <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
@@ -788,7 +823,26 @@ export function initTracker(navigateFn) {
 
   // Rest timer — só cria se não existir ainda
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
-  const restDur = parseInt(curEx.rest) || 60;
+  
+  let restDur = parseInt(curEx.rest) || 60;
+  let progression = curEx.seriesProgression;
+  if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
+    const progDef = METHOD_PROGRESSIONS[curEx.method];
+    const baseLoad = parseFloat(curEx.load) || 0;
+    progression = progDef.series.map((s, si) => ({
+      set: si + 1,
+      reps: s.reps,
+      load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
+      rest: s.rest != null ? s.rest : parseInt(curEx.rest || 60),
+      label: s.label || `Série ${si + 1}`
+    }));
+  }
+
+  if (progression && progression[state.setIdx]) {
+    const sRest = progression[state.setIdx].rest;
+    if (sRest != null) restDur = parseInt(sRest);
+  }
+
   if (!state.restTimer) {
     // Criar pela primeira vez
     state.restTimer = new Timer({
@@ -895,6 +949,26 @@ export function initTracker(navigateFn) {
 
     // Start rest timer immediately while the user fills the modal
     const exSets = parseInt(curEx?.sets || ex?.sets) || 3;
+    
+    let restDur = parseInt(ex.rest) || 60;
+    let progression = ex.seriesProgression;
+    if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
+      const progDef = METHOD_PROGRESSIONS[ex.method];
+      const baseLoad = parseFloat(ex.load) || 0;
+      progression = progDef.series.map((s, si) => ({
+        set: si + 1,
+        reps: s.reps,
+        load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
+        rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
+        label: s.label || `Série ${si + 1}`
+      }));
+    }
+    if (progression && progression[i]) {
+      const sRest = progression[i].rest;
+      if (sRest != null) restDur = parseInt(sRest);
+    }
+
+    state.restTimer.setDuration(restDur);
     // Sempre iniciar o descanso após uma série, mesmo sendo a última
     state.restTimer.reset(); state.restTimer.start();
     state.isResting = true;

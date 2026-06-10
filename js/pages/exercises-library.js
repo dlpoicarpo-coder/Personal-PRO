@@ -6,6 +6,7 @@ import db from '../db.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { BUILT_IN_TEMPLATES, getTemplatesByCategory } from '../utils/workout-templates.js';
+import { METHOD_PROGRESSIONS } from './workouts.js';
 import { isAdmin } from '../utils/roles.js';
 
 // ── Proteção admin/personal ───────────────────────────────────
@@ -880,19 +881,76 @@ function bindMethodAutoFill(row) {
   if (!methodSelect) return;
   methodSelect.addEventListener('change', () => {
     const opt = methodSelect.selectedOptions[0];
+    const methodName = opt?.value || '';
+
+    // Remove previous panels/tips
+    row.querySelectorAll('.method-series-panel').forEach(p => p.remove());
+    row.querySelectorAll('.method-tip').forEach(p => p.remove());
+
     const setsEl = row.querySelector('input[name*="_sets_"]');
     const repsEl = row.querySelector('input[name*="_reps_"]');
     const restEl = row.querySelector('input[name*="_rest_"]');
-    
+
+    if (!methodName) {
+      return;
+    }
+
     const sets = opt?.dataset.sets;
     const reps = opt?.dataset.reps;
     const rest = opt?.dataset.rest;
-    
+
     if (sets && setsEl) setsEl.value = sets.replace(/[^0-9]/g, '') || '3';
     if (reps && repsEl) repsEl.value = reps;
     if (rest && restEl) {
       const match = rest.match(/(\d+)/);
       if (match) restEl.value = match[1];
     }
+
+    // ── Verificar se o método tem progressão definida ────────
+    const progression = METHOD_PROGRESSIONS[methodName];
+    if (!progression) {
+      const desc = opt?.dataset.desc;
+      if (desc) {
+        const tip = document.createElement('div');
+        tip.className = 'method-tip';
+        tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;width:100%;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
+        tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
+        row.appendChild(tip);
+      }
+      return;
+    }
+
+    // Atualizar contador de séries
+    if (setsEl) setsEl.value = progression.series.length;
+
+    // Criar painel de visualização das sub-séries do método
+    const panel = document.createElement('div');
+    panel.className = 'method-series-panel';
+    panel.style.cssText = 'width:100%;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:8px 10px';
+
+    const seriesHeader = `
+      <div style="margin-bottom:6px">
+        <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${methodName}</span>
+        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
+      </div>`;
+
+    const seriesLegend = `
+      <div style="display:grid;grid-template-columns:100px 72px 72px;gap:6px;margin-bottom:4px;border-bottom:1px solid rgba(148,163,184,0.1);padding-bottom:2px">
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Intensidade</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
+      </div>`;
+
+    const seriesHTML = progression.series.map((s, si) => {
+      return `
+        <div style="display:grid;grid-template-columns:100px 72px 72px;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid rgba(148,163,184,0.05)">
+          <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+          <div style="font-size:0.72rem;color:var(--primary);font-weight:600">${Math.round(s.loadPct * 100)}% 1RM</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600">${s.reps}</div>
+        </div>`;
+    }).join('');
+
+    panel.innerHTML = seriesHeader + seriesLegend + seriesHTML;
+    row.appendChild(panel);
   });
 }

@@ -202,7 +202,7 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
 
 // ── DEFINIÇÃO DE PROGRESSÃO POR MÉTODO ───────────────────────
 // Métodos que geram múltiplas sub-séries com reps/carga diferente por série
-const METHOD_PROGRESSIONS = {
+export const METHOD_PROGRESSIONS = {
   'Pirâmide Crescente': {
     desc: 'Carga aumenta a cada série, reps diminuem',
     series: [

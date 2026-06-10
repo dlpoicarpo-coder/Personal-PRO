@@ -8,6 +8,7 @@ import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { PERIODIZATION_MODELS, generateProgression } from '../utils/periodization-engine.js';
 import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
+import { METHOD_PROGRESSIONS } from './workouts.js';
 
 // Adaptar BUILT_IN_TEMPLATES para o formato que o periodization espera
 function adaptTemplate(t) {
@@ -781,6 +782,39 @@ export function initPeriodization(navigateFn) {
                     if (isDeload) load = Math.round(oneRM * 0.5 * 2) / 2;
                   }
 
+                  const progression = METHOD_PROGRESSIONS[ex.method];
+                  if (progression) {
+                    const seriesProgression = progression.series.map((s, si) => {
+                      let sLoad;
+                      if (exType === 'time') {
+                        sLoad = Math.round(oneRM * loadMultiplier * s.loadPct);
+                      } else if (exType === 'bodyweight') {
+                        sLoad = Math.round(oneRM * loadMultiplier * s.loadPct * 2) / 2;
+                      } else {
+                        sLoad = Math.round(load * s.loadPct * 2) / 2;
+                      }
+                      const sRest = s.rest != null ? s.rest : parseInt(ex.rest || 60);
+                      return {
+                        set: si + 1,
+                        reps: s.reps,
+                        load: sLoad,
+                        rest: sRest,
+                        label: s.label || `Série ${si + 1}`
+                      };
+                    });
+
+                    return {
+                      ...ex,
+                      load: seriesProgression[0]?.load || load,
+                      oneRM,
+                      week: w + 1,
+                      sets: seriesProgression.length,
+                      reps: seriesProgression.map(s => s.reps).join('→'),
+                      rest: seriesProgression[0]?.rest || ex.rest || 60,
+                      seriesProgression
+                    };
+                  }
+
                   return { ...ex, load, oneRM, week: w + 1 };
                 });
 
@@ -841,7 +875,7 @@ export function initPeriodization(navigateFn) {
                   <input class="form-input" name="wk_${idx}_rest_0" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
                   <select class="form-select" name="wk_${idx}_method_0" style="width:150px;font-size:0.75rem;padding:4px">
                     <option value="">— Método —</option>
-                    ${allMet.map(m=>`<option value="${m.name}" data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}">${m.name}</option>`).join('')}
+                    ${allMet.map(m=>`<option value="${m.name}" data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
                   </select>
                   <input class="form-input load-input" name="wk_${idx}_1rm_0" type="number" step="0.5" value="60" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM Estimado (kg)" />
                   <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
@@ -872,7 +906,7 @@ export function initPeriodization(navigateFn) {
                 <input class="form-input" name="wk_${wi}_rest_${ei}" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
                 <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem;padding:4px">
                   <option value="">— Método —</option>
-                  ${allMet.map(m=>`<option value="${m.name}" data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}">${m.name}</option>`).join('')}
+                  ${allMet.map(m=>`<option value="${m.name}" data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
                 </select>
                 <input class="form-input load-input" name="wk_${wi}_1rm_${ei}" type="number" step="0.5" value="60" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM Estimado (kg)" />
                 <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
@@ -1257,19 +1291,131 @@ function bindPeriodoMethodAutoFill(row) {
   if (!methodSelect) return;
   methodSelect.addEventListener('change', () => {
     const opt = methodSelect.selectedOptions[0];
+    const methodName = opt?.value || '';
+
+    // Remove previous panels/tips
+    row.querySelectorAll('.method-series-panel').forEach(p => p.remove());
+    row.querySelectorAll('.method-tip').forEach(p => p.remove());
+
     const setsEl = row.querySelector('input[name*="_sets_"]');
     const repsEl = row.querySelector('input[name*="_reps_"]');
     const restEl = row.querySelector('input[name*="_rest_"]');
-    
+
+    if (!methodName) {
+      return;
+    }
+
     const sets = opt?.dataset.sets;
     const reps = opt?.dataset.reps;
     const rest = opt?.dataset.rest;
-    
+
     if (sets && setsEl) setsEl.value = sets.replace(/[^0-9]/g, '') || '3';
     if (reps && repsEl) repsEl.value = reps;
     if (rest && restEl) {
       const match = rest.match(/(\d+)/);
       if (match) restEl.value = match[1];
+    }
+
+    // ── Verificar progressão ──
+    const progression = METHOD_PROGRESSIONS[methodName];
+    if (!progression) {
+      const desc = opt?.dataset.desc;
+      if (desc) {
+        const tip = document.createElement('div');
+        tip.className = 'method-tip';
+        tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;width:100%;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
+        tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
+        row.appendChild(tip);
+      }
+      return;
+    }
+
+    // ── Método com progressão: gerar painel de sub-séries ──
+    if (setsEl) setsEl.value = progression.series.length;
+
+    const base1RMEl = row.querySelector('input[name*="_1rm_"]');
+    const base1RM = parseFloat(base1RMEl?.value) || 60;
+
+    const panel = document.createElement('div');
+    panel.className = 'method-series-panel';
+    panel.style.cssText = 'width:100%;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px';
+
+    const seriesHeader = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${methodName}</span>
+          <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:0.65rem;color:var(--text-muted)">1RM Base (kg):</span>
+          <input type="number" step="0.5" value="${base1RM}" placeholder="kg"
+            class="form-input method-base-load"
+            style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
+        </div>
+      </div>`;
+
+    const seriesLegend = `
+      <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga %</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
+      </div>`;
+
+    const seriesHTML = progression.series.map((s, si) => {
+      const calcLoad = base1RM > 0 ? Math.round(base1RM * s.loadPct * 2) / 2 : '';
+      const restVal  = s.rest != null ? s.rest : (restEl?.value || '60');
+      return `
+        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.1)" data-serie="${si}">
+          <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted)">${Math.round(s.loadPct * 100)}% 1RM</div>
+          <div>
+            <input type="number" step="0.5" value="${calcLoad}" placeholder="kg"
+              class="form-input serie-load" data-serie="${si}"
+              style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${calcLoad?`color:var(--primary)`:''}"/>
+          </div>
+          <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
+            ${s.reps} reps
+          </div>
+          <div>
+            <input type="number" value="${restVal}"
+              class="form-input serie-rest" data-serie="${si}"
+              style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:var(--text-muted)"
+              placeholder="s" title="Descanso (s)"/>
+          </div>
+        </div>`;
+    }).join('');
+
+    panel.innerHTML = seriesHeader + seriesLegend + seriesHTML;
+    row.appendChild(panel);
+
+    // Sync load changes
+    const baseLoadInp = panel.querySelector('.method-base-load');
+    baseLoadInp?.addEventListener('input', e => {
+      const new1RM = parseFloat(e.target.value) || 0;
+      if (base1RMEl) base1RMEl.value = new1RM || '';
+      panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+        const s = progression.series[si];
+        if (s && new1RM > 0) {
+          inp.value = Math.round(new1RM * s.loadPct * 2) / 2;
+          inp.style.color = 'var(--primary)';
+        }
+      });
+    });
+
+    if (base1RMEl) {
+      base1RMEl.addEventListener('input', e => {
+        const new1RM = parseFloat(e.target.value) || 0;
+        if (baseLoadInp) baseLoadInp.value = new1RM || '';
+        panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+          const s = progression.series[si];
+          if (s && new1RM > 0) {
+            inp.value = Math.round(new1RM * s.loadPct * 2) / 2;
+            inp.style.color = 'var(--primary)';
+          }
+        });
+      });
     }
   });
 }
