@@ -974,9 +974,10 @@ function renderTreinar(workouts, schedules) {
           <div class="portal-rest-label">Descanso</div>
           <div class="portal-rest-countdown" id="restCountdown">60</div>
           <div class="portal-rest-bar-track"><div class="portal-rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
-          <div class="portal-rest-actions">
+          <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
-            <button class="portal-rest-skip" id="restSkip">Pular ⏩</button>
+            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar ⏸</button>
+            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho 💪</button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
         </div>
@@ -1084,22 +1085,37 @@ function initTreinar(workouts, schedules, student) {
   });
 
   // Rest timer
+  let isRestPaused = false;
+
   function startRestTimer(seconds) {
     if (restTimer) clearInterval(restTimer);
     restTotal = seconds;
     restRemaining = seconds;
     isResting = true;
+    isRestPaused = false;
+    
+    const pauseToggle = document.getElementById('restPauseToggle');
+    if (pauseToggle) {
+      pauseToggle.textContent = 'Pausar ⏸';
+      pauseToggle.style.background = 'rgba(245,158,11,0.15)';
+      pauseToggle.style.borderColor = 'rgba(245,158,11,0.3)';
+      pauseToggle.style.color = '#f59e0b';
+    }
+
     const overlay = document.getElementById('restTimerOverlay');
     const cd = document.getElementById('restCountdown');
     const bar = document.getElementById('restBarFill');
     if (!overlay) return;
     overlay.style.display = 'block';
+    
     const updateUI = () => {
       if (cd) cd.textContent = restRemaining;
       if (bar) bar.style.width = `${(restRemaining / restTotal) * 100}%`;
     };
     updateUI();
+    
     restTimer = setInterval(() => {
+      if (isRestPaused) return;
       restRemaining--;
       restSeconds++;
       updateUI();
@@ -1118,6 +1134,114 @@ function initTreinar(workouts, schedules, student) {
     const overlay = document.getElementById('restTimerOverlay');
     if (overlay) overlay.style.display = 'none';
   }
+
+  // Helper to add a set row for free workouts
+  const addFreeSetRow = (ei, si) => {
+    const container = document.getElementById(`fex_sets_${ei}`);
+    if (!container) return;
+    
+    const row = document.createElement('div');
+    row.className = 'portal-solo-set-row';
+    row.id = `fex_setrow_${ei}_${si}`;
+    
+    row.innerHTML = `
+      <span class="portal-set-num">S${si+1}</span>
+      <input type="number" placeholder="Reps" class="portal-solo-input" id="fex_${ei}_${si}_reps" min="0">
+      <input type="number" placeholder="kg" class="portal-solo-input" id="fex_${ei}_${si}_load" min="0" step="0.5">
+      
+      <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_${si}_pse" style="display: none;">
+        <option value="" disabled selected>PSE</option>
+        <option value="1">1 - M. Leve</option>
+        <option value="2">2 - Leve</option>
+        <option value="3">3 - Moderado</option>
+        <option value="4">4 - A. Pesado</option>
+        <option value="5">5 - Forte</option>
+        <option value="6">6 - Forte+</option>
+        <option value="7">7 - M. Forte</option>
+        <option value="8">8 - M. Forte+</option>
+        <option value="9">9 - Extr. Forte</option>
+        <option value="10">10 - Máximo</option>
+      </select>
+      <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="fex_psebtn_${ei}_${si}">PSE</button>
+      
+      <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_${si}_rir" style="display: none;">
+        <option value="" disabled selected>RIR</option>
+        <option value="0">0 RIR (Falha)</option>
+        <option value="1">1 RIR</option>
+        <option value="2">2 RIR</option>
+        <option value="3">3 RIR</option>
+        <option value="4">4 RIR</option>
+        <option value="5">5 RIR</option>
+        <option value="6">6 RIR</option>
+        <option value="7">7 RIR</option>
+        <option value="8">8 RIR</option>
+        <option value="9">9 RIR</option>
+        <option value="10">10+ RIR</option>
+      </select>
+      <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="fex_rirbtn_${ei}_${si}">RIR</button>
+      
+      <button class="portal-solo-done-btn" id="fex_sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}">&#10003;</button>
+    `;
+    
+    container.appendChild(row);
+    
+    const pseBtn = row.querySelector(`#fex_psebtn_${ei}_${si}`);
+    const pseSelect = row.querySelector(`#fex_${ei}_${si}_pse`);
+    if (pseBtn && pseSelect) {
+      updatePseButton(pseBtn, '');
+      pseBtn.addEventListener('click', () => {
+        openCustomSelector('Selecionar PSE', PSE_OPTIONS, pseSelect.value, (val) => {
+          pseSelect.value = val;
+          pseSelect.dispatchEvent(new Event('change'));
+          updatePseButton(pseBtn, val);
+        });
+      });
+    }
+    
+    const rirBtn = row.querySelector(`#fex_rirbtn_${ei}_${si}`);
+    const rirSelect = row.querySelector(`#fex_${ei}_${si}_rir`);
+    if (rirBtn && rirSelect) {
+      updateRirButton(rirBtn, '');
+      rirBtn.addEventListener('click', () => {
+        openCustomSelector('Selecionar RIR', RIR_OPTIONS, rirSelect.value, (val) => {
+          rirSelect.value = val;
+          rirSelect.dispatchEvent(new Event('change'));
+          updateRirButton(rirBtn, val);
+        });
+      });
+    }
+    
+    const doneBtn = row.querySelector(`.portal-solo-done-btn`);
+    doneBtn.addEventListener('click', () => {
+      const isDone = doneBtn.classList.toggle('done');
+      row.classList.toggle('set-done', isDone);
+      if (isDone) {
+        workSeconds += 30;
+        const restInput = document.getElementById(`fex_${ei}_rest`);
+        const restSec = parseInt(restInput?.value) || 60;
+        startRestTimer(restSec);
+        playBeep(440, 0.1, 1);
+      }
+    });
+  };
+
+  document.getElementById('restPauseToggle')?.addEventListener('click', () => {
+    isRestPaused = !isRestPaused;
+    const btn = document.getElementById('restPauseToggle');
+    if (btn) {
+      if (isRestPaused) {
+        btn.textContent = 'Retomar ▶';
+        btn.style.background = 'rgba(16,185,129,0.15)';
+        btn.style.borderColor = 'rgba(16,185,129,0.3)';
+        btn.style.color = '#10b981';
+      } else {
+        btn.textContent = 'Pausar ⏸';
+        btn.style.background = 'rgba(245,158,11,0.15)';
+        btn.style.borderColor = 'rgba(245,158,11,0.3)';
+        btn.style.color = '#f59e0b';
+      }
+    }
+  });
 
   document.getElementById('restSkip')?.addEventListener('click', stopRestTimer);
   document.getElementById('restMinus')?.addEventListener('click', () => {
@@ -1245,70 +1369,49 @@ function initTreinar(workouts, schedules, student) {
       let cnt = 0;
       document.getElementById('soloAddExBtn')?.addEventListener('click', () => {
         const div = document.createElement('div');
-        div.className = 'glass-card'; div.style.cssText = 'padding:10px;margin-bottom:8px';
+        div.className = 'glass-card'; 
+        div.style.cssText = 'padding:14px;margin-bottom:12px;position:relative;';
         const ei = cnt++;
+        let setCnt = 0;
+        
         div.innerHTML = `
-          <input type="text" placeholder="Nome do exercício" class="portal-textarea" id="fex_${ei}_name" style="margin-bottom:6px">
-          <div class="portal-solo-set-row">
-            <span class="portal-set-num">S1</span>
-            <input type="number" placeholder="Reps" class="portal-solo-input" id="fex_${ei}_reps">
-            <input type="number" placeholder="kg" class="portal-solo-input" id="fex_${ei}_load" step="0.5">
-            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_pse" style="display: none;">
-              <option value="" disabled selected>PSE</option>
-              <option value="1">1 - M. Leve</option>
-              <option value="2">2 - Leve</option>
-              <option value="3">3 - Moderado</option>
-              <option value="4">4 - A. Pesado</option>
-              <option value="5">5 - Forte</option>
-              <option value="6">6 - Forte+</option>
-              <option value="7">7 - M. Forte</option>
-              <option value="8">8 - M. Forte+</option>
-              <option value="9">9 - Extr. Forte</option>
-              <option value="10">10 - Máximo</option>
-            </select>
-            <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="fex_psebtn_${ei}">PSE</button>
-            <select class="portal-solo-input portal-solo-pse" id="fex_${ei}_rir" style="display: none;">
-              <option value="" disabled selected>RIR</option>
-              <option value="0">0 RIR (Falha)</option>
-              <option value="1">1 RIR</option>
-              <option value="2">2 RIR</option>
-              <option value="3">3 RIR</option>
-              <option value="4">4 RIR</option>
-              <option value="5">5 RIR</option>
-              <option value="6">6 RIR</option>
-              <option value="7">7 RIR</option>
-              <option value="8">8 RIR</option>
-              <option value="9">9 RIR</option>
-              <option value="10">10+ RIR</option>
-            </select>
-            <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="fex_rirbtn_${ei}">RIR</button>
-          </div>`;
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+            <input type="text" placeholder="Nome do exercício" class="portal-textarea" id="fex_${ei}_name" style="margin-bottom:0;flex:1;font-weight:600">
+            <button type="button" class="fex-remove-btn" style="background:rgba(239,68,68,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0" title="Remover exercício">&times;</button>
+          </div>
+          
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:0.75rem;color:var(--portal-text-muted)">Tempo de descanso:</span>
+            <input type="number" id="fex_${ei}_rest" value="60" class="portal-solo-input" style="width:65px;padding:2px 4px;font-size:0.75rem;height:24px" min="0">
+            <span style="font-size:0.75rem;color:var(--portal-text-muted)">segundos</span>
+          </div>
+
+          <div class="free-sets-container" id="fex_sets_${ei}" style="display:flex;flex-direction:column;gap:6px"></div>
+          
+          <button type="button" class="portal-expand-btn add-free-set-btn" id="fex_addset_${ei}" style="background:rgba(99,102,241,0.1);color:#818cf8;border:1px dashed rgba(99,102,241,0.2);padding:8px;border-radius:6px;width:100%;font-size:0.8rem;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adicionar série
+          </button>
+          
+          <div style="margin-top:8px">
+            <textarea class="portal-textarea" id="fex_notes_${ei}" rows="1" placeholder="Anotações deste exercício..." style="font-size:0.8rem"></textarea>
+          </div>
+        `;
+        
         document.getElementById('soloFreeExercises').appendChild(div);
-
-        // Bind custom PSE/RIR buttons for the dynamically added free exercise row
-        const pseBtn = div.querySelector('.portal-solo-pse-btn');
-        const rirBtn = div.querySelector('.portal-solo-rir-btn');
-        const pseSelect = div.querySelector(`#fex_${ei}_pse`);
-        const rirSelect = div.querySelector(`#fex_${ei}_rir`);
-
-        if (pseBtn && pseSelect) {
-          pseBtn.addEventListener('click', () => {
-            openCustomSelector('Selecionar PSE', PSE_OPTIONS, pseSelect.value, (val) => {
-              pseSelect.value = val;
-              pseSelect.dispatchEvent(new Event('change'));
-              updatePseButton(pseBtn, val);
-            });
-          });
-        }
-        if (rirBtn && rirSelect) {
-          rirBtn.addEventListener('click', () => {
-            openCustomSelector('Selecionar RIR', RIR_OPTIONS, rirSelect.value, (val) => {
-              rirSelect.value = val;
-              rirSelect.dispatchEvent(new Event('change'));
-              updateRirButton(rirBtn, val);
-            });
-          });
-        }
+        
+        // Add first set row
+        addFreeSetRow(ei, setCnt++);
+        
+        // Bind add set button
+        div.querySelector(`#fex_addset_${ei}`).addEventListener('click', () => {
+          addFreeSetRow(ei, setCnt++);
+        });
+        
+        // Bind remove button
+        div.querySelector('.fex-remove-btn').addEventListener('click', () => {
+          div.remove();
+        });
       });
     }
 
@@ -1406,7 +1509,14 @@ function initTreinar(workouts, schedules, student) {
     startMainTimer();
   });
 
-  document.getElementById('soloFinishBtn')?.addEventListener('click', async () => {
+  document.getElementById('soloFinishBtn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.pointerEvents = 'none';
+    btn.innerHTML = '<div class="portal-spin-ring" style="width:16px;height:16px;border-width:2px;border-top-color:#fff;margin-right:8px"></div> Salvando...';
+
     clearInterval(soloTimerInterval);
     stopRestTimer();
     const durationMin = Math.round((new Date() - soloStartTime) / 60000);
@@ -1453,30 +1563,42 @@ function initTreinar(workouts, schedules, student) {
       // Collect from free exercises
       const freeCards = document.getElementById('soloFreeExercises')?.children || [];
       Array.from(freeCards).forEach((card, ei) => {
-        const name = document.getElementById(`fex_${ei}_name`)?.value || `Exercício ${ei+1}`;
-        const reps = document.getElementById(`fex_${ei}_reps`)?.value;
-        const load = document.getElementById(`fex_${ei}_load`)?.value;
-        const psei = document.getElementById(`fex_${ei}_pse`)?.value;
-        const rir = document.getElementById(`fex_${ei}_rir`)?.value;
+        const nameInput = card.querySelector(`input[id^="fex_${ei}_name"]`);
+        if (!nameInput) return; // not an exercise card
+        const name = nameInput.value || `Exercício ${ei+1}`;
+        const exNotes = document.getElementById(`fex_notes_${ei}`)?.value || '';
         
+        let si = 0;
+        while (true) {
+          const rowEl = document.getElementById(`fex_setrow_${ei}_${si}`);
+          if (!rowEl) break;
+          
+          const reps = document.getElementById(`fex_${ei}_${si}_reps`)?.value;
+          const load = document.getElementById(`fex_${ei}_${si}_load`)?.value;
+          const psei = document.getElementById(`fex_${ei}_${si}_pse`)?.value;
+          const rir = document.getElementById(`fex_${ei}_${si}_rir`)?.value;
+
+          setLog.push({
+            exIdx: ei,
+            exerciseIdx: ei,
+            exerciseName: name,
+            setIdx: si,
+            reps: parseInt(reps) || 0,
+            load: parseFloat(load) || 0,
+            pse: psei ? parseInt(psei) : null,
+            rir: rir !== '' && rir != null ? parseInt(rir) : null,
+            notes: exNotes
+          });
+          
+          si++;
+        }
+
         exercisesList.push({
           name: name,
-          sets: '1',
-          reps: reps || '10',
-          load: parseFloat(load) || 0,
+          sets: String(si || 1),
+          reps: document.getElementById(`fex_${ei}_0_reps`)?.value || '10',
+          load: parseFloat(document.getElementById(`fex_${ei}_0_load`)?.value) || 0,
           method: ''
-        });
-
-        setLog.push({
-          exIdx: ei,
-          exerciseIdx: ei,
-          exerciseName: name,
-          setIdx: 0,
-          reps: parseInt(reps)||0,
-          load: parseFloat(load)||0,
-          pse: psei ? parseInt(psei) : null,
-          rir: rir !== '' && rir != null ? parseInt(rir) : null,
-          notes: ''
         });
       });
     }
@@ -2485,6 +2607,31 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     }
   }
 
+  // Calculate topEx for portalLoadProgressChart in this macrocycle filter
+  const exMap = {};
+  completed.forEach(s => {
+    (s.setLog||[]).forEach(x => {
+      if (!x.exerciseName || !x.load || x.load<=0) return;
+      if (!exMap[x.exerciseName]) exMap[x.exerciseName] = [];
+      exMap[x.exerciseName].push({
+        date: s.date,
+        load: parseFloat(x.load)||0,
+        reps: parseFloat(x.reps)||0,
+        vol:  (parseFloat(x.load)||0) * (parseFloat(x.reps)||1),
+      });
+    });
+  });
+  const topEx = Object.entries(exMap).filter(([,sets])=>sets.length>=2)
+    .map(([name,sets])=>{
+      const sorted=sets.sort((a,b)=>new Date(a.date)-new Date(b.date));
+      const first=sorted[0], last=sorted[sorted.length-1];
+      const maxLoad=Math.max(...sorted.map(s=>s.load));
+      const delta=last.load-first.load;
+      const pct=first.load>0?Math.round((delta/first.load)*100):0;
+      const totalVol=sorted.reduce((t,s)=>t+s.vol,0);
+      return {name,first,last,maxLoad,delta,pct,totalVol,series:sorted.length,sets:sorted};
+    }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct)).slice(0,8);
+
   const btnAI = document.getElementById('btnGenerateAIPortal');
   const txtAI = document.getElementById('aiInsightTextPortal');
   const resAI = document.getElementById('aiInsightResultPortal');
@@ -2515,8 +2662,17 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
   }
 
   const fmtDate = d => {
-    try { return new Date(d.includes('T')?d:d+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }
-    catch { return d||''; }
+    if (!d) return '';
+    try {
+      const dStr = typeof d === 'string' ? d : new Date(d).toISOString();
+      return new Date(dStr.includes('T') ? dStr : dStr + 'T12:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'});
+    } catch {
+      try {
+        return new Date(d).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'});
+      } catch {
+        return String(d || '');
+      }
+    }
   };
 
   const co = {
@@ -2531,7 +2687,13 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
   // Group workouts by base name for comparative chart
   const getBaseWorkoutName = name => {
     if (!name) return 'Treino Avulso';
-    return name.replace(/\s*—\s*Sem\s*\d+/i, '').replace(/\s*-\s*Semana\s*\d+/i, '').replace(/\s*Sem\s*\d+/i, '').trim();
+    return name
+      .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+      .replace(/\s*Semana\s*\d+/i, '')
+      .replace(/\s*Sem\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*$/g, '')
+      .trim();
   };
 
   const workoutsByName = {};
@@ -2585,7 +2747,9 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     if (loadCtx && completed.length>=1) {
       const wc={};
       completed.forEach(s=>{
-        const d=new Date(s.date.includes('T')?s.date:s.date+'T12:00');
+        const dateStr = typeof s.date === 'string' ? s.date : '';
+        if (!dateStr) return;
+        const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00');
         const mon=new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
         const key=mon.toISOString().split('T')[0];
         const pse = (s.postBiofeedback?.pse || 5);
@@ -2626,7 +2790,9 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     if (freqCtx && completed.length>=1) {
       const fc={};
       completed.forEach(s=>{
-        const d=new Date(s.date.includes('T')?s.date:s.date+'T12:00');
+        const dateStr = typeof s.date === 'string' ? s.date : '';
+        if (!dateStr) return;
+        const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00');
         const mon=new Date(d); mon.setDate(d.getDate()-d.getDay()+1);
         const key=mon.toISOString().split('T')[0];
         fc[key]=(fc[key]||0)+1;
@@ -2660,7 +2826,14 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       const colors = ['#10b981','#06b6d4','#f59e0b'];
       const top3 = topEx.slice(0, 3);
       const allDates = [...new Set(top3.flatMap(ex => ex.sets.map(s => s.date)))].sort();
-      const fmtD = d => { try { return new Date(d.includes('T')?d:d+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); } catch{return d;} };
+      const fmtD = d => {
+        try {
+          const dStr = typeof d === 'string' ? d : new Date(d).toISOString();
+          return new Date(dStr.includes('T') ? dStr : dStr + 'T12:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'});
+        } catch {
+          return d || '';
+        }
+      };
       createPortalChart('portalLoadProgressChart', lpCtx, {
         type: 'line',
         data: {
