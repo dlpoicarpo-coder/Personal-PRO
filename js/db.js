@@ -78,50 +78,89 @@ class Database {
     if (user) {
       this._currentUser = user;
       if (user.id && !user._offline) {
-        this.syncLocalToRemote(user.id).catch(err => console.warn('Sync failed:', err));
+        this.startAutoSync(user.id);
       }
     }
     return user?.id || null;
   }
 
-  async syncLocalToRemote(trainerId) {
+  async syncBothWays(trainerId) {
     if (!this.supabase || !trainerId) return;
     if (this._syncing) return;
     this._syncing = true;
-    console.log(`[Sync] Starting database sync for trainer: ${trainerId}`);
+    console.log(`[Sync] Starting two-way database sync for trainer: ${trainerId}`);
     try {
       for (const storeName of this.SUPABASE_TABLES) {
         const localItems = this._getLocal(storeName, trainerId) || [];
-        if (localItems.length === 0) continue;
 
-        const { data: remoteRows, error } = await this.supabase
-          .from(storeName)
-          .select('id, updated_at')
-          .eq('trainer_id', trainerId);
+        // Fetch remote data (all columns) for this trainer
+        let q = this.supabase.from(storeName).select('*');
+        if (storeName !== 'exercises' && storeName !== 'methods') {
+          q = q.eq('trainer_id', trainerId);
+        } else {
+          q = q.eq('trainer_id', trainerId);
+        }
+        const { data: remoteRows, error } = await q;
 
         if (error) {
-          console.warn(`[Sync] Failed to fetch remote keys for ${storeName}:`, error.message);
+          console.warn(`[Sync] Failed to fetch remote data for ${storeName}:`, error.message);
           continue;
         }
 
-        const remoteMap = new Map(remoteRows.map(r => [r.id, r.updated_at]));
-        const toUpload = [];
+        const remote = (remoteRows || []).map(r => {
+          if (r.data && typeof r.data === 'object') {
+            return { 
+              ...r.data, 
+              id: r.id,
+              updatedAt: r.data.updatedAt || r.updated_at,
+              createdAt: r.data.createdAt || r.created_at
+            };
+          }
+          return { 
+            ...r,
+            updatedAt: r.updatedAt || r.updated_at,
+            createdAt: r.createdAt || r.created_at
+          };
+        });
 
+        const remoteMap = new Map(remote.map(r => [r.id, r]));
+        const toUpload = [];
+        const merged = new Map();
+
+        // 1. Check local items for upload or local retention
         for (const localItem of localItems) {
           if (!localItem.id) continue;
-          const remoteUpdatedAt = remoteMap.get(localItem.id);
+          const remoteItem = remoteMap.get(localItem.id);
 
-          if (!remoteUpdatedAt) {
+          if (!remoteItem) {
             toUpload.push(localItem);
+            merged.set(localItem.id, localItem);
           } else {
             const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
-            const remoteTime = new Date(remoteUpdatedAt).getTime();
+            const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+
             if (localTime > remoteTime + 1000) {
               toUpload.push(localItem);
+              merged.set(localItem.id, localItem);
+            } else {
+              merged.set(localItem.id, remoteItem);
             }
           }
         }
 
+        // 2. Add remote items that don't exist locally
+        for (const remoteItem of remote) {
+          if (!remoteItem.id) continue;
+          if (!merged.has(remoteItem.id)) {
+            merged.set(remoteItem.id, remoteItem);
+          }
+        }
+
+        // 3. Save merged results locally
+        const result = [...merged.values()];
+        this._saveLocal(storeName, result, trainerId);
+
+        // 4. Perform upload if needed
         if (toUpload.length > 0) {
           console.log(`[Sync] Uploading ${toUpload.length} items to ${storeName}...`);
           const chunkSize = 50;
@@ -141,11 +180,137 @@ class Database {
           }
         }
       }
-      console.log(`[Sync] Sync completed successfully!`);
+      console.log(`[Sync] Two-way sync completed successfully!`);
     } catch (err) {
       console.warn(`[Sync] Error during sync:`, err);
     } finally {
       this._syncing = false;
+    }
+  }
+
+  async syncLocalToRemote(trainerId) {
+    return this.syncBothWays(trainerId);
+  }
+
+  async syncStudentData(studentId, trainerId) {
+    if (!this.supabase || !studentId || !trainerId) return;
+    if (this._studentSyncing) return;
+    this._studentSyncing = true;
+    console.log(`[Student Sync] Starting sync for student: ${studentId}`);
+    try {
+      const tablesToSync = ['biofeedback', 'sessions'];
+      for (const storeName of tablesToSync) {
+        const localItems = this._getLocal(storeName, trainerId) || [];
+        const studentLocal = localItems.filter(r => r && (r.studentId === studentId || r.student_id === studentId));
+
+        // Fetch remote data (all columns) for this student
+        const { data: remoteRows, error } = await this.supabase
+          .from(storeName)
+          .select('*')
+          .filter('data->>studentId', 'eq', studentId);
+
+        if (error) {
+          console.warn(`[Student Sync] Failed to fetch remote data for ${storeName}:`, error.message);
+          continue;
+        }
+
+        const remote = (remoteRows || []).map(r => {
+          if (r.data && typeof r.data === 'object') {
+            return { 
+              ...r.data, 
+              id: r.id,
+              updatedAt: r.data.updatedAt || r.updated_at,
+              createdAt: r.data.createdAt || r.created_at
+            };
+          }
+          return { 
+            ...r,
+            updatedAt: r.updatedAt || r.updated_at,
+            createdAt: r.createdAt || r.created_at
+          };
+        });
+
+        const remoteMap = new Map(remote.map(r => [r.id, r]));
+        const toUpload = [];
+        const merged = new Map();
+
+        // 1. Check local student items for upload or local retention
+        for (const localItem of studentLocal) {
+          if (!localItem.id) continue;
+          const remoteItem = remoteMap.get(localItem.id);
+
+          if (!remoteItem) {
+            toUpload.push(localItem);
+            merged.set(localItem.id, localItem);
+          } else {
+            const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+            const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+
+            if (localTime > remoteTime + 1000) {
+              toUpload.push(localItem);
+              merged.set(localItem.id, localItem);
+            } else {
+              merged.set(localItem.id, remoteItem);
+            }
+          }
+        }
+
+        // 2. Add remote items that don't exist locally
+        for (const remoteItem of remote) {
+          if (!remoteItem.id) continue;
+          if (!merged.has(remoteItem.id)) {
+            merged.set(remoteItem.id, remoteItem);
+          }
+        }
+
+        // 3. Save merged results locally, preserving other student data
+        const allLocal = this._getLocal(storeName, trainerId) || [];
+        const localMap = new Map(allLocal.map(x => [x.id, x]));
+        merged.forEach(r => localMap.set(r.id, r));
+        this._saveLocal(storeName, [...localMap.values()], trainerId);
+
+        // 4. Perform upload if needed
+        if (toUpload.length > 0) {
+          console.log(`[Student Sync] Uploading ${toUpload.length} items to ${storeName}...`);
+          const payloads = toUpload.map(item => ({
+            id: item.id,
+            trainer_id: trainerId || null,
+            data: item
+          }));
+          const { error: upsertError } = await this.supabase
+            .from(storeName)
+            .upsert(payloads);
+          if (upsertError) {
+            console.warn(`[Student Sync] Failed to upload to ${storeName}:`, upsertError.message);
+          }
+        }
+      }
+      console.log(`[Student Sync] Sync completed successfully!`);
+    } catch (err) {
+      console.warn(`[Student Sync] Error during student sync:`, err);
+    } finally {
+      this._studentSyncing = false;
+    }
+  }
+
+  startAutoSync(trainerId) {
+    if (this._autoSyncInterval) clearInterval(this._autoSyncInterval);
+    
+    // Initial sync
+    this.syncBothWays(trainerId).catch(err => console.warn('Initial sync failed:', err));
+    
+    // Periodic sync every 30 seconds
+    this._autoSyncInterval = setInterval(() => {
+      this.syncBothWays(trainerId).catch(err => console.warn('Periodic sync failed:', err));
+    }, 30_000);
+    
+    // Sync on online event
+    if (!this._onlineListenerBound) {
+      window.addEventListener('online', () => {
+        console.log('[Sync] Connection restored, triggering sync...');
+        this.syncBothWays(trainerId).catch(err => console.warn('Online sync failed:', err));
+      });
+      this._onlineListenerBound = true;
     }
   }
 
@@ -402,6 +567,15 @@ class Database {
       if (error) console.warn(`Supabase put error (${storeName}):`, error.message);
     } catch (err) { console.warn(`Supabase put exception:`, err.message); }
 
+    if (trainerId && !item._offline) {
+      const sid = item.studentId || item.student_id;
+      if (sid) {
+        setTimeout(() => this.syncStudentData(sid, trainerId).catch(() => {}), 500);
+      } else {
+        setTimeout(() => this.syncBothWays(trainerId).catch(() => {}), 500);
+      }
+    }
+
     return item;
   }
 
@@ -423,6 +597,10 @@ class Database {
       const { error } = await q;
       if (error) console.warn(`Supabase delete error (${storeName}):`, error.message);
     } catch {}
+
+    if (trainerId) {
+      setTimeout(() => this.syncBothWays(trainerId).catch(() => {}), 500);
+    }
   }
 
   // ── CLEAR ──

@@ -76,6 +76,18 @@ async function publicGet(table, id) {
   return null;
 }
 
+async function publicGetWithRetry(table, id, retries = 3, delayMs = 1500) {
+  for (let i = 0; i < retries; i++) {
+    const item = await publicGet(table, id);
+    if (item) return item;
+    if (i < retries - 1) {
+      console.warn(`[publicGetWithRetry] ${table} ${id} not found, retrying in ${delayMs}ms... (attempt ${i + 1}/${retries})`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  return null;
+}
+
 async function publicAdd(table, data) {
   const id = data.id || crypto.randomUUID();
   // trainer_id deve ser UUID válido ou null — string vazia quebra a FK
@@ -601,7 +613,7 @@ export async function renderPreForm(studentId) {
   const urlParams = new URLSearchParams(rawSplit.length > 1 ? '?' + rawSplit[1] : '');
   const urlTrainerId = urlParams.get('t');
 
-  const student = await publicGet('students', cleanId);
+  const student = await publicGetWithRetry('students', cleanId);
 
   if (!student) {    return `
       <style>${FORM_CSS}</style>
@@ -780,7 +792,7 @@ export function initPreForm() {
 
 export async function renderPostForm(sessionId) {
   const cleanSessionId = (sessionId || '').split('?')[0].split('&')[0].trim();
-  const session = await publicGet('sessions', cleanSessionId);
+  const session = await publicGetWithRetry('sessions', cleanSessionId);
 
   if (!session) {
     return `
@@ -788,18 +800,23 @@ export async function renderPostForm(sessionId) {
       <div class="student-form-page">
         <div class="form-card">
           <div class="form-card-header"><h2>Personal<strong class="logo-pro">PRO</strong></h2></div>
-          <div class="form-card-body" style="text-align:center;padding:48px 24px">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" style="margin-bottom:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <h3>Sessão não encontrada</h3>
-            <p style="color:var(--text-muted);margin-top:8px;font-size:0.9rem">
-              O link pode estar expirado. Peça um novo link ao seu personal.
-            </p>
+          <div class="form-card-body" style="text-align:center;padding:40px 24px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="1.5" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <h3 style="font-size:1.1rem;color:#f1f5f9;margin-bottom:12px">Treino não sincronizado ou inexistente</h3>
+            <div style="color:#94a3b8;font-size:0.85rem;line-height:1.6;text-align:left;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:14px;margin-bottom:20px">
+              Não conseguimos encontrar esta sessão de treino na nuvem.
+              <br><br>
+              <strong>Por que isso acontece?</strong>
+              <br>
+              O seu personal trainer pode ter finalizado o treino enquanto estava sem internet no tablet ou celular. Assim que o dispositivo dele se conectar à rede, o treino será enviado e você conseguirá preencher a avaliação.
+            </div>
+            <button onclick="window.location.reload()" class="submit-btn" style="margin-top:0;padding:12px 20px;font-size:0.88rem">Recarregar Página 🔄</button>
           </div>
         </div>
       </div>`;
   }
 
-  const student    = await publicGet('students', session.studentId);
+  const student    = await publicGetWithRetry('students', session.studentId);
   const firstName  = student?.name?.split(' ')[0] || 'Aluno';
   const ini        = student?.name?.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() || '?';
 
@@ -808,7 +825,7 @@ export async function renderPostForm(sessionId) {
   try {
     const dayStr = (session.date||new Date().toISOString()).substring(0, 10);
     const bfId = 'bf_' + session.studentId + '_' + dayStr;
-    preBf = await publicGet('biofeedback', bfId);
+    preBf = await publicGetWithRetry('biofeedback', bfId);
     // Verificar se realmente tem dados de pre (ex: sleep)
     if (preBf && !preBf.sleep && !preBf.stress) preBf = null;
   } catch(_) {}
@@ -922,7 +939,7 @@ export function initPostForm() {
     try {
       const fd      = new FormData(e.target);
       const data    = Object.fromEntries(fd);
-      const session = await publicGet('sessions', data.sessionId);
+      const session = await publicGetWithRetry('sessions', data.sessionId);
 
       if (!session) throw new Error('Sessão não encontrada. O link pode ter expirado.');
       {
@@ -946,7 +963,7 @@ export function initPostForm() {
         // Atualizar ou criar registro biofeedback
         const bfId = 'bf_' + session.studentId + '_' + (session.date||Calc.nowISO()).substring(0, 10);
         let existingBf = null;
-        try { existingBf = await publicGet('biofeedback', bfId); } catch(e) {}
+        try { existingBf = await publicGetWithRetry('biofeedback', bfId); } catch(e) {}
 
         if (existingBf) {
           await publicPut('biofeedback', {

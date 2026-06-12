@@ -1429,7 +1429,14 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
 
   const summary = buildSessionSummary(sessionData, student);
   resetState();
-  closeModal(() => { notify.success('Sessão salva!'); showSessionSummary(summary, sessionData, student, navigateFn); });
+  closeModal(() => { 
+    if (navigator.onLine) {
+      notify.success('Sessão salva com sucesso!');
+    } else {
+      notify.warning('Sessão salva localmente! Conecte-se à internet para sincronizar a avaliação do aluno.');
+    }
+    showSessionSummary(summary, sessionData, student, navigateFn); 
+  });
 }
 
 // ── BUILD SUMMARY ────────────────────────────────────────────

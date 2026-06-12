@@ -33,6 +33,7 @@ const LOAD_COLORS = { weight: 'var(--accent)', bodyweight: 'var(--success)', tim
 const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const ICON_DEL  = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
 const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+const ICON_IMG  = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
 
 export async function renderExercisesLibrary() {
   const [exercises, methods, customTplsRaw, adminMode] = await Promise.all([
@@ -139,7 +140,8 @@ export async function renderExercisesLibrary() {
                       ${ex.description?`<div style="font-size:0.67rem;color:var(--text-muted);margin-top:3px;line-height:1.3">${ex.description.slice(0,75)}${ex.description.length>75?'…':''}</div>`:''}
                     </div>
                     <div style="display:flex;gap:2px;flex-shrink:0">
-                      ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:3px 5px;color:var(--danger)">${ICON_PLAY}</a>`:''}
+                      ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:3px 5px;color:var(--danger)" title="Ver vídeo">${ICON_PLAY}</a>`:''}
+                      ${ex.imageUrl?`<a href="${ex.imageUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:3px 5px;color:var(--success)" title="Ver imagem">${ICON_IMG}</a>`:''}
                       <button class="btn btn-ghost btn-sm edit-exercise" data-id="${ex.id}" style="padding:3px 5px;color:var(--text-muted)" ${!canEdit(ex,adminMode)?'style="display:none"':''}>${canEdit(ex,adminMode) ? ICON_EDIT : ''}</button>
                       <button class="btn btn-ghost btn-sm delete-exercise" data-id="${ex.id}" style="padding:3px 5px;color:var(--danger)" ${!canDelete(ex,adminMode)?'style="display:none"':''}>${canDelete(ex,adminMode) ? ICON_DEL : ''}</button>
                     </div>
@@ -320,6 +322,9 @@ function exerciseFormHTML(ex = {}) {
     </div>
     <div class="form-group"><label class="form-label">Link do Vídeo (YouTube)</label>
       <input class="form-input" name="videoUrl" value="${ex.videoUrl||''}" placeholder="https://youtube.com/watch?v=..." />
+    </div>
+    <div class="form-group"><label class="form-label">Link da Imagem (URL)</label>
+      <input class="form-input" name="imageUrl" value="${ex.imageUrl||''}" placeholder="https://..." />
     </div>
   </form>`;
 }

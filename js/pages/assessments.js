@@ -136,6 +136,31 @@ export async function renderAssessments() {
     if(!prs[key]||a.rm1>prs[key].rm1) prs[key]=a;
   });
 
+  // Agrupar avaliações por aluno
+  const groupAssessmentsByStudent = (items) => {
+    const groups = {};
+    items.forEach(item => {
+      if (!groups[item.studentId]) groups[item.studentId] = [];
+      groups[item.studentId].push(item);
+    });
+    Object.keys(groups).forEach(sid => {
+      groups[sid].sort((a, b) => new Date(b.date) - new Date(a.date));
+    });
+    const sortedStudents = Object.keys(groups)
+      .map(sid => students.find(s => s.id === sid))
+      .filter(Boolean)
+      .sort((a, b) => {
+        const latestA = new Date(groups[a.id][0].date);
+        const latestB = new Date(groups[b.id][0].date);
+        return latestB - latestA;
+      });
+    return { sortedStudents, groups };
+  };
+
+  const { sortedStudents: compStudents, groups: compGroups } = groupAssessmentsByStudent(compAss);
+  const { sortedStudents: forcaStudents, groups: forcaGroups } = groupAssessmentsByStudent(forcaAss);
+  const { sortedStudents: conconiStudents, groups: conconiGroups } = groupAssessmentsByStudent(concAss);
+
   return `
     <div class="page-header">
       <div>
@@ -191,38 +216,55 @@ export async function renderAssessments() {
                 <th>Aluno</th><th>Data</th><th>Peso</th><th>Altura</th><th>IMC</th>
                 <th>% Gordura</th><th>M. Magra</th><th>M. Musc. Esq.</th><th>Cintura</th><th>RCQ</th><th></th>
               </tr></thead>
-              <tbody>
-                ${compAss.map(a=>{
-                  const st   = students.find(s=>s.id===a.studentId);
-                  const imc  = a.peso&&a.altura?Calc.imc(a.peso,a.altura):null;
-                  const imcC = imc?Calc.imcClassificacao(imc):null;
-                  const pctColor = (a.percentualGordura||0)>25?'var(--warning)':'var(--success)';
-                  return `<tr data-student="${a.studentId}">
-                    <td>
-                      <div class="flex items-center gap-sm">
-                        <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem">${ini(st?.name)}</div>
-                        <span style="font-size:0.85rem">${st?.name||'?'}</span>
-                      </div>
-                    </td>
-                    <td style="font-size:0.82rem;white-space:nowrap">${Calc.formatDate(a.date)}</td>
-                    <td><strong>${a.peso?a.peso+'kg':'—'}</strong></td>
-                    <td>${a.altura?a.altura+'cm':'—'}</td>
-                    <td>${imc?`<span class="badge badge-${imcC.color}" title="${imcC.label}">${Calc.formatNum(imc)}</span>`:'—'}</td>
-                    <td style="color:${pctColor};font-weight:600">${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':'—'}</td>
-                    <td style="color:var(--primary);font-weight:600">${a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'}</td>
-                    <td style="color:var(--accent);font-weight:600">${a.pctMassaMuscular?Calc.formatNum(a.pctMassaMuscular)+'%':'—'}</td>
-                    <td>${a.cintura?a.cintura+'cm':'—'}</td>
-                    <td>${a.rcq?Calc.formatNum(a.rcq,2):'—'}</td>
-                    <td>
-                      <div style="display:flex;gap:4px">
-                        <button class="btn btn-ghost btn-sm view-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--accent)">${ICON_EYE}</button>
-                        <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--text-muted)">${ICON_EDIT}</button>
-                        <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
-                      </div>
-                    </td>
-                  </tr>`;
-                }).join('')}
-              </tbody>
+              ${compStudents.map(student => {
+                const studentAssessments = compGroups[student.id] || [];
+                return `
+                  <tbody class="student-group" data-student="${student.id}">
+                    <tr class="group-header-row" style="background: rgba(255,255,255,0.015); cursor: pointer;">
+                      <td colspan="11">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding: 6px 8px;">
+                          <div class="flex items-center gap-sm">
+                            <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem; background: var(--primary); color: white;">${ini(student.name)}</div>
+                            <span style="font-weight:700; font-size:0.88rem; color: var(--text-primary);">${student.name}</span>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:8px">
+                            <span class="badge badge-primary" style="font-size:0.65rem">${studentAssessments.length} registro(s)</span>
+                            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    ${studentAssessments.map(a => {
+                      const imc  = a.peso&&a.altura?Calc.imc(a.peso,a.altura):null;
+                      const imcC = imc?Calc.imcClassificacao(imc):null;
+                      const pctColor = (a.percentualGordura||0)>25?'var(--warning)':'var(--success)';
+                      return `
+                        <tr class="student-row" data-student="${a.studentId}">
+                          <td style="padding-left:24px">
+                            <span class="text-muted" style="font-size:0.75rem">—</span>
+                          </td>
+                          <td style="font-size:0.82rem;white-space:nowrap">${Calc.formatDate(a.date)}</td>
+                          <td><strong>${a.peso?a.peso+'kg':'—'}</strong></td>
+                          <td>${a.altura?a.altura+'cm':'—'}</td>
+                          <td>${imc?`<span class="badge badge-${imcC.color}" title="${imcC.label}">${Calc.formatNum(imc)}</span>`:'—'}</td>
+                          <td style="color:${pctColor};font-weight:600">${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':'—'}</td>
+                          <td style="color:var(--primary);font-weight:600">${a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'}</td>
+                          <td style="color:var(--accent);font-weight:600">${a.pctMassaMuscular?Calc.formatNum(a.pctMassaMuscular)+'%':'—'}</td>
+                          <td>${a.cintura?a.cintura+'cm':'—'}</td>
+                          <td>${a.rcq?Calc.formatNum(a.rcq,2):'—'}</td>
+                          <td>
+                            <div style="display:flex;gap:4px">
+                              <button class="btn btn-ghost btn-sm view-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--accent)">${ICON_EYE}</button>
+                              <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--text-muted)">${ICON_EDIT}</button>
+                              <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                `;
+              }).join('')}
             </table>
           </div>
         </div>
@@ -313,34 +355,51 @@ export async function renderAssessments() {
                 <thead><tr>
                   <th>Aluno</th><th>Data</th><th>Exercício</th><th>Carga</th><th>Reps</th><th>1RM</th><th></th>
                 </tr></thead>
-                <tbody>
-                  ${forcaAss.map(a=>{
-                    const st  = students.find(s=>s.id===a.studentId);
-                    const key = `${a.studentId}::${a.exercise}`;
-                    const isPR= prs[key]?.id===a.id && a.rm1;
-                    return `<tr data-student="${a.studentId}">
-                      <td>
-                        <div class="flex items-center gap-sm">
-                          <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem">${ini(st?.name)}</div>
-                          <span>${st?.name||'?'}</span>
-                        </div>
-                      </td>
-                      <td style="white-space:nowrap">${Calc.formatDate(a.date)}</td>
-                      <td style="font-weight:600">${a.exercise||'—'}</td>
-                      <td>${a.carga?a.carga+'kg':'—'}</td>
-                      <td>${a.reps||'—'}</td>
-                      <td>
-                        <span style="color:var(--primary);font-weight:700">${a.rm1?a.rm1+'kg':'—'}</span>
-                        ${isPR?`<span style="color:#fbbf24;font-size:0.7rem;font-weight:700;margin-left:3px">★PR</span>`:''}
-                      </td>
-                      <td style="display:flex;gap:3px">
-                        <button class="btn btn-ghost btn-sm view-rm1" data-id="${a.id}" style="padding:4px 5px;color:var(--accent)">${ICON_EYE}</button>
-                        <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
-                        <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
-                      </td>
-                    </tr>`;
-                  }).join('')}
-                </tbody>
+                ${forcaStudents.map(student => {
+                  const studentAssessments = forcaGroups[student.id] || [];
+                  return `
+                    <tbody class="student-group" data-student="${student.id}">
+                      <tr class="group-header-row" style="background: rgba(255,255,255,0.015); cursor: pointer;">
+                        <td colspan="7">
+                          <div style="display:flex; align-items:center; justify-content:space-between; padding: 5px 6px;">
+                            <div class="flex items-center gap-sm">
+                              <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem; background: var(--warning); color: black;">${ini(student.name)}</div>
+                              <span style="font-weight:700; color: var(--text-primary);">${student.name}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px">
+                              <span class="badge badge-warning" style="font-size:0.65rem">${studentAssessments.length} registro(s)</span>
+                              <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      ${studentAssessments.map(a => {
+                        const key = `${a.studentId}::${a.exercise}`;
+                        const isPR= prs[key]?.id===a.id && a.rm1;
+                        return `
+                          <tr class="student-row" data-student="${a.studentId}">
+                            <td style="padding-left:20px">
+                              <span class="text-muted" style="font-size:0.75rem">—</span>
+                            </td>
+                            <td style="white-space:nowrap">${Calc.formatDate(a.date)}</td>
+                            <td style="font-weight:600">${a.exercise||'—'}</td>
+                            <td>${a.carga?a.carga+'kg':'—'}</td>
+                            <td>${a.reps||'—'}</td>
+                            <td>
+                              <span style="color:var(--primary);font-weight:700">${a.rm1?a.rm1+'kg':'—'}</span>
+                              ${isPR?`<span style="color:#fbbf24;font-size:0.7rem;font-weight:700;margin-left:3px">★PR</span>`:''}
+                            </td>
+                            <td style="display:flex;gap:3px">
+                              <button class="btn btn-ghost btn-sm view-rm1" data-id="${a.id}" style="padding:4px 5px;color:var(--accent)">${ICON_EYE}</button>
+                              <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
+                              <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
+                            </td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  `;
+                }).join('')}
               </table>
             </div>`}
         </div>
@@ -361,29 +420,46 @@ export async function renderAssessments() {
               <thead><tr>
                 <th>Aluno</th><th>Data</th><th>FC Pico</th><th>VMA</th><th>VO₂max</th><th>FC Limiar</th><th>Limiar 2</th><th></th>
               </tr></thead>
-              <tbody>
-                ${concAss.map(a=>{
-                  const st=students.find(s=>s.id===a.studentId);
-                  return `<tr data-student="${a.studentId}">
-                    <td>
-                      <div class="flex items-center gap-sm">
-                        <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem">${ini(st?.name)}</div>
-                        <span style="font-size:0.85rem">${st?.name||'?'}</span>
-                      </div>
-                    </td>
-                    <td style="font-size:0.82rem;white-space:nowrap">${Calc.formatDate(a.date)}</td>
-                    <td style="color:var(--danger);font-weight:600">${a.fcPico?a.fcPico+' bpm':'—'}</td>
-                    <td style="color:var(--primary);font-weight:600">${a.vma?a.vma+' km/h':'—'}</td>
-                    <td style="color:var(--accent);font-weight:700">${a.vo2max?Calc.formatNum(a.vo2max)+' ml/kg/min':'—'}</td>
-                    <td>${a.fcLimiar?a.fcLimiar+' bpm':'—'}</td>
-                    <td>${a.limiar2?a.limiar2+' km/h':'—'}</td>
-                    <td style="display:flex;gap:3px">
-                      <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
-                      <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
-                    </td>
-                  </tr>`;
-                }).join('')}
-              </tbody>
+              ${conconiStudents.map(student => {
+                const studentAssessments = conconiGroups[student.id] || [];
+                return `
+                  <tbody class="student-group" data-student="${student.id}">
+                    <tr class="group-header-row" style="background: rgba(255,255,255,0.015); cursor: pointer;">
+                      <td colspan="8">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding: 6px 8px;">
+                          <div class="flex items-center gap-sm">
+                            <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem; background: var(--accent); color: white;">${ini(student.name)}</div>
+                            <span style="font-weight:700; color: var(--text-primary);">${student.name}</span>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:8px">
+                            <span class="badge badge-accent" style="font-size:0.65rem">${studentAssessments.length} teste(s)</span>
+                            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    ${studentAssessments.map(a => {
+                      return `
+                        <tr class="student-row" data-student="${a.studentId}">
+                          <td style="padding-left:20px">
+                            <span class="text-muted" style="font-size:0.75rem">—</span>
+                          </td>
+                          <td style="font-size:0.82rem;white-space:nowrap">${Calc.formatDate(a.date)}</td>
+                          <td style="color:var(--danger);font-weight:600">${a.fcPico?a.fcPico+' bpm':'—'}</td>
+                          <td style="color:var(--primary);font-weight:600">${a.vma?a.vma+' km/h':'—'}</td>
+                          <td style="color:var(--accent);font-weight:700">${a.vo2max?Calc.formatNum(a.vo2max)+' ml/kg/min':'—'}</td>
+                          <td>${a.fcLimiar?a.fcLimiar+' bpm':'—'}</td>
+                          <td>${a.limiar2?a.limiar2+' km/h':'—'}</td>
+                          <td style="display:flex;gap:3px">
+                            <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
+                            <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                `;
+              }).join('')}
             </table>
           </div>
         </div>`}
@@ -479,6 +555,17 @@ export async function renderAssessments() {
         </div>
       </div>
     </div>
+    <style>
+      .student-group.collapsed tr:not(.group-header-row) {
+        display: none !important;
+      }
+      .group-header-row:hover {
+        background: rgba(255, 255, 255, 0.04) !important;
+      }
+      .chevron-icon {
+        color: var(--text-muted);
+      }
+    </style>
   `;
 }
 
@@ -498,7 +585,21 @@ export function initAssessments(navigateFn) {
   // Filtro por aluno
   document.getElementById('assStudentFilter')?.addEventListener('change', async e=>{
     const sid = e.target.value;
-    document.querySelectorAll('.assessment-panel table tbody tr').forEach(row=>{
+    
+    document.querySelectorAll('.assessment-panel table tbody.student-group').forEach(tbody=>{
+      if (!sid || tbody.dataset.student === sid) {
+        tbody.style.display = '';
+        if (sid) {
+          tbody.classList.remove('collapsed');
+          const chevron = tbody.querySelector('.chevron-icon');
+          if (chevron) chevron.style.transform = 'rotate(0deg)';
+        }
+      } else {
+        tbody.style.display = 'none';
+      }
+    });
+
+    document.querySelectorAll('.assessment-panel table tbody:not(.student-group) tr').forEach(row=>{
       row.style.display = !sid||row.dataset.student===sid||!row.dataset.student?'':'none';
     });
     
@@ -1025,6 +1126,19 @@ export function initAssessments(navigateFn) {
   document.getElementById('fichaExportBtn')?.addEventListener('click', async()=>{
     const sid = document.getElementById('fichaStudentSel')?.value;
     if(sid) await exportFichaPDF(sid);
+  });
+
+  // Bind toggle action on group header click
+  document.querySelectorAll('.group-header-row').forEach(header => {
+    header.addEventListener('click', () => {
+      const tbody = header.closest('tbody');
+      if (!tbody) return;
+      tbody.classList.toggle('collapsed');
+      const chevron = header.querySelector('.chevron-icon');
+      if (chevron) {
+        chevron.style.transform = tbody.classList.contains('collapsed') ? 'rotate(-90deg)' : 'rotate(0deg)';
+      }
+    });
   });
 }
 

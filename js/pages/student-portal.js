@@ -147,6 +147,32 @@ export async function renderStudentPortal(rawParam) {
   return renderPortalShell(student);
 }
 
+function startStudentAutoSync(sid, tid) {
+  if (!sid || !tid) return;
+  if (window._studentAutoSyncInterval) clearInterval(window._studentAutoSyncInterval);
+
+  // Sync immediately in background
+  db.syncStudentData(sid, tid).catch(err => console.warn('Background student sync failed:', err));
+
+  // Periodic sync every 30 seconds
+  window._studentAutoSyncInterval = setInterval(() => {
+    db.syncStudentData(sid, tid).catch(err => console.warn('Periodic student sync failed:', err));
+  }, 30_000);
+
+  // Sync on online event
+  if (!window._studentOnlineListenerBound) {
+    window.addEventListener('online', () => {
+      console.log('[Student Sync] Connection restored, triggering sync...');
+      const currentSid = portalState.studentId;
+      const currentTid = portalState.trainerId;
+      if (currentSid && currentTid) {
+        db.syncStudentData(currentSid, currentTid).catch(err => console.warn('Online student sync failed:', err));
+      }
+    });
+    window._studentOnlineListenerBound = true;
+  }
+}
+
 export function initStudentPortal(rawParam) {
   if (!rawParam || rawParam === 'undefined') {
     initEmailLoginScreen();
@@ -160,6 +186,14 @@ export function initStudentPortal(rawParam) {
   }
   // Portal nav
   initPortalNav();
+
+  // Start background auto sync for student
+  const sid = portalState.studentId;
+  const tid = portalState.trainerId;
+  if (sid && tid) {
+    startStudentAutoSync(sid, tid);
+  }
+
   loadSection('home');
   // Apply saved theme
   document.querySelector('.portal-root')?.setAttribute('data-theme', getPortalTheme());
@@ -504,6 +538,10 @@ async function loadSection(section) {
       return studentLocal;
     }
   };
+
+  if (sid && tid) {
+    await db.syncStudentData(sid, tid).catch(err => console.warn('Student loadSection sync failed:', err));
+  }
 
   const [student, sessionsRaw, workoutsRaw, biofeedbacks, assessments, schedules, macrocycles, finances] = await Promise.all([
     db.get('students', sid).catch(() => null),
@@ -1316,6 +1354,11 @@ function initTreinar(workouts, schedules, student) {
             ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
           </div>
           ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
+          ${ex.imageUrl ? `
+            <div class="portal-ex-img-preview-container" style="padding:0 12px 10px;cursor:pointer">
+              <img src="${ex.imageUrl}" style="width:100%;max-height:125px;object-fit:cover;border-radius:10px;opacity:0.9" class="portal-ex-img-preview" data-ei="${ei}" />
+            </div>
+          ` : ''}
           ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => `
             <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
               <span class="portal-set-num">S${si+1}</span>
@@ -1429,12 +1472,12 @@ function initTreinar(workouts, schedules, student) {
       });
     });
 
-    // Bind info buttons
+    // Bind info buttons and image previews
     if (w?.exercises) {
-      exLogEl.querySelectorAll('.portal-ex-info-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+      exLogEl.querySelectorAll('.portal-ex-info-btn, .portal-ex-img-preview').forEach(el => {
+        el.addEventListener('click', async (e) => {
           e.stopPropagation();
-          const ei = parseInt(btn.dataset.ei);
+          const ei = parseInt(el.dataset.ei);
           const ex = w.exercises[ei];
           if (ex) await showExerciseModal(ex);
         });
@@ -1766,10 +1809,18 @@ async function showExerciseModal(ex) {
           </div>` :
           `<video src="${ex.videoUrl}" controls playsinline style="width:100%;border-radius:14px;max-height:220px;background:#000"></video>`
         }
-      </div>` : `<div style="margin:0 20px 16px;height:160px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
+      </div>` : ''}
+
+      <!-- Image -->
+      ${ex.imageUrl ? `<div style="padding:0 20px 16px">
+        <img src="${ex.imageUrl}" style="width:100%;border-radius:14px;max-height:220px;object-fit:cover;background:rgba(255,255,255,0.03)" />
+      </div>` : ''}
+
+      <!-- Fallback when no media -->
+      ${!ex.videoUrl && !ex.imageUrl ? `<div style="margin:0 20px 16px;height:160px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhum vídeo vinculado</span>
-      </div>`}
+        <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhuma mídia vinculada</span>
+      </div>` : ''}
 
       <!-- Description / Technique -->
       <div style="padding:0 20px 20px">
