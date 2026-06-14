@@ -180,6 +180,10 @@ export const Calc = {
     return (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1);
   },
 
+  todayLocal() {
+    return this.nowISO().slice(0, 10);
+  },
+
   // ── FORÇA / 1RM ──────────────────────────────────────────
   // Epley (padrão)
   rm1Estimado(carga, reps, formula = 'epley') {

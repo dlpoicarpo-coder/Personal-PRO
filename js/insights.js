@@ -91,10 +91,10 @@ export async function generateAIInsight(student, sessions, biofeedbacks, days = 
     })),
     resumoBemEstar: recentBio.map(b => ({
       data: b.date,
-      sono: b.sleep,
+      sono: b.sleep ? Math.round(b.sleep / 2) : null,
       recuperacaoTQR: b.tqr || b.energy,
-      dor: b.pain,
-      motivacao: b.motivation
+      dor: b.pain ? (b.pain > 8 ? 5 : b.pain > 6 ? 4 : b.pain > 4 ? 3 : b.pain > 2 ? 2 : 1) : null,
+      motivacao: b.motivation ? Math.round(b.motivation / 2) : null
     }))
   };
 

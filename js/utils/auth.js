@@ -180,17 +180,14 @@ export async function syncTrainerProfile() {
     const cref = user.user_metadata?.cref || '';
     const email = user.email;
 
-    let trainer = await db.get('settings', 'trainer');
-    if (!trainer) {
-      trainer = {
-        id: 'trainer',
-        trainerName,
-        cref,
-        email,
-        trainerPhone: user.user_metadata?.phone || '',
-      };
-      await db.put('settings', trainer);
-    }
+    let trainer = await db.get('settings', 'trainer') || {};
+    trainer.id = 'trainer';
+    trainer.trainerId = user.id;
+    trainer.trainerName = user.user_metadata?.trainer_name || user.user_metadata?.name || trainer.trainerName || user.email.split('@')[0];
+    trainer.cref = user.user_metadata?.cref || trainer.cref || '';
+    trainer.email = user.email || trainer.email;
+    trainer.trainerPhone = user.user_metadata?.phone || trainer.trainerPhone || '';
+    await db.put('settings', trainer);
 
     return { user, trainer };
   } catch (err) {

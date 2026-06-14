@@ -45,7 +45,7 @@ export async function renderBiofeedback() {
   const today     = new Date().toDateString();
   const todayBf   = allBf.filter(e => new Date(e.date).toDateString() === today);
   const recent30  = allBf.slice(0, 30);
-  const avgSleep  = recent30.length ? (recent30.reduce((t,e)=>t+(e.sleep||0),0)/recent30.length).toFixed(1) : '-';
+  const avgSleep  = recent30.length ? ((recent30.reduce((t,e)=>t+(e.sleep||0),0)/recent30.length)/2).toFixed(1) : '-';
   const avgTqr    = recent30.length ? (recent30.reduce((t,e)=>t+((e.tqr||e.energy)||0),0)/recent30.length).toFixed(1) : '-';
   const avgStress = recent30.length ? (recent30.reduce((t,e)=>t+(e.stress||0),0)/recent30.length).toFixed(1) : '-';
   const alerts    = [];
@@ -74,7 +74,7 @@ export async function renderBiofeedback() {
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
         <div class="stat-label">SONO MÉDIO</div>
-        <div class="stat-value" style="color:${parseFloat(avgSleep)<6?'var(--warning)':'var(--success)'}">${avgSleep}</div>
+        <div class="stat-value" style="color:${parseFloat(avgSleep)<3?'var(--warning)':'var(--success)'}">${avgSleep}</div>
         <div class="stat-change">últimos 30 registros</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
@@ -99,7 +99,14 @@ export async function renderBiofeedback() {
           <div style="width:8px;height:8px;border-radius:50%;background:var(--danger);margin-top:5px;flex-shrink:0"></div>
           <div>
             <strong>${a.studentName}</strong>
-            <span style="color:var(--danger)"> — ${a.metric}: ${a.value}/10</span>
+            <span style="color:var(--danger)"> — ${
+              a.metric === 'Sono' ? `${a.metric}: ${Math.round(a.value / 2)}/5` :
+              a.metric === 'Dor' ? `${a.metric}: ${a.value > 8 ? 5 : a.value > 6 ? 4 : a.value > 4 ? 3 : a.value > 2 ? 2 : 1}/5` :
+              a.metric === 'ACWR' ? `${a.metric}: ${a.value}` :
+              a.metric === 'Ciclo Menstrual' ? `${a.metric}: ${a.value}` :
+              a.metric === 'Dor Localizada' ? `${a.metric}` :
+              `${a.metric}: ${a.value}/10`
+            }</span>
             <div class="text-xs text-muted mt-xs">${a.action}</div>
           </div>
         </div>`).join('')}
@@ -189,15 +196,15 @@ function renderBfContent(entries, students, filterStudentId) {
                   <span style="font-size:0.82rem">${st?.name||'?'}</span>
                 </div>
               </td>` : ''}
-              <td style="font-weight:600;color:${colorForVal(e.sleep,false)}">${e.sleep||'-'}</td>
+              <td style="font-weight:600;color:${colorForVal(e.sleep,false)}">${e.sleep ? `${Math.round(e.sleep / 2)}/5` : '-'}</td>
               <td style="color:${colorForVal(e.tqr ?? e.energy,false)}">${e.tqr ?? e.energy ?? '-'}</td>
               <td style="font-weight:600;color:${colorForFood(e.food)}">${e.food ? e.food+'/5' : '-'}</td>
               <td style="font-weight:600;color:${colorForVal(e.stress,true)}">${e.stress||'-'}</td>
               <td style="color:${colorForVal(e.pain,true)}">
-                ${e.pain||'-'}
+                ${e.pain ? `${e.pain > 8 ? 5 : e.pain > 6 ? 4 : e.pain > 4 ? 3 : e.pain > 2 ? 2 : 1}/5` : '-'}
                 ${painLabel ? `<div style="font-size:0.62rem;color:var(--warning);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${painLabel}</div>` : ''}
               </td>
-              <td style="font-weight:600;color:${colorForVal(e.motivation,false)}">${e.motivation||'-'}</td>
+              <td style="font-weight:600;color:${colorForVal(e.motivation,false)}">${e.motivation ? `${Math.round(e.motivation / 2)}/5` : '-'}</td>
               <td><strong style="color:${(e.pse||0)>8?'var(--danger)':(e.pse||0)>6?'var(--warning)':'var(--success)'}">${e.pse||'-'}</strong></td>
               <td style="font-size:0.8rem">${e.trainingLoad||'-'}</td>
               <td><span class="badge badge-${status.color}" style="font-size:0.7rem">${status.label}</span></td>
@@ -260,13 +267,13 @@ export function initBiofeedback(navigateFn) {
           </div>
         </div>
         ${[
-          { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: 7, max: 10 },
+          { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 5 = muito bem',                    val: 4, max: 5 },
           { id:'tqr',        label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: 5, max: 10 },
           { id:'food',       label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: 4, max: 5 },
           { id:'stress',     label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: 5, max: 10 },
-          { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: 1, max: 10,
-            extra:`document.getElementById('painGrp').style.display=this.value>=3?'block':'none'` },
-          { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 10 = muito alta',                 val: 7, max: 10 },
+          { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 5 = dor intensa',                    val: 1, max: 5,
+            extra:`document.getElementById('painGrp').style.display=this.value>=2?'block':'none'` },
+          { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 5 = muito alta',                 val: 4, max: 5 },
         ].map(f=>`
           <div class="form-group" style="margin-bottom:14px">
             <div class="flex items-center justify-between mb-xs">
@@ -335,10 +342,18 @@ export function initBiofeedback(navigateFn) {
           const fd = new FormData(document.getElementById('bfForm'));
           const d  = Object.fromEntries(fd);
           if (!d.studentId) { notify.error('Selecione o aluno'); return; }
-          ['sleep','tqr','stress','pain','food','pse','duration','motivation'].forEach(k=>d[k]=parseInt(d[k])||(k==='motivation'?7:0));
+          ['sleep','tqr','stress','pain','food','pse','duration','motivation'].forEach(k=>d[k]=parseInt(d[k])||((k==='motivation'||k==='sleep')?4:0));
+          
+          // Map 1-5 UI scale to database 10-point scale
+          d.sleep = d.sleep * 2;
+          d.motivation = d.motivation * 2;
+          const painDbMap = [0, 1, 3, 5, 7, 10];
+          d.pain = painDbMap[d.pain] || 1;
+
           d.energy = d.tqr; // compatibilidade com alertas e gráficos antigos
           d.mood   = d.tqr; // idem
-          d.painRegions  = fd.getAll('painRegions');
+          d.painRegions  = d.pain >= 3 ? fd.getAll('painRegions') : [];
+          d.painDescription = d.pain >= 3 ? (d.painDescription || '') : '';
           d.menstrualCycle = fd.get('menstrualCycle') || '';
           d.trainingLoad = Calc.cargaTreino(d.pse, d.duration);
           d.date         = d.date || new Date().toISOString().slice(0,10);
@@ -411,7 +426,7 @@ function bindBfActions(navigateFn, studentsCache) {
           
           <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
             <span class="text-muted">😴 Qualidade do Sono</span>
-            <strong>${entry.sleep || '—'}/10</strong>
+            <strong>${entry.sleep ? `${Math.round(entry.sleep / 2)}/5` : '—'}</strong>
           </div>
           
           <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
@@ -426,12 +441,12 @@ function bindBfActions(navigateFn, studentsCache) {
           
           <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
             <span class="text-muted">🤕 Dor Corporal</span>
-            <strong>${entry.pain || '—'}/10</strong>
+            <strong>${entry.pain ? `${entry.pain > 8 ? 5 : entry.pain > 6 ? 4 : entry.pain > 4 ? 3 : entry.pain > 2 ? 2 : 1}/5` : '—'}</strong>
           </div>
           
           <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
             <span class="text-muted">🔥 Motivação para Treinar</span>
-            <strong>${entry.motivation || '—'}/10</strong>
+            <strong>${entry.motivation ? `${Math.round(entry.motivation / 2)}/5` : '—'}</strong>
           </div>
           
           ${entry.menstrualCycle ? `
@@ -499,6 +514,10 @@ function bindBfActions(navigateFn, studentsCache) {
       const settings = await db.get('settings', 'trainer') || {};
       const pRegs = entry.painRegions || [];
 
+      const sleepUiVal = Math.round((entry.sleep || 8) / 2);
+      const motivationUiVal = Math.round((entry.motivation || 8) / 2);
+      const painUiVal = entry.pain > 8 ? 5 : entry.pain > 6 ? 4 : entry.pain > 4 ? 3 : entry.pain > 2 ? 2 : 1;
+
       openModal({
         title: `Editar Biofeedback — ${st?.name || 'Aluno'}`, size: 'lg',
         preventBackdropClose: true,
@@ -509,13 +528,13 @@ function bindBfActions(navigateFn, studentsCache) {
             </div>
           </div>
           ${[
-            { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 10 = muito bem',                    val: entry.sleep || 5, max: 10 },
+            { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 5 = muito bem',                    val: sleepUiVal, max: 5 },
             { id:'tqr',        label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5, max: 10 },
             { id:'food',       label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: entry.food || 4, max: 5 },
             { id:'stress',     label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5, max: 10 },
-            { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 10 = dor intensa',                    val: entry.pain || 1, max: 10,
-              extra:`document.getElementById('editPainGrp').style.display=this.value>=3? 'block' : 'none'` },
-            { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 10 = muito alta',                 val: entry.motivation || 7, max: 10 },
+            { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 5 = dor intensa',                    val: painUiVal, max: 5,
+              extra:`document.getElementById('editPainGrp').style.display=this.value>=2?'block':'none'` },
+            { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 5 = muito alta',                 val: motivationUiVal, max: 5 },
           ].map(f=>`
             <div class="form-group" style="margin-bottom:14px">
               <div class="flex items-center justify-between mb-xs">
@@ -540,7 +559,7 @@ function bindBfActions(navigateFn, studentsCache) {
               <option value="Lutea" ${entry.menstrualCycle==='Lutea'?'selected':''}>Fase Lútea (Pré-menstrual / TPM)</option>
             </select>
           </div>
-          <div id="editPainGrp" style="display:${(entry.pain || 1) >= 3 ? 'block' : 'none'};margin-bottom:14px">
+          <div id="editPainGrp" style="display:${painUiVal >= 2 ? 'block' : 'none'};margin-bottom:14px">
             <label class="form-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
               ${PAIN_REGIONS.map(r=>`
@@ -588,7 +607,15 @@ function bindBfActions(navigateFn, studentsCache) {
             const pse = parseInt(fd.get('pse')) || 1;
             const duration = parseInt(fd.get('duration')) || 0;
             const trainingLoad = pse * duration;
-            const painVal = parseInt(fd.get('pain')) || 1;
+            
+            const sleepUiVal = parseInt(fd.get('sleep')) || 4;
+            const motivationUiVal = parseInt(fd.get('motivation')) || 4;
+            const painUiVal = parseInt(fd.get('pain')) || 1;
+
+            const sleepVal = sleepUiVal * 2;
+            const motivationVal = motivationUiVal * 2;
+            const painDbMap = [0, 1, 3, 5, 7, 10];
+            const painVal = painDbMap[painUiVal] || 1;
             
             const selectedPainRegs = [];
             document.querySelectorAll('#editPainGrp input[name="painRegions"]:checked').forEach(cb => {
@@ -599,16 +626,16 @@ function bindBfActions(navigateFn, studentsCache) {
               ...entry,
               date: fd.get('date'),
               cycle: fd.get('cycle'),
-              sleep: parseInt(fd.get('sleep')),
+              sleep: sleepVal,
               tqr: parseInt(fd.get('tqr')),
               food: parseInt(fd.get('food')) || 5,
-              motivation: parseInt(fd.get('motivation')) || 7,
+              motivation: motivationVal,
               menstrualCycle: fd.get('menstrualCycle') || '',
               mood: parseInt(fd.get('tqr')),
               energy: parseInt(fd.get('tqr')),
               stress: parseInt(fd.get('stress')),
               pain: painVal,
-              painRegions: selectedPainRegs,
+              painRegions: painVal >= 3 ? selectedPainRegs : [],
               painDescription: painVal >= 3 ? fd.get('painDescription') : '',
               pse,
               duration,

@@ -683,8 +683,8 @@ async function loadSection(section) {
 
 // ── SESSION REMINDERS ──────────────────────────────────────────
 function checkSessionReminders(schedules, sessions) {
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const _d = new Date();
+  const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
 
   // 1. Check-in reminder: session TODAY
   const todaySessions = schedules.filter(s => s.date === todayStr);
@@ -723,8 +723,9 @@ function showToast(msg, type = 'info', duration = 5000) {
 
 // ── HOME ───────────────────────────────────────────────────────
 function renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks) {
+  const _d = new Date();
+  const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
   const nextSchedule = schedules
     .filter(s => new Date(s.date + 'T' + (s.time || '00:00')) >= now)
     .sort((a,b) => new Date(a.date+'T'+a.time) - new Date(b.date+'T'+b.time))[0];
@@ -996,7 +997,8 @@ function getWorkoutSVG(name) {
 
 // ── TREINAR (Smart) ────────────────────────────────────────────────
 function renderTreinar(workouts, schedules) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const _d = new Date();
+  const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
   const todaySched = schedules.find(s => s.date === todayStr);
   const nextSched = schedules
     .filter(s => s.date > todayStr)
@@ -1421,7 +1423,7 @@ function initTreinar(workouts, schedules, student) {
           ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
           ${ex.imageUrl ? `
             <div class="portal-ex-img-preview-container" style="padding:0 12px 10px;cursor:pointer">
-              <img src="${ex.imageUrl}" style="width:100%;max-height:125px;object-fit:cover;border-radius:10px;opacity:0.9" class="portal-ex-img-preview" data-ei="${ei}" />
+              <img src="${ex.imageUrl}" onerror="this.closest('.portal-ex-img-preview-container').style.display='none'" style="width:100%;max-height:125px;object-fit:cover;border-radius:10px;opacity:0.9" class="portal-ex-img-preview" data-ei="${ei}" />
             </div>
           ` : ''}
           ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
@@ -1894,7 +1896,7 @@ async function showExerciseModal(ex) {
       ${ex.videoUrl ? `<div style="padding:0 20px 16px">
         ${ex.videoUrl.includes('youtube') || ex.videoUrl.includes('youtu.be') ?
           `<div style="position:relative;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000">
-            <iframe src="${ex.videoUrl.replace('watch?v=','embed/').replace('youtu.be/','youtube.com/embed/')}" style="position:absolute;inset:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+            <iframe src="${getYouTubeEmbedUrl(ex.videoUrl)}" style="position:absolute;inset:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
           </div>` :
           `<video src="${ex.videoUrl}" controls playsinline style="width:100%;border-radius:14px;max-height:220px;background:#000"></video>`
         }
@@ -1902,7 +1904,7 @@ async function showExerciseModal(ex) {
 
       <!-- Image -->
       ${ex.imageUrl ? `<div style="padding:0 20px 16px">
-        <img src="${ex.imageUrl}" style="width:100%;border-radius:14px;max-height:220px;object-fit:cover;background:rgba(255,255,255,0.03)" />
+        <img src="${ex.imageUrl}" onerror="this.parentElement.remove()" style="width:100%;border-radius:14px;max-height:220px;object-fit:cover;background:rgba(255,255,255,0.03)" />
       </div>` : ''}
 
       <!-- Fallback when no media -->
@@ -2091,7 +2093,7 @@ function renderBio(biofeedbacks, sid, tid) {
         <form id="portalBioForm">
           <div class="portal-bio-field">
             <label class="portal-bio-label">😴 Qualidade do Sono</label>
-            ${renderInlineCardSelector('sleep', SONO_OPTIONS, 7)}
+            ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
           </div>
           <div class="portal-bio-field">
             <label class="portal-bio-label">⚡ Recuperação (TQR)</label>
@@ -2127,7 +2129,7 @@ function renderBio(biofeedbacks, sid, tid) {
           </div>
           <div class="portal-bio-field">
             <label class="portal-bio-label">🎯 Motivação para Treinar</label>
-            ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 7)}
+            ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 8)}
           </div>
           
           ${isWomanUnder40 ? `
@@ -2226,7 +2228,8 @@ function initBio() {
     const fd = new FormData(e.target);
     const painVal = parseInt(fd.get('pain')) || 1;
     
-    const todayYMD = new Date().toISOString().slice(0, 10);
+    const _d = new Date();
+    const todayYMD = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
     const bfId = `bf_${portalState.studentId}_${todayYMD}`;
     let existingBf = {};
     try {
@@ -2235,6 +2238,9 @@ function initBio() {
       console.warn('Erro ao obter biofeedback existente:', e);
     }
 
+    const tzoffset = _d.getTimezoneOffset() * 60000;
+    const localISO = new Date(_d.getTime() - tzoffset).toISOString().slice(0, -1);
+
     const data = {
       ...existingBf,
       id: bfId,
@@ -2242,7 +2248,7 @@ function initBio() {
       trainerId: portalState.trainerId,
       trainer_id: portalState.trainerId,
       formType: existingBf.formType === 'complete' ? 'complete' : 'pre',
-      date: existingBf.date || new Date().toISOString(),
+      date: existingBf.date || localISO,
       sleep: parseInt(fd.get('sleep')),
       tqr: parseInt(fd.get('tqr')),
       stress: parseInt(fd.get('stress')),
@@ -3211,49 +3217,13 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     updateExerciseAnalysisSelector();
     drawExAnalysisChart();
 
-    // Body composition
-    const measCtx = document.getElementById('portalMeasuresChart');
-    if (measCtx && compAss.length>=2) {
-      const ds=[];
-      if (compAss.some(a=>a.peso)) ds.push({label:'Peso (kg)', data:compAss.map(a=>a.peso||null), borderColor:'#10b981', tension:0.3, yAxisID:'y'});
-      if (compAss.some(a=>a.percentualGordura)) ds.push({label:'BF %', data:compAss.map(a=>a.percentualGordura||null), borderColor:'#f59e0b', tension:0.3, yAxisID:'y1'});
-      if (ds.length) createPortalChart('portalMeasuresChart', measCtx, { type:'line', data:{ labels:compAss.map(a=>fmtDate(a.date)), datasets:ds },
-        options:{ responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
-          scales:{y:{position:'left',ticks:{color:'#10b981',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:9}},grid:{display:false}},x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}}
-        }});
-    }
-  };
-
-  // Bind change on macro filter to reload section
-  document.getElementById('portalReportMacroFilter')?.addEventListener('change', async (e) => {
-    portalState.selectedReportMacroId = e.target.value;
-    await loadSection('relatorios');
-  });
-
-  if (window.Chart) {
-    drawAll();
-  } else {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-    s.onload = drawAll;
-    document.head.appendChild(s);
-  }
-}
-
-
-// ── PRE-DEFINED RATING OPTIONS FOR CHECK-IN AND CHECKOUT ──────
+    // Body compositi// ── PRE-DEFINED RATING OPTIONS FOR CHECK-IN AND CHECKOUT ──────
 const SONO_OPTIONS = [
-  { value: '1', label: '1 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '2', label: '2 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '3', label: '3 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '4', label: '4 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '5', label: '5 - Regular', desc: 'Dormi o suficiente, mas acordei cansado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '6', label: '6 - Regular', desc: 'Dormi o suficiente, mas acordei cansado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '7', label: '7 - Bom', desc: 'Sono contínuo e revigorante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '8', label: '8 - Bom', desc: 'Sono contínuo e revigorante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '9', label: '9 - Excelente', desc: 'Sono profundo e muito reparador', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
-  { value: '10', label: '10 - Excelente', desc: 'Sono profundo e muito reparador', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
+  { value: '2', display: '1', label: '1 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '4', display: '2', label: '2 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '6', display: '3', label: '3 - Regular', desc: 'Dormi o suficiente, mas acordei cansado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '8', display: '4', label: '4 - Bom', desc: 'Sono contínuo e revigorante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '10', display: '5', label: '5 - Excelente', desc: 'Sono profundo e muito reparador', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
 ];
 
 const TQR_OPTIONS = [
@@ -3292,34 +3262,24 @@ const ESTRESSE_OPTIONS = [
 ];
 
 const DOR_OPTIONS = [
-  { value: '1', label: '1 - Nenhuma Dor', desc: 'Músculos e articulações 100% livres de dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '2', label: '2 - Leve', desc: 'Desconforto muscular leve residual pós-treino', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '3', label: '3 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '4', label: '4 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '5', label: '5 - Incômoda', desc: 'Dor persistente nas articulações ou tendões', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '6', label: '6 - Incômoda', desc: 'Dor persistente nas articulações ou tendões', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '7', label: '7 - Forte', desc: 'Dificulta a execução de movimentos específicos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '8', label: '8 - Forte', desc: 'Dificulta a execução de movimentos específicos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '9', label: '9 - Intensa', desc: 'Dor muito forte, impede ou dificulta treinar', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '10', label: '10 - Intensa / Lesão', desc: 'Dor severa, risco de lesão ou incapacidade física', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+  { value: '1', display: '1', label: '1 - Nenhuma Dor', desc: 'Músculos e articulações 100% livres de dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', display: '2', label: '2 - Leve', desc: 'Desconforto muscular leve residual pós-treino', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '5', display: '3', label: '3 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '7', display: '4', label: '4 - Forte', desc: 'Dificulta a execução de movimentos específicos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', display: '5', label: '5 - Intensa / Risco de lesão', desc: 'Dor severa, risco de lesão ou incapacidade física', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
 ];
 
 const DOR_OPTIONS_0 = [
-  { value: '0', label: '0 - Sem Dor', desc: 'Articulações e tendões 100% confortáveis', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '0', display: '0', label: '0 - Sem Dor', desc: 'Articulações e tendões 100% confortáveis', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   ...DOR_OPTIONS
 ];
 
 const MOTIVACAO_OPTIONS = [
-  { value: '1', label: '1 - Muito Baixa', desc: 'Sem nenhuma vontade de treinar hoje', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '2', label: '2 - Muito Baixa', desc: 'Sem nenhuma vontade de treinar hoje', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '3', label: '3 - Baixa', desc: 'Desanimado, vou treinar por pura obrigação', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '4', label: '4 - Baixa', desc: 'Desanimado, vou treinar por pura obrigação', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '5', label: '5 - Moderada', desc: 'Foco mediano, treino mantido por disciplina', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '6', label: '6 - Moderada', desc: 'Foco mediano, treino mantido por disciplina', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '7', label: '7 - Alta', desc: 'Focado, animado e com boa energia mental', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '8', label: '8 - Alta', desc: 'Focado, animado e com boa energia mental', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '9', label: '9 - Muito Alta', desc: 'Energia máxima, sedento por treinar pesado', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
-  { value: '10', label: '10 - Muito Alta', desc: 'Energia máxima, sedento por treinar pesado', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
+  { value: '2', display: '1', label: '1 - Muito Baixa', desc: 'Sem nenhuma vontade de treinar hoje', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '4', display: '2', label: '2 - Baixa', desc: 'Desanimado, vou treinar por pura obrigação', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '6', display: '3', label: '3 - Moderada', desc: 'Foco mediano, treino mantido por disciplina', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '8', display: '4', label: '4 - Alta', desc: 'Focado, animado e com boa energia mental', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '10', display: '5', label: '5 - Muito Alta', desc: 'Energia máxima, sedento por treinar pesado', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
 ];
 
 function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
@@ -3339,7 +3299,7 @@ function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
                  ${onSelectJS ? `${onSelectJS}('${opt.value}');` : ''}
                ">
             <div class="portal-sel-badge-num" style="background: ${opt.bg}; color: ${opt.color}; border: 1px solid ${opt.color}33;">
-              ${opt.value}
+              ${opt.display || opt.value}
             </div>
             <div style="flex: 1; min-width: 0; text-align: left;">
               <div style="font-size: 0.85rem; font-weight: 700; color: var(--portal-text);">${opt.label}</div>
@@ -3835,8 +3795,8 @@ function showPortalCheckoutModal(session) {
       feeling: selectedFeeling,
       satisfaction: selectedFeeling * 2, // Map 1-5 feeling to 2-10 satisfaction
       notes,
-      date: new Date().toISOString(),
-      submittedAt: new Date().toISOString(),
+      date: Calc.nowISO(),
+      submittedAt: Calc.nowISO(),
       submittedByStudent: true
     };
 
@@ -3846,7 +3806,7 @@ function showPortalCheckoutModal(session) {
 
       // Sincronizar com tabela biofeedback
       try {
-        const sessDateStr = (session.date || new Date().toISOString()).slice(0, 10);
+        const sessDateStr = (session.date || Calc.nowISO()).slice(0, 10);
         const bfId = `bf_${session.studentId}_${sessDateStr}`;
         const preBf = await db.get('biofeedback', bfId) || {};
         
@@ -3859,7 +3819,7 @@ function showPortalCheckoutModal(session) {
           studentId: session.studentId,
           trainerId: session.trainerId || portalState.trainerId,
           trainer_id: session.trainerId || portalState.trainerId,
-          date: session.date || preBf.date || new Date().toISOString(),
+          date: session.date || preBf.date || Calc.nowISO(),
           sleep: preBf.sleep || session.preBiofeedback?.sleep || 7,
           tqr: preBf.tqr || preBf.energy || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
           energy: preBf.energy || preBf.tqr || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
@@ -3878,7 +3838,7 @@ function showPortalCheckoutModal(session) {
           notes: notes || preBf.notes || '',
           sessionId: session.id,
           formType: 'complete',
-          submittedAt: new Date().toISOString(),
+          submittedAt: Calc.nowISO(),
           submittedByStudent: true
         };
         
@@ -3993,4 +3953,41 @@ function renderEmailLoginScreen() {
 
 function initEmailLoginScreen() {
   // Bypassed: Student login is direct link only.
+}
+
+function getYouTubeEmbedUrl(url) {
+  if (!url) return '';
+  url = url.trim();
+  let videoId = '';
+  try {
+    if (url.includes('youtu.be/')) {
+      const parts = url.split('youtu.be/');
+      if (parts[1]) {
+        videoId = parts[1].split(/[?#]/)[0];
+      }
+    } else if (url.includes('/shorts/')) {
+      const parts = url.split('/shorts/');
+      if (parts[1]) {
+        videoId = parts[1].split(/[?#]/)[0];
+      }
+    } else if (url.includes('watch?v=')) {
+      const parts = url.split('watch?v=');
+      if (parts[1]) {
+        videoId = parts[1].split('&')[0].split(/[?#]/)[0];
+      }
+    } else if (url.includes('/embed/')) {
+      return url;
+    } else {
+      const match = url.match(/[?&]v=([^&#]+)/);
+      if (match) {
+        videoId = match[1];
+      }
+    }
+  } catch (e) {
+    console.error('Error parsing YouTube URL:', e);
+  }
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+  return url;
 }

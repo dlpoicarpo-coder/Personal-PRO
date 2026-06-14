@@ -402,10 +402,10 @@ function renderLiveView(students) {
           <div style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:10px">
             <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Pré-treino do aluno</div>
             <div class="flex gap-md text-xs" style="flex-wrap:wrap">
-              <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep||'-'}</strong></span>
+              <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep ? `${Math.round(s.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
               <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
               <span>Estresse <strong style="color:${(s.preBiofeedback.stress||0)>=7?'var(--warning)':'inherit'}">${s.preBiofeedback.stress||'-'}</strong></span>
-              ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain}</strong></span>`:''}
+              ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 8 ? 5 : s.preBiofeedback.pain > 6 ? 4 : s.preBiofeedback.pain > 4 ? 3 : s.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
             </div>
           </div>` : ''}
         </div>
@@ -700,12 +700,23 @@ export function initTracker(navigateFn) {
             ['Motivação',   todayPre.motivation,             false],
             todayPre.menstrualCycle ? ['Ciclo', '🔴', false] : null,
           ];
-          valuesEl.innerHTML = vals.filter(Boolean).map(([l,v,inv])=>`
-            <span style="padding:3px 8px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-color);color:${
-              v==null?'var(--text-muted)':inv?(v>=7?'var(--danger)':v>=5?'var(--warning)':'var(--success)'):(v<=3?'var(--danger)':v<=5?'var(--warning)':'var(--success)')
-            }">
-              ${l} <strong>${v??'—'}</strong>
-            </span>`).join('');
+          valuesEl.innerHTML = vals.filter(Boolean).map(([l,v,inv])=>{
+            let displayVal = v;
+            if (v != null) {
+              if (l === 'Sono') displayVal = `${Math.round(v / 2)}/5`;
+              else if (l === 'Alim. (24h)') displayVal = `${v}/5`;
+              else if (l === 'TQR') displayVal = `${v}/10`;
+              else if (l === 'Mental') displayVal = `${v}/10`;
+              else if (l === 'Dor') displayVal = `${v > 8 ? 5 : v > 6 ? 4 : v > 4 ? 3 : v > 2 ? 2 : 1}/5`;
+              else if (l === 'Motivação') displayVal = `${Math.round(v / 2)}/5`;
+            }
+            return `
+              <span style="padding:3px 8px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-color);color:${
+                v==null?'var(--text-muted)':inv?(v>=7?'var(--danger)':v>=5?'var(--warning)':'var(--success)'):(v<=3?'var(--danger)':v<=5?'var(--warning)':'var(--success)')
+              }">
+                ${l} <strong>${displayVal??'—'}</strong>
+              </span>`;
+          }).join('');
         }
       } else {
         resetPreBioStatus();
@@ -1522,10 +1533,10 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
         ${session.preBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
           <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pré</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
-            <span>Sono <strong>${session.preBiofeedback.sleep||'—'}/10</strong></span>
+            <span>Sono <strong>${session.preBiofeedback.sleep ? `${Math.round(session.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
             <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
             <span>Est. Mental <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
-            ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain}/10</strong></span>`:''}
+            ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain > 8 ? 5 : session.preBiofeedback.pain > 6 ? 4 : session.preBiofeedback.pain > 4 ? 3 : session.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
           </div>
         </div>`:''}
         ${session.postBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
@@ -1657,10 +1668,10 @@ function generateSessionPDF(session, student) {
       doc.setTextColor(...G); doc.setFontSize(5.5); doc.setFont('helvetica','bold'); doc.text('CHECK-IN PRÉ',17,y+3.5);
       doc.setFont('helvetica','normal'); doc.setTextColor(...MU); doc.setFontSize(6.5);
       const preInfo = [
-        pre.sleep?`Sono ${pre.sleep}/10`:'',
+        pre.sleep?`Sono ${Math.round(pre.sleep/2)}/5`:'',
         pre.tqr!=null?`TQR ${pre.tqr??pre.energy}/10`:'',
         pre.stress?`Est.Mental ${pre.stress}/10`:'',
-        (pre.pain||0)>=3?`Dor ${pre.pain}/10`:'',
+        (pre.pain||0)>=3?`Dor ${pre.pain > 8 ? 5 : pre.pain > 6 ? 4 : pre.pain > 4 ? 3 : pre.pain > 2 ? 2 : 1}/5`:'',
         kcal?`Kcal est. ${kcal}`:'',
       ].filter(Boolean).join('  ·  ');
       doc.text(preInfo||'—',63,y+5.5);

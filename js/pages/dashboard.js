@@ -34,7 +34,7 @@ export async function renderDashboard() {
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 10);
 
-  const avgSleep = recentBf.length ? (recentBf.reduce((s, b) => s + (b.sleep || 0), 0) / recentBf.length).toFixed(1) : '-';
+  const avgSleep = recentBf.length ? ((recentBf.reduce((s, b) => s + (b.sleep || 0), 0) / recentBf.length)/2).toFixed(1) : '-';
 
   // 1. Inatividade de Alunos
   const studentSessions = activeStudents.map(s => {
@@ -241,7 +241,7 @@ export async function renderDashboard() {
                     <div class="text-muted text-xs">${Calc.formatDate(b.date)}</div>
                   </div>
                   <div class="flex gap-sm text-xs">
-                    <span title="Sono" style="color:${sleepColor}">Sono: ${b.sleep || '-'}</span>
+                    <span title="Sono" style="color:${sleepColor}">Sono: ${b.sleep ? `${Math.round(b.sleep / 2)}/5` : '-'}</span>
                     <span title="Humor">Hum: ${b.mood || '-'}</span>
                     <span title="Estresse">Est: ${b.stress || '-'}</span>
                   </div>

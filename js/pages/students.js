@@ -6,6 +6,7 @@ import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
+import { getCurrentUser } from '../utils/auth.js';
 
 const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const ICON_DELETE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
@@ -18,7 +19,8 @@ export async function renderStudents() {
     db.getAll('sessions'),
     db.get('settings', 'trainer').catch(() => ({}))
   ]);
-  const trainerId = settings?.id || 'trainer';
+  const user = await getCurrentUser();
+  const trainerId = settings?.trainerId || user?.id || 'trainer';
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   // Enriquecer com dados de sessão
@@ -247,14 +249,16 @@ async function viewStudentHTML(student) {
     db.get('settings', 'trainer').catch(() => ({})),
   ]);
 
+  const user = await getCurrentUser();
+  const trainerId = settings?.trainerId || user?.id || 'trainer';
+  const portalUrl = `${window.location.origin}${window.location.pathname}#/portal/${student.id}?t=${trainerId}`;
+
   const totalVol = sessions.reduce((t, s) => t + (s.totalVolume || 0), 0);
   const avgPse   = sessions.filter(s => s.postBiofeedback?.pse).length
     ? (sessions.filter(s => s.postBiofeedback?.pse).reduce((t,s) => t + s.postBiofeedback.pse, 0) / sessions.filter(s => s.postBiofeedback?.pse).length).toFixed(1)
     : '-';
   const phone = student.phone?.replace(/\D/g,'') || '';
   const waUrl = phone ? `https://wa.me/${phone.startsWith('55') ? phone : '55'+phone}` : null;
-  const trainerId = settings?.id || 'trainer';
-  const portalUrl = `${window.location.origin}${window.location.pathname}#/portal/${student.id}?t=${trainerId}`;
 
   return `
     <div class="flex items-center gap-lg mb-lg" style="flex-wrap:wrap">
@@ -347,12 +351,12 @@ async function viewStudentHTML(student) {
         <tbody>${bfData.map(b => `<tr>
           <td>${Calc.formatDate(b.date)}</td>
           <td><strong>${b.cycle || 'Geral'}</strong></td>
-          <td style="color:${(b.sleep||0)<5?'var(--danger)':(b.sleep||0)<7?'var(--warning)':'var(--success)'}">${b.sleep||'-'}</td>
+          <td style="color:${(b.sleep||0)<5?'var(--danger)':(b.sleep||0)<7?'var(--warning)':'var(--success)'}">${b.sleep ? `${Math.round(b.sleep / 2)}/5` : '-'}</td>
           <td style="color:${(b.tqr || b.energy || 0)<5?'var(--danger)':(b.tqr || b.energy || 0)<7?'var(--warning)':'var(--success)'}">${b.tqr || b.energy || '-'}</td>
           <td style="color:${(b.food||0)<=2?'var(--danger)':(b.food||0)<=3?'var(--warning)':'var(--success)'}"><strong>${b.food ? b.food+'/5' : '-'}</strong></td>
           <td style="color:${(b.stress||0)>=8?'var(--danger)':(b.stress||0)>=6?'var(--warning)':'inherit'}">${b.stress||'-'}</td>
-          <td style="color:${(b.pain||0)>=5?'var(--danger)':(b.pain||0)>=3?'var(--warning)':'inherit'}">${b.pain||'-'}</td>
-          <td style="font-weight:600;color:${(b.motivation||0)<=3?'var(--danger)':(b.motivation||0)<=5?'var(--warning)':'var(--success)'}">${b.motivation||'-'}</td>
+          <td style="color:${(b.pain||0)>=5?'var(--danger)':(b.pain||0)>=3?'var(--warning)':'inherit'}">${b.pain ? `${b.pain > 8 ? 5 : b.pain > 6 ? 4 : b.pain > 4 ? 3 : b.pain > 2 ? 2 : 1}/5` : '-'}</td>
+          <td style="font-weight:600;color:${(b.motivation||0)<=3?'var(--danger)':(b.motivation||0)<=5?'var(--warning)':'var(--success)'}">${b.motivation ? `${Math.round(b.motivation / 2)}/5` : '-'}</td>
           <td style="color:${(b.pse||0)>8?'var(--danger)':(b.pse||0)>6?'var(--warning)':'var(--success)'}"><strong>${b.pse||'-'}</strong></td>
           <td>${b.trainingLoad||'-'}</td>
         </tr>`).join('')}</tbody></table>`

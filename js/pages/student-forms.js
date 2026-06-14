@@ -505,16 +505,11 @@ const PSE_SCALE = [
 ];
 
 const SONO_SCALE = [
-  { v:1,  color:'#ef4444', label:'1 - Péssimo', desc:'Insônia / Noite em claro' },
-  { v:2,  color:'#ef4444', label:'2 - Péssimo', desc:'Insônia / Noite em claro' },
-  { v:3,  color:'#fb923c', label:'3 - Ruim', desc:'Acordei várias vezes / Agitado' },
-  { v:4,  color:'#fb923c', label:'4 - Ruim', desc:'Acordei várias vezes / Agitado' },
-  { v:5,  color:'#eab308', label:'5 - Regular', desc:'Dormi o suficiente, mas acordei cansado' },
-  { v:6,  color:'#eab308', label:'6 - Regular', desc:'Dormi o suficiente, mas acordei cansado' },
-  { v:7,  color:'#10b981', label:'7 - Bom', desc:'Sono contínuo e revigorante' },
-  { v:8,  color:'#10b981', label:'8 - Bom', desc:'Sono contínuo e revigorante' },
-  { v:9,  color:'#06b6d4', label:'9 - Excelente', desc:'Sono profundo e muito reparador' },
-  { v:10, color:'#06b6d4', label:'10 - Excelente', desc:'Sono profundo e muito reparador' }
+  { v: 2, display: 1, label: '1 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444' },
+  { v: 4, display: 2, label: '2 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c' },
+  { v: 6, display: 3, label: '3 - Regular', desc: 'Dormi o suficiente, mas acordei cansado', color: '#eab308' },
+  { v: 8, display: 4, label: '4 - Bom', desc: 'Sono contínuo e revigorante', color: '#10b981' },
+  { v: 10, display: 5, label: '5 - Excelente', desc: 'Sono profundo e muito reparador', color: '#06b6d4' }
 ];
 
 const ALIMENTACAO_SCALE = [
@@ -539,29 +534,19 @@ const ESTRESSE_SCALE = [
 ];
 
 const DOR_SCALE = [
-  { v:1,  color:'#10b981', label:'1 - Nenhuma Dor', desc:'Músculos e articulações 100% livres de dores' },
-  { v:2,  color:'#10b981', label:'2 - Leve', desc:'Desconforto muscular leve residual pós-treino' },
-  { v:3,  color:'#eab308', label:'3 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
-  { v:4,  color:'#eab308', label:'4 - Moderada', desc:'Dor suportável, mas incomoda em movimentos' },
-  { v:5,  color:'#fb923c', label:'5 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
-  { v:6,  color:'#fb923c', label:'6 - Incômoda', desc:'Dor persistente nas articulações ou tendões' },
-  { v:7,  color:'#ef4444', label:'7 - Forte', desc:'Dificulta a execução de movimentos específicos' },
-  { v:8,  color:'#ef4444', label:'8 - Forte', desc:'Dificulta a execução de movimentos específicos' },
-  { v:9,  color:'#ef4444', label:'9 - Intensa', desc:'Dor muito forte, impede ou dificulta treinar' },
-  { v:10, color:'#ef4444', label:'10 - Intensa / Lesão', desc:'Dor severa, risco de lesão ou incapacidade física' }
+  { v: 1, display: 1, label: '1 - Nenhuma Dor', desc: 'Músculos e articulações 100% livres de dores', color: '#10b981' },
+  { v: 3, display: 2, label: '2 - Leve', desc: 'Desconforto muscular leve residual pós-treino', color: '#10b981' },
+  { v: 5, display: 3, label: '3 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308' },
+  { v: 7, display: 4, label: '4 - Forte', desc: 'Dificulta a execução de movimentos específicos', color: '#ef4444' },
+  { v: 10, display: 5, label: '5 - Intensa / Risco de lesão', desc: 'Dor severa, risco de lesão ou incapacidade física', color: '#ef4444' }
 ];
 
 const MOTIVACAO_SCALE = [
-  { v:1,  color:'#ef4444', label:'1 - Muito Baixa', desc:'Sem nenhuma vontade de treinar hoje' },
-  { v:2,  color:'#ef4444', label:'2 - Muito Baixa', desc:'Sem nenhuma vontade de treinar hoje' },
-  { v:3,  color:'#fb923c', label:'3 - Baixa', desc:'Desanimado, vou treinar por pura obrigação' },
-  { v:4,  color:'#fb923c', label:'4 - Baixa', desc:'Desanimado, vou treinar por pura obrigação' },
-  { v:5,  color:'#eab308', label:'5 - Moderada', desc:'Foco mediano, treino mantido por disciplina' },
-  { v:6,  color:'#eab308', label:'6 - Moderada', desc:'Foco mediano, treino mantido por disciplina' },
-  { v:7,  color:'#10b981', label:'7 - Alta', desc:'Focado, animado e com boa energia mental' },
-  { v:8,  color:'#10b981', label:'8 - Alta', desc:'Focado, animado e com boa energia mental' },
-  { v:9,  color:'#06b6d4', label:'9 - Muito Alta', desc:'Energia máxima, sedento por treinar pesado' },
-  { v:10, color:'#06b6d4', label:'10 - Muito Alta', desc:'Energia máxima, sedento por treinar pesado' }
+  { v: 2, display: 1, label: '1 - Muito Baixa', desc: 'Sem nenhuma vontade de treinar hoje', color: '#ef4444' },
+  { v: 4, display: 2, label: '2 - Baixa', desc: 'Desanimado, vou treinar por pura obrigação', color: '#fb923c' },
+  { v: 6, display: 3, label: '3 - Moderada', desc: 'Foco mediano, treino mantido por disciplina', color: '#eab308' },
+  { v: 8, display: 4, label: '4 - Alta', desc: 'Focado, animado e com boa energia mental', color: '#10b981' },
+  { v: 10, display: 5, label: '5 - Muito Alta', desc: 'Energia máxima, sedento por treinar pesado', color: '#06b6d4' }
 ];
 
 function scalePickerHTML(id, scale, defaultVal, label, sublabel='') {
@@ -664,7 +649,7 @@ export async function renderPreForm(studentId) {
             <input type="hidden" name="studentId" value="${cleanId}" />
             <input type="hidden" name="trainerId" value="${urlTrainerId||student.trainer_id||student.trainerId||''}" />
 
-            ${scalePickerHTML('sleep', SONO_SCALE, 7, '😴 Qualidade do Sono 🌙', 'Selecione o descritor que melhor representa sua última noite de sono.')}
+            ${scalePickerHTML('sleep', SONO_SCALE, 8, '😴 Qualidade do Sono 🌙', 'Selecione o descritor que melhor representa sua última noite de sono.')}
 
             ${scalePickerHTML('food', ALIMENTACAO_SCALE, 4, '🍎 Alimentação nas últimas 24h', 'Como foi sua ingestão de alimentos e hidratação nas últimas 24h?')}
 
@@ -760,7 +745,7 @@ export function initPreForm() {
 
       // Normalizar numéricos
       ['sleep','tqr','stress','pain','food','motivation'].forEach(k => {
-        data[k] = parseInt(data[k]) || (k==='pain'?0:(k==='motivation'?7:5));
+        data[k] = parseInt(data[k]) || (k==='pain'?0:((k==='motivation'||k==='sleep')?8:5));
       });
       data.energy    = data.tqr;
       data.mood      = Math.round((data.sleep + data.tqr) / 2);
@@ -823,7 +808,7 @@ export async function renderPostForm(sessionId) {
   // Buscar pré-treino do mesmo dia via publicGet
   let preBf = null;
   try {
-    const dayStr = (session.date||new Date().toISOString()).substring(0, 10);
+    const dayStr = (session.date||Calc.nowISO()).substring(0, 10);
     const bfId = 'bf_' + session.studentId + '_' + dayStr;
     preBf = await publicGetWithRetry('biofeedback', bfId);
     // Verificar se realmente tem dados de pre (ex: sleep)
@@ -852,10 +837,10 @@ export async function renderPostForm(sessionId) {
           <div class="pre-card">
             <div class="pre-card-title">Check-in de entrada</div>
             <div class="pre-card-vals">
-              <span>Sono <strong>${preBf.sleep}/10</strong></span>
+              <span>Sono <strong>${Math.round((preBf.sleep || 8) / 2)}/5</strong></span>
               <span>TQR <strong>${preBf.tqr||preBf.energy||'—'}/10</strong></span>
               <span>Est. Mental <strong>${preBf.stress}/10</strong></span>
-              ${preBf.pain>2?`<span>Dor <strong>${preBf.pain}/10</strong></span>`:''}
+              ${preBf.pain>2?`<span>Dor <strong>${preBf.pain > 8 ? 5 : preBf.pain > 6 ? 4 : preBf.pain > 4 ? 3 : preBf.pain > 2 ? 2 : 1}/5</strong></span>`:''}
             </div>
           </div>` : ''}
 

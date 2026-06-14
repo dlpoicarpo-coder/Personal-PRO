@@ -72,7 +72,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   const completed = sessions.filter(s => s.status === 'completed');
   const recent10 = bf.slice(-10);
   const avgPse = recent10.length ? (recent10.reduce((s, b) => s + (b.pse || 0), 0) / recent10.length).toFixed(1) : '-';
-  const avgSleep = recent10.length ? (recent10.reduce((s, b) => s + (b.sleep || 0), 0) / recent10.length).toFixed(1) : '-';
+  const avgSleep = recent10.length ? ((recent10.reduce((s, b) => s + (b.sleep || 0), 0) / recent10.length)/2).toFixed(1) : '-';
   const avgMood = recent10.length ? (recent10.reduce((s, b) => s + (b.mood || 0), 0) / recent10.length).toFixed(1) : '-';
   const avgTqr    = recent10.length ? (recent10.reduce((s, b) => s + (b.tqr || b.energy || 0), 0) / recent10.length).toFixed(1) : '-';
   const totalLoad = bf.reduce((s, b) => s + (b.trainingLoad || 0), 0);
@@ -101,8 +101,8 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   if (pseNum > 8) parecerAluno += 'Atenção: Seus treinos estão muito intensos! Vamos reduzir um pouco o ritmo para seu corpo se recuperar melhor. ';
   else if (pseNum > 6) parecerAluno += 'Você está treinando no nível ideal! Continue assim, seu corpo está respondendo muito bem. ';
   else parecerAluno += 'Você ainda tem bastante fôlego! Podemos aumentar a intensidade gradualmente. ';
-  if (sleepNum < 6) parecerAluno += 'Seu sono está abaixo do ideal — tente dormir entre 7 e 9 horas para otimizar seus resultados. ';
-  else if (sleepNum >= 7) parecerAluno += 'Ótimo sono! Isso ajuda muito na recuperação e nos ganhos. ';
+  if (sleepNum < 3) parecerAluno += 'Seu sono está abaixo do ideal — tente dormir entre 7 e 9 horas para otimizar seus resultados. ';
+  else if (sleepNum >= 3.5) parecerAluno += 'Ótimo sono! Isso ajuda muito na recuperação e nos ganhos. ';
   if (completed.length > 0) parecerAluno += `Parabéns! Você completou ${completed.length} sessão(ões) no período. `;
   if (totalLoad > 2000) parecerAluno += 'Sua carga acumulada está alta — estamos monitorando para evitar excesso.';
   else parecerAluno += 'Sua carga está dentro do esperado. Tudo sob controle!';
@@ -112,7 +112,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   if (pseNum > 8) parecerTecnico += 'PSE média elevada (>8), indicando possível fadiga acumulada. Recomenda-se reduzir volume em 20-30%. ';
   else if (pseNum > 6) parecerTecnico += 'PSE em nível adequado para progressão. Aluno responde bem ao estímulo. ';
   else parecerTecnico += 'PSE baixa, margem para aumento progressivo de intensidade. ';
-  if (sleepNum < 6) parecerTecnico += 'Sono comprometido — orientar higiene do sono. ';
+  if (sleepNum < 3) parecerTecnico += 'Sono comprometido — orientar higiene do sono. ';
   if (totalLoad > 2000) parecerTecnico += 'Carga acumulada significativa. Monitorar sinais de overreaching.';
 
   // ── Evolução de carga por exercício (baseado nas sessões) ──
@@ -228,8 +228,8 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
       <div class="stat-card">
         <div class="stat-label">Sono Médio</div>
-        <div class="stat-value" style="color:${sleepNum < 5 ? 'var(--danger)' : sleepNum < 7 ? 'var(--warning)' : 'var(--success)'}">${avgSleep}</div>
-        <div class="text-xs text-muted" style="margin-top:4px">${sleepNum < 5 ? 'Insuficiente' : sleepNum < 7 ? 'Regular' : 'Bom'}</div>
+        <div class="stat-value" style="color:${sleepNum < 2.5 ? 'var(--danger)' : sleepNum < 3.5 ? 'var(--warning)' : 'var(--success)'}">${avgSleep}</div>
+        <div class="text-xs text-muted" style="margin-top:4px">${sleepNum < 2.5 ? 'Insuficiente' : sleepNum < 3.5 ? 'Regular' : 'Bom'}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Carga Total</div>
@@ -444,7 +444,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <div style="height:280px;position:relative"><canvas id="densityChart"></canvas></div>
     </div>
 
-    <div class="grid-2 mb-lg">
+<div class="grid-2 mb-lg">
       <div class="card"><div class="card-header"><span class="card-title">Frequência — Últimas 8 Semanas</span></div>
         <p class="text-xs text-muted mb-sm">Sessões realizadas por semana. A <strong>consistência</strong> (mínimo 3x/semana) é o fator mais importante para resultados a longo prazo.</p>
         <div style="height:220px;position:relative"><canvas id="freqChart"></canvas></div>
@@ -457,7 +457,13 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     const rec = trainingRecommendation(e);
     return `<div class="event-card" style="border-left:3px solid var(--${status.color})">
             <div class="flex items-center justify-between"><span>${status.icon} ${Calc.formatDate(e.date)}</span><span class="badge badge-${status.color}">${status.label}</span></div>
-            ${alerts.length ? `<div class="text-sm mt-xs">${alerts.map(a => `${a.icon} ${a.metric}: ${a.value}`).join(' · ')}</div>` : ''}
+            ${alerts.length ? `<div class="text-sm mt-xs">${alerts.map(a => {
+      const valText = a.metric === 'Sono' ? `${Math.round(a.value / 2)}/5` :
+        a.metric === 'Dor' ? `${a.value > 8 ? 5 : a.value > 6 ? 4 : a.value > 4 ? 3 : a.value > 2 ? 2 : 1}/5` :
+        a.metric === 'ACWR' || a.metric === 'Ciclo Menstrual' || a.metric === 'Dor Localizada' ? `${a.value}` :
+        `${a.value}/10`;
+      return `${a.icon} ${a.metric}: ${valText}`;
+    }).join(' · ')}</div>` : ''}
             <div class="text-xs text-muted mt-xs">${rec.label}</div>
           </div>`;
   }).join('') : '<p class="text-muted text-center" style="padding:20px">Sem dados</p>'}
@@ -559,7 +565,7 @@ export async function initReports(navigateFn) {
     const bf       = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
     const recent10 = bf.slice(-10);
     const avgPse   = recent10.length ? (recent10.reduce((t,b)=>t+(b.pse||0),0)/recent10.length).toFixed(1) : '-';
-    const avgSleep = recent10.length ? (recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length).toFixed(1) : '-';
+    const avgSleep = recent10.length ? ((recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length)/2).toFixed(1) : '-';
     const avgTqr   = recent10.length ? (recent10.reduce((s,b)=>s+(b.tqr||b.energy||0),0)/recent10.length).toFixed(1) : '-';
     const avgTqrR  = avgTqr;
     const totalVol = sessions.reduce((t,s)=>t+(s.totalVolume||0),0);
@@ -575,7 +581,7 @@ export async function initReports(navigateFn) {
       `• Volume total acumulado: ${totalVol}kg`,
       ``,
       `📈 *Indicadores (últimos ${recent10.length} check-ins)*`,
-      `• Sono médio: ${avgSleep}/10`,
+      `• Sono médio: ${avgSleep}/5`,
       `• TQR médio: ${avgTqr||avgTqrR||'-'}/10`,
       `• PSE médio: ${avgPse}/10`,
       ``,
@@ -619,7 +625,7 @@ export async function initReports(navigateFn) {
     // ── Stats ──
     const recent10  = bf.slice(-10);
     const avgPse    = recent10.length ? (recent10.reduce((t,b)=>t+(b.pse||0),0)/recent10.length).toFixed(1) : '-';
-    const avgSleep  = recent10.length ? (recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length).toFixed(1) : '-';
+    const avgSleep  = recent10.length ? ((recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length)/2).toFixed(1) : '-';
     const avgDisp   = recent10.length ? (recent10.reduce((t,b)=>t+(b.mood||0),0)/recent10.length).toFixed(1) : '-';
     const avgTqr    = recent10.length ? (recent10.reduce((s,b)=>s+(b.tqr||b.energy||0),0)/recent10.length).toFixed(1) : '-';
     const avgTqrR   = avgTqr;
@@ -684,8 +690,8 @@ export async function initReports(navigateFn) {
     if (pseNum > 8)      parecerAluno += 'Atenção: seus treinos estão muito intensos. Vamos ajustar o ritmo para garantir boa recuperação. ';
     else if (pseNum > 6) parecerAluno += 'Você está treinando na intensidade ideal! Continue assim. ';
     else                 parecerAluno += 'Boa consistência! Temos margem para evoluir a intensidade gradualmente. ';
-    if (sleepNum > 0 && sleepNum < 6)    parecerAluno += 'O sono está abaixo do ideal — priorize 7 a 9 horas para maximizar os resultados. ';
-    else if (sleepNum >= 7)              parecerAluno += 'Ótima qualidade de sono! Isso acelera muito a recuperação e os ganhos. ';
+    if (sleepNum > 0 && sleepNum < 3)    parecerAluno += 'O sono está abaixo do ideal — priorize 7 a 9 horas para maximizar os resultados. ';
+    else if (sleepNum >= 3.5)            parecerAluno += 'Ótima qualidade de sono! Isso acelera muito a recuperação e os ganhos. ';
     if (sessions.length > 0)            parecerAluno += `Parabéns pelas ${sessions.length} sessão(ões) concluídas! A consistência é o maior segredo dos resultados. `;
     parecerAluno += totalLoad > 2000 ? 'A carga acumulada está elevada — estamos monitorando de perto.' : 'Sua carga de treino está dentro do esperado.';
 
@@ -693,7 +699,7 @@ export async function initReports(navigateFn) {
     if (pseNum > 8)      parecerTecnico += 'PSE média elevada (>8): possível fadiga acumulada. Recomendar redução de volume 20–30% ou semana de deload. ';
     else if (pseNum > 6) parecerTecnico += 'PSE em nível adequado. Progressão viável nas próximas semanas. ';
     else                 parecerTecnico += 'PSE baixa — espaço para aumento de carga ou densidade. ';
-    if (sleepNum > 0 && sleepNum < 6) parecerTecnico += 'Sono comprometido: orientar higiene do sono. ';
+    if (sleepNum > 0 && sleepNum < 3) parecerTecnico += 'Sono comprometido: orientar higiene do sono. ';
     if (totalLoad > 2000)             parecerTecnico += 'Carga acumulada significativa — monitorar sinais de overreaching (queda de performance, irritabilidade, FC elevada em repouso).';
 
     // ── Capturar gráficos por ID (não por posição) ──
@@ -832,7 +838,7 @@ export async function initReports(navigateFn) {
         <div class="stat"><div class="stat-val">${uniqueWorkouts.length}</div><div class="stat-lbl">Treinos Prescritos</div></div>
         <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">Sessões Realizadas</div></div>
         <div class="stat"><div class="stat-val" style="color:${pseNum>8?'#ef4444':pseNum>6?'#f59e0b':'#10b981'}">${avgPse}</div><div class="stat-lbl">PSE Média</div></div>
-        <div class="stat"><div class="stat-val" style="color:${sleepNum>0&&sleepNum<6?'#ef4444':sleepNum>=7?'#10b981':'#f59e0b'}">${avgSleep}</div><div class="stat-lbl">Sono Médio</div></div>
+        <div class="stat"><div class="stat-val" style="color:${sleepNum>0&&sleepNum<3?'#ef4444':sleepNum>=3.5?'#10b981':'#f59e0b'}">${avgSleep}</div><div class="stat-lbl">Sono Médio</div></div>
         <div class="stat"><div class="stat-val" style="color:${parseFloat(avgTqr||0)<5?'#ef4444':parseFloat(avgTqr||0)<7?'#f59e0b':'#10b981'}">${avgTqr||'-'}</div><div class="stat-lbl">TQR Médio</div></div>
         <div class="stat"><div class="stat-val">${Math.round(totalLoad)}</div><div class="stat-lbl">Carga Total</div></div>
       </div>
