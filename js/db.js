@@ -66,6 +66,46 @@ class Database {
     this._currentUser = null;
   }
 
+  _deletionsKey(trainerId) {
+    return trainerId ? `pp_${trainerId}_deletions` : `pp_deletions`;
+  }
+
+  _getTombstones(trainerId) {
+    try {
+      const key = this._deletionsKey(trainerId);
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    } catch { return []; }
+  }
+
+  _saveTombstones(tombstones, trainerId) {
+    try {
+      const key = this._deletionsKey(trainerId);
+      localStorage.setItem(key, JSON.stringify(tombstones));
+    } catch (e) { console.error('LocalStorage error in tombstones:', e); }
+  }
+
+  _addTombstone(storeName, id, trainerId) {
+    const tombstones = this._getTombstones(trainerId);
+    if (!tombstones.some(t => t.id === id && t.storeName === storeName)) {
+      tombstones.push({ id, storeName, deletedAt: new Date().toISOString() });
+      this._saveTombstones(tombstones, trainerId);
+    }
+  }
+
+  _removeTombstone(storeName, id, trainerId) {
+    let tombstones = this._getTombstones(trainerId);
+    tombstones = tombstones.filter(t => !(t.id === id && t.storeName === storeName));
+    this._saveTombstones(tombstones, trainerId);
+  }
+
+  _pruneTombstones(trainerId) {
+    let tombstones = this._getTombstones(trainerId);
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    tombstones = tombstones.filter(t => new Date(t.deletedAt).getTime() > thirtyDaysAgo);
+    this._saveTombstones(tombstones, trainerId);
+  }
+
   get supabase() {
     return getSupabase();
   }
@@ -90,8 +130,35 @@ class Database {
     this._syncing = true;
     console.log(`[Sync] Starting two-way database sync for trainer: ${trainerId}`);
     try {
+      // 0. Prune old tombstones
+      this._pruneTombstones(trainerId);
+
+      // Retry outstanding deletions first
+      const tombstones = this._getTombstones(trainerId);
+      const remainingTombstones = [];
+      for (const tomb of tombstones) {
+        try {
+          let q = this.supabase.from(tomb.storeName).delete().eq('id', tomb.id);
+          if (trainerId) q = q.eq('trainer_id', trainerId);
+          const { error } = await q;
+          if (error) {
+            console.warn(`[Sync] Failed to retry remote delete for ${tomb.storeName} ID ${tomb.id}:`, error.message);
+            remainingTombstones.push(tomb);
+          }
+        } catch (err) {
+          console.warn(`[Sync] Exception retry remote delete:`, err);
+          remainingTombstones.push(tomb);
+        }
+      }
+      this._saveTombstones(remainingTombstones, trainerId);
+
       for (const storeName of this.SUPABASE_TABLES) {
         const localItems = this._getLocal(storeName, trainerId) || [];
+        const currentStoreTombstones = new Set(
+          this._getTombstones(trainerId)
+            .filter(t => t.storeName === storeName)
+            .map(t => t.id)
+        );
 
         // Fetch remote data (all columns) for this trainer
         let q = this.supabase.from(storeName).select('*');
@@ -108,19 +175,23 @@ class Database {
         }
 
         const remote = (remoteRows || []).map(r => {
+          let itemData;
           if (r.data && typeof r.data === 'object') {
-            return { 
+            itemData = { 
               ...r.data, 
               id: r.id,
               updatedAt: r.data.updatedAt || r.updated_at,
               createdAt: r.data.createdAt || r.created_at
             };
+          } else {
+            itemData = { 
+              ...r,
+              updatedAt: r.updatedAt || r.updated_at,
+              createdAt: r.createdAt || r.created_at
+            };
           }
-          return { 
-            ...r,
-            updatedAt: r.updatedAt || r.updated_at,
-            createdAt: r.createdAt || r.created_at
-          };
+          itemData._synced = true;
+          return itemData;
         });
 
         const remoteMap = new Map(remote.map(r => [r.id, r]));
@@ -130,11 +201,19 @@ class Database {
         // 1. Check local items for upload or local retention
         for (const localItem of localItems) {
           if (!localItem.id) continue;
+          if (currentStoreTombstones.has(localItem.id)) continue;
+
           const remoteItem = remoteMap.get(localItem.id);
 
           if (!remoteItem) {
-            toUpload.push(localItem);
-            merged.set(localItem.id, localItem);
+            if (localItem._synced === true) {
+              // Deleted on another device, remove locally
+              console.log(`[Sync] Item ${localItem.id} from ${storeName} was deleted on remote. Removing locally.`);
+              continue;
+            } else {
+              toUpload.push(localItem);
+              merged.set(localItem.id, localItem);
+            }
           } else {
             const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
             const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
@@ -151,6 +230,7 @@ class Database {
         // 2. Add remote items that don't exist locally
         for (const remoteItem of remote) {
           if (!remoteItem.id) continue;
+          if (currentStoreTombstones.has(remoteItem.id)) continue;
           if (!merged.has(remoteItem.id)) {
             merged.set(remoteItem.id, remoteItem);
           }
@@ -166,16 +246,31 @@ class Database {
           const chunkSize = 50;
           for (let i = 0; i < toUpload.length; i += chunkSize) {
             const chunk = toUpload.slice(i, i + chunkSize);
-            const payloads = chunk.map(item => ({
-              id: item.id,
-              trainer_id: trainerId,
-              data: item
-            }));
+            const payloads = chunk.map(item => {
+              const { _synced, ...cleanItem } = item;
+              return {
+                id: item.id,
+                trainer_id: trainerId,
+                data: cleanItem
+              };
+            });
             const { error: upsertError } = await this.supabase
               .from(storeName)
               .upsert(payloads);
             if (upsertError) {
               console.warn(`[Sync] Failed to upload chunk to ${storeName}:`, upsertError.message);
+            } else {
+              // Mark uploaded items as synced locally
+              const currentLocal = this._getLocal(storeName, trainerId) || [];
+              const localMap = new Map(currentLocal.map(x => [x.id, x]));
+              chunk.forEach(item => {
+                const localItem = localMap.get(item.id);
+                if (localItem) {
+                  localItem._synced = true;
+                  localMap.set(item.id, localItem);
+                }
+              });
+              this._saveLocal(storeName, [...localMap.values()], trainerId);
             }
           }
         }
@@ -198,10 +293,36 @@ class Database {
     this._studentSyncing = true;
     console.log(`[Student Sync] Starting sync for student: ${studentId}`);
     try {
+      // 0. Prune and retry tombstones
+      this._pruneTombstones(trainerId);
+
+      const tombstones = this._getTombstones(trainerId);
+      const remainingTombstones = [];
+      for (const tomb of tombstones) {
+        try {
+          let q = this.supabase.from(tomb.storeName).delete().eq('id', tomb.id);
+          if (trainerId) q = q.eq('trainer_id', trainerId);
+          const { error } = await q;
+          if (error) {
+            console.warn(`[Student Sync] Failed to retry remote delete for ${tomb.storeName} ID ${tomb.id}:`, error.message);
+            remainingTombstones.push(tomb);
+          }
+        } catch (err) {
+          console.warn(`[Student Sync] Exception retry remote delete:`, err);
+          remainingTombstones.push(tomb);
+        }
+      }
+      this._saveTombstones(remainingTombstones, trainerId);
+
       const tablesToSync = ['biofeedback', 'sessions'];
       for (const storeName of tablesToSync) {
         const localItems = this._getLocal(storeName, trainerId) || [];
         const studentLocal = localItems.filter(r => r && (r.studentId === studentId || r.student_id === studentId));
+        const currentStoreTombstones = new Set(
+          this._getTombstones(trainerId)
+            .filter(t => t.storeName === storeName)
+            .map(t => t.id)
+        );
 
         // Fetch remote data (all columns) for this student
         const { data: remoteRows, error } = await this.supabase
@@ -215,19 +336,23 @@ class Database {
         }
 
         const remote = (remoteRows || []).map(r => {
+          let itemData;
           if (r.data && typeof r.data === 'object') {
-            return { 
+            itemData = { 
               ...r.data, 
               id: r.id,
               updatedAt: r.data.updatedAt || r.updated_at,
               createdAt: r.data.createdAt || r.created_at
             };
+          } else {
+            itemData = { 
+              ...r,
+              updatedAt: r.updatedAt || r.updated_at,
+              createdAt: r.createdAt || r.created_at
+            };
           }
-          return { 
-            ...r,
-            updatedAt: r.updatedAt || r.updated_at,
-            createdAt: r.createdAt || r.created_at
-          };
+          itemData._synced = true;
+          return itemData;
         });
 
         const remoteMap = new Map(remote.map(r => [r.id, r]));
@@ -237,11 +362,19 @@ class Database {
         // 1. Check local student items for upload or local retention
         for (const localItem of studentLocal) {
           if (!localItem.id) continue;
+          if (currentStoreTombstones.has(localItem.id)) continue;
+
           const remoteItem = remoteMap.get(localItem.id);
 
           if (!remoteItem) {
-            toUpload.push(localItem);
-            merged.set(localItem.id, localItem);
+            if (localItem._synced === true) {
+              // Deleted on another device, remove locally
+              console.log(`[Student Sync] Item ${localItem.id} from ${storeName} was deleted on remote. Removing locally.`);
+              continue;
+            } else {
+              toUpload.push(localItem);
+              merged.set(localItem.id, localItem);
+            }
           } else {
             const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
             const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
@@ -258,6 +391,7 @@ class Database {
         // 2. Add remote items that don't exist locally
         for (const remoteItem of remote) {
           if (!remoteItem.id) continue;
+          if (currentStoreTombstones.has(remoteItem.id)) continue;
           if (!merged.has(remoteItem.id)) {
             merged.set(remoteItem.id, remoteItem);
           }
@@ -266,22 +400,45 @@ class Database {
         // 3. Save merged results locally, preserving other student data
         const allLocal = this._getLocal(storeName, trainerId) || [];
         const localMap = new Map(allLocal.map(x => [x.id, x]));
+        
+        // Remove locally deleted items for this student
+        studentLocal.forEach(localItem => {
+          if (!merged.has(localItem.id)) {
+            localMap.delete(localItem.id);
+          }
+        });
+
         merged.forEach(r => localMap.set(r.id, r));
         this._saveLocal(storeName, [...localMap.values()], trainerId);
 
         // 4. Perform upload if needed
         if (toUpload.length > 0) {
           console.log(`[Student Sync] Uploading ${toUpload.length} items to ${storeName}...`);
-          const payloads = toUpload.map(item => ({
-            id: item.id,
-            trainer_id: trainerId || null,
-            data: item
-          }));
+          const payloads = toUpload.map(item => {
+            const { _synced, ...cleanItem } = item;
+            return {
+              id: item.id,
+              trainer_id: trainerId || null,
+              data: cleanItem
+            };
+          });
           const { error: upsertError } = await this.supabase
             .from(storeName)
             .upsert(payloads);
           if (upsertError) {
             console.warn(`[Student Sync] Failed to upload to ${storeName}:`, upsertError.message);
+          } else {
+            // Mark uploaded items as synced locally
+            const currentLocal = this._getLocal(storeName, trainerId) || [];
+            const localMap2 = new Map(currentLocal.map(x => [x.id, x]));
+            toUpload.forEach(item => {
+              const localItem = localMap2.get(item.id);
+              if (localItem) {
+                localItem._synced = true;
+                localMap2.set(item.id, localItem);
+              }
+            });
+            this._saveLocal(storeName, [...localMap2.values()], trainerId);
           }
         }
       }
@@ -553,6 +710,9 @@ class Database {
       item.trainerId = trainerId;
     }
 
+    // Remove from deletions tombstone log if it exists
+    this._removeTombstone(storeName, item.id, trainerId);
+
     // Save locally first (offline-first)
     const all = this._getLocal(storeName, trainerId);
     const idx = all.findIndex(i => i.id === item.id);
@@ -590,12 +750,21 @@ class Database {
     const all = this._getLocal(storeName, trainerId).filter(i => i.id !== id);
     this._saveLocal(storeName, all, trainerId);
 
+    // Save tombstone local log
+    if (this.SUPABASE_TABLES.has(storeName)) {
+      this._addTombstone(storeName, id, trainerId);
+    }
+
     if (!this.supabase) return;
     try {
       let q = this.supabase.from(storeName).delete().eq('id', id);
       if (trainerId) q = q.eq('trainer_id', trainerId);
       const { error } = await q;
-      if (error) console.warn(`Supabase delete error (${storeName}):`, error.message);
+      if (!error) {
+        this._removeTombstone(storeName, id, trainerId);
+      } else {
+        console.warn(`Supabase delete error (${storeName}):`, error.message);
+      }
     } catch {}
 
     if (trainerId) {

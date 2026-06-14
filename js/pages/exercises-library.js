@@ -330,6 +330,33 @@ function exerciseFormHTML(ex = {}) {
 }
 
 export function initExercisesLibrary(navigateFn) {
+  // Restore tab
+  const savedTab = sessionStorage.getItem('pp_lib_active_tab') || 'exercises';
+  const activeTabBtn = document.querySelector(`#libTabs .tab[data-tab="${savedTab}"]`);
+  if (activeTabBtn) {
+    document.querySelectorAll('#libTabs .tab').forEach(t => t.classList.remove('active'));
+    activeTabBtn.classList.add('active');
+    document.querySelectorAll('.lib-tab-content').forEach(c => c.style.display = 'none');
+    const map = { exercises:'tabExercises', methods:'tabMethods', templates:'tabTemplates', custom:'tabCustom' };
+    const el = document.getElementById(map[savedTab]);
+    if (el) el.style.display = '';
+  }
+
+  // Restore filters
+  const savedSearch = sessionStorage.getItem('pp_lib_ex_search') || '';
+  const savedGroup = sessionStorage.getItem('pp_lib_ex_group') || '';
+  const savedLoad = sessionStorage.getItem('pp_lib_ex_load') || '';
+  const savedCat = sessionStorage.getItem('pp_lib_ex_cat') || '';
+
+  const exSearchEl = document.getElementById('exSearch');
+  if (exSearchEl) exSearchEl.value = savedSearch;
+  const exGroupEl = document.getElementById('exFilterGroup');
+  if (exGroupEl) exGroupEl.value = savedGroup;
+  const exLoadEl = document.getElementById('exFilterLoad');
+  if (exLoadEl) exLoadEl.value = savedLoad;
+  const exCatEl = document.getElementById('exFilterCat');
+  if (exCatEl) exCatEl.value = savedCat;
+
   // Tabs
   document.querySelectorAll('#libTabs .tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -339,6 +366,7 @@ export function initExercisesLibrary(navigateFn) {
       const map = { exercises:'tabExercises', methods:'tabMethods', templates:'tabTemplates', custom:'tabCustom' };
       const el = document.getElementById(map[tab.dataset.tab]);
       if (el) el.style.display = '';
+      sessionStorage.setItem('pp_lib_active_tab', tab.dataset.tab);
     });
   });
 
@@ -348,6 +376,13 @@ export function initExercisesLibrary(navigateFn) {
     const g  = document.getElementById('exFilterGroup')?.value||'';
     const lt = document.getElementById('exFilterLoad')?.value||'';
     const ct = document.getElementById('exFilterCat')?.value||'';
+    
+    // Save to sessionStorage
+    sessionStorage.setItem('pp_lib_ex_search', document.getElementById('exSearch')?.value || '');
+    sessionStorage.setItem('pp_lib_ex_group', g);
+    sessionStorage.setItem('pp_lib_ex_load', lt);
+    sessionStorage.setItem('pp_lib_ex_cat', ct);
+
     const vis = new Set();
     document.querySelectorAll('.exercise-item').forEach(el => {
       const m = (!q||el.dataset.name.includes(q))&&(!g||el.dataset.group===g)&&(!lt||el.dataset.load===lt)&&(!ct||el.dataset.cat===ct);
@@ -361,6 +396,9 @@ export function initExercisesLibrary(navigateFn) {
   ['exSearch','exFilterGroup','exFilterLoad','exFilterCat'].forEach(id => {
     document.getElementById(id)?.addEventListener(id==='exSearch'?'input':'change', filter);
   });
+  
+  // Apply filters on load
+  filter();
 
   // Busca métodos
   document.getElementById('methodSearch')?.addEventListener('input', e => {

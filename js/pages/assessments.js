@@ -106,6 +106,7 @@ function rm1Zones(rm1) {
 
 // ── RENDER PRINCIPAL ─────────────────────────────────────────
 export async function renderAssessments() {
+  const storedStudent = sessionStorage.getItem('pp_assessments_student_filter') || '';
   const students    = await db.getAll('students');
   let assessments = await db.getAll('assessments');
   const active      = students.filter(s=>s.status==='Ativo');
@@ -170,7 +171,7 @@ export async function renderAssessments() {
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <select class="form-select" id="assStudentFilter" style="min-width:180px">
           <option value="">Todos os alunos</option>
-          ${active.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+          ${active.map(s=>`<option value="${s.id}" ${storedStudent === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
         </select>
         <button class="btn btn-primary" id="addAssessmentBtn">+ Nova Avaliação</button>
       </div>
@@ -579,12 +580,14 @@ export function initAssessments(navigateFn) {
       tab.classList.add('active');
       document.querySelectorAll('.assessment-panel').forEach(p=>p.style.display='none');
       document.getElementById(`panel-${tab.dataset.type}`)?.style.setProperty('display','');
+      sessionStorage.setItem('pp_assessments_active_tab', tab.dataset.type);
     });
   });
 
   // Filtro por aluno
   document.getElementById('assStudentFilter')?.addEventListener('change', async e=>{
     const sid = e.target.value;
+    sessionStorage.setItem('pp_assessments_student_filter', sid);
     
     document.querySelectorAll('.assessment-panel table tbody.student-group').forEach(tbody=>{
       if (!sid || tbody.dataset.student === sid) {
@@ -616,6 +619,25 @@ export function initAssessments(navigateFn) {
       }
     }
   });
+
+  // Restore active tab and filter state on load
+  const savedTab = sessionStorage.getItem('pp_assessments_active_tab') || 'composicao';
+  const tabBtn = document.querySelector(`#assessmentTypeTabs .tab[data-type="${savedTab}"]`);
+  if (tabBtn) {
+    document.querySelectorAll('#assessmentTypeTabs .tab').forEach(t=>t.classList.remove('active'));
+    tabBtn.classList.add('active');
+    document.querySelectorAll('.assessment-panel').forEach(p=>p.style.display='none');
+    document.getElementById(`panel-${savedTab}`)?.style.setProperty('display','');
+  }
+
+  const storedFilter = sessionStorage.getItem('pp_assessments_student_filter') || '';
+  if (storedFilter) {
+    const filterEl = document.getElementById('assStudentFilter');
+    if (filterEl) {
+      filterEl.value = storedFilter;
+      filterEl.dispatchEvent(new Event('change'));
+    }
+  }
 
   // ── BOTÃO + Nova Avaliação ─────────────────────────────────
   document.getElementById('addAssessmentBtn')?.addEventListener('click', async ()=>{

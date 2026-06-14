@@ -9,6 +9,7 @@ import { analyzeBiofeedback, overallStatus, trainingRecommendation } from '../ut
 import { generateAlgorithmicInsight, generateAIInsight } from '../insights.js';
 
 export async function renderReports() {
+  const storedStudent = sessionStorage.getItem('pp_reports_student_filter') || '';
   const students = await db.getAll('students');
   const active = students.filter(s => s.status === 'Ativo');
   return `
@@ -17,7 +18,7 @@ export async function renderReports() {
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <select class="form-select" id="reportStudent" style="min-width:220px">
           <option value="">Selecione um aluno</option>
-          ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+          ${active.map(s => `<option value="${s.id}" ${storedStudent === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
         </select>
         <select class="form-select" id="reportCycle" style="min-width:160px;display:none">
           <option value="">Todos os ciclos</option>
@@ -472,6 +473,8 @@ export async function initReports(navigateFn) {
 
   document.getElementById('reportStudent')?.addEventListener('change', async (e) => {
     const sid = e.target.value;
+    sessionStorage.setItem('pp_reports_student_filter', sid);
+    sessionStorage.removeItem('pp_reports_cycle_filter');
     const content = document.getElementById('reportContent');
     const pdfFormatSel = document.getElementById('pdfFormatSel');
     if (pdfBtn) pdfBtn.style.display = sid ? '' : 'none';
@@ -503,11 +506,48 @@ export async function initReports(navigateFn) {
   cycleSel?.addEventListener('change', async () => {
     const sid = document.getElementById('reportStudent')?.value;
     if (!sid) return;
+    sessionStorage.setItem('pp_reports_cycle_filter', cycleSel.value);
     const content = document.getElementById('reportContent');
     content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
     content.innerHTML = await renderStudentReport(sid, cycleSel.value);
     initReportCharts(sid, cycleSel.value);
   });
+
+  // Restore student and cycle filters on load
+  const storedStudent = sessionStorage.getItem('pp_reports_student_filter') || '';
+  const storedCycle = sessionStorage.getItem('pp_reports_cycle_filter') || '';
+
+  if (storedStudent) {
+    const studentSel = document.getElementById('reportStudent');
+    if (studentSel) {
+      studentSel.value = storedStudent;
+
+      const content = document.getElementById('reportContent');
+      const pdfFormatSel = document.getElementById('pdfFormatSel');
+      if (pdfBtn) pdfBtn.style.display = '';
+      if (pdfFormatSel) pdfFormatSel.style.display = 'inline-block';
+      if (cycleSel) cycleSel.style.display = '';
+      const waBtn = document.getElementById('exportWaBtn');
+      if (waBtn) waBtn.style.display = '';
+      const annContainer = document.getElementById('pdfAnnotationsContainer');
+      if (annContainer) annContainer.style.display = 'block';
+
+      // Populate cycles and restore cycle selection
+      const cycles = await getStudentCycles(storedStudent);
+      if (cycleSel) {
+        cycleSel.innerHTML = '<option value="">Todos os macrociclos</option>' + cycles.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        if (storedCycle && cycles.some(c => c.id === storedCycle)) {
+          cycleSel.value = storedCycle;
+        }
+      }
+
+      content.innerHTML = '<div class="page-loading"><div class="spinner"></div></div>';
+      const activeCycle = cycleSel?.value || '';
+      content.innerHTML = await renderStudentReport(storedStudent, activeCycle);
+      initReportCharts(storedStudent, activeCycle);
+      loadPeriodizationForReport(storedStudent);
+    }
+  }
 
   // WhatsApp — enviar resumo ao aluno
   document.getElementById('exportWaBtn')?.addEventListener('click', async () => {

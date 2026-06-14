@@ -19,8 +19,18 @@ let currentYear, currentMonth, studentFilter = '';
 
 export async function renderCalendar() {
   const now = new Date();
-  currentYear = now.getFullYear();
-  currentMonth = now.getMonth();
+  const storedYear = sessionStorage.getItem('pp_cal_year');
+  const storedMonth = sessionStorage.getItem('pp_cal_month');
+  const storedStudent = sessionStorage.getItem('pp_cal_student_filter');
+
+  currentYear = storedYear ? parseInt(storedYear) : now.getFullYear();
+  currentMonth = storedMonth ? parseInt(storedMonth) : now.getMonth();
+  studentFilter = storedStudent || '';
+
+  sessionStorage.setItem('pp_cal_year', currentYear);
+  sessionStorage.setItem('pp_cal_month', currentMonth);
+  sessionStorage.setItem('pp_cal_student_filter', studentFilter);
+
   return buildCalendarHTML();
 }
 
@@ -239,6 +249,7 @@ export function initCalendar(navigateFn) {
   // Student filter (item 3)
   document.getElementById('calStudentFilter')?.addEventListener('change', async (e) => {
     studentFilter = e.target.value;
+    sessionStorage.setItem('pp_cal_student_filter', studentFilter);
     const content = document.getElementById('pageContent');
     if (content) { content.innerHTML = await buildCalendarHTML(); initCalendar(navigateFn); }
   });
@@ -246,16 +257,22 @@ export function initCalendar(navigateFn) {
   // Month navigation
   document.getElementById('prevMonth')?.addEventListener('click', async () => {
     currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    sessionStorage.setItem('pp_cal_month', currentMonth);
+    sessionStorage.setItem('pp_cal_year', currentYear);
     const content = document.getElementById('pageContent');
     if (content) { content.innerHTML = await buildCalendarHTML(); initCalendar(navigateFn); }
   });
   document.getElementById('nextMonth')?.addEventListener('click', async () => {
     currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    sessionStorage.setItem('pp_cal_month', currentMonth);
+    sessionStorage.setItem('pp_cal_year', currentYear);
     const content = document.getElementById('pageContent');
     if (content) { content.innerHTML = await buildCalendarHTML(); initCalendar(navigateFn); }
   });
   document.getElementById('todayBtn')?.addEventListener('click', async () => {
     const now = new Date(); currentYear = now.getFullYear(); currentMonth = now.getMonth();
+    sessionStorage.setItem('pp_cal_month', currentMonth);
+    sessionStorage.setItem('pp_cal_year', currentYear);
     const content = document.getElementById('pageContent');
     if (content) { content.innerHTML = await buildCalendarHTML(); initCalendar(navigateFn); }
   });

@@ -14,6 +14,22 @@ const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14
 const ICON_DEL = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
 const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
 
+export function getWorkoutWeek(workout) {
+  if (workout.week) return `Semana ${workout.week}`;
+  const match = (workout.name || '').match(/\b(?:sem|semana|sem\.|s|w|week)\s*(\d+)\b/i);
+  if (match) {
+    return `Semana ${match[1]}`;
+  }
+  return 'Sem semana';
+}
+
+export function getWorkoutBaseName(name) {
+  if (!name) return '';
+  return name
+    .replace(/\s*[-—_:\(]?\s*\b(?:sem|semana|sem\.|s|w|week)\s*\d+\b\)?/gi, '')
+    .trim();
+}
+
 export async function renderWorkouts() {
   const students  = await db.getAll('students');
   const workouts  = await db.getAll('workouts');
@@ -22,6 +38,30 @@ export async function renderWorkouts() {
   const activeStudents = students.filter(s => s.status === 'Ativo');
   workouts.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+  // Retrieve stored states
+  const storedStudent = sessionStorage.getItem('pp_workout_student_filter') || 'all';
+  const storedCycle = sessionStorage.getItem('pp_workout_cycle_filter') || '';
+  const storedWeek = sessionStorage.getItem('pp_workout_week_filter') || '';
+  const storedBaseName = sessionStorage.getItem('pp_workout_basename_filter') || '';
+  const storedSearch = sessionStorage.getItem('pp_workout_search_filter') || '';
+
+  // Extrair semanas e nomes base únicos
+  const weeksSet = new Set();
+  const baseNamesSet = new Set();
+  workouts.forEach(w => {
+    weeksSet.add(getWorkoutWeek(w));
+    baseNamesSet.add(getWorkoutBaseName(w.name));
+  });
+
+  const weeksArr = [...weeksSet].sort((a, b) => {
+    if (a === 'Sem semana') return 1;
+    if (b === 'Sem semana') return -1;
+    const aNum = parseInt(a.replace(/\D/g, '')) || 0;
+    const bNum = parseInt(b.replace(/\D/g, '')) || 0;
+    return aNum - bNum;
+  });
+  const baseNamesArr = [...baseNamesSet].sort();
+
   // Stats rápidas
   const withStudent = workouts.filter(w => w.studentId);
   const fromMacro   = workouts.filter(w => w.macrocycleId);
@@ -29,7 +69,8 @@ export async function renderWorkouts() {
 
   const cycleOptions = macros.map(m => {
     const st = students.find(s => s.id === m.studentId);
-    return `<option value="${m.id}" data-student="${m.studentId}">${st ? st.name.split(' ')[0] : '?'} — ${m.name}</option>`;
+    const selected = (storedCycle === m.id || (storedCycle === 'active_match' && m.status === 'active')) ? 'selected' : '';
+    return `<option value="${m.id}" data-student="${m.studentId}" ${selected}>${st ? st.name.split(' ')[0] : '?'} — ${m.name}</option>`;
   }).join('');
 
   return `
@@ -62,16 +103,24 @@ export async function renderWorkouts() {
     <div class="flex gap-sm mb-md" style="flex-wrap:wrap;align-items:center">
       <div style="position:relative;width:180px">
         <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-muted)" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="workoutSearch" class="form-input" placeholder="Buscar..." style="padding-left:28px;font-size:0.82rem" />
+        <input type="text" id="workoutSearch" class="form-input" value="${storedSearch}" placeholder="Buscar..." style="padding-left:28px;font-size:0.82rem" />
       </div>
       <div class="tabs" id="workoutTabs" style="margin-bottom:0">
-        <button class="tab active" data-filter="all">Todos</button>
-        ${activeStudents.map(s => `<button class="tab" data-filter="${s.id}">${s.name.split(' ')[0]}</button>`).join('')}
+        <button class="tab ${storedStudent === 'all' ? 'active' : ''}" data-filter="all">Todos</button>
+        ${activeStudents.map(s => `<button class="tab ${storedStudent === s.id ? 'active' : ''}" data-filter="${s.id}">${s.name.split(' ')[0]}</button>`).join('')}
       </div>
       <select class="form-select" id="workoutCycleFilter" style="min-width:200px">
         <option value="">Todos os ciclos</option>
-        <option value="active">Apenas ciclo ativo</option>
+        <option value="active" ${storedCycle === 'active_match' ? 'selected' : ''}>Apenas ciclo ativo</option>
         ${cycleOptions}
+      </select>
+      <select class="form-select" id="workoutWeekFilter" style="min-width:140px">
+        <option value="">Todas as semanas</option>
+        ${weeksArr.map(wk => `<option value="${wk}" ${storedWeek === wk ? 'selected' : ''}>${wk}</option>`).join('')}
+      </select>
+      <select class="form-select" id="workoutBaseNameFilter" style="min-width:160px">
+        <option value="">Todos os treinos (Nome)</option>
+        ${baseNamesArr.map(bn => `<option value="${bn}" ${storedBaseName === bn ? 'selected' : ''}>${bn}</option>`).join('')}
       </select>
     </div>
 
@@ -99,7 +148,9 @@ export async function renderWorkouts() {
                   w.intensityPct >= 85 ? 'var(--danger)' :
                   w.intensityPct >= 75 ? 'var(--warning)' :
                   w.intensityPct >= 65 ? 'var(--accent)' : 'var(--success)';
-                return `<tr data-student="${w.studentId}" data-macroid="${w.macrocycleId || ''}" data-name="${(w.name||'').toLowerCase()}">
+                const weekStr = getWorkoutWeek(w);
+                const baseNameStr = getWorkoutBaseName(w.name);
+                return `<tr data-student="${w.studentId}" data-macroid="${w.macrocycleId || ''}" data-name="${(w.name||'').toLowerCase()}" data-week="${weekStr}" data-basename="${baseNameStr}">
                   <td>
                     <div class="flex items-center gap-sm">
                       <div class="avatar avatar-sm" style="width:26px;height:26px;font-size:0.7rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
@@ -525,16 +576,15 @@ export function initWorkouts(navigateFn) {
 
   // Busca
   document.getElementById('workoutSearch')?.addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
-      const name = row.dataset.name || '';
-      row.style.display = name.includes(q) ? '' : 'none';
-    });
+    sessionStorage.setItem('pp_workout_search_filter', e.target.value);
+    applyFilters();
   });
 
   // Filtro por aluno
-  let activeStudentFilter = 'all';
-  let activeCycleFilter   = '';
+  let activeStudentFilter = sessionStorage.getItem('pp_workout_student_filter') || 'all';
+  let activeCycleFilter   = sessionStorage.getItem('pp_workout_cycle_filter') || '';
+  let activeWeekFilter    = sessionStorage.getItem('pp_workout_week_filter') || '';
+  let activeBaseNameFilter = sessionStorage.getItem('pp_workout_basename_filter') || '';
 
   function applyFilters() {
     const q = document.getElementById('workoutSearch')?.value.toLowerCase() || '';
@@ -542,7 +592,9 @@ export function initWorkouts(navigateFn) {
       const matchStudent = activeStudentFilter === 'all' || row.dataset.student === activeStudentFilter;
       const matchCycle   = !activeCycleFilter || row.dataset.macro === activeCycleFilter || row.dataset.macro === 'active_match';
       const matchSearch  = !q || (row.dataset.name || '').includes(q);
-      row.style.display  = matchStudent && matchCycle && matchSearch ? '' : 'none';
+      const matchWeek    = !activeWeekFilter || row.dataset.week === activeWeekFilter;
+      const matchBaseName= !activeBaseNameFilter || row.dataset.basename === activeBaseNameFilter;
+      row.style.display  = matchStudent && matchCycle && matchSearch && matchWeek && matchBaseName ? '' : 'none';
     });
   }
 
@@ -551,6 +603,7 @@ export function initWorkouts(navigateFn) {
       document.querySelectorAll('#workoutTabs .tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       activeStudentFilter = tab.dataset.filter;
+      sessionStorage.setItem('pp_workout_student_filter', activeStudentFilter);
       applyFilters();
     });
   });
@@ -571,12 +624,43 @@ export function initWorkouts(navigateFn) {
         });
         activeCycleFilter = val;
       }
+      sessionStorage.setItem('pp_workout_cycle_filter', activeCycleFilter);
       applyFilters();
     } catch (err) {
       console.error(err);
       notify?.error('Erro ao filtrar ciclos');
     }
   });
+
+  document.getElementById('workoutWeekFilter')?.addEventListener('change', e => {
+    activeWeekFilter = e.target.value;
+    sessionStorage.setItem('pp_workout_week_filter', activeWeekFilter);
+    applyFilters();
+  });
+
+  document.getElementById('workoutBaseNameFilter')?.addEventListener('change', e => {
+    activeBaseNameFilter = e.target.value;
+    sessionStorage.setItem('pp_workout_basename_filter', activeBaseNameFilter);
+    applyFilters();
+  });
+
+  // Initialize data-macro on load for cycle filter
+  const initCycleDataset = async () => {
+    const cycleVal = document.getElementById('workoutCycleFilter')?.value || '';
+    if (cycleVal === 'active') {
+      const macros = await db.getAll('macrocycles');
+      const ids = new Set(macros.filter(m => m.status === 'active').map(m => m.id));
+      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+        row.dataset.macro = ids.has(row.dataset.macroid) ? 'active_match' : '';
+      });
+    } else {
+      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+        row.dataset.macro = cycleVal ? (row.dataset.macroid === cycleVal ? cycleVal : '') : '';
+      });
+    }
+    applyFilters();
+  };
+  initCycleDataset();
 
   // Iniciar treino direto
   document.querySelectorAll('.start-workout').forEach(btn => {
