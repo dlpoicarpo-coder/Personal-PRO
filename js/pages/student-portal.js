@@ -438,14 +438,14 @@ async function loadSection(section) {
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
 
-  // Função auxiliar para buscar do Supabase focado no aluno atual e evitar limites de 1000 linhas, mesclando com o local storage offline
+  // Função auxiliar para buscar do Supabase focado no aluno atual e evitar limites de 1000 linhas, mesclando com o local storage offline e tratando deleções remotas
   const fetchForStudent = async (table) => {
     let localItems = [];
     try {
       localItems = db._getLocal(table, tid) || [];
     } catch (_) {}
 
-    const studentLocal = table === 'workouts'
+    const studentLocal = (table === 'workouts' || table === 'exercises' || table === 'methods')
       ? localItems
       : localItems.filter(r => r && (r.studentId === sid || r.student_id === sid));
 
@@ -454,38 +454,47 @@ async function loadSection(section) {
     }
 
     try {
-      // Primary query: filter by studentId inside JSON data column
       let rows = [];
-      if (table !== 'workouts') {
+      if (table === 'exercises' || table === 'methods') {
+        if (tid) {
+          const q1 = db.supabase.from(table).select('*').eq('trainer_id', tid);
+          const q2 = db.supabase.from(table).select('*').eq('is_default', true);
+          const [r1, r2] = await Promise.all([q1, q2]);
+          const combined = [...(r1.data || []), ...(r2.data || [])];
+          const seenIds = new Set();
+          rows = combined.filter(row => {
+            if (!row || seenIds.has(row.id)) return false;
+            seenIds.add(row.id);
+            return true;
+          });
+        }
+      } else if (table === 'workouts') {
+        if (tid) {
+          const { data: wd } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
+          rows = wd || [];
+        }
+      } else {
         const q1 = db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
-        const { data: d1, error: e1 } = await q1;
+        const { data: d1 } = await q1;
         if (d1) rows = d1;
-      }
 
-      // Fallback for sessions: also fetch by trainer_id and filter client-side
-      // This catches sessions created via the trainer's live-tracker that may not
-      // have studentId indexed as a top-level column
-      if (table === 'sessions' && tid) {
-        try {
-          const { data: d2 } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
-          if (d2 && d2.length > 0) {
-            const seenIds = new Set(rows.map(r => r.id));
-            for (const r of d2) {
-              const parsed = r.data ? { ...r.data, id: r.id } : r;
-              const rSid = parsed.studentId || parsed.student_id;
-              if (rSid === sid && !seenIds.has(r.id)) {
-                rows.push(r);
-                seenIds.add(r.id);
+        // Fallback for sessions
+        if (table === 'sessions' && tid) {
+          try {
+            const { data: d2 } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
+            if (d2 && d2.length > 0) {
+              const seenIds = new Set(rows.map(r => r.id));
+              for (const r of d2) {
+                const parsed = r.data ? { ...r.data, id: r.id } : r;
+                const rSid = parsed.studentId || parsed.student_id;
+                if (rSid === sid && !seenIds.has(r.id)) {
+                  rows.push(r);
+                  seenIds.add(r.id);
+                }
               }
             }
-          }
-        } catch(_) {}
-      }
-
-      // Special case: workouts are indexed by trainer_id (top-level column)
-      if (table === 'workouts' && tid) {
-        const { data: wd } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
-        rows = wd || [];
+          } catch(_) {}
+        }
       }
 
       const remote = rows.map(r => {
@@ -504,33 +513,60 @@ async function loadSection(section) {
         };
       });
 
-      // Mesclar mantendo o mais atualizado (segundo updatedAt)
+      const remoteMap = new Map(remote.map(r => [r.id, r]));
       const merged = new Map();
-      studentLocal.forEach(r => { if (r && r.id) merged.set(r.id, r); });
-      remote.forEach(r => {
-        if (r && r.id) {
-          const localItem = merged.get(r.id);
-          if (localItem) {
-            const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
-            const remoteTime = new Date(r.updatedAt || r.createdAt || 0).getTime();
-            if (remoteTime >= localTime) {
-              merged.set(r.id, r);
-            }
+
+      // Check local student items for remote deletion or retention
+      for (const localItem of studentLocal) {
+        if (!localItem.id) continue;
+        const remoteItem = remoteMap.get(localItem.id);
+        if (!remoteItem) {
+          if (localItem._synced === true) {
+            // Deleted on remote, remove locally
+            console.log(`[Student Portal] Item ${localItem.id} de ${table} foi removido no remote. Excluindo local.`);
+            continue;
           } else {
-            merged.set(r.id, r);
+            // New local item, keep it
+            merged.set(localItem.id, localItem);
+          }
+        } else {
+          const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+          const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+          if (localTime > remoteTime + 1000) {
+            merged.set(localItem.id, localItem);
+          } else {
+            merged.set(localItem.id, remoteItem);
           }
         }
-      });
+      }
+
+      // Add new remote items
+      for (const remoteItem of remote) {
+        if (!merged.has(remoteItem.id)) {
+          merged.set(remoteItem.id, remoteItem);
+        }
+      }
 
       const result = [...merged.values()];
 
-      // Se obtivemos dados do servidor, atualizar cache local mesclado
-      if (rows.length > 0) {
-        const allLocal = db._getLocal(table, tid) || [];
-        const localMap = new Map(allLocal.map(x => [x.id, x]));
-        result.forEach(r => localMap.set(r.id, r));
-        db._saveLocal(table, [...localMap.values()], tid);
-      }
+      // Update local storage cache
+      const allLocal = db._getLocal(table, tid) || [];
+      const localMap = new Map(allLocal.map(x => [x.id, x]));
+
+      // Clear deleted items of this student/scope
+      studentLocal.forEach(localItem => {
+        if (!merged.has(localItem.id)) {
+          localMap.delete(localItem.id);
+        }
+      });
+
+      // Add/update merged items
+      result.forEach(r => {
+        const cleanItem = { ...r, _synced: true };
+        localMap.set(r.id, cleanItem);
+      });
+
+      db._saveLocal(table, [...localMap.values()], tid);
 
       return result;
     } catch (e) {
@@ -540,10 +576,17 @@ async function loadSection(section) {
   };
 
   if (sid && tid) {
-    await db.syncStudentData(sid, tid).catch(err => console.warn('Student loadSection sync failed:', err));
+    const hasLocalData = (db._getLocal('workouts', tid) || []).some(w => w.studentId === sid);
+    if (!hasLocalData) {
+      // First load or empty cache: await sync so the user doesn't see an empty screen
+      await db.syncStudentData(sid, tid).catch(err => console.warn('Student loadSection sync failed:', err));
+    } else {
+      // Already has cache: sync in background so page renders instantly
+      db.syncStudentData(sid, tid).catch(err => console.warn('Background student loadSection sync failed:', err));
+    }
   }
 
-  const [student, sessionsRaw, workoutsRaw, biofeedbacks, assessments, schedules, macrocycles, finances] = await Promise.all([
+  const [student, sessionsRaw, workoutsRaw, biofeedbacks, assessments, schedules, macrocycles, finances, exercisesRaw, methodsRaw] = await Promise.all([
     db.get('students', sid).catch(() => null),
     fetchForStudent('sessions'),
     fetchForStudent('workouts'),
@@ -552,21 +595,43 @@ async function loadSection(section) {
     fetchForStudent('schedules'),
     fetchForStudent('macrocycles'),
     fetchForStudent('financial'),
+    fetchForStudent('exercises'),
+    fetchForStudent('methods'),
   ]);
+
+  // Enrich exercises inside workouts with media fields from the exercises library
+  const exercisesList = exercisesRaw || [];
+  const workoutsEnriched = (workoutsRaw || []).map(w => {
+    if (w.exercises && w.exercises.length) {
+      const enrichedExs = w.exercises.map(ex => {
+        const libraryEx = exercisesList.find(e => e.id === ex.exerciseId || e.id === ex.id) ||
+                          exercisesList.find(e => e.name.toLowerCase().trim() === ex.name.toLowerCase().trim());
+        if (libraryEx) {
+          return {
+            ...libraryEx,
+            ...ex
+          };
+        }
+        return ex;
+      });
+      return { ...w, exercises: enrichedExs };
+    }
+    return w;
+  });
 
   // Filtrar treinos por studentId — com fallback por trainerId
   // Garante que treinos apareçam mesmo que o studentId tenha sido salvo
   // de forma levemente diferente (ex.: com ou sem trainerId no escopo)
-  let workouts = workoutsRaw.filter(w => w.studentId === sid);
+  let workouts = workoutsEnriched.filter(w => w.studentId === sid);
   if (workouts.length === 0 && tid) {
     // Fallback: buscar treinos do mesmo treinador que tenham este aluno
-    workouts = workoutsRaw.filter(w =>
+    workouts = workoutsEnriched.filter(w =>
       (w.trainerId === tid || w.trainer_id === tid) && w.studentId === sid
     );
   }
   if (workouts.length === 0 && tid) {
     // Fallback mais amplo: qualquer treino cujo trainerId bate (caso studentId esteja errado)
-    const byTrainer = workoutsRaw.filter(w => w.trainerId === tid || w.trainer_id === tid);
+    const byTrainer = workoutsEnriched.filter(w => w.trainerId === tid || w.trainer_id === tid);
     // Tentar match parcial de studentId (primeiros 8 chars)
     const sidShort = sid.substring(0, 8);
     workouts = byTrainer.filter(w => w.studentId?.startsWith(sidShort));

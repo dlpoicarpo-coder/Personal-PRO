@@ -314,21 +314,48 @@ class Database {
       }
       this._saveTombstones(remainingTombstones, trainerId);
 
-      const tablesToSync = ['biofeedback', 'sessions'];
+      const tablesToSync = ['students', 'sessions', 'workouts', 'biofeedback', 'assessments', 'schedules', 'macrocycles', 'financial', 'exercises', 'methods'];
       for (const storeName of tablesToSync) {
         const localItems = this._getLocal(storeName, trainerId) || [];
-        const studentLocal = localItems.filter(r => r && (r.studentId === studentId || r.student_id === studentId));
+        const studentLocal = storeName === 'students'
+          ? localItems.filter(r => r && r.id === studentId)
+          : (storeName === 'exercises' || storeName === 'methods')
+            ? localItems
+            : localItems.filter(r => r && (r.studentId === studentId || r.student_id === studentId));
+
         const currentStoreTombstones = new Set(
           this._getTombstones(trainerId)
             .filter(t => t.storeName === storeName)
             .map(t => t.id)
         );
 
-        // Fetch remote data (all columns) for this student
-        const { data: remoteRows, error } = await this.supabase
-          .from(storeName)
-          .select('*')
-          .filter('data->>studentId', 'eq', studentId);
+        // Fetch remote data (all columns) for this student/trainer
+        let remoteRows = [];
+        let error = null;
+        if (storeName === 'students') {
+          const { data, error: err } = await this.supabase.from(storeName).select('*').eq('id', studentId);
+          remoteRows = data || [];
+          error = err;
+        } else if (storeName === 'exercises' || storeName === 'methods') {
+          const q1 = this.supabase.from(storeName).select('*').eq('trainer_id', trainerId);
+          const q2 = this.supabase.from(storeName).select('*').eq('is_default', true);
+          const [r1, r2] = await Promise.all([q1, q2]);
+          const combined = [...(r1.data || []), ...(r2.data || [])];
+          const seenIds = new Set();
+          remoteRows = combined.filter(row => {
+            if (!row || seenIds.has(row.id)) return false;
+            seenIds.add(row.id);
+            return true;
+          });
+          error = r1.error || r2.error;
+        } else {
+          const { data, error: err } = await this.supabase
+            .from(storeName)
+            .select('*')
+            .filter('data->>studentId', 'eq', studentId);
+          remoteRows = data || [];
+          error = err;
+        }
 
         if (error) {
           console.warn(`[Student Sync] Failed to fetch remote data for ${storeName}:`, error.message);
