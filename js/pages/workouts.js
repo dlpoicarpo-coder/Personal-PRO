@@ -293,6 +293,73 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const loadType = ex.loadType || 'weight';
   const isTime   = loadType === 'time';
   const isBW     = loadType === 'bodyweight';
+
+  const progression = ex.method ? METHOD_PROGRESSIONS[ex.method] : null;
+  let methodPanelHTML = '';
+  if (progression) {
+    const baseLoad = parseFloat(ex.load) || 0;
+    const restElVal = ex.rest || '60';
+
+    const seriesHTML = progression.series.map((s, si) => {
+      const savedSerie = ex.seriesProgression && ex.seriesProgression[si];
+      const loadVal = savedSerie ? savedSerie.load : (baseLoad > 0 && !isTime ? Math.round(baseLoad * s.loadPct * 2) / 2 : '');
+      const restVal = savedSerie ? savedSerie.rest : (s.rest != null ? s.rest : restElVal);
+      return `
+        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.1)" data-serie="${si}">
+          <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
+          <div>
+            <input type="number" step="0.5" value="${loadVal}" placeholder="${isTime?'km/h':'kg'}"
+              class="form-input serie-load" data-serie="${si}" data-index="${index}"
+              style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${loadVal?`color:var(--primary)`:''}"/>
+          </div>
+          <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
+            ${isTime ? s.reps : `${s.reps} reps`}
+          </div>
+          <div>
+            <input type="number" value="${restVal}"
+              class="form-input serie-rest" data-serie="${si}"
+              style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:var(--text-muted)"
+              placeholder="s" title="Descanso (s)"/>
+          </div>
+        </div>`;
+    }).join('');
+
+    methodPanelHTML = `
+      <div class="method-series-panel" style="grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${ex.method}</span>
+            <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:0.65rem;color:var(--text-muted)">Carga base (kg):</span>
+            <input type="number" step="0.5" value="${baseLoad||''}" placeholder="kg"
+              class="form-input method-base-load" data-index="${index}"
+              style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
+        </div>
+        ${seriesHTML}
+      </div>
+    `;
+  } else if (ex.method) {
+    const methodOpt = allMethods.find(m => m.name === ex.method);
+    const desc = methodOpt?.description;
+    if (desc) {
+      methodPanelHTML = `
+        <div class="method-tip" style="font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)">
+          <strong>${ex.method}</strong> — ${desc}
+        </div>`;
+    }
+  }
+
   return `
     <div class="exercise-row" style="
       display:grid;grid-template-columns:2fr 50px 60px 68px 55px 90px 135px 28px;
@@ -357,6 +424,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         style="color:var(--danger);padding:4px;align-self:flex-end;margin-bottom:2px" title="Remover">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
       </button>
+      ${methodPanelHTML}
     </div>`;
 }
 
@@ -374,7 +442,7 @@ function collectExercises() {
 
     // Se tem painel de sub-séries progressivas, salvar cada série individualmente
     if (seriesPanel && METHOD_PROGRESSIONS[method]) {
-      const serieRows  = seriesPanel.querySelectorAll('[data-serie]');
+      const serieRows  = seriesPanel.querySelectorAll('div[data-serie]');
       const progression = METHOD_PROGRESSIONS[method];
       const serieLogs  = [];
       serieRows.forEach((sr, si) => {
@@ -1041,5 +1109,46 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
       if (loadEl) loadEl.placeholder = lt === 'time' ? 'km/h/W' : lt === 'bodyweight' ? '+kg' : 'kg';
     });
+  });
+
+  // ── Sincronizar painéis de métodos pré-existentes (na edição) ──
+  document.querySelectorAll('.method-series-panel').forEach(panel => {
+    const row = panel.closest('.exercise-row');
+    const i = row.dataset.index;
+    const methodName = row.querySelector('.ex-method')?.value;
+    const progression = METHOD_PROGRESSIONS[methodName];
+    if (!progression) return;
+
+    const isTime = row.querySelector('.ex-loadtype')?.value === 'time';
+
+    panel.querySelector('.method-base-load')?.addEventListener('input', e => {
+      const newBase = parseFloat(e.target.value) || 0;
+      const mainLoad = document.querySelector(`[name="ex_load_${i}"]`);
+      if (mainLoad && newBase) mainLoad.value = newBase;
+      panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+        const s = progression.series[si];
+        if (s && newBase > 0 && !isTime) {
+          const calc = Math.round(newBase * s.loadPct * 2) / 2;
+          inp.value = calc;
+          inp.style.color = 'var(--primary)';
+        }
+      });
+    });
+
+    const mainLoadEl = document.querySelector(`[name="ex_load_${i}"]`);
+    if (mainLoadEl) {
+      mainLoadEl.addEventListener('input', e => {
+        const newBase = parseFloat(e.target.value) || 0;
+        const baseInp = panel.querySelector('.method-base-load');
+        if (baseInp) baseInp.value = newBase || '';
+        panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+          const s = progression.series[si];
+          if (s && newBase > 0 && !isTime) {
+            inp.value = Math.round(newBase * s.loadPct * 2) / 2;
+            inp.style.color = 'var(--primary)';
+          }
+        });
+      });
+    }
   });
 }

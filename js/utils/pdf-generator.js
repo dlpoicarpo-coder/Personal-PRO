@@ -74,19 +74,51 @@ export async function generateWorkoutPDF(student, workout, exercises) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   (exercises || []).forEach((ex, idx) => {
-    if (y > 270) { doc.addPage(); y = 20; }
+    const nameLines = doc.splitTextToSize(ex.name || '-', 62);
+    const setsLines = doc.splitTextToSize(String(ex.sets || '-'), 24);
+    
+    // Normalize reps: replace arrow symbol
+    let repsClean = String(ex.reps || '-').replace(/→/g, ' - ');
+    const repsLines = doc.splitTextToSize(repsClean, 18);
+    
+    const loadText = ex.load ? `${ex.load}kg` : '-';
+    const loadLines = doc.splitTextToSize(loadText, 18);
+    
+    const restText = ex.rest ? `${ex.rest}s` : '-';
+    const restLines = doc.splitTextToSize(restText, 18);
+    
+    const methodLines = doc.splitTextToSize(ex.method || '-', 24);
+
+    const maxLines = Math.max(
+      nameLines.length,
+      setsLines.length,
+      repsLines.length,
+      loadLines.length,
+      restLines.length,
+      methodLines.length
+    );
+
+    const rowHeight = maxLines * 3.5 + 3.5;
+
+    if (y + rowHeight > 275) {
+      doc.addPage();
+      y = 20;
+    }
+
     if (idx % 2 === 0) {
       doc.setFillColor(248, 250, 252);
-      doc.rect(10, y - 4, W - 20, 7, 'F');
+      doc.rect(10, y - 4, W - 20, rowHeight, 'F');
     }
+
     doc.setTextColor(...COLORS.dark);
-    doc.text(ex.name || '-', cols[0], y, { maxWidth: 62 });
-    doc.text(String(ex.sets || '-'), cols[1], y);
-    doc.text(String(ex.reps || '-'), cols[2], y);
-    doc.text(ex.load ? `${ex.load}kg` : '-', cols[3], y);
-    doc.text(ex.rest ? `${ex.rest}s` : '-', cols[4], y);
-    doc.text(ex.method || '-', cols[5], y);
-    y += 7;
+    doc.text(nameLines, cols[0], y);
+    doc.text(setsLines, cols[1], y);
+    doc.text(repsLines, cols[2], y);
+    doc.text(loadLines, cols[3], y);
+    doc.text(restLines, cols[4], y);
+    doc.text(methodLines, cols[5], y);
+    
+    y += rowHeight;
   });
 
   // Footer

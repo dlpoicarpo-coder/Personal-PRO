@@ -1359,43 +1359,67 @@ function initTreinar(workouts, schedules, student) {
               <img src="${ex.imageUrl}" style="width:100%;max-height:125px;object-fit:cover;border-radius:10px;opacity:0.9" class="portal-ex-img-preview" data-ei="${ei}" />
             </div>
           ` : ''}
-          ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => `
-            <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-              <span class="portal-set-num">S${si+1}</span>
-              <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${parseInt(ex.reps)||''}">
-              <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${ex.load||''}">
-              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
-                <option value="" disabled selected>PSE</option>
-                <option value="1">1 - M. Leve</option>
-                <option value="2">2 - Leve</option>
-                <option value="3">3 - Moderado</option>
-                <option value="4">4 - A. Pesado</option>
-                <option value="5">5 - Forte</option>
-                <option value="6">6 - Forte+</option>
-                <option value="7">7 - M. Forte</option>
-                <option value="8">8 - M. Forte+</option>
-                <option value="9">9 - Extr. Forte</option>
-                <option value="10">10 - Máximo</option>
-              </select>
-              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
-              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
-                <option value="" disabled selected>RIR</option>
-                <option value="0">0 RIR (Falha)</option>
-                <option value="1">1 RIR</option>
-                <option value="2">2 RIR</option>
-                <option value="3">3 RIR</option>
-                <option value="4">4 RIR</option>
-                <option value="5">5 RIR</option>
-                <option value="6">6 RIR</option>
-                <option value="7">7 RIR</option>
-                <option value="8">8 RIR</option>
-                <option value="9">9 RIR</option>
-                <option value="10">10+ RIR</option>
-              </select>
-              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
-              <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${ex.rest||60}">&#10003;</button>
-            </div>
-          `).join('')}
+          ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
+            let repsVal = '';
+            let loadVal = '';
+            let restVal = ex.rest || 60;
+            
+            if (ex.seriesProgression && ex.seriesProgression[si]) {
+              const sp = ex.seriesProgression[si];
+              repsVal = parseInt(sp.reps) || '';
+              loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
+              restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
+            } else {
+              if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+                const parts = ex.reps.split('→');
+                if (parts[si]) {
+                  repsVal = parseInt(parts[si]) || '';
+                } else {
+                  repsVal = parseInt(ex.reps) || '';
+                }
+              } else {
+                repsVal = parseInt(ex.reps) || '';
+              }
+              loadVal = ex.load || '';
+            }
+
+            return `
+              <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
+                <span class="portal-set-num">S${si+1}</span>
+                <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
+                <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
+                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
+                  <option value="" disabled selected>PSE</option>
+                  <option value="1">1 - M. Leve</option>
+                  <option value="2">2 - Leve</option>
+                  <option value="3">3 - Moderado</option>
+                  <option value="4">4 - A. Pesado</option>
+                  <option value="5">5 - Forte</option>
+                  <option value="6">6 - Forte+</option>
+                  <option value="7">7 - M. Forte</option>
+                  <option value="8">8 - M. Forte+</option>
+                  <option value="9">9 - Extr. Forte</option>
+                  <option value="10">10 - Máximo</option>
+                </select>
+                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
+                  <option value="" disabled selected>RIR</option>
+                  <option value="0">0 RIR (Falha)</option>
+                  <option value="1">1 RIR</option>
+                  <option value="2">2 RIR</option>
+                  <option value="3">3 RIR</option>
+                  <option value="4">4 RIR</option>
+                  <option value="5">5 RIR</option>
+                  <option value="6">6 RIR</option>
+                  <option value="7">7 RIR</option>
+                  <option value="8">8 RIR</option>
+                  <option value="9">9 RIR</option>
+                  <option value="10">10+ RIR</option>
+                </select>
+                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+                <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
+              </div>`;
+          }).join('')}
           <div class="portal-live-ex-notes-wrap">
             <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
           </div>
