@@ -1892,26 +1892,33 @@ async function showExerciseModal(ex) {
         </div>` : ''}
       </div>
 
-      <!-- Video -->
-      ${ex.videoUrl ? `<div style="padding:0 20px 16px">
-        ${ex.videoUrl.includes('youtube') || ex.videoUrl.includes('youtu.be') ?
-          `<div style="position:relative;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000">
-            <iframe src="${getYouTubeEmbedUrl(ex.videoUrl)}" style="position:absolute;inset:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
-          </div>` :
-          `<video src="${ex.videoUrl}" controls playsinline style="width:100%;border-radius:14px;max-height:220px;background:#000"></video>`
-        }
-      </div>` : ''}
+      <!-- Media Container -->
+      <div id="portalExMediaContainer" style="padding:0 20px 16px">
+        ${ex.imageUrl ? `
+          <div id="portalExMediaCover" style="position:relative;width:100%;border-radius:14px;overflow:hidden;max-height:220px;height:180px;background:rgba(255,255,255,0.03);cursor:pointer">
+            <img src="${ex.imageUrl}" style="width:100%;height:100%;object-fit:cover" />
+            ${ex.videoUrl ? `
+              <div style="position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center">
+                <div style="width:56px;height:56px;border-radius:50%;background:rgba(15,23,42,0.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.15);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left:3px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
 
-      <!-- Image -->
-      ${ex.imageUrl ? `<div style="padding:0 20px 16px">
-        <img src="${ex.imageUrl}" onerror="this.parentElement.remove()" style="width:100%;border-radius:14px;max-height:220px;object-fit:cover;background:rgba(255,255,255,0.03)" />
-      </div>` : ''}
+        <div id="portalExVideoOnlyCover" style="display:${!ex.imageUrl && ex.videoUrl ? 'flex' : 'none'};position:relative;width:100%;border-radius:14px;overflow:hidden;height:160px;background:linear-gradient(135deg, #1e293b, #0f172a);border:1px solid rgba(255,255,255,0.08);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+          <div style="width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.1)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="margin-left:2px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <span style="font-size:0.75rem;color:rgba(255,255,255,0.6);font-weight:600">Assistir vídeo de execução</span>
+        </div>
 
-      <!-- Fallback when no media -->
-      ${!ex.videoUrl && !ex.imageUrl ? `<div style="margin:0 20px 16px;height:160px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhuma mídia vinculada</span>
-      </div>` : ''}
+        <div id="portalExMediaFallback" style="display:${!ex.videoUrl && !ex.imageUrl ? 'flex' : 'none'};height:160px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhuma mídia vinculada</span>
+        </div>
+      </div>
 
       <!-- Description / Technique -->
       <div style="padding:0 20px 20px">
@@ -1943,6 +1950,42 @@ async function showExerciseModal(ex) {
   document.body.appendChild(modal);
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   document.getElementById('closeExModal')?.addEventListener('click', () => modal.remove());
+
+  // Handle media interactions (play video, image load errors)
+  if (ex.imageUrl) {
+    const img = modal.querySelector('#portalExMediaCover img');
+    if (img) {
+      img.addEventListener('error', () => {
+        const cover = modal.querySelector('#portalExMediaCover');
+        if (cover) cover.style.display = 'none';
+        if (ex.videoUrl) {
+          const videoOnly = modal.querySelector('#portalExVideoOnlyCover');
+          if (videoOnly) videoOnly.style.display = 'flex';
+        } else {
+          const fallback = modal.querySelector('#portalExMediaFallback');
+          if (fallback) fallback.style.display = 'flex';
+        }
+      });
+    }
+  }
+
+  if (ex.videoUrl) {
+    const playVideo = () => {
+      const videoHtml = ex.videoUrl.includes('youtube') || ex.videoUrl.includes('youtu.be') ?
+        `<div style="position:relative;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000">
+          <iframe src="${getYouTubeEmbedUrl(ex.videoUrl)}" style="position:absolute;inset:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+        </div>` :
+        `<video src="${ex.videoUrl}" controls autoplay playsinline style="width:100%;border-radius:14px;max-height:220px;background:#000"></video>`;
+      
+      const container = modal.querySelector('#portalExMediaContainer');
+      if (container) {
+        container.innerHTML = videoHtml;
+      }
+    };
+
+    modal.querySelector('#portalExMediaCover')?.addEventListener('click', playVideo);
+    modal.querySelector('#portalExVideoOnlyCover')?.addEventListener('click', playVideo);
+  }
 }
 
 function renderSessoes(sessions, schedules) {
