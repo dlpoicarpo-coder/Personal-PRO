@@ -3217,7 +3217,37 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
     updateExerciseAnalysisSelector();
     drawExAnalysisChart();
 
-    // Body compositi// ── PRE-DEFINED RATING OPTIONS FOR CHECK-IN AND CHECKOUT ──────
+    // Body composition
+    const measCtx = document.getElementById('portalMeasuresChart');
+    if (measCtx && compAss.length>=2) {
+      const ds=[];
+      if (compAss.some(a=>a.peso)) ds.push({label:'Peso (kg)', data:compAss.map(a=>a.peso||null), borderColor:'#10b981', tension:0.3, yAxisID:'y'});
+      if (compAss.some(a=>a.percentualGordura)) ds.push({label:'BF %', data:compAss.map(a=>a.percentualGordura||null), borderColor:'#f59e0b', tension:0.3, yAxisID:'y1'});
+      if (ds.length) createPortalChart('portalMeasuresChart', measCtx, { type:'line', data:{ labels:compAss.map(a=>fmtDate(a.date)), datasets:ds },
+        options:{ responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
+          scales:{y:{position:'left',ticks:{color:'#10b981',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:9}},grid:{display:false}},x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}}
+        }});
+    }
+  };
+
+  // Bind change on macro filter to reload section
+  document.getElementById('portalReportMacroFilter')?.addEventListener('change', async (e) => {
+    portalState.selectedReportMacroId = e.target.value;
+    await loadSection('relatorios');
+  });
+
+  if (window.Chart) {
+    drawAll();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    s.onload = drawAll;
+    document.head.appendChild(s);
+  }
+}
+
+// ── PRE-DEFINED RATING OPTIONS FOR CHECK-IN AND CHECKOUT ──────
 const SONO_OPTIONS = [
   { value: '2', display: '1', label: '1 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
   { value: '4', display: '2', label: '2 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
