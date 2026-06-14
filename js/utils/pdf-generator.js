@@ -18,115 +18,192 @@ const COLORS = {
 
 export async function generateWorkoutPDF(student, workout, exercises) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const W = doc.internal.pageSize.getWidth();
+  
+  const W = 100; // Mobile friendly width
+  const H = 180; // Mobile friendly height
+  const doc = new jsPDF({
+    unit: 'mm',
+    format: [W, H]
+  });
 
   // Header gradient bar
   doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, W, 28, 'F');
+  doc.rect(0, 0, W, 22, 'F');
 
   doc.setTextColor(...COLORS.white);
-  doc.setFontSize(18);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Personal PRO', 14, 14);
+  doc.text('Personal PRO', 8, 9);
 
-  doc.setFontSize(9);
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Ficha de Treino — ${workout.name}`, 14, 22);
-  doc.text(Calc.formatDate(workout.date), W - 14, 14, { align: 'right' });
+  const workoutNameLines = doc.splitTextToSize(`Ficha: ${workout.name}`, 50);
+  workoutNameLines.forEach((line, li) => {
+    doc.text(line, 8, 14.5 + (li * 3));
+  });
 
-  // Trainer info (name + CREF)
   if (workout._trainerName) {
-    doc.setFontSize(8);
-    doc.text(`Prof. ${workout._trainerName}${workout._trainerCref ? ' | CREF ' + workout._trainerCref : ''}`, W - 14, 22, { align: 'right' });
+    doc.setFontSize(6.5);
+    const trainerText = `Prof. ${workout._trainerName}`;
+    const crefText = workout._trainerCref ? `CREF ${workout._trainerCref}` : '';
+    doc.text(trainerText, W - 8, 9, { align: 'right' });
+    if (crefText) {
+      doc.text(crefText, W - 8, 12.5, { align: 'right' });
+    }
   }
 
-  // Student info
+  // Student info card
+  const notesLines = workout.notes ? doc.splitTextToSize(`Obs: ${workout.notes}`, 78) : [];
+  const notesHeight = notesLines.length * 3;
+  const infoHeight = 14 + notesHeight + (workout.notes ? 2 : 0);
+
+  doc.setFillColor(249, 250, 251);
+  doc.setDrawColor(243, 244, 246);
+  doc.rect(8, 26, 84, infoHeight, 'FD');
+
   doc.setTextColor(...COLORS.dark);
-  doc.setFontSize(11);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Aluno: ${student.name}`, 14, 38);
+  doc.text(`Aluno: ${student.name}`, 11, 31);
+  
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`Código: ${student.code} | Objetivo: ${student.goal || '-'}`, 14, 44);
+  doc.setFontSize(6.5);
+  doc.setTextColor(...COLORS.muted);
+  doc.text(`Código: ${student.code}  |  Objetivo: ${student.goal || '-'}`, 11, 35);
+  doc.text(`Data: ${Calc.formatDate(workout.date)}`, 11, 38);
 
   if (workout.notes) {
-    doc.setFontSize(8);
     doc.setTextColor(...COLORS.muted);
-    doc.text(`Obs: ${workout.notes}`, 14, 50);
+    notesLines.forEach((line, li) => {
+      doc.text(line, 11, 42 + (li * 3));
+    });
   }
 
-  // Exercise table
-  let y = 58;
-  const cols = [14, 80, 108, 128, 150, 172];
-  const headers = ['Exercício', 'Séries', 'Reps', 'Carga', 'Descanso', 'Método'];
+  let y = 26 + infoHeight + 4;
 
-  // Table header
-  doc.setFillColor(230, 240, 235);
-  doc.rect(10, y - 5, W - 20, 8, 'F');
-  doc.setTextColor(...COLORS.dark);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  headers.forEach((h, i) => doc.text(h, cols[i], y));
-  y += 8;
-
-  // Table rows
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  // Exercises
   (exercises || []).forEach((ex, idx) => {
-    const nameLines = doc.splitTextToSize(ex.name || '-', 62);
-    const setsLines = doc.splitTextToSize(String(ex.sets || '-'), 24);
-    
-    // Normalize reps: replace arrow symbol
-    let repsClean = String(ex.reps || '-').replace(/→/g, ' - ');
-    const repsLines = doc.splitTextToSize(repsClean, 18);
-    
-    const loadText = ex.load ? `${ex.load}kg` : '-';
-    const loadLines = doc.splitTextToSize(loadText, 18);
-    
-    const restText = ex.rest ? `${ex.rest}s` : '-';
-    const restLines = doc.splitTextToSize(restText, 18);
-    
-    const methodLines = doc.splitTextToSize(ex.method || '-', 24);
+    // Collect series details
+    const seriesList = [];
+    const setsCount = parseInt(ex.sets) || 3;
+    for (let si = 0; si < setsCount; si++) {
+      let repsVal = '';
+      let loadVal = '-';
+      let restVal = ex.rest ? `${ex.rest}s` : '-';
+      
+      if (ex.seriesProgression && ex.seriesProgression[si]) {
+        const sp = ex.seriesProgression[si];
+        repsVal = String(sp.reps || '');
+        loadVal = sp.load !== undefined && sp.load !== null ? `${sp.load}kg` : '-';
+        restVal = sp.rest !== undefined && sp.rest !== null ? `${sp.rest}s` : restVal;
+      } else {
+        if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+          const parts = ex.reps.split('→');
+          repsVal = parts[si] || ex.reps;
+        } else {
+          repsVal = ex.reps || '12';
+        }
+        loadVal = ex.load ? `${ex.load}kg` : '-';
+      }
 
-    const maxLines = Math.max(
-      nameLines.length,
-      setsLines.length,
-      repsLines.length,
-      loadLines.length,
-      restLines.length,
-      methodLines.length
-    );
+      // Normalize reps format
+      repsVal = repsVal.replace(/→/g, ' - ');
+      
+      seriesList.push({
+        label: `Série ${si+1}`,
+        reps: repsVal,
+        load: loadVal,
+        rest: restVal
+      });
+    }
 
-    const rowHeight = maxLines * 3.5 + 3.5;
+    const titleLines = doc.splitTextToSize(`${idx + 1}. ${ex.name || '-'}`, 76);
+    const titleHeight = titleLines.length * 4;
+    const detailsStr = `Método: ${ex.method || 'Padrão'} · Tipo: ${ex.loadType === 'time' ? 'Tempo' : ex.loadType === 'bodyweight' ? 'P. Corporal' : 'Peso'}`;
+    
+    const headerHeight = titleHeight + 8;
+    const tableHeaderHeight = 5;
+    const rowsHeight = seriesList.length * 4.5;
+    const paddingBottom = 4;
+    const cardHeight = headerHeight + tableHeaderHeight + rowsHeight + paddingBottom;
 
-    if (y + rowHeight > 275) {
+    if (y + cardHeight > H - 10) {
       doc.addPage();
-      y = 20;
+      y = 10;
     }
 
-    if (idx % 2 === 0) {
-      doc.setFillColor(248, 250, 252);
-      doc.rect(10, y - 4, W - 20, rowHeight, 'F');
-    }
+    // Draw card background
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(229, 231, 235);
+    doc.rect(8, y, 84, cardHeight, 'FD');
 
+    // Colored indicator bar on the left
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(8, y, 1.5, cardHeight, 'F');
+
+    // Draw Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
     doc.setTextColor(...COLORS.dark);
-    doc.text(nameLines, cols[0], y);
-    doc.text(setsLines, cols[1], y);
-    doc.text(repsLines, cols[2], y);
-    doc.text(loadLines, cols[3], y);
-    doc.text(restLines, cols[4], y);
-    doc.text(methodLines, cols[5], y);
-    
-    y += rowHeight;
+    titleLines.forEach((line, li) => {
+      doc.text(line, 11, y + 4.5 + (li * 4));
+    });
+
+    // Draw Details line
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...COLORS.muted);
+    doc.text(detailsStr, 11, y + titleHeight + 4.5);
+
+    // Draw table headers
+    let ty = y + titleHeight + 9;
+    doc.setFillColor(248, 250, 252);
+    doc.rect(11, ty, 78, 4, 'F');
+    doc.setTextColor(...COLORS.dark);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.text('SÉRIE', 13, ty + 3);
+    doc.text('REPETIÇÕES', 30, ty + 3);
+    doc.text('CARGA', 52, ty + 3);
+    doc.text('DESCANSO', 72, ty + 3);
+
+    // Draw Rows
+    ty += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    seriesList.forEach((s, si) => {
+      if (si % 2 === 1) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(11, ty, 78, 4.5, 'F');
+      }
+      doc.setTextColor(...COLORS.dark);
+      doc.text(s.label, 13, ty + 3.2);
+      doc.text(String(s.reps), 30, ty + 3.2);
+      
+      doc.setTextColor(...COLORS.primary);
+      doc.setFont('helvetica', 'bold');
+      doc.text(s.load, 52, ty + 3.2);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...COLORS.muted);
+      doc.text(s.rest, 72, ty + 3.2);
+      
+      ty += 4.5;
+    });
+
+    y += cardHeight + 4;
   });
 
   // Footer
-  doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 285, W, 12, 'F');
-  doc.setTextColor(...COLORS.white);
-  doc.setFontSize(7);
-  doc.text('Personal PRO — Sistema Profissional de Personal Trainer', W / 2, 292, { align: 'center' });
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, H - 7, W, 7, 'F');
+    doc.setTextColor(...COLORS.white);
+    doc.setFontSize(6);
+    doc.text(`Personal PRO — Página ${i}/${pageCount}`, W / 2, H - 3, { align: 'center' });
+  }
 
   return doc;
 }
