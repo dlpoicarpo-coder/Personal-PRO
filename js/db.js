@@ -888,6 +888,27 @@ class Database {
             imageUrl = 'assets/exercises/leg_press_45.png';
           } else if (nameLower.includes('agachamento búlgaro') || nameLower.includes('bulgaro')) {
             imageUrl = 'assets/exercises/bulgarian_split_squat.png';
+          } else if (nameLower.includes('afundo')) {
+            imageUrl = 'assets/exercises/barbell_lunge.png';
+          } else if (nameLower.includes('passada') || nameLower.includes('avanço') || nameLower.includes('avanço')) {
+            imageUrl = 'assets/exercises/walking_lunge.png';
+          } else if (nameLower.includes('agachamento frontal')) {
+            imageUrl = 'assets/exercises/front_squat.png';
+          } else if (nameLower.includes('hack squat')) {
+            imageUrl = 'assets/exercises/hack_squat.png';
+          } else if (nameLower.includes('goblet squat')) {
+            imageUrl = 'assets/exercises/goblet_squat.png';
+          }
+          
+          // Posterior
+          else if (nameLower.includes('cadeira flexora')) {
+            imageUrl = 'assets/exercises/seated_leg_curl.png';
+          } else if (nameLower.includes('mesa flexora')) {
+            imageUrl = 'assets/exercises/lying_leg_curl.png';
+          } else if (nameLower.includes('stiff')) {
+            imageUrl = 'assets/exercises/stiff_deadlift.png';
+          } else if (nameLower.includes('good morning') || nameLower.includes('bom dia')) {
+            imageUrl = 'assets/exercises/good_morning.png';
           }
           
           // Peito
