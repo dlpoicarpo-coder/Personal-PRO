@@ -545,6 +545,7 @@ class Database {
         updatedAt: data.updatedAt || data.updated_at,
         createdAt: data.createdAt || data.created_at
       };
+      res._synced = true;
       
       if (local) {
         const localTime = new Date(local.updatedAt || local.createdAt || 0).getTime();
@@ -579,6 +580,7 @@ class Database {
       if (!error && data && data.length > 0) {
         const r = data[0];
         const res = r.data ? { ...r.data, id: r.id } : r;
+        res._synced = true;
         return fixObjectEncoding(res);
       }
     } catch (e) {
@@ -631,19 +633,23 @@ class Database {
 
       // Mapear: usar r.data (JSONB) se existir, senão usar a row direta
       const remote = data.map(r => {
+        let itemData;
         if (r.data && typeof r.data === 'object') {
-          return { 
+          itemData = {
             ...r.data, 
             id: r.id,
             updatedAt: r.data.updatedAt || r.updated_at,
             createdAt: r.data.createdAt || r.created_at
           };
+        } else {
+          itemData = {
+            ...r,
+            updatedAt: r.updatedAt || r.updated_at,
+            createdAt: r.createdAt || r.created_at
+          };
         }
-        return { 
-          ...r,
-          updatedAt: r.updatedAt || r.updated_at,
-          createdAt: r.createdAt || r.created_at
-        };
+        itemData._synced = true;
+        return itemData;
       });
 
       // Mesclar com local (local pode ter registros offline) mantendo o registro com updatedAt mais recente
@@ -708,7 +714,11 @@ class Database {
       const seen = new Set();
       const res = all
         .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
-        .map(r => r.data ? { ...r.data, id: r.id } : r)
+        .map(r => {
+          let itemData = r.data ? { ...r.data, id: r.id } : r;
+          itemData._synced = true;
+          return itemData;
+        })
         .filter(r => r?.studentId === studentId);
       return fixObjectEncoding(res);
     } catch (e) {
@@ -740,6 +750,9 @@ class Database {
     // Remove from deletions tombstone log if it exists
     this._removeTombstone(storeName, item.id, trainerId);
 
+    // Any put/modification means the local item is not synced until the remote write succeeds
+    delete item._synced;
+
     // Save locally first (offline-first)
     const all = this._getLocal(storeName, trainerId);
     const idx = all.findIndex(i => i.id === item.id);
@@ -751,7 +764,17 @@ class Database {
     try {
       const payload = { id: item.id, trainer_id: trainerId || null, data: item };
       const { error } = await this.supabase.from(storeName).upsert(payload);
-      if (error) console.warn(`Supabase put error (${storeName}):`, error.message);
+      if (error) {
+        console.warn(`Supabase put error (${storeName}):`, error.message);
+      } else {
+        // Mark as synced locally since the server write succeeded
+        const currentLocal = this._getLocal(storeName, trainerId) || [];
+        const localIdx = currentLocal.findIndex(i => i.id === item.id);
+        if (localIdx >= 0) {
+          currentLocal[localIdx]._synced = true;
+          this._saveLocal(storeName, currentLocal, trainerId);
+        }
+      }
     } catch (err) { console.warn(`Supabase put exception:`, err.message); }
 
     if (trainerId && !item._offline) {

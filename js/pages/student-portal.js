@@ -498,19 +498,23 @@ async function loadSection(section) {
       }
 
       const remote = rows.map(r => {
+        let itemData;
         if (r.data && typeof r.data === 'object') {
-          return { 
+          itemData = {
             ...r.data, 
             id: r.id,
             updatedAt: r.data.updatedAt || r.updated_at,
             createdAt: r.data.createdAt || r.created_at
           };
+        } else {
+          itemData = {
+            ...r,
+            updatedAt: r.updatedAt || r.updated_at,
+            createdAt: r.createdAt || r.created_at
+          };
         }
-        return { 
-          ...r,
-          updatedAt: r.updatedAt || r.updated_at,
-          createdAt: r.createdAt || r.created_at
-        };
+        itemData._synced = true;
+        return itemData;
       });
 
       const remoteMap = new Map(remote.map(r => [r.id, r]));
@@ -562,8 +566,7 @@ async function loadSection(section) {
 
       // Add/update merged items
       result.forEach(r => {
-        const cleanItem = { ...r, _synced: true };
-        localMap.set(r.id, cleanItem);
+        localMap.set(r.id, r);
       });
 
       db._saveLocal(table, [...localMap.values()], tid);
