@@ -857,6 +857,110 @@ class Database {
     // Sempre verificar métodos independente do seed de exercícios
     await this.seedMethods();
 
+    // ── MIGRATION: VINCULAR IMAGENS DE EXERCÍCIOS LOCALMENTE ──
+    try {
+      const existing = await this.getAll('exercises');
+      let updatedAny = false;
+      for (const ex of existing) {
+        if (ex.name && !ex.imageUrl) {
+          const nameLower = ex.name.trim().toLowerCase();
+          let imageUrl = null;
+          
+          // Glúteos
+          if (nameLower === 'elevação pélvica' || nameLower === 'elevaçao pélvica' || nameLower === 'hip thrust') {
+            imageUrl = 'assets/exercises/hip_thrust.png';
+          } else if (nameLower === 'coice no cabo') {
+            imageUrl = 'assets/exercises/glute_kickback.png';
+          } else if (nameLower === 'agachamento sumô' || nameLower === 'agachamento sumô com halter' || nameLower === 'agachamento sumô' || nameLower === 'agachamento sumô com halter') {
+            imageUrl = 'assets/exercises/sumo_squat.png';
+          } else if (nameLower.includes('cadeira abdutora') || nameLower.includes('cadeira abdultora')) {
+            imageUrl = 'assets/exercises/hip_abductor.png';
+          } else if (nameLower.includes('pélvica na máquina') || nameLower.includes('pélvica na maquina') || nameLower === 'hip thrust na máquina' || nameLower === 'elevação pélvica na máquina') {
+            imageUrl = 'assets/exercises/hip_thrust_machine.png';
+          }
+          
+          // Quadríceps
+          else if (nameLower === 'agachamento livre com barra' || nameLower === 'agachamento livre') {
+            imageUrl = 'assets/exercises/barbell_squat.png';
+          } else if (nameLower.includes('cadeira extensora') || nameLower === 'extensora') {
+            imageUrl = 'assets/exercises/leg_extension.png';
+          } else if (nameLower.includes('leg press')) {
+            imageUrl = 'assets/exercises/leg_press_45.png';
+          } else if (nameLower.includes('agachamento búlgaro') || nameLower.includes('bulgaro')) {
+            imageUrl = 'assets/exercises/bulgarian_split_squat.png';
+          }
+          
+          // Peito
+          else if (nameLower === 'supino reto com barra' || nameLower === 'supino reto') {
+            imageUrl = 'assets/exercises/barbell_bench_press.png';
+          } else if (nameLower === 'supino inclinado com halteres' || nameLower === 'supino inclinado') {
+            imageUrl = 'assets/exercises/incline_dumbbell_press.png';
+          } else if (nameLower.includes('peck deck') || nameLower.includes('voador')) {
+            imageUrl = 'assets/exercises/peck_deck.png';
+          } else if (nameLower.includes('cross over') || nameLower.includes('crossover')) {
+            imageUrl = 'assets/exercises/cable_crossover.png';
+          }
+          
+          // Costas
+          else if (nameLower.includes('puxada frontal') || nameLower.includes('puxada fechada')) {
+            imageUrl = 'assets/exercises/lat_pulldown.png';
+          } else if (nameLower.includes('remada curvada')) {
+            imageUrl = 'assets/exercises/barbell_row.png';
+          } else if (nameLower === 'levantamento terra' || nameLower === 'terra') {
+            imageUrl = 'assets/exercises/barbell_deadlift.png';
+          } else if (nameLower.includes('remada unilateral')) {
+            imageUrl = 'assets/exercises/dumbbell_row.png';
+          }
+          
+          // Core
+          else if (nameLower === 'prancha frontal' || nameLower === 'prancha') {
+            imageUrl = 'assets/exercises/plank.png';
+          } else if (nameLower.includes('russian twist')) {
+            imageUrl = 'assets/exercises/russian_twist.png';
+          } else if (nameLower.includes('roda') || nameLower.includes('rollout')) {
+            imageUrl = 'assets/exercises/ab_wheel_rollout.png';
+          } else if (nameLower.includes('prancha lateral')) {
+            imageUrl = 'assets/exercises/side_plank.png';
+          }
+          
+          // Ombros
+          else if (nameLower.includes('desenvolvimento') || nameLower.includes('arnold press')) {
+            imageUrl = 'assets/exercises/dumbbell_shoulder_press.png';
+          } else if (nameLower.includes('elevação lateral') || nameLower.includes('elevaçao lateral')) {
+            imageUrl = 'assets/exercises/lateral_raise.png';
+          }
+          
+          // Braços (Pre-configuração)
+          else if (nameLower.includes('rosca direta') || nameLower === 'rosca 21') {
+            imageUrl = 'assets/exercises/barbell_bicep_curl.png';
+          } else if (nameLower.includes('rosca martelo')) {
+            imageUrl = 'assets/exercises/dumbbell_hammer_curl.png';
+          } else if (nameLower.includes('rosca scott') || nameLower.includes('rosca concentrada')) {
+            imageUrl = 'assets/exercises/preacher_bicep_curl.png';
+          } else if (nameLower.includes('tríceps corda') || nameLower.includes('triceps corda') || nameLower.includes('tríceps pulley') || nameLower.includes('triceps pulley') || nameLower.includes('extensão de tríceps') || nameLower.includes('extensao de triceps')) {
+            imageUrl = 'assets/exercises/tricep_pushdown.png';
+          } else if (nameLower.includes('tríceps testa') || nameLower.includes('triceps testa') || nameLower.includes('tríceps francês') || nameLower.includes('triceps frances')) {
+            imageUrl = 'assets/exercises/tricep_overhead.png';
+          } else if (nameLower.includes('mergulho')) {
+            imageUrl = 'assets/exercises/tricep_dips.png';
+          }
+
+          if (imageUrl) {
+            ex.imageUrl = imageUrl;
+            // Remover _synced para forçar o upload de atualização no próximo sync
+            delete ex._synced;
+            await this.put('exercises', ex);
+            updatedAny = true;
+          }
+        }
+      }
+      if (updatedAny) {
+        console.log('Exercícios atualizados localmente com URLs de imagem.');
+      }
+    } catch (err) {
+      console.warn('Erro na migração de imagens de exercícios:', err);
+    }
+
     const exercisesCount = await this.count('exercises');
     if (exercisesCount < 80) {
       const exercises = [
