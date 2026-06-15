@@ -1136,6 +1136,7 @@ function initTreinar(workouts, schedules, student) {
   let restTimer = null;
   let restTotal = 60;
   let restRemaining = 60;
+  let activeRestingRowId = null;
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
   const selInput = document.getElementById('soloWorkoutSel');
@@ -1235,11 +1236,15 @@ function initTreinar(workouts, schedules, student) {
       restRemaining--;
       restSeconds++;
       updateUI();
+      if (restRemaining <= 5 && restRemaining > 0) {
+        playBeep(800, 0.06, 1);
+      }
       if (restRemaining <= 0) {
         clearInterval(restTimer);
         overlay.style.display = 'none';
         isResting = false;
-        playBeep(660, 0.2, 3);
+        activeRestingRowId = null;
+        playBeep(1000, 0.25, 3);
       }
     }, 1000);
   }
@@ -1247,6 +1252,7 @@ function initTreinar(workouts, schedules, student) {
   function stopRestTimer() {
     if (restTimer) clearInterval(restTimer);
     isResting = false;
+    activeRestingRowId = null;
     const overlay = document.getElementById('restTimerOverlay');
     if (overlay) overlay.style.display = 'none';
   }
@@ -1335,8 +1341,17 @@ function initTreinar(workouts, schedules, student) {
         workSeconds += 30;
         const restInput = document.getElementById(`fex_${ei}_rest`);
         const restSec = parseInt(restInput?.value) || 60;
+        const overlay = document.getElementById('restTimerOverlay');
+        if (overlay) {
+          row.after(overlay);
+        }
+        activeRestingRowId = row.id;
         startRestTimer(restSec);
         playBeep(440, 0.1, 1);
+      } else {
+        if (activeRestingRowId === row.id) {
+          stopRestTimer();
+        }
       }
     });
   };
@@ -1559,12 +1574,24 @@ function initTreinar(workouts, schedules, student) {
     exLogEl.querySelectorAll('.portal-solo-done-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const isDone = btn.classList.toggle('done');
-        btn.closest('.portal-solo-set-row')?.classList.toggle('set-done', isDone);
-        if (isDone) {
-          workSeconds += 30; // estimate 30s work per set
-          const restSec = parseInt(btn.dataset.rest) || 60;
-          startRestTimer(restSec);
-          playBeep(440, 0.1, 1);
+        const row = btn.closest('.portal-solo-set-row');
+        if (row) {
+          row.classList.toggle('set-done', isDone);
+          if (isDone) {
+            workSeconds += 30; // estimate 30s work per set
+            const restSec = parseInt(btn.dataset.rest) || 60;
+            const overlay = document.getElementById('restTimerOverlay');
+            if (overlay) {
+              row.after(overlay);
+            }
+            activeRestingRowId = row.id;
+            startRestTimer(restSec);
+            playBeep(440, 0.1, 1);
+          } else {
+            if (activeRestingRowId === row.id) {
+              stopRestTimer();
+            }
+          }
         }
       });
     });

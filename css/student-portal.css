@@ -671,17 +671,24 @@
 
 /* Rest Overlay */
 .portal-rest-overlay {
-  background: rgba(15,23,42,0.95); border: 1px solid rgba(6,182,212,0.4); border-radius: 16px;
-  padding: 20px; text-align: center; margin-bottom: 16px; backdrop-filter: blur(10px);
+  background: rgba(15,23,42,0.96); border: 1.5px solid rgba(6,182,212,0.5); border-radius: 14px;
+  padding: 14px 18px; text-align: center; margin: 10px 0; backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+  animation: portalSlideDown 0.25s ease-out;
 }
-.portal-root[data-theme="light"] .portal-rest-overlay { background: rgba(255,255,255,0.95); }
-.portal-rest-label { font-size: 0.8rem; font-weight: 700; color: #06b6d4; text-transform: uppercase; letter-spacing: 0.05em; }
-.portal-rest-countdown { font-size: 3rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--portal-text); line-height: 1.1; margin: 10px 0; }
-.portal-rest-bar-track { height: 6px; background: var(--portal-border); border-radius: 99px; overflow: hidden; margin-bottom: 16px; }
+.portal-root[data-theme="light"] .portal-rest-overlay { background: rgba(255,255,255,0.96); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.portal-rest-label { font-size: 0.72rem; font-weight: 700; color: #06b6d4; text-transform: uppercase; letter-spacing: 0.08em; }
+.portal-rest-countdown { font-size: 2.5rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--portal-text); line-height: 1.1; margin: 6px 0; }
+.portal-rest-bar-track { height: 5px; background: var(--portal-border); border-radius: 99px; overflow: hidden; margin-bottom: 12px; }
 .portal-rest-bar-fill { height: 100%; background: #06b6d4; transition: width 1s linear; }
-.portal-rest-actions { display: flex; justify-content: center; gap: 10px; }
-.portal-rest-adj { background: var(--portal-surface); border: 1px solid var(--portal-border); color: var(--portal-text); padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-.portal-rest-skip { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); color: #06b6d4; padding: 8px 24px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+.portal-rest-actions { display: flex; justify-content: center; gap: 8px; }
+.portal-rest-adj { background: var(--portal-surface); border: 1px solid var(--portal-border); color: var(--portal-text); padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.8rem; }
+.portal-rest-skip { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); color: #06b6d4; padding: 6px 18px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.8rem; }
+
+@keyframes portalSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* Exercises Live Card */
 .portal-live-ex-card { padding: 14px; margin-bottom: 12px; }
