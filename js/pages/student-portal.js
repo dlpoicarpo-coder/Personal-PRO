@@ -1945,13 +1945,6 @@ async function showExerciseModal(ex) {
         ${finalImageUrl ? `
           <div id="portalExMediaCover" style="position:relative;width:100%;border-radius:14px;overflow:hidden;height:240px;background:#090d16;cursor:pointer;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.08)">
             <img src="${finalImageUrl}" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain" />
-            ${ex.videoUrl ? `
-              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.25)">
-                <div style="width:56px;height:56px;border-radius:50%;background:rgba(16,185,129,0.9);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 8px 24px rgba(0,0,0,0.35);transition:all 0.2s">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="margin-left:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                </div>
-              </div>
-            ` : ''}
           </div>
         ` : ''}
 
