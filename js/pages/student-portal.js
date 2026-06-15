@@ -137,7 +137,7 @@ export async function renderStudentPortal(rawParam) {
 
   // PIN auth
   const sessionKey = `portal_auth_${studentId}`;
-  const isAuth = sessionStorage.getItem(sessionKey) === 'ok';
+  const isAuth = sessionStorage.getItem(sessionKey) === 'ok' || localStorage.getItem(sessionKey) === 'ok';
 
   if (!isAuth) {
     return renderPINScreen(student, studentId, trainerId);
@@ -231,6 +231,10 @@ function renderPINScreen(student, studentId, trainerId) {
                 <button type="button" class="keypad-btn ${k===''?'keypad-empty':''}" data-key="${k}">${k}</button>
               `).join('')}
             </div>
+            <label class="portal-remember-me">
+              <input type="checkbox" id="rememberLoginCheck" checked />
+              Lembrar login neste dispositivo
+            </label>
           </form>
 
           <div class="portal-pin-footer">
@@ -261,6 +265,12 @@ function initPINHandlers() {
         const student = await db.get('students', sid).catch(() => null);
         const correctPin = student?.portalPin || '1234';
         if (pin === String(correctPin)) {
+          const rememberMe = document.getElementById('rememberLoginCheck')?.checked;
+          if (rememberMe) {
+            localStorage.setItem(`portal_auth_${sid}`, 'ok');
+          } else {
+            localStorage.removeItem(`portal_auth_${sid}`);
+          }
           sessionStorage.setItem(`portal_auth_${sid}`, 'ok');
           // Save student name so PWA/header shows it immediately
           if (student?.name) localStorage.setItem(`portal_name_${sid}`, student.name);
@@ -393,6 +403,7 @@ function initPortalNav() {
 
   document.getElementById('portalLogout')?.addEventListener('click', () => {
     sessionStorage.removeItem(`portal_auth_${portalState.studentId}`);
+    localStorage.removeItem(`portal_auth_${portalState.studentId}`);
     window.location.reload();
   });
 
@@ -1868,6 +1879,7 @@ async function showExerciseModal(ex) {
   modal.id = 'exDetailModal';
   modal.style.cssText = `
     position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;justify-content:flex-end;
+    align-items:center;
     background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
     animation:fadeIn 0.2s ease;
   `;
@@ -1882,6 +1894,8 @@ async function showExerciseModal(ex) {
       background:var(--portal-card,#1e293b);border-radius:24px 24px 0 0;
       padding:0 0 env(safe-area-inset-bottom,20px);max-height:85vh;overflow-y:auto;
       box-shadow:0 -20px 60px rgba(0,0,0,0.5);
+      width:100%;max-width:480px;margin:0 auto;box-sizing:border-box;
+      border-top:1px solid rgba(255,255,255,0.08);
     ">
       <!-- Handle -->
       <div style="display:flex;justify-content:center;padding:12px 0 0">
@@ -1929,8 +1943,24 @@ async function showExerciseModal(ex) {
       <!-- Media Container -->
       <div id="portalExMediaContainer" style="padding:0 20px 16px">
         ${finalImageUrl ? `
-          <div id="portalExMediaCover" style="position:relative;width:100%;border-radius:14px;overflow:hidden;max-height:220px;height:180px;background:rgba(255,255,255,0.03);cursor:pointer">
-            <img src="${finalImageUrl}" style="width:100%;height:100%;object-fit:cover" />
+          <div id="portalExMediaCover" style="position:relative;width:100%;border-radius:14px;overflow:hidden;height:240px;background:#090d16;cursor:pointer;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.08)">
+            <img src="${finalImageUrl}" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain" />
+            ${ex.videoUrl ? `
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.25)">
+                <div style="width:56px;height:56px;border-radius:50%;background:rgba(16,185,129,0.9);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 8px 24px rgba(0,0,0,0.35);transition:all 0.2s">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="margin-left:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        ${!finalImageUrl && ex.videoUrl ? `
+          <div id="portalExMediaCover" style="position:relative;width:100%;border-radius:14px;overflow:hidden;height:180px;background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.15));cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:1px solid rgba(255,255,255,0.08)">
+            <div style="width:56px;height:56px;border-radius:50%;background:var(--portal-primary);display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 8px 20px var(--portal-primary-glow)">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="margin-left:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <span style="font-size:0.8rem;font-weight:700;color:var(--portal-text-secondary)">Carregar vídeo de execução</span>
           </div>
         ` : ''}
 

@@ -903,3 +903,45 @@ select.portal-solo-input {
 @media (max-width: 480px) {
   .portal-root { max-width: 100vw; }
 }
+
+/* Remember me checkbox style */
+.portal-remember-me {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0 8px 0;
+  font-size: 0.85rem;
+  color: var(--portal-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.portal-remember-me input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--portal-border);
+  border-radius: 4px;
+  background: var(--portal-surface);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  outline: none;
+}
+.portal-remember-me input[type="checkbox"]:checked {
+  background: var(--portal-primary);
+  border-color: var(--portal-primary);
+  box-shadow: 0 0 8px var(--portal-primary-glow);
+}
+.portal-remember-me input[type="checkbox"]:checked::after {
+  content: '✓';
+  font-size: 0.75rem;
+  color: white;
+  font-weight: bold;
+}
+.portal-remember-me:hover input[type="checkbox"] {
+  border-color: var(--portal-primary);
+}
