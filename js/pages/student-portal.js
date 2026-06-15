@@ -1424,9 +1424,9 @@ function initTreinar(workouts, schedules, student) {
             ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
           </div>
           ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
-          ${ex.imageUrl ? `
+          ${(ex.imageUrl || (ex.videoUrl && getYouTubeThumbnailUrl(ex.videoUrl))) ? `
             <div class="portal-ex-img-preview-container" style="padding:0 12px 10px;cursor:pointer">
-              <img src="${ex.imageUrl}" onerror="this.closest('.portal-ex-img-preview-container').style.display='none'" style="width:100%;max-height:125px;object-fit:cover;border-radius:10px;opacity:0.9" class="portal-ex-img-preview" data-ei="${ei}" />
+              <img src="${ex.imageUrl || getYouTubeThumbnailUrl(ex.videoUrl)}" onerror="this.closest('.portal-ex-img-preview-container').style.display='none'" style="width:100%;max-height:125px;object-fit:cover;border-radius:10px;opacity:0.9" class="portal-ex-img-preview" data-ei="${ei}" />
             </div>
           ` : ''}
           ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
@@ -1804,6 +1804,7 @@ function safeFormatDate(dStr, timeStr = '') {
 async function showExerciseModal(ex) {
   // Remove any existing modal
   document.getElementById('exDetailModal')?.remove();
+  const finalImageUrl = ex.imageUrl || (ex.videoUrl ? getYouTubeThumbnailUrl(ex.videoUrl) : '');
 
   let methodDesc = '';
   if (ex.method) {
@@ -1897,9 +1898,9 @@ async function showExerciseModal(ex) {
 
       <!-- Media Container -->
       <div id="portalExMediaContainer" style="padding:0 20px 16px">
-        ${ex.imageUrl ? `
+        ${finalImageUrl ? `
           <div id="portalExMediaCover" style="position:relative;width:100%;border-radius:14px;overflow:hidden;max-height:220px;height:180px;background:rgba(255,255,255,0.03);cursor:pointer">
-            <img src="${ex.imageUrl}" style="width:100%;height:100%;object-fit:cover" />
+            <img src="${finalImageUrl}" style="width:100%;height:100%;object-fit:cover" />
             ${ex.videoUrl ? `
               <div style="position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center">
                 <div style="width:56px;height:56px;border-radius:50%;background:rgba(15,23,42,0.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.15);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:transform 0.2s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
@@ -1910,14 +1911,14 @@ async function showExerciseModal(ex) {
           </div>
         ` : ''}
 
-        <div id="portalExVideoOnlyCover" style="display:${!ex.imageUrl && ex.videoUrl ? 'flex' : 'none'};position:relative;width:100%;border-radius:14px;overflow:hidden;height:160px;background:linear-gradient(135deg, #1e293b, #0f172a);border:1px solid rgba(255,255,255,0.08);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+        <div id="portalExVideoOnlyCover" style="display:${!finalImageUrl && ex.videoUrl ? 'flex' : 'none'};position:relative;width:100%;border-radius:14px;overflow:hidden;height:160px;background:linear-gradient(135deg, #1e293b, #0f172a);border:1px solid rgba(255,255,255,0.08);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:10px">
           <div style="width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.1)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="margin-left:2px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </div>
           <span style="font-size:0.75rem;color:rgba(255,255,255,0.6);font-weight:600">Assistir vídeo de execução</span>
         </div>
 
-        <div id="portalExMediaFallback" style="display:${!ex.videoUrl && !ex.imageUrl ? 'flex' : 'none'};height:160px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
+        <div id="portalExMediaFallback" style="display:${!ex.videoUrl && !finalImageUrl ? 'flex' : 'none'};height:160px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhuma mídia vinculada</span>
         </div>
@@ -1955,7 +1956,7 @@ async function showExerciseModal(ex) {
   document.getElementById('closeExModal')?.addEventListener('click', () => modal.remove());
 
   // Handle media interactions (play video, image load errors)
-  if (ex.imageUrl) {
+  if (finalImageUrl) {
     const img = modal.querySelector('#portalExMediaCover img');
     if (img) {
       img.addEventListener('error', () => {
@@ -4066,4 +4067,44 @@ function getYouTubeEmbedUrl(url) {
     return `https://www.youtube.com/embed/${videoId}`;
   }
   return url;
+}
+
+function getYouTubeThumbnailUrl(url) {
+  if (!url) return '';
+  url = url.trim();
+  let videoId = '';
+  try {
+    if (url.includes('youtu.be/')) {
+      const parts = url.split('youtu.be/');
+      if (parts[1]) {
+        videoId = parts[1].split(/[?#]/)[0];
+      }
+    } else if (url.includes('/shorts/')) {
+      const parts = url.split('/shorts/');
+      if (parts[1]) {
+        videoId = parts[1].split(/[?#]/)[0];
+      }
+    } else if (url.includes('watch?v=')) {
+      const parts = url.split('watch?v=');
+      if (parts[1]) {
+        videoId = parts[1].split('&')[0].split(/[?#]/)[0];
+      }
+    } else if (url.includes('/embed/')) {
+      const parts = url.split('/embed/');
+      if (parts[1]) {
+        videoId = parts[1].split(/[?#]/)[0];
+      }
+    } else {
+      const match = url.match(/[?&]v=([^&#]+)/);
+      if (match) {
+        videoId = match[1];
+      }
+    }
+  } catch (e) {
+    console.error('Error parsing YouTube URL for thumbnail:', e);
+  }
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  }
+  return '';
 }
