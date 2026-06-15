@@ -323,10 +323,98 @@ function exerciseFormHTML(ex = {}) {
     <div class="form-group"><label class="form-label">Link do Vídeo (YouTube)</label>
       <input class="form-input" name="videoUrl" value="${ex.videoUrl||''}" placeholder="https://youtube.com/watch?v=..." />
     </div>
-    <div class="form-group"><label class="form-label">Link da Imagem (URL)</label>
-      <input class="form-input" name="imageUrl" value="${ex.imageUrl||''}" placeholder="https://..." />
+    <div class="form-group"><label class="form-label">Imagem de Capa (Foto)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input class="form-input" id="exFormImageUrl" name="imageUrl" value="${ex.imageUrl||''}" placeholder="https://... ou faça upload" style="flex:1" />
+        <label class="btn btn-outline" style="margin:0;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 12px;height:38px;box-sizing:border-box;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload
+          <input type="file" id="exFormImageFile" accept="image/*" style="display:none" />
+        </label>
+      </div>
+      <div id="exFormImagePreviewContainer" style="display:${ex.imageUrl?'block':'none'};margin-top:10px;position:relative;width:100px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
+        <img id="exFormImagePreview" src="${ex.imageUrl||''}" style="width:100%;height:100%;object-fit:cover" />
+        <button type="button" id="exFormRemoveImage" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px">×</button>
+      </div>
     </div>
   </form>`;
+}
+
+function setupImageUploadListener() {
+  const fileInput = document.getElementById('exFormImageFile');
+  const imageUrlInput = document.getElementById('exFormImageUrl');
+  const previewContainer = document.getElementById('exFormImagePreviewContainer');
+  const previewImg = document.getElementById('exFormImagePreview');
+  const removeBtn = document.getElementById('exFormRemoveImage');
+
+  if (!fileInput || !imageUrlInput) return;
+
+  const updatePreview = (url) => {
+    if (url) {
+      if (previewImg) previewImg.src = url;
+      if (previewContainer) previewContainer.style.display = 'block';
+    } else {
+      if (previewContainer) previewContainer.style.display = 'none';
+      if (previewImg) previewImg.src = '';
+    }
+  };
+
+  // If user pastes/types a URL manually
+  imageUrlInput.addEventListener('input', () => {
+    updatePreview(imageUrlInput.value.trim());
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      notify.error('Por favor, selecione um arquivo de imagem válido.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Redimensionar para tamanho razoável (ex: max 600px de largura/altura)
+        const maxW = 600;
+        const maxH = 400;
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxW || h > maxH) {
+          if (w / h > maxW / maxH) {
+            h = Math.round((h * maxW) / w);
+            w = maxW;
+          } else {
+            w = Math.round((w * maxH) / h);
+            h = maxH;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Comprimir em JPEG com qualidade 0.7
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+        imageUrlInput.value = dataUrl;
+        updatePreview(dataUrl);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removeBtn?.addEventListener('click', () => {
+    imageUrlInput.value = '';
+    fileInput.value = '';
+    updatePreview('');
+  });
 }
 
 export function initExercisesLibrary(navigateFn) {
@@ -454,28 +542,31 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
-  const openAddEx = () => openModal({
-    title: '+ Novo Exercício', size: 'md',
-    preventBackdropClose: true,
-    content: exerciseFormHTML(),
-    actions: [
-      { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-      { label: 'Salvar', class: 'btn-primary', onClick: async () => {
-        const fd = new FormData(document.getElementById('exForm'));
-        const d = Object.fromEntries(fd);
-        if (!d.name) { notify.error('Nome obrigatório'); return; }
-        const allEx = await db.getAll('exercises');
-        const cleanName = d.name.toLowerCase().trim();
-        if (allEx.some(ex => ex.name.toLowerCase().trim() === cleanName)) {
-          notify.error('Já existe um exercício com este nome nesta biblioteca.');
-          return;
-        }
-        await db.add('exercises', d);
-        notify.success('Exercício criado!');
-        closeModal(); navigateFn('/exercicios');
-      }}
-    ]
-  });
+  const openAddEx = () => {
+    openModal({
+      title: '+ Novo Exercício', size: 'md',
+      preventBackdropClose: true,
+      content: exerciseFormHTML(),
+      actions: [
+        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+        { label: 'Salvar', class: 'btn-primary', onClick: async () => {
+          const fd = new FormData(document.getElementById('exForm'));
+          const d = Object.fromEntries(fd);
+          if (!d.name) { notify.error('Nome obrigatório'); return; }
+          const allEx = await db.getAll('exercises');
+          const cleanName = d.name.toLowerCase().trim();
+          if (allEx.some(ex => ex.name.toLowerCase().trim() === cleanName)) {
+            notify.error('Já existe um exercício com este nome nesta biblioteca.');
+            return;
+          }
+          await db.add('exercises', d);
+          notify.success('Exercício criado!');
+          closeModal(); navigateFn('/exercicios');
+        }}
+      ]
+    });
+    setupImageUploadListener();
+  };
   document.getElementById('addExerciseBtn')?.addEventListener('click', openAddEx);
 
   document.getElementById('dedupBtn')?.addEventListener('click', async () => {
@@ -529,6 +620,7 @@ export function initExercisesLibrary(navigateFn) {
           }}
         ]
       });
+      setupImageUploadListener();
     });
   });
 
