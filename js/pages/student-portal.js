@@ -1167,23 +1167,31 @@ function initTreinar(workouts, schedules, student) {
     });
   });
 
+  let audioCtx = null;
   // Sound helper (Web Audio API)
   function playBeep(freq = 880, dur = 0.15, times = 3) {
     if (!soundEnabled) return;
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      let t = ctx.currentTime;
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      let t = audioCtx.currentTime;
       for (let i = 0; i < times; i++) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
         osc.frequency.value = freq;
         gain.gain.setValueAtTime(0.3, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
         osc.start(t); osc.stop(t + dur);
         t += dur + 0.05;
       }
-    } catch {}
+    } catch (err) {
+      console.warn("Audio Context play error:", err);
+    }
   }
 
   // Sound toggle
