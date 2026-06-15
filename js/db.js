@@ -857,118 +857,157 @@ class Database {
     // Sempre verificar métodos independente do seed de exercícios
     await this.seedMethods();
 
-    // ── MIGRATION: VINCULAR IMAGENS DE EXERCÍCIOS LOCALMENTE ──
+    // ── MIGRATION: VINCULAR IMAGENS E VÍDEOS DE EXERCÍCIOS LOCALMENTE ──
     try {
       const existing = await this.getAll('exercises');
       let updatedAny = false;
       for (const ex of existing) {
-        if (ex.name && !ex.imageUrl) {
+        if (ex.name) {
           const nameLower = ex.name.trim().toLowerCase();
-          let imageUrl = null;
+          let imageUrl = ex.imageUrl || null;
+          let videoUrl = ex.videoUrl || null;
           
           // Glúteos
           if (nameLower === 'elevação pélvica' || nameLower === 'elevaçao pélvica' || nameLower === 'hip thrust') {
-            imageUrl = 'assets/exercises/hip_thrust.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/hip_thrust.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           } else if (nameLower === 'coice no cabo') {
-            imageUrl = 'assets/exercises/glute_kickback.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/glute_kickback.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=T1wG9x1i8Gk';
           } else if (nameLower === 'agachamento sumô' || nameLower === 'agachamento sumô com halter' || nameLower === 'agachamento sumô' || nameLower === 'agachamento sumô com halter') {
-            imageUrl = 'assets/exercises/sumo_squat.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/sumo_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=L2G5M0H8L_g';
           } else if (nameLower.includes('cadeira abdutora') || nameLower.includes('cadeira abdultora')) {
-            imageUrl = 'assets/exercises/hip_abductor.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/hip_abductor.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('pélvica na máquina') || nameLower.includes('pélvica na maquina') || nameLower === 'hip thrust na máquina' || nameLower === 'elevação pélvica na máquina') {
-            imageUrl = 'assets/exercises/hip_thrust_machine.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/hip_thrust_machine.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           }
           
           // Quadríceps
           else if (nameLower === 'agachamento livre com barra' || nameLower === 'agachamento livre') {
-            imageUrl = 'assets/exercises/barbell_squat.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('cadeira extensora') || nameLower === 'extensora') {
-            imageUrl = 'assets/exercises/leg_extension.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/leg_extension.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=FmS_3914aC8';
           } else if (nameLower.includes('leg press')) {
-            imageUrl = 'assets/exercises/leg_press_45.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/leg_press_45.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('agachamento búlgaro') || nameLower.includes('bulgaro')) {
-            imageUrl = 'assets/exercises/bulgarian_split_squat.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/bulgarian_split_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('afundo')) {
-            imageUrl = 'assets/exercises/barbell_lunge.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_lunge.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('passada') || nameLower.includes('avanço') || nameLower.includes('avanço')) {
-            imageUrl = 'assets/exercises/walking_lunge.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/walking_lunge.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('agachamento frontal')) {
-            imageUrl = 'assets/exercises/front_squat.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/front_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('hack squat')) {
-            imageUrl = 'assets/exercises/hack_squat.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/hack_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('goblet squat')) {
-            imageUrl = 'assets/exercises/goblet_squat.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/goblet_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           }
           
           // Posterior
           else if (nameLower.includes('cadeira flexora')) {
-            imageUrl = 'assets/exercises/seated_leg_curl.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/seated_leg_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('mesa flexora')) {
-            imageUrl = 'assets/exercises/lying_leg_curl.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/lying_leg_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('stiff')) {
-            imageUrl = 'assets/exercises/stiff_deadlift.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/stiff_deadlift.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('good morning') || nameLower.includes('bom dia')) {
-            imageUrl = 'assets/exercises/good_morning.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/good_morning.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           }
           
           // Peito
           else if (nameLower === 'supino reto com barra' || nameLower === 'supino reto') {
-            imageUrl = 'assets/exercises/barbell_bench_press.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_bench_press.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           } else if (nameLower === 'supino inclinado com halteres' || nameLower === 'supino inclinado') {
-            imageUrl = 'assets/exercises/incline_dumbbell_press.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/incline_dumbbell_press.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           } else if (nameLower.includes('peck deck') || nameLower.includes('voador')) {
-            imageUrl = 'assets/exercises/peck_deck.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/peck_deck.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           } else if (nameLower.includes('cross over') || nameLower.includes('crossover')) {
-            imageUrl = 'assets/exercises/cable_crossover.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/cable_crossover.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           }
           
           // Costas
           else if (nameLower.includes('puxada frontal') || nameLower.includes('puxada fechada')) {
-            imageUrl = 'assets/exercises/lat_pulldown.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/lat_pulldown.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=T1wG9x1i8Gk';
           } else if (nameLower.includes('remada curvada')) {
-            imageUrl = 'assets/exercises/barbell_row.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_row.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=T1wG9x1i8Gk';
           } else if (nameLower === 'levantamento terra' || nameLower === 'terra') {
-            imageUrl = 'assets/exercises/barbell_deadlift.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_deadlift.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=T1wG9x1i8Gk';
           } else if (nameLower.includes('remada unilateral')) {
-            imageUrl = 'assets/exercises/dumbbell_row.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/dumbbell_row.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=T1wG9x1i8Gk';
           }
           
           // Core
           else if (nameLower === 'prancha frontal' || nameLower === 'prancha') {
-            imageUrl = 'assets/exercises/plank.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/plank.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=EZGgsUJ2Ujg';
           } else if (nameLower.includes('russian twist')) {
-            imageUrl = 'assets/exercises/russian_twist.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/russian_twist.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('roda') || nameLower.includes('rollout')) {
-            imageUrl = 'assets/exercises/ab_wheel_rollout.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/ab_wheel_rollout.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('prancha lateral')) {
-            imageUrl = 'assets/exercises/side_plank.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/side_plank.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=EZGgsUJ2Ujg';
           }
           
           // Ombros
           else if (nameLower.includes('desenvolvimento') || nameLower.includes('arnold press')) {
-            imageUrl = 'assets/exercises/dumbbell_shoulder_press.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/dumbbell_shoulder_press.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           } else if (nameLower.includes('elevação lateral') || nameLower.includes('elevaçao lateral')) {
-            imageUrl = 'assets/exercises/lateral_raise.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/lateral_raise.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=0fW8dI-yXvM';
           }
           
           // Braços (Pre-configuração)
           else if (nameLower.includes('rosca direta') || nameLower === 'rosca 21') {
-            imageUrl = 'assets/exercises/barbell_bicep_curl.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_bicep_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=HPoQsAbUar0';
           } else if (nameLower.includes('rosca martelo')) {
-            imageUrl = 'assets/exercises/dumbbell_hammer_curl.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/dumbbell_hammer_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=HPoQsAbUar0';
           } else if (nameLower.includes('rosca scott') || nameLower.includes('rosca concentrada')) {
-            imageUrl = 'assets/exercises/preacher_bicep_curl.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/preacher_bicep_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=HPoQsAbUar0';
           } else if (nameLower.includes('tríceps corda') || nameLower.includes('triceps corda') || nameLower.includes('tríceps pulley') || nameLower.includes('triceps pulley') || nameLower.includes('extensão de tríceps') || nameLower.includes('extensao de triceps')) {
-            imageUrl = 'assets/exercises/tricep_pushdown.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/tricep_pushdown.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('tríceps testa') || nameLower.includes('triceps testa') || nameLower.includes('tríceps francês') || nameLower.includes('triceps frances')) {
-            imageUrl = 'assets/exercises/tricep_overhead.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/tricep_overhead.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           } else if (nameLower.includes('mergulho')) {
-            imageUrl = 'assets/exercises/tricep_dips.png';
+            if (!imageUrl) imageUrl = 'assets/exercises/tricep_dips.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/watch?v=s5R7s3k6v3c';
           }
 
-          if (imageUrl) {
-            ex.imageUrl = imageUrl;
-            // Remover _synced para forçar o upload de atualização no próximo sync
+          if (imageUrl !== ex.imageUrl || videoUrl !== ex.videoUrl) {
+            if (imageUrl) ex.imageUrl = imageUrl;
+            if (videoUrl) ex.videoUrl = videoUrl;
             delete ex._synced;
             await this.put('exercises', ex);
             updatedAny = true;
@@ -976,7 +1015,7 @@ class Database {
         }
       }
       if (updatedAny) {
-        console.log('Exercícios atualizados localmente com URLs de imagem.');
+        console.log('Exercícios atualizados localmente com imagens e vídeos.');
       }
     } catch (err) {
       console.warn('Erro na migração de imagens de exercícios:', err);
