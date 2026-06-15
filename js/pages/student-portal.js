@@ -1050,13 +1050,15 @@ function renderTreinar(workouts, schedules) {
             <div class="portal-workout-pick-name">Livre</div>
             <div class="portal-workout-pick-sub">Sem base</div>
           </div>
-          ${workouts.slice(0,6).map(w => `
-            <div class="portal-workout-pick-item" data-wid="${w.id}">
-              <div class="portal-workout-pick-icon">${getWorkoutSVG(w.name)}</div>
-              <div class="portal-workout-pick-name">${(w.name||'Treino').substring(0,18)}${(w.name||'').length>18?'…':''}</div>
-              <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
-            </div>
-          `).join('')}
+          ${[...workouts]
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }))
+            .map(w => `
+              <div class="portal-workout-pick-item" data-wid="${w.id}">
+                <div class="portal-workout-pick-icon">${getWorkoutSVG(w.name)}</div>
+                <div class="portal-workout-pick-name">${w.name || 'Treino'}</div>
+                <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
+              </div>
+            `).join('')}
         </div>
         <input type="hidden" id="soloWorkoutSel" value="">
       </div>
