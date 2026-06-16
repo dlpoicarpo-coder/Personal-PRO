@@ -336,7 +336,7 @@ export const METHOD_PROGRESSIONS = {
   },
   'FST-7': {
     desc: '7 séries do isolador com 30-45s descanso. Alta congestão.',
-    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))\r
+    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))
   },
 };
 

@@ -1440,12 +1440,15 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   const s = state.session;
   if (!s) { notify.error('Sessão não encontrada'); return; }
 
+  const pseVal = post.pse ? parseInt(post.pse) : null;
+  const satVal = post.satisfaction ? parseInt(post.satisfaction) : null;
+
   const sessionData = {
     ...s, status: 'completed', endTime: Date.now(),
     totalDuration: dur, totalVolume: vol, density: dens,
     workSeconds: state.workSec, restSeconds: Math.max(0, dur - state.workSec),
     setLog: [...state.setLog], totalSets: state.setLog.length,
-    postBiofeedback: { pse: parseInt(post.pse)||7, satisfaction: parseInt(post.satisfaction)||8, notes: post.notes||'', submittedAt: Calc.nowISO() },
+    postBiofeedback: { pse: pseVal, satisfaction: satVal, notes: post.notes||'', submittedAt: Calc.nowISO() },
   };
 
   await db.put('sessions', sessionData);
@@ -1458,9 +1461,9 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
     id: bfId,
     studentId: s.studentId, date: s.date,
     ...s.preBiofeedback,
-    pse: parseInt(post.pse)||7,
+    pse: pseVal,
     duration: Math.round(dur/60),
-    trainingLoad: Calc.cargaTreino(parseInt(post.pse)||7, Math.round(dur/60)),
+    trainingLoad: pseVal ? Calc.cargaTreino(pseVal, Math.round(dur/60)) : null,
     notes: post.notes, sessionId: s.id, formType: 'complete',
   });
 
