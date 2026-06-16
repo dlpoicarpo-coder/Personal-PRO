@@ -307,7 +307,13 @@ function renderLiveView(students) {
                 }
               }
 
-              const isTime = ex.loadType === 'time';
+              const cardioMethods = [
+                'zona 1', 'zona 2', 'zona 3', 'zona 4', 'zona 5',
+                'tabata', 'hiit', 'sit ', 'sprint', 'steady state',
+                'progressivo', 'polarizado', 'gibala'
+              ];
+              const isCardioMethod = ex.method && cardioMethods.some(m => ex.method.toLowerCase().includes(m));
+              const isTime = ex.loadType === 'time' || isCardioMethod;
               const repsVal  = done ? done.reps : (temp.reps !== undefined ? temp.reps : defaultReps);
               const loadVal  = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
               const pseVal   = done ? done.pse  : (temp.pse !== undefined ? temp.pse : '');
@@ -479,7 +485,13 @@ export function initTracker(navigateFn) {
               ${ex.method ? `<span style="font-size:0.68rem;color:var(--accent)">${ex.method}</span>` : ''}
             </div>
             ${(() => {
-              const isTime = ex.loadType === 'time';
+              const cardioMethods = [
+                'zona 1', 'zona 2', 'zona 3', 'zona 4', 'zona 5',
+                'tabata', 'hiit', 'sit ', 'sprint', 'steady state',
+                'progressivo', 'polarizado', 'gibala'
+              ];
+              const isCardioMethod = ex.method && cardioMethods.some(m => ex.method.toLowerCase().includes(m));
+              const isTime = ex.loadType === 'time' || isCardioMethod;
               return sets.map((s, si) => `
                 <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:5px" id="set_${ei}_${si}">
                   <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;min-width:20px">S${si+1}</span>

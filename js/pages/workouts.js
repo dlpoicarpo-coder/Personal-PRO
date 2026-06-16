@@ -358,12 +358,13 @@ export const METHOD_COLORS = {
 
 function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const loadType = ex.loadType || 'weight';
-  const isTime   = loadType === 'time';
-  const isBW     = loadType === 'bodyweight';
+  const isBW     = ex.loadType === 'bodyweight';
 
   const selectedMethodOpt = allMethods.find(m => m.name === ex.method);
   const methodCategory = selectedMethodOpt?.category || 'Geral';
   const colors = METHOD_COLORS[methodCategory] || METHOD_COLORS['Geral'];
+  const isCardioMethod = methodCategory === 'Cardio / Endurance';
+  const isTime   = loadType === 'time' || isCardioMethod;
 
   const progression = ex.method ? METHOD_PROGRESSIONS[ex.method] : null;
   let methodPanelHTML = '';
@@ -1072,16 +1073,34 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       const i        = sel.dataset.index;
       const row      = sel.closest('.exercise-row');
       const methodName = opt?.value || '';
+      const category   = opt?.dataset.category || 'Geral';
+      const isCardioMethod = category === 'Cardio / Endurance';
 
       // Remover painel de sub-séries anterior
       row?.querySelectorAll('.method-series-panel').forEach(p => p.remove());
       row?.querySelectorAll('.method-tip').forEach(p => p.remove());
 
+      const repsLbl = document.getElementById(`repsLbl_${i}`);
+      const loadLbl = document.getElementById(`loadLbl_${i}`);
+      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
+      const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
+      const ltSel = document.querySelector(`[name="ex_loadtype_${i}"]`);
+
+      if (isCardioMethod) {
+        if (ltSel) ltSel.value = 'time';
+        if (repsLbl) repsLbl.textContent = 'Duração';
+        if (loadLbl) loadLbl.textContent = 'Intensidade';
+        if (loadEl) loadEl.placeholder = 'km/h/W';
+      } else {
+        const currentLt = ltSel?.value || 'weight';
+        if (repsLbl) repsLbl.textContent = currentLt === 'time' ? 'Duração' : 'Reps/Tempo';
+        if (loadLbl) loadLbl.textContent = currentLt === 'time' ? 'Intensidade' : currentLt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+        if (loadEl) loadEl.placeholder = currentLt === 'time' ? 'km/h/W' : currentLt === 'bodyweight' ? '+kg' : 'kg';
+      }
+
       if (!methodName) {
         // Limpar indicação de método
         const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
-        const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
-        const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
         if (setsEl) setsEl.closest('div').style.opacity = '';
         if (repsEl) repsEl.closest('div').style.opacity = '';
         if (loadEl) loadEl.closest('div').style.opacity = '';
@@ -1090,7 +1109,6 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
 
       // Preencher séries/reps/descanso padrão
       const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
-      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
       const restEl = document.querySelector(`[name="ex_rest_${i}"]`);
       const sets   = opt?.dataset.sets;
       const reps   = opt?.dataset.reps;
@@ -1109,10 +1127,11 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
         // Método simples — apenas dica de descrição
         const desc = opt?.dataset.desc;
         if (desc) {
+          const colors = METHOD_COLORS[category] || METHOD_COLORS['Geral'];
           const tip = document.createElement('div');
           tip.className = 'method-tip';
-          tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
-          tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
+          tip.style.cssText = `font-size:0.72rem;color:${colors.text};margin-top:4px;grid-column:1/-1;padding:6px 8px;background:${colors.bg};border-radius:6px;border-left:3px solid ${colors.text};display:flex;align-items:center;gap:6px;border:1px solid ${colors.border};border-left-width:3px`;
+          tip.innerHTML = `<span style="font-size:0.6rem;text-transform:uppercase;font-weight:800;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;color:${colors.text};border:1px solid ${colors.border}">${category}</span> <strong>${methodName}</strong> — ${desc}`;
           row?.appendChild(tip);
         }
         return;

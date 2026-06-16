@@ -1448,7 +1448,15 @@ function initTreinar(workouts, schedules, student) {
       exLogEl.innerHTML = w.exercises.map((ex, ei) => {
         const loadType = ex.loadType || '';
         const isTime = loadType === 'time';
-        const isCardioEx = isTime || 
+        
+        const cardioMethods = [
+          'zona 1', 'zona 2', 'zona 3', 'zona 4', 'zona 5',
+          'tabata', 'hiit', 'sit ', 'sprint', 'steady state',
+          'progressivo', 'polarizado', 'gibala'
+        ];
+        const isCardioMethod = ex.method && cardioMethods.some(m => ex.method.toLowerCase().includes(m));
+        
+        const isCardioEx = isTime || isCardioMethod || 
                            (ex.name && (ex.name.toLowerCase().includes('esteira') || 
                                        ex.name.toLowerCase().includes('corrida') || 
                                        ex.name.toLowerCase().includes('caminhada') || 
