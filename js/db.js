@@ -1239,6 +1239,9 @@ class Database {
       { name: 'Série de Repetição (VO2max)', category: 'Cardio / Endurance', description: 'Intervalos de 3-5min a 95-100% VO2max.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforço' },
       { name: 'Steady State',    category: 'Cardio / Endurance',      description: 'Ritmo constante e moderado. Zona 2-3. Base aeróbica.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
       { name: 'Progressivo',     category: 'Cardio / Endurance',      description: 'Aumentar velocidade/intensidade a cada bloco. Ex: +0.5km/h a cada 5min.', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
+      { name: 'Polarizado (80/20)', category: 'Cardio / Endurance',      description: 'Distribuição científica: 80% do volume em baixa intensidade (Z1/Z2) e 20% em alta intensidade (Z5+), evitando zona moderada.', sets: '1', repsHint: '80% Z2 / 20% Z5', restHint: 'Nenhum' },
+      { name: 'Gibala 10x60s (HIIT)', category: 'Cardio / Endurance',   description: 'Protocolo de Gibala: 10 tiros de 60s a ~90% FC Máx com 60s de recuperação ativa. Excelente para eficiência de tempo.', sets: '10 rounds', repsHint: '60s esforço', restHint: '60s rec. ativa' },
+      { name: 'Gibala 3x20s (Sprint)', category: 'Cardio / Endurance',   description: 'The One-Minute Workout (Gibala): 3 tiros máximos (all-out) de 20s, com 2min de recuperação leve entre eles.', sets: '3 rounds', repsHint: '20s sprint', restHint: '2min rec. leve' },
 
       // Mobilidade / Flexibilidade
       { name: 'Alongamento Ativo', category: 'Mobilidade / Flexibilidade', description: 'Sustentação ativa de posições articulares no limite da amplitude de movimento.', sets: '2-3', repsHint: '30-45s', restHint: '15s' },
