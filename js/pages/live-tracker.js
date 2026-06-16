@@ -34,7 +34,18 @@ function resetState() {
 }
 
 function totalVolume() {
-  return state.setLog.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
+  return state.setLog.reduce((t, s) => {
+    const ex = state.session?.exercises?.[s.exIdx];
+    if (ex) {
+      const nameLower = (ex.name || '').toLowerCase().trim();
+      const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
+      const isCardioEx = (ex.loadType === 'cardio') || 
+                         cardioKeywords.some(k => nameLower.includes(k)) || 
+                         (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
+      if (isCardioEx) return t;
+    }
+    return t + ((s.reps || 0) * (s.load || 0));
+  }, 0);
 }
 
 function saveCurrentInputs() {
@@ -261,20 +272,20 @@ function renderLiveView(students) {
           <div style="margin-bottom:12px">
             <div style="font-size:1.15rem;font-weight:700;color:var(--primary);margin-bottom:4px">${ex.name || '—'}</div>
             <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
-              <span>${exSets} séries</span>
-              <span>${ex.reps || '12'} reps</span>
-              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}kg</span>` : ''}
-              ${ex.oneRM ? (() => {
+              ${(() => {
                 const nameLower = (ex.name || '').toLowerCase().trim();
                 const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
                 const isCardioEx = (ex.loadType === 'cardio') || 
                                    cardioKeywords.some(k => nameLower.includes(k)) || 
                                    (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
-                return isCardioEx 
-                  ? `<span style="color:var(--text-muted);font-size:0.75rem">FC Máx: ${ex.oneRM} bpm</span>`
-                  : `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>`;
-              })() : ''}
-              <span>${ex.rest || 60}s desc.</span>
+                return `
+                  <span>${exSets} séries</span>
+                  <span>${ex.reps || '12'}${isCardioEx ? '' : ' reps'}</span>
+                  ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}${isCardioEx ? ' bpm' : 'kg'}</span>` : ''}
+                  ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">${isCardioEx ? 'FC Máx' : '1RM'}: ${ex.oneRM}${isCardioEx ? ' bpm' : 'kg'}</span>` : ''}
+                  <span>${ex.rest || 60}s desc.</span>
+                `;
+              })()}
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
             </div>
           </div>
@@ -373,7 +384,14 @@ function renderLiveView(students) {
                 color:${done ? 'var(--success)' : isCur ? 'var(--primary)' : 'var(--text-secondary)'}">
                 <span style="font-size:0.7rem;min-width:12px">${done ? '✓' : isCur ? '●' : '○'}</span>
                 <span style="font-size:0.82rem;font-weight:${isCur ? 600 : 400}">${e.name}</span>
-                ${e.load ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto">${e.load}kg</span>` : ''}
+                ${e.load ? (() => {
+                  const eNameLower = (e.name || '').toLowerCase().trim();
+                  const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
+                  const isCardioE = (e.loadType === 'cardio') || 
+                                    cardioKeywords.some(k => eNameLower.includes(k)) || 
+                                    (e.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => e.method.toLowerCase().includes(m)));
+                  return `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto">${e.load}${isCardioE ? ' bpm' : 'kg'}</span>`;
+                })() : ''}
               </div>`;
             }).join('')}
           </div>
