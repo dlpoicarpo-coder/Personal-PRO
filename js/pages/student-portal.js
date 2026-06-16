@@ -1498,22 +1498,40 @@ function initTreinar(workouts, schedules, student) {
             const targetRepsStr = String(repsVal || ex.reps || '').toLowerCase().trim();
             const isDistance = (targetRepsStr.endsWith('m') && !targetRepsStr.endsWith('min')) || targetRepsStr.endsWith('km');
             
+            const metaDisplay = repsVal || ex.reps || '—';
+            const loadDisplay = loadVal || ex.load || '';
+            const isSwapped = /[%z]/i.test(String(metaDisplay)) && /^\d+$/.test(String(loadDisplay).trim());
+            
             // Extract initial distance/time numeric value for hidden inputs
-            const initialNumericVal = parseFloat(targetRepsStr.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
-            const finalRepsVal = repsVal === '' ? initialNumericVal : repsVal;
+            const checkVal = isSwapped ? String(loadDisplay) : targetRepsStr;
+            const initialNumericVal = parseFloat(checkVal.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+            const finalRepsVal = (isSwapped ? loadDisplay : repsVal) === '' ? initialNumericVal : (isSwapped ? loadDisplay : repsVal);
+            const finalLoadVal = isSwapped ? (parseFloat(metaDisplay) || 0) : (parseFloat(loadVal) || 0);
+
+            const repsLabel = isSwapped ? 'Intensidade' : 'Duração';
+            const loadLabel = isSwapped ? 'Duração' : 'Intensidade';
+            
+            let repsText = metaDisplay;
+            if (!isSwapped && /^\d+$/.test(String(repsText).trim())) {
+              repsText = String(repsText).trim() + ' min';
+            }
+            let loadText = loadDisplay;
+            if (isSwapped && /^\d+$/.test(String(loadText).trim())) {
+              loadText = String(loadText).trim() + ' min';
+            }
 
             return `
               <div class="portal-solo-set-row cardio-set-row" id="setrow_${ei}_${si}" style="display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); margin-bottom:8px; width:100%; box-sizing:border-box;">
                 <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
                   <span class="portal-set-num" style="font-weight:700; color:var(--portal-primary); font-size:0.85rem">Série ${si+1}</span>
                   <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:0.72rem; color:var(--portal-text-secondary);">Meta: <strong style="color:var(--portal-text);">${repsVal || ex.reps || '—'}</strong></span>
-                    ${loadVal ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">Prescrita: <strong style="color:var(--portal-text);">${loadVal}${isCardioEx ? ' bpm' : (isTime ? '' : 'kg')}</strong></span>` : ''}
+                    <span style="font-size:0.72rem; color:var(--portal-text-secondary);">${repsLabel}: <strong style="color:var(--portal-text);">${repsText}</strong></span>
+                    ${loadDisplay ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">${loadLabel}: <strong style="color:var(--portal-text);">${loadText}${isCardioEx && !isSwapped ? ' bpm' : ''}</strong></span>` : ''}
                   </div>
                 </div>
 
                 <input type="hidden" id="sr_${ei}_${si}_reps" value="${finalRepsVal}">
-                <input type="hidden" id="sr_${ei}_${si}_load" value="${parseFloat(loadVal)||0}">
+                <input type="hidden" id="sr_${ei}_${si}_load" value="${finalLoadVal}">
 
                 ${isDistance ? `
                   <div class="cardio-distance-container" style="display:flex; flex-direction:column; gap:6px; width:100%;">
@@ -1795,7 +1813,7 @@ function initTreinar(workouts, schedules, student) {
       };
 
       // Helper to parse target
-      const parseDurationToSeconds = (repsStr) => {
+      const parseDurationToSeconds = (repsStr, isTimeOrCardio = false) => {
         if (!repsStr) return 0;
         const str = String(repsStr).toLowerCase().trim();
         if (str.includes('min') || str.endsWith('m')) {
@@ -1812,8 +1830,17 @@ function initTreinar(workouts, schedules, student) {
         }
         const match = str.match(/^(\d+):(\d+)$/);
         if (match) return parseInt(match[1]) * 60 + parseInt(match[2]);
+        
+        if (/[%z/]/i.test(str)) {
+          return 0; // Invalid as duration (e.g. "80% Z2 / 20% Z5")
+        }
+
         const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
         if (isNaN(num)) return 0;
+        
+        if (isTimeOrCardio) {
+          return Math.round(num * 60); // Default to minutes for raw numbers in cardio/time
+        }
         return num < 15 ? Math.round(num * 60) : Math.round(num);
       };
 
@@ -1886,7 +1913,15 @@ function initTreinar(workouts, schedules, student) {
         const key = `${ei}_${si}`;
         const ex = w.exercises[ei];
         const targetStr = getTargetVal(ex, si);
-        const targetSeconds = parseDurationToSeconds(targetStr) || 60; // default 60s
+        const loadVal = ex.seriesProgression && ex.seriesProgression[si] ? ex.seriesProgression[si].load : ex.load;
+        const isCardioEx = ex.muscleGroup === 'Cardio' || ex.category === 'Cardio';
+        const isTimeOrCardio = ex.loadType === 'time' || isCardioEx;
+        
+        let targetSeconds = parseDurationToSeconds(targetStr, isTimeOrCardio);
+        if (targetSeconds === 0 && loadVal && /^\d+$/.test(String(loadVal).trim())) {
+          targetSeconds = parseDurationToSeconds(loadVal, true);
+        }
+        if (!targetSeconds) targetSeconds = 60; // default 60s
         
         if (!window.portalCardioTimers[key]) {
           window.portalCardioTimers[key] = {
