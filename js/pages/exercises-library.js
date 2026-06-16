@@ -931,6 +931,32 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null) {
   const restVal = ex && ex.rest !== undefined ? ex.rest : '60';
   const methodVal = ex ? ex.method : '';
   
+  const categoryOrder = [
+    'Hipertrofia',
+    'Força / Potência',
+    'Resistência / RML',
+    'Cardio / Endurance',
+    'Mobilidade / Flexibilidade',
+    'Core / Estabilização',
+    'Regenerativo / Recovery',
+    'Aquecimento / Preparação',
+    'Calistenia / Ginástica',
+    'LPO / Levantamento Olímpico',
+    'Coordenação / Agilidade',
+    'Reabilitação / Preventivo',
+    'Geral'
+  ];
+  const sortedMethods = [...allMethods].sort((a, b) => {
+    const catA = a.category || 'Geral';
+    const catB = b.category || 'Geral';
+    const idxA = categoryOrder.indexOf(catA);
+    const idxB = categoryOrder.indexOf(catB);
+    const orderA = idxA !== -1 ? idxA : 99;
+    const orderB = idxB !== -1 ? idxB : 99;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
+
   return `
     <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-ei="${ei}" style="flex-wrap:wrap">
       <input class="form-input" name="wk_${wi}_ex_${ei}" value="${nameVal}" list="tplExList" placeholder="Exercício" style="flex:2;min-width:150px;font-size:0.82rem" />
@@ -939,7 +965,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null) {
       <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" />
       <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem">
         <option value="">— Método —</option>
-        ${allMethods.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
+        ${sortedMethods.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">[${m.category||'Geral'}] ${m.name}</option>`).join('')}
       </select>
       <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">✕</button>
     </div>`;

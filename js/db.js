@@ -1197,39 +1197,85 @@ class Database {
     const trainerId = await this._getTrainerId();
     if (!trainerId) return;
     const methods = [
-      // Força / Hipertrofia
+      // Geral
       { name: 'Unilateral',     category: 'Geral',        description: 'Executar o exercício de um lado de cada vez para correção de assimetrias e equilíbrio muscular.', sets: '3-4', repsHint: '10-12', restHint: '60s' },
+      
+      // Hipertrofia
       { name: 'Drop-set',       category: 'Hipertrofia', description: 'Executar até a falha, reduzir carga ~20% e continuar sem descanso. Repetir 2-3x.', sets: '3+drops', repsHint: '8-12 + drops', restHint: '120-180s entre drop-sets completos' },
-      { name: 'Pirâmide Crescente',  category: 'Força',        description: 'Aumentar carga a cada série, reduzir reps: 15→12→10→8. Boa para progressão de força.', sets: '4', repsHint: '15→12→10→8', restHint: '90-120s' },
-      { name: 'Pirâmide Decrescente',category: 'Força',        description: 'Inicia pesado e reduz carga: 8→10→12→15. Trabalha força e resistência na mesma sessão.', sets: '4', repsHint: '8→10→12→15', restHint: '90-120s' },
       { name: 'Pirâmide Dupla',      category: 'Hipertrofia',  description: 'Crescente depois decrescente: 15→12→10→8→10→12→15. Máximo volume. Mais desgastante.', sets: '7', repsHint: '15→12→10→8→10→12→15', restHint: '90s' },
       { name: 'Pirâmide Completa',   category: 'Hipertrofia',  description: 'Versão estendida com 10 séries: 20→15→12→10→8→6→8→10→12→15. Volume e intensidade máximos. Para avançados.', sets: '10', repsHint: '20→15→12→10→8→6→8→10→12→15', restHint: '90-120s' },
-      { name: 'Rest-Pause',      category: 'Força',       description: 'Executar até a falha, descanso de 15-20s, continuar até nova falha. 2-3 mini-séries.', sets: '1-3', repsHint: 'Até a falha + pausa', restHint: '15-20s entre mini-séries' },
       { name: 'Super-série Agonista', category: 'Hipertrofia', description: 'Dois exercícios do mesmo grupo muscular sem descanso. Ex: Supino + Crucifixo.', sets: '3', repsHint: '10-12 cada', restHint: '90s após o par' },
       { name: 'Super-série Antagonista', category: 'Hipertrofia', description: 'Dois exercícios de grupos opostos sem descanso. Ex: Rosca + Tríceps.', sets: '3', repsHint: '10-12 cada', restHint: '60s após o par' },
       { name: 'Tri-set',         category: 'Hipertrofia', description: 'Três exercícios consecutivos sem descanso. Alto estímulo metabólico.', sets: '3', repsHint: '8-12 cada', restHint: '120s após o tri' },
       { name: 'Série Gigante',   category: 'Hipertrofia', description: '4+ exercícios consecutivos. Máximo estímulo. Reduzir cargas.', sets: '3', repsHint: '10-15 cada', restHint: '180s após o set' },
-      { name: 'Cluster',         category: 'Força',       description: 'Carga 85-95% 1RM. Execução: 2-3 reps, pausa 10-15s, repetir até 5 cluster. Força máxima.', sets: '5', repsHint: '2-3 por cluster', restHint: '10-15s entre clusters; 3-5min entre sets' },
       { name: 'Excêntrico Acentuado', category: 'Hipertrofia', description: 'Fase excêntrica 4-6 segundos. Provoca mais dano muscular e hipertrofia.', sets: '3-4', repsHint: '6-8', restHint: '120s' },
-      { name: 'Isometria',       category: 'Força',       description: 'Sustentação em posição de tensão por 30-60s. Boa para estabilização.', sets: '3', repsHint: '30-60s', restHint: '90s' },
       { name: 'Pré-exaustão',    category: 'Hipertrofia', description: 'Isolamento antes do composto. Ex: Crucifixo → Supino. Fatiga o músculo-alvo primeiro.', sets: '3', repsHint: '12 iso + 8-10 composto', restHint: '0s entre, 120s entre séries' },
       { name: 'Bi-set',          category: 'Hipertrofia', description: 'Dois exercícios para o mesmo músculo, sem pausa.', sets: '3-4', repsHint: '10 cada', restHint: '90s após o par' },
       { name: '21s',             category: 'Hipertrofia', description: '7 reps parciais (0-90°) + 7 reps parciais (90-180°) + 7 reps completas = 21.', sets: '3', repsHint: '21 (7+7+7)', restHint: '90-120s' },
       { name: 'Stripping',       category: 'Hipertrofia', description: 'Similar ao drop-set com barra: remover anilhas sem parar.', sets: '1 longa', repsHint: 'Até a falha com cada carga', restHint: '120-180s' },
       { name: 'FST-7',           category: 'Hipertrofia', description: '7 séries do exercício isolador com 30-45s descanso. Alta congestão.', sets: '7', repsHint: '12-15', restHint: '30-45s' },
+
+      // Força / Potência
+      { name: 'Pirâmide Crescente',  category: 'Força / Potência',        description: 'Aumentar carga a cada série, reduzir reps: 15→12→10→8. Boa para progressão de força.', sets: '4', repsHint: '15→12→10→8', restHint: '90-120s' },
+      { name: 'Pirâmide Decrescente',category: 'Força / Potência',        description: 'Inicia pesado e reduz carga: 8→10→12→15. Trabalha força e resistência na mesma sessão.', sets: '4', repsHint: '8→10→12→15', restHint: '90-120s' },
+      { name: 'Rest-Pause',      category: 'Força / Potência',       description: 'Executar até a falha, descanso de 15-20s, continuar até nova falha. 2-3 mini-séries.', sets: '1-3', repsHint: 'Até a falha + pausa', restHint: '15-20s entre mini-séries' },
+      { name: 'Cluster',         category: 'Força / Potência',       description: 'Carga 85-95% 1RM. Execução: 2-3 reps, pausa 10-15s, repetir até 5 cluster. Força máxima.', sets: '5', repsHint: '2-3 por cluster', restHint: '10-15s entre clusters; 3-5min entre sets' },
+      { name: 'Isometria',       category: 'Força / Potência',       description: 'Sustentação em posição de tensão por 30-60s. Boa para estabilização.', sets: '3', repsHint: '30-60s', restHint: '90s' },
+
+      // Resistência / RML
+      { name: 'Série de Exaustão', category: 'Resistência / RML', description: 'Série executada até a falha muscular concêntrica para desenvolvimento de endurance muscular.', sets: '2-3', repsHint: '15-25+', restHint: '45-60s' },
+      { name: 'Circuito',         category: 'Resistência / RML', description: 'Transição imediata entre múltiplos exercícios para aumentar gasto calórico e condicionamento.', sets: '3-4 voltas', repsHint: '15-20', restHint: '2-3min após circuito' },
+
       // Cardio / Endurance
-      { name: 'Zona 1 (Z1)',     category: 'Cardio',      description: '<65% FC Máx. Recuperação ativa, base aeróbica.', sets: '1', repsHint: '20-60min contínuo', restHint: 'Sem descanso' },
-      { name: 'Zona 2 (Z2)',     category: 'Cardio',      description: '65-75% FC Máx. Base aeróbica. Longo e lento.', sets: '1', repsHint: '30-90min contínuo', restHint: 'Sem descanso' },
-      { name: 'Zona 3 (Z3)',     category: 'Cardio',      description: '75-80% FC Máx. Limiar aeróbico inferior.', sets: '1', repsHint: '20-40min', restHint: 'Sem descanso' },
-      { name: 'Zona 4 (Z4) — Limiar', category: 'Cardio', description: '80-90% FC Máx. Limiar anaeróbio.', sets: '1-3', repsHint: '10-20min', restHint: '5min recuperação ativa entre blocos' },
-      { name: 'Zona 5 (Z5) — VO2max', category: 'Cardio', description: '90-100% FC Máx. Intervalos curtos. Melhora VO2max.', sets: '4-8', repsHint: '3-5min esforço', restHint: '3-5min recuperação' },
-      { name: 'Tabata',          category: 'Cardio',      description: '20s máximo / 10s repouso × 8 rounds = 4min.', sets: '1-3 blocos', repsHint: '20s esforço / 10s repouso', restHint: '60-90s entre blocos' },
-      { name: 'HIIT 1:2',        category: 'Cardio',      description: 'Ratio 1:2 trabalho:descanso. 30s esforço / 60s recuperação. 8-12 rounds.', sets: '8-12', repsHint: '30s esforço', restHint: '60s recuperação ativa' },
-      { name: 'HIIT 1:1',        category: 'Cardio',      description: 'Ratio 1:1. 30s esforço / 30s recuperação. Mais intenso.', sets: '8-12', repsHint: '30s esforço', restHint: '30s recuperação ativa' },
-      { name: 'SIT (Sprint Interval Training)', category: 'Cardio', description: 'Sprints de 10-30s máximos. Melhora potência anaeróbica.', sets: '4-6', repsHint: '10-30s sprint', restHint: '2-4min recuperação completa' },
-      { name: 'Série de Repetição (VO2max)', category: 'Cardio', description: 'Intervalos de 3-5min a 95-100% VO2max.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforço' },
-      { name: 'Steady State',    category: 'Cardio',      description: 'Ritmo constante e moderado. Zona 2-3. Base aeróbica.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
-      { name: 'Progressivo',     category: 'Cardio',      description: 'Aumentar velocidade/intensidade a cada bloco. Ex: +0.5km/h a cada 5min.', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
+      { name: 'Zona 1 (Z1)',     category: 'Cardio / Endurance',      description: '<65% FC Máx. Recuperação ativa, base aeróbica.', sets: '1', repsHint: '20-60min contínuo', restHint: 'Sem descanso' },
+      { name: 'Zona 2 (Z2)',     category: 'Cardio / Endurance',      description: '65-75% FC Máx. Base aeróbica. Longo e lento.', sets: '1', repsHint: '30-90min contínuo', restHint: 'Sem descanso' },
+      { name: 'Zona 3 (Z3)',     category: 'Cardio / Endurance',      description: '75-80% FC Máx. Limiar aeróbico inferior.', sets: '1', repsHint: '20-40min', restHint: 'Sem descanso' },
+      { name: 'Zona 4 (Z4) — Limiar', category: 'Cardio / Endurance', description: '80-90% FC Máx. Limiar anaeróbio.', sets: '1-3', repsHint: '10-20min', restHint: '5min recuperação ativa entre blocos' },
+      { name: 'Zona 5 (Z5) — VO2max', category: 'Cardio / Endurance', description: '90-100% FC Máx. Intervalos curtos. Melhora VO2max.', sets: '4-8', repsHint: '3-5min esforço', restHint: '3-5min recuperação' },
+      { name: 'Tabata',          category: 'Cardio / Endurance',      description: '20s máximo / 10s repouso × 8 rounds = 4min.', sets: '1-3 blocos', repsHint: '20s esforço / 10s repouso', restHint: '60-90s entre blocos' },
+      { name: 'HIIT 1:2',        category: 'Cardio / Endurance',      description: 'Ratio 1:2 trabalho:descanso. 30s esforço / 60s recuperação. 8-12 rounds.', sets: '8-12', repsHint: '30s esforço', restHint: '60s recuperação ativa' },
+      { name: 'HIIT 1:1',        category: 'Cardio / Endurance',      description: 'Ratio 1:1. 30s esforço / 30s recuperação. Mais intenso.', sets: '8-12', repsHint: '30s esforço', restHint: '30s recuperação ativa' },
+      { name: 'SIT (Sprint Interval Training)', category: 'Cardio / Endurance', description: 'Sprints de 10-30s máximos. Melhora potência anaeróbica.', sets: '4-6', repsHint: '10-30s sprint', restHint: '2-4min recuperação completa' },
+      { name: 'Série de Repetição (VO2max)', category: 'Cardio / Endurance', description: 'Intervalos de 3-5min a 95-100% VO2max.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforço' },
+      { name: 'Steady State',    category: 'Cardio / Endurance',      description: 'Ritmo constante e moderado. Zona 2-3. Base aeróbica.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
+      { name: 'Progressivo',     category: 'Cardio / Endurance',      description: 'Aumentar velocidade/intensidade a cada bloco. Ex: +0.5km/h a cada 5min.', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
+
+      // Mobilidade / Flexibilidade
+      { name: 'Alongamento Ativo', category: 'Mobilidade / Flexibilidade', description: 'Sustentação ativa de posições articulares no limite da amplitude de movimento.', sets: '2-3', repsHint: '30-45s', restHint: '15s' },
+      { name: 'Mobilidade Articular', category: 'Mobilidade / Flexibilidade', description: 'Exercícios dinâmicos visando aumentar a lubrificação sinovial e amplitude.', sets: '3', repsHint: '10-15 reps lentas', restHint: '0s' },
+
+      // Core / Estabilização
+      { name: 'Estabilização Core', category: 'Core / Estabilização', description: 'Manutenção de posturas isométricas que recrutam eretores da espinha, transverso abdominal e oblíquos.', sets: '3-4', repsHint: '30-60s', restHint: '45s' },
+      { name: 'Anti-Rotacional', category: 'Core / Estabilização', description: 'Exercícios com resistência que desafiam o core a impedir o movimento rotacional.', sets: '3', repsHint: '10-12', restHint: '60s' },
+
+      // Regenerativo / Recovery
+      { name: 'Recuperação Ativa', category: 'Regenerativo / Recovery', description: 'Esforço de baixíssima intensidade pós-treino ou em dia regenerativo para remover lactato.', sets: '1', repsHint: '10-20min', restHint: 'Nenhum' },
+      { name: 'Liberação Miofascial', category: 'Regenerativo / Recovery', description: 'Automassagem com rolo de espuma (foam roller) ou bola para soltar fáscias musculares.', sets: '1', repsHint: '1-2min por grupo', restHint: '0s' },
+
+      // Aquecimento / Preparação
+      { name: 'RAMP (Ativação)', category: 'Aquecimento / Preparação', description: 'Ativação progressiva (Raise, Activate, Mobilize, Potentiate) para preparar o sistema nervoso e articular.', sets: '1', repsHint: '5-10min', restHint: '0s' },
+      { name: 'Facilitação Neuromuscular', category: 'Aquecimento / Preparação', description: 'FNP (Facilitação Neuromuscular Proprioceptiva) - contrair-relaxar para ganho rápido de amplitude articular.', sets: '2-3', repsHint: '15-20s', restHint: '15s' },
+      { name: 'Ativação Muscular', category: 'Aquecimento / Preparação', description: 'Estímulo direcionado de baixa intensidade para ativação de músculos alvo.', sets: '2', repsHint: '15-20', restHint: '30s' },
+
+      // Calistenia / Ginástica
+      { name: 'Progressão Calistênica', category: 'Calistenia / Ginástica', description: 'Trabalho focado em progressões de força relativa e peso corporal (ex: Tuck Planche, Front Lever).', sets: '4-5', repsHint: 'Submáxima', restHint: '120-180s' },
+      { name: 'Isometria Avançada', category: 'Calistenia / Ginástica', description: 'Manutenção de posturas calistênicas estáticas sob máxima contração voluntária (ex: L-sit, Handstand).', sets: '3-4', repsHint: '10-20s', restHint: '90s' },
+      { name: 'Treino de Skills', category: 'Calistenia / Ginástica', description: 'Desenvolvimento de habilidades ginásticas e controle motor antes da fadiga muscular.', sets: '3-5', repsHint: 'Trabalho de técnica', restHint: '120s' },
+
+      // LPO / Levantamento Olímpico
+      { name: 'Complex Olímpico', category: 'LPO / Levantamento Olímpico', description: 'Sequência ininterrupta de variações de LPO (ex: Clean + Front Squat + Jerk) para potência e coordenação.', sets: '3-5', repsHint: '1-3 complexes', restHint: '120-180s' },
+      { name: 'Cluster LPO', category: 'LPO / Levantamento Olímpico', description: 'Séries compostas por repetições únicas (singles) com pausa curta de 10-15s para foco na técnica.', sets: '4-6', repsHint: '3-5 singles', restHint: '180s' },
+      { name: 'Potência / Velocidade', category: 'LPO / Levantamento Olímpico', description: 'Trabalho dinâmico com 60-80% 1RM focado na velocidade de execução concêntrica.', sets: '4-6', repsHint: '2-3', restHint: '120s' },
+
+      // Coordenação / Agilidade
+      { name: 'Escada de Agilidade', category: 'Coordenação / Agilidade', description: 'Padrões rápidos de passos na escada de agilidade para coordenação neuromuscular e velocidade de pés.', sets: '4-6 voltas', repsHint: 'Trabalho rápido', restHint: '45-60s' },
+      { name: 'Treino de Reação', category: 'Coordenação / Agilidade', description: 'Deslocamento multidirecional responsivo a comandos visuais ou auditivos do treinador.', sets: '4-6', repsHint: '15-30s esforço', restHint: '60s' },
+      { name: 'Drill Técnico', category: 'Coordenação / Agilidade', description: 'Exercícios repetitivos específicos para refino de gestos esportivos e controle de movimento.', sets: '3-4', repsHint: '10-15', restHint: '60s' },
+
+      // Reabilitação / Preventivo
+      { name: 'Isolamento Corretivo', category: 'Reabilitação / Preventivo', description: 'Recrutamento seletivo de estabilizadores profundos para prevenção de lesões e reabilitação pós-lesão.', sets: '3', repsHint: '12-15 lentas', restHint: '45s' },
+      { name: 'Controle Motor', category: 'Reabilitação / Preventivo', description: 'Exercícios de baixa sobrecarga focados na qualidade biomecânica e recrutamento muscular consciente.', sets: '3', repsHint: '10-15', restHint: '30-45s' },
+      { name: 'Excêntrico Lento (Rehab)', category: 'Reabilitação / Preventivo', description: 'Foco exclusivo na fase de estiramento controlado (4-6 segundos) para tratamento de tendinopatias.', sets: '3-4', repsHint: '8-10', restHint: '60s' }
     ];
     const existing = await this.getAll('methods');
     

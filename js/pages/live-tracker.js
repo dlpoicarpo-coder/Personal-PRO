@@ -307,6 +307,7 @@ function renderLiveView(students) {
                 }
               }
 
+              const isTime = ex.loadType === 'time';
               const repsVal  = done ? done.reps : (temp.reps !== undefined ? temp.reps : defaultReps);
               const loadVal  = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
               const pseVal   = done ? done.pse  : (temp.pse !== undefined ? temp.pse : '');
@@ -320,12 +321,12 @@ function renderLiveView(students) {
                   ${setLabel ? `<span style="font-size:0.55rem;color:var(--text-muted);white-space:nowrap">${setLabel}</span>` : ''}
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
-                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">${isTime ? 'Duração' : 'Reps'}</span>
+                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="${isTime ? 'min/s' : '—'}" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">kg</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">${isTime ? 'Intens.' : 'kg'}</span>
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="${isTime ? 'vel/w' : '—'}" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
@@ -477,34 +478,37 @@ export function initTracker(navigateFn) {
               <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">${ex.name}</div>
               ${ex.method ? `<span style="font-size:0.68rem;color:var(--accent)">${ex.method}</span>` : ''}
             </div>
-            ${sets.map((s, si) => `
-              <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:5px" id="set_${ei}_${si}">
-                <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;min-width:20px">S${si+1}</span>
-                <div>
-                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Reps</label>
-                  <input type="number" class="form-input set-reps" data-ei="${ei}" data-si="${si}"
-                    value="${s.reps||0}" min="0" max="100"
-                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                </div>
-                <div>
-                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Carga (kg)</label>
-                  <input type="number" class="form-input set-load" data-ei="${ei}" data-si="${si}"
-                    value="${s.load||0}" min="0" step="0.5"
-                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                </div>
-                <div>
-                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">PSE</label>
-                  <input type="number" class="form-input set-pse" data-ei="${ei}" data-si="${si}"
-                    value="${s.pse||''}" min="1" max="10" placeholder="—"
-                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                </div>
-                <div>
-                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">RIR</label>
-                  <input type="number" class="form-input set-rir" data-ei="${ei}" data-si="${si}"
-                    value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="—"
-                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                </div>
-              </div>`).join('')}
+            ${(() => {
+              const isTime = ex.loadType === 'time';
+              return sets.map((s, si) => `
+                <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:5px" id="set_${ei}_${si}">
+                  <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;min-width:20px">S${si+1}</span>
+                  <div>
+                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">${isTime ? 'Duração' : 'Reps'}</label>
+                    <input type="number" class="form-input set-reps" data-ei="${ei}" data-si="${si}"
+                      value="${s.reps||0}" min="0" max="100"
+                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                  </div>
+                  <div>
+                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">${isTime ? 'Intensidade' : 'Carga (kg)'}</label>
+                    <input type="number" class="form-input set-load" data-ei="${ei}" data-si="${si}"
+                      value="${s.load||0}" min="0" step="0.5"
+                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                  </div>
+                  <div>
+                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">PSE</label>
+                    <input type="number" class="form-input set-pse" data-ei="${ei}" data-si="${si}"
+                      value="${s.pse||''}" min="1" max="10" placeholder="—"
+                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                  </div>
+                  <div>
+                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">RIR</label>
+                    <input type="number" class="form-input set-rir" data-ei="${ei}" data-si="${si}"
+                      value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="—"
+                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                  </div>
+                </div>`).join('');
+            })()}
           </div>`;
       }).join('');
 

@@ -340,10 +340,30 @@ export const METHOD_PROGRESSIONS = {
   },
 };
 
+export const METHOD_COLORS = {
+  'Cardio / Endurance': { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.3)', text: '#10b981' },
+  'Hipertrofia': { bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.3)', text: '#8b5cf6' },
+  'Força / Potência': { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.3)', text: '#ef4444' },
+  'Resistência / RML': { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)', text: '#f59e0b' },
+  'Mobilidade / Flexibilidade': { bg: 'rgba(2,132,199,0.08)', border: 'rgba(2,132,199,0.3)', text: '#0284c7' },
+  'Core / Estabilização': { bg: 'rgba(219,39,119,0.08)', border: 'rgba(219,39,119,0.3)', text: '#db2777' },
+  'Regenerativo / Recovery': { bg: 'rgba(13,148,136,0.08)', border: 'rgba(13,148,136,0.3)', text: '#0d9488' },
+  'Aquecimento / Preparação': { bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.3)', text: '#f97316' },
+  'Calistenia / Ginástica': { bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.3)', text: '#6366f1' },
+  'LPO / Levantamento Olímpico': { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.3)', text: '#eab308' },
+  'Coordenação / Agilidade': { bg: 'rgba(132,204,22,0.08)', border: 'rgba(132,204,22,0.3)', text: '#84cc16' },
+  'Reabilitação / Preventivo': { bg: 'rgba(244,63,94,0.08)', border: 'rgba(244,63,94,0.3)', text: '#f43f5e' },
+  'Geral': { bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.3)', text: '#64748b' }
+};
+
 function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const loadType = ex.loadType || 'weight';
   const isTime   = loadType === 'time';
   const isBW     = loadType === 'bodyweight';
+
+  const selectedMethodOpt = allMethods.find(m => m.name === ex.method);
+  const methodCategory = selectedMethodOpt?.category || 'Geral';
+  const colors = METHOD_COLORS[methodCategory] || METHOD_COLORS['Geral'];
 
   const progression = ex.method ? METHOD_PROGRESSIONS[ex.method] : null;
   let methodPanelHTML = '';
@@ -377,10 +397,11 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
     }).join('');
 
     methodPanelHTML = `
-      <div class="method-series-panel" style="grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px">
+      <div class="method-series-panel" style="grid-column:1/-1;margin-top:6px;background:${colors.bg};border:1px solid ${colors.border};border-radius:8px;padding:10px 12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div>
-            <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${ex.method}</span>
+            <span style="font-size:0.6rem;text-transform:uppercase;font-weight:800;color:${colors.text};background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;margin-right:6px;border:1px solid ${colors.border}">${methodCategory}</span>
+            <span style="font-size:0.75rem;font-weight:700;color:${colors.text}">${ex.method}</span>
             <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
@@ -401,15 +422,42 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       </div>
     `;
   } else if (ex.method) {
-    const methodOpt = allMethods.find(m => m.name === ex.method);
-    const desc = methodOpt?.description;
+    const desc = selectedMethodOpt?.description;
     if (desc) {
       methodPanelHTML = `
-        <div class="method-tip" style="font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)">
+        <div class="method-tip" style="font-size:0.72rem;color:${colors.text};margin-top:4px;grid-column:1/-1;padding:6px 8px;background:${colors.bg};border-radius:6px;border-left:3px solid ${colors.text};display:flex;align-items:center;gap:6px;border:1px solid ${colors.border};border-left-width:3px">
+          <span style="font-size:0.6rem;text-transform:uppercase;font-weight:800;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;color:${colors.text};border:1px solid ${colors.border}">${methodCategory}</span>
           <strong>${ex.method}</strong> — ${desc}
         </div>`;
     }
   }
+
+  // Sort and group methods by category
+  const categoryOrder = [
+    'Hipertrofia',
+    'Força / Potência',
+    'Resistência / RML',
+    'Cardio / Endurance',
+    'Mobilidade / Flexibilidade',
+    'Core / Estabilização',
+    'Regenerativo / Recovery',
+    'Aquecimento / Preparação',
+    'Calistenia / Ginástica',
+    'LPO / Levantamento Olímpico',
+    'Coordenação / Agilidade',
+    'Reabilitação / Preventivo',
+    'Geral'
+  ];
+  const sortedMethods = [...allMethods].sort((a, b) => {
+    const catA = a.category || 'Geral';
+    const catB = b.category || 'Geral';
+    const idxA = categoryOrder.indexOf(catA);
+    const idxB = categoryOrder.indexOf(catB);
+    const orderA = idxA !== -1 ? idxA : 99;
+    const orderB = idxB !== -1 ? idxB : 99;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
 
   return `
     <div class="exercise-row" style="
@@ -427,9 +475,11 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
-        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Reps/Tempo</label>
-        <input class="form-input" name="ex_reps_${index}" value="${ex.reps || ex.defaultReps || '12'}"
-          placeholder="12" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65" id="repsLbl_${index}">
+          ${isTime ? 'Duração' : 'Reps/Tempo'}
+        </label>
+        <input class="form-input" name="ex_reps_${index}" value="${ex.reps || ex.defaultReps || (isTime ? '20min' : '12')}"
+          placeholder="${isTime ? '20min / 30s' : '12'}" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65" id="loadLbl_${index}">
@@ -466,9 +516,9 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         <select class="form-select ex-method" name="ex_method_${index}" data-index="${index}"
           style="font-size:0.78rem;padding:4px 6px">
           <option value="">— Nenhum —</option>
-          ${allMethods.map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
+          ${sortedMethods.map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
             data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
-            data-desc="${m.description||''}">${m.name}</option>`).join('')}
+            data-desc="${m.description||''}" data-category="${m.category||'Geral'}">[${m.category||'Geral'}] ${m.name}</option>`).join('')}
         </select>
       </div>
       <button type="button" class="btn btn-ghost btn-icon remove-exercise" data-index="${index}"

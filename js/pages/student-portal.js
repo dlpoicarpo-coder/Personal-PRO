@@ -1445,87 +1445,208 @@ function initTreinar(workouts, schedules, student) {
   function buildExerciseLog(w) {
     const exLogEl = document.getElementById('soloExerciseLog');
     if (w && w.exercises?.length) {
-      exLogEl.innerHTML = w.exercises.map((ex, ei) => `
-        <div class="glass-card portal-live-ex-card">
-          <div class="portal-live-ex-header">
-            <div class="portal-ex-num">${ei+1}</div>
-            <div style="flex:1;min-width:0">
-              <div class="portal-ex-name">${ex.name}</div>
-              <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
-              ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
-            </div>
-            <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </button>
-            ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
-          </div>
-          ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
-          ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
-            let repsVal = '';
-            let loadVal = '';
-            let restVal = ex.rest || 60;
-            
-            if (ex.seriesProgression && ex.seriesProgression[si]) {
-              const sp = ex.seriesProgression[si];
-              repsVal = parseInt(sp.reps) || '';
-              loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
-              restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
+      exLogEl.innerHTML = w.exercises.map((ex, ei) => {
+        const loadType = ex.loadType || '';
+        const isTime = loadType === 'time';
+        const isCardioEx = isTime || 
+                           (ex.name && (ex.name.toLowerCase().includes('esteira') || 
+                                       ex.name.toLowerCase().includes('corrida') || 
+                                       ex.name.toLowerCase().includes('caminhada') || 
+                                       ex.name.toLowerCase().includes('bicicleta') || 
+                                       ex.name.toLowerCase().includes('elíptico') || 
+                                       ex.name.toLowerCase().includes('remo ergométrico') || 
+                                       ex.name.toLowerCase().includes('natação') || 
+                                       ex.name.toLowerCase().includes('pular corda') || 
+                                       ex.name.toLowerCase().includes('spinning') || 
+                                       ex.name.toLowerCase().includes('assault bike') || 
+                                       ex.name.toLowerCase().includes('ski erg') || 
+                                       ex.name.toLowerCase().includes('air runner') ||
+                                       ex.name.toLowerCase().includes('hiit') ||
+                                       ex.name.toLowerCase().includes('tabata')));
+
+        const isTimedOrCardio = isTime || isCardioEx;
+
+        const setsHTML = Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
+          let repsVal = '';
+          let loadVal = '';
+          let restVal = ex.rest || 60;
+          
+          if (ex.seriesProgression && ex.seriesProgression[si]) {
+            const sp = ex.seriesProgression[si];
+            repsVal = sp.reps !== undefined && sp.reps !== null ? sp.reps : '';
+            loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
+            restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
+          } else {
+            if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+              const parts = ex.reps.split('→');
+              repsVal = parts[si] !== undefined ? parts[si] : ex.reps;
             } else {
-              if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
-                const parts = ex.reps.split('→');
-                if (parts[si]) {
-                  repsVal = parseInt(parts[si]) || '';
-                } else {
-                  repsVal = parseInt(ex.reps) || '';
-                }
-              } else {
-                repsVal = parseInt(ex.reps) || '';
-              }
-              loadVal = ex.load || '';
+              repsVal = ex.reps || '';
             }
+            loadVal = ex.load || '';
+          }
+
+          if (isTimedOrCardio) {
+            const targetRepsStr = String(repsVal || ex.reps || '').toLowerCase().trim();
+            const isDistance = (targetRepsStr.endsWith('m') && !targetRepsStr.endsWith('min')) || targetRepsStr.endsWith('km');
+            
+            // Extract initial distance/time numeric value for hidden inputs
+            const initialNumericVal = parseFloat(targetRepsStr.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+            const finalRepsVal = repsVal === '' ? initialNumericVal : repsVal;
 
             return `
-              <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-                <span class="portal-set-num">S${si+1}</span>
-                <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
-                <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
-                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
-                  <option value="" disabled selected>PSE</option>
-                  <option value="1">1 - M. Leve</option>
-                  <option value="2">2 - Leve</option>
-                  <option value="3">3 - Moderado</option>
-                  <option value="4">4 - A. Pesado</option>
-                  <option value="5">5 - Forte</option>
-                  <option value="6">6 - Forte+</option>
-                  <option value="7">7 - M. Forte</option>
-                  <option value="8">8 - M. Forte+</option>
-                  <option value="9">9 - Extr. Forte</option>
-                  <option value="10">10 - Máximo</option>
-                </select>
-                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
-                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
-                  <option value="" disabled selected>RIR</option>
-                  <option value="0">0 RIR (Falha)</option>
-                  <option value="1">1 RIR</option>
-                  <option value="2">2 RIR</option>
-                  <option value="3">3 RIR</option>
-                  <option value="4">4 RIR</option>
-                  <option value="5">5 RIR</option>
-                  <option value="6">6 RIR</option>
-                  <option value="7">7 RIR</option>
-                  <option value="8">8 RIR</option>
-                  <option value="9">9 RIR</option>
-                  <option value="10">10+ RIR</option>
-                </select>
-                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
-                <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
+              <div class="portal-solo-set-row cardio-set-row" id="setrow_${ei}_${si}" style="display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); margin-bottom:8px; width:100%; box-sizing:border-box;">
+                <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                  <span class="portal-set-num" style="font-weight:700; color:var(--portal-primary); font-size:0.85rem">Série ${si+1}</span>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:0.72rem; color:var(--portal-text-secondary);">Meta: <strong style="color:var(--portal-text);">${repsVal || ex.reps || '—'}</strong></span>
+                    ${loadVal ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">Prescrita: <strong style="color:var(--portal-text);">${loadVal}${isTime?'':'kg'}</strong></span>` : ''}
+                  </div>
+                </div>
+
+                <input type="hidden" id="sr_${ei}_${si}_reps" value="${finalRepsVal}">
+                <input type="hidden" id="sr_${ei}_${si}_load" value="${parseFloat(loadVal)||0}">
+
+                ${isDistance ? `
+                  <div class="cardio-distance-container" style="display:flex; flex-direction:column; gap:6px; width:100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                      <div style="display:flex; align-items:center; gap:4px;">
+                        <input type="number" class="distance-progress-input portal-solo-input" data-ei="${ei}" data-si="${si}" style="width:75px; text-align:center; font-size:1.05rem; font-weight:bold; height:28px; margin:0; padding:2px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff" value="${parseFloat(repsVal) || initialNumericVal}" />
+                        <span style="font-size:0.8rem; font-weight:600; color:var(--portal-text-secondary)">m / km</span>
+                      </div>
+                      <span class="distance-pct-display" style="font-size:0.75rem; font-weight:600; color:var(--portal-accent);">0%</span>
+                    </div>
+                    <div class="cardio-progress-bar-bg" style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden;">
+                      <div class="cardio-progress-bar-fill" id="progress_fill_${ei}_${si}" style="width:0%; height:100%; background:linear-gradient(90deg, var(--portal-accent), var(--portal-primary)); transition:width 0.3s ease;"></div>
+                    </div>
+                    <div style="display:flex; gap:6px; justify-content:center; align-items:center; margin-top:4px; width:100%;">
+                      <button type="button" class="btn-dist-step minus-btn" data-ei="${ei}" data-si="${si}" data-step="-50" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">-50m</button>
+                      <button type="button" class="btn-dist-step minus-btn" data-ei="${ei}" data-si="${si}" data-step="-10" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">-10m</button>
+                      <button type="button" class="btn-dist-step plus-btn" data-ei="${ei}" data-si="${si}" data-step="10" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">+10m</button>
+                      <button type="button" class="btn-dist-step plus-btn" data-ei="${ei}" data-si="${si}" data-step="50" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">+50m</button>
+                    </div>
+                  </div>
+                ` : `
+                  <div class="cardio-timer-container" style="display:flex; flex-direction:column; gap:6px; width:100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                      <span class="timer-display" id="timer_display_${ei}_${si}" style="font-family: monospace; font-size:1.4rem; font-weight:bold; color:var(--portal-primary); text-shadow:0 0- 10px var(--portal-primary-glow);">00:00</span>
+                      <span class="timer-pct-display" id="timer_pct_${ei}_${si}" style="font-size:0.75rem; font-weight:600; color:var(--portal-primary);">0%</span>
+                    </div>
+                    <div class="cardio-progress-bar-bg" style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; position:relative;">
+                      <div class="cardio-progress-bar-fill" id="progress_fill_${ei}_${si}" style="width:0%; height:100%; background:linear-gradient(90deg, var(--portal-primary), var(--portal-accent)); transition:width 0.2s ease; box-shadow:0 0 8px var(--portal-primary-glow);"></div>
+                    </div>
+                    <div style="display:flex; gap:8px; justify-content:center; margin-top:4px;">
+                      <button type="button" class="btn-timer-ctrl play-btn" id="play_${ei}_${si}" data-ei="${ei}" data-si="${si}" style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:var(--portal-primary); padding:4px 10px; border-radius:6px; font-size:0.72rem; cursor:pointer; display:flex; align-items:center; gap:4px; font-weight:bold;">▶ Iniciar</button>
+                      <button type="button" class="btn-timer-ctrl pause-btn" id="pause_${ei}_${si}" data-ei="${ei}" data-si="${si}" style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); color:var(--portal-warning); padding:4px 10px; border-radius:6px; font-size:0.72rem; cursor:pointer; display:none; align-items:center; gap:4px; font-weight:bold;">⏸ Pausar</button>
+                      <button type="button" class="btn-timer-ctrl reset-btn" id="reset_${ei}_${si}" data-ei="${ei}" data-si="${si}" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text-secondary); padding:4px 10px; border-radius:6px; font-size:0.72rem; cursor:pointer;">↺ Reset</button>
+                    </div>
+                  </div>
+                `}
+
+                <div style="display:flex; align-items:center; gap:6px; width:100%; flex-wrap:wrap; margin-top:4px; justify-content:space-between;">
+                  <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:100px;">
+                    <span style="font-size:0.65rem; color:var(--portal-text-secondary); white-space:nowrap;">Intensidade:</span>
+                    <input type="number" class="cardio-intensity-input portal-solo-input" data-ei="${ei}" data-si="${si}" placeholder="${parseFloat(loadVal) || 'Vel.'}" min="0" step="0.1" style="height:26px; font-size:0.8rem; margin:0; padding:2px 4px; text-align:center; flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff" value="${parseFloat(loadVal) || ''}" />
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                    <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
+                      <option value="" disabled selected>PSE</option>
+                      <option value="1">1 - M. Leve</option>
+                      <option value="2">2 - Leve</option>
+                      <option value="3">3 - Moderado</option>
+                      <option value="4">4 - A. Pesado</option>
+                      <option value="5">5 - Forte</option>
+                      <option value="6">6 - Forte+</option>
+                      <option value="7">7 - M. Forte</option>
+                      <option value="8">8 - M. Forte+</option>
+                      <option value="9">9 - Extr. Forte</option>
+                      <option value="10">10 - Máximo</option>
+                    </select>
+                    <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}" style="height:26px; padding:0 8px; font-size:0.75rem; border-radius:6px; border:1px solid var(--portal-border); background:var(--portal-surface); color:var(--portal-text)">PSE</button>
+
+                    <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
+                      <option value="" disabled selected>RIR</option>
+                      <option value="0">0 RIR (Falha)</option>
+                      <option value="1">1 RIR</option>
+                      <option value="2">2 RIR</option>
+                      <option value="3">3 RIR</option>
+                      <option value="4">4 RIR</option>
+                      <option value="5">5 RIR</option>
+                      <option value="6">6 RIR</option>
+                      <option value="7">7 RIR</option>
+                      <option value="8">8 RIR</option>
+                      <option value="9">9 RIR</option>
+                      <option value="10">10+ RIR</option>
+                    </select>
+                    <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}" style="height:26px; padding:0 8px; font-size:0.75rem; border-radius:6px; border:1px solid var(--portal-border); background:var(--portal-surface); color:var(--portal-text)">RIR</button>
+
+                    <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}" style="height:26px; width:26px; font-size:0.75rem; border-radius:6px; display:flex; align-items:center; justify-content:center;">&#10003;</button>
+                  </div>
+                </div>
               </div>`;
-          }).join('')}
-          <div class="portal-live-ex-notes-wrap">
-            <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
+          }
+
+          return `
+            <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
+              <span class="portal-set-num">S${si+1}</span>
+              <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
+              <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
+              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
+                <option value="" disabled selected>PSE</option>
+                <option value="1">1 - M. Leve</option>
+                <option value="2">2 - Leve</option>
+                <option value="3">3 - Moderado</option>
+                <option value="4">4 - A. Pesado</option>
+                <option value="5">5 - Forte</option>
+                <option value="6">6 - Forte+</option>
+                <option value="7">7 - M. Forte</option>
+                <option value="8">8 - M. Forte+</option>
+                <option value="9">9 - Extr. Forte</option>
+                <option value="10">10 - Máximo</option>
+              </select>
+              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
+                <option value="" disabled selected>RIR</option>
+                <option value="0">0 RIR (Falha)</option>
+                <option value="1">1 RIR</option>
+                <option value="2">2 RIR</option>
+                <option value="3">3 RIR</option>
+                <option value="4">4 RIR</option>
+                <option value="5">5 RIR</option>
+                <option value="6">6 RIR</option>
+                <option value="7">7 RIR</option>
+                <option value="8">8 RIR</option>
+                <option value="9">9 RIR</option>
+                <option value="10">10+ RIR</option>
+              </select>
+              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+              <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="glass-card portal-live-ex-card">
+            <div class="portal-live-ex-header">
+              <div class="portal-ex-num">${ei+1}</div>
+              <div style="flex:1;min-width:0">
+                <div class="portal-ex-name">${ex.name}</div>
+                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}${isTime?'':'kg'}`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
+                ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
+              </div>
+              <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </button>
+              ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
+            </div>
+            ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
+            ${setsHTML}
+            <div class="portal-live-ex-notes-wrap">
+              <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     } else {
       // Free log
       exLogEl.innerHTML = `
@@ -1655,6 +1776,202 @@ function initTreinar(workouts, schedules, student) {
         });
       });
     });
+
+    // ── NATIVE CARDIO PROGRESS PANEL EVENT BINDINGS ──
+    if (w && w.exercises?.length) {
+      // Helper to format MM:SS
+      const formatMMSS = (sec) => {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      };
+
+      // Helper to parse target
+      const parseDurationToSeconds = (repsStr) => {
+        if (!repsStr) return 0;
+        const str = String(repsStr).toLowerCase().trim();
+        if (str.includes('min') || str.endsWith('m')) {
+          const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
+          return isNaN(num) ? 0 : Math.round(num * 60);
+        }
+        if (str.includes('h')) {
+          const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
+          return isNaN(num) ? 0 : Math.round(num * 3600);
+        }
+        if (str.endsWith('s') || str.includes('seg')) {
+          const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
+          return isNaN(num) ? 0 : Math.round(num);
+        }
+        const match = str.match(/^(\d+):(\d+)$/);
+        if (match) return parseInt(match[1]) * 60 + parseInt(match[2]);
+        const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
+        if (isNaN(num)) return 0;
+        return num < 15 ? Math.round(num * 60) : Math.round(num);
+      };
+
+      const getTargetVal = (ex, si) => {
+        let r = ex.reps;
+        if (ex.seriesProgression && ex.seriesProgression[si] && ex.seriesProgression[si].reps) {
+          r = ex.seriesProgression[si].reps;
+        }
+        return r;
+      };
+
+      // Clean old timers on rebuild
+      if (window.portalCardioTimers) {
+        Object.values(window.portalCardioTimers).forEach(t => { if (t.interval) clearInterval(t.interval); });
+      }
+      window.portalCardioTimers = {};
+
+      // 1. Intensity input sync
+      exLogEl.querySelectorAll('.cardio-intensity-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const { ei, si } = inp.dataset;
+          const hiddenLoad = document.getElementById(`sr_${ei}_${si}_load`);
+          if (hiddenLoad) hiddenLoad.value = inp.value;
+        });
+      });
+
+      // 2. Distance progression sync
+      exLogEl.querySelectorAll('.distance-progress-input').forEach(inp => {
+        const { ei, si } = inp.dataset;
+        const ex = w.exercises[ei];
+        const targetStr = getTargetVal(ex, si);
+        const targetVal = parseFloat(targetStr.replace(/[^0-9.,]/g, '')) || 400; // fallback target
+
+        const updateDistanceProgress = (val) => {
+          inp.value = val;
+          const hiddenReps = document.getElementById(`sr_${ei}_${si}_reps`);
+          if (hiddenReps) hiddenReps.value = val;
+          
+          const pct = Math.min(100, Math.round((val / targetVal) * 100));
+          const fill = exLogEl.querySelector(`#progress_fill_${ei}_${si}`);
+          if (fill) fill.style.width = `${pct}%`;
+          const rowEl = document.getElementById(`setrow_${ei}_${si}`);
+          const pctDisplay = rowEl?.querySelector('.distance-pct-display');
+          if (pctDisplay) pctDisplay.textContent = `${pct}%`;
+        };
+
+        // Initial update
+        updateDistanceProgress(parseFloat(inp.value) || 0);
+
+        inp.addEventListener('input', () => {
+          updateDistanceProgress(parseFloat(inp.value) || 0);
+        });
+      });
+
+      exLogEl.querySelectorAll('.btn-dist-step').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const { ei, si, step } = btn.dataset;
+          const inp = exLogEl.querySelector(`.distance-progress-input[data-ei="${ei}"][data-si="${si}"]`);
+          if (inp) {
+            const newVal = Math.max(0, (parseFloat(inp.value) || 0) + parseFloat(step));
+            inp.value = newVal;
+            inp.dispatchEvent(new Event('input'));
+          }
+        });
+      });
+
+      // 3. Timer progression sync
+      exLogEl.querySelectorAll('.btn-timer-ctrl').forEach(btn => {
+        const { ei, si } = btn.dataset;
+        const key = `${ei}_${si}`;
+        const ex = w.exercises[ei];
+        const targetStr = getTargetVal(ex, si);
+        const targetSeconds = parseDurationToSeconds(targetStr) || 60; // default 60s
+        
+        if (!window.portalCardioTimers[key]) {
+          window.portalCardioTimers[key] = {
+            elapsed: 0,
+            target: targetSeconds,
+            interval: null,
+            running: false
+          };
+        }
+
+        const timerState = window.portalCardioTimers[key];
+        const displayEl = exLogEl.querySelector(`#timer_display_${ei}_${si}`);
+        const fillEl = exLogEl.querySelector(`#progress_fill_${ei}_${si}`);
+        const pctEl = exLogEl.querySelector(`#timer_pct_${ei}_${si}`);
+        
+        const updateTimerUI = () => {
+          if (displayEl) displayEl.textContent = formatMMSS(timerState.elapsed);
+          const pct = Math.min(100, Math.round((timerState.elapsed / timerState.target) * 100));
+          if (fillEl) fillEl.style.width = `${pct}%`;
+          if (pctEl) pctEl.textContent = `${pct}%`;
+          
+          // update hidden reps input (duration in target unit format)
+          const hiddenReps = document.getElementById(`sr_${ei}_${si}_reps`);
+          if (hiddenReps) {
+            // Save as minutes if target is in minutes, else seconds
+            const isMinTarget = targetStr.includes('min') || targetStr.endsWith('m');
+            hiddenReps.value = isMinTarget ? Math.round(timerState.elapsed / 60) : timerState.elapsed;
+          }
+        };
+
+        // Set initial state
+        updateTimerUI();
+
+        if (btn.classList.contains('play-btn')) {
+          btn.addEventListener('click', () => {
+            if (timerState.running) return;
+            timerState.running = true;
+            
+            btn.style.display = 'none';
+            exLogEl.querySelector(`#pause_${ei}_${si}`).style.display = 'flex';
+            
+            timerState.interval = setInterval(() => {
+              timerState.elapsed++;
+              updateTimerUI();
+              
+              if (timerState.elapsed >= timerState.target) {
+                clearInterval(timerState.interval);
+                timerState.interval = null;
+                timerState.running = false;
+                
+                exLogEl.querySelector(`#pause_${ei}_${si}`).style.display = 'none';
+                exLogEl.querySelector(`#play_${ei}_${si}`).style.display = 'flex';
+                
+                // Trigger success beep & complete set!
+                playBeep(880, 0.15, 2);
+                const doneBtn = document.getElementById(`sdb_${ei}_${si}`);
+                if (doneBtn && !doneBtn.classList.contains('done')) {
+                  doneBtn.click();
+                }
+              }
+            }, 1000);
+          });
+        }
+
+        if (btn.classList.contains('pause-btn')) {
+          btn.addEventListener('click', () => {
+            if (!timerState.running) return;
+            timerState.running = false;
+            if (timerState.interval) {
+              clearInterval(timerState.interval);
+              timerState.interval = null;
+            }
+            btn.style.display = 'none';
+            exLogEl.querySelector(`#play_${ei}_${si}`).style.display = 'flex';
+          });
+        }
+
+        if (btn.classList.contains('reset-btn')) {
+          btn.addEventListener('click', () => {
+            timerState.running = false;
+            if (timerState.interval) {
+              clearInterval(timerState.interval);
+              timerState.interval = null;
+            }
+            timerState.elapsed = 0;
+            updateTimerUI();
+            
+            exLogEl.querySelector(`#pause_${ei}_${si}`).style.display = 'none';
+            exLogEl.querySelector(`#play_${ei}_${si}`).style.display = 'flex';
+          });
+        }
+      });
+    }
   }
 
 
