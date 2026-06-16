@@ -772,8 +772,18 @@ export function initPeriodization(navigateFn) {
                   const dbEx = allEx.find(e => e.name.toLowerCase().trim() === ex.name.toLowerCase().trim());
                   const exType = dbEx?.loadType || 'weight';
 
+                  const nameLower = ex.name.toLowerCase().trim();
+                  const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
+                  const isCardioEx = (dbEx?.category === 'Cardio') || 
+                                     (dbEx?.muscleGroup === 'Cardio') ||
+                                     cardioKeywords.some(k => nameLower.includes(k)) || 
+                                     (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
+
                   let load;
-                  if (exType === 'time') {
+                  if (isCardioEx) {
+                    load = Math.round(oneRM * (weekPlan.intensityPct / 100));
+                    if (isDeload) load = Math.round(oneRM * 0.5);
+                  } else if (exType === 'time') {
                     load = Math.round(oneRM * loadMultiplier);
                   } else if (exType === 'bodyweight') {
                     load = Math.round(oneRM * loadMultiplier * 2) / 2;
@@ -786,7 +796,9 @@ export function initPeriodization(navigateFn) {
                   if (progression) {
                     const seriesProgression = progression.series.map((s, si) => {
                       let sLoad;
-                      if (exType === 'time') {
+                      if (isCardioEx) {
+                        sLoad = Math.round(load * s.loadPct);
+                      } else if (exType === 'time') {
                         sLoad = Math.round(oneRM * loadMultiplier * s.loadPct);
                       } else if (exType === 'bodyweight') {
                         sLoad = Math.round(oneRM * loadMultiplier * s.loadPct * 2) / 2;
@@ -1006,7 +1018,14 @@ export function initPeriodization(navigateFn) {
           const isCardio = selectedTemplate.category === 'Cardio / Endurance';
           if (!isCardio) {
             const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
-              .filter(e => (e.loadType || 'weight') === 'weight');
+              .filter(e => {
+                const nameLower = e.name.toLowerCase().trim();
+                const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
+                const isCardioEx = (e.loadType === 'cardio') || 
+                                   cardioKeywords.some(k => nameLower.includes(k)) || 
+                                   (e.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => e.method.toLowerCase().includes(m)));
+                return isCardioEx || (e.loadType || 'weight') === 'weight';
+              });
             renderLoadInputs(allEx);
           }
         }
@@ -1142,7 +1161,14 @@ export function initPeriodization(navigateFn) {
                 selectedTemplate = { ...selectedTemplate, sessions: [allSess[0]] };
               } else {
                 const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
-                  .filter(e => (e.loadType || 'weight') === 'weight');
+                  .filter(e => {
+                    const nameLower = e.name.toLowerCase().trim();
+                    const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
+                    const isCardioEx = (e.loadType === 'cardio') || 
+                                       cardioKeywords.some(k => nameLower.includes(k)) || 
+                                       (e.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => e.method.toLowerCase().includes(m)));
+                    return isCardioEx || (e.loadType || 'weight') === 'weight';
+                  });
                 renderLoadInputs(allEx);
               }
             }
@@ -1161,14 +1187,17 @@ async function renderLoadInputs(exercises) {
 
   const BODYWEIGHT_KEYWORDS = ['prancha','flexão','burpee','barra fixa','pull-up','dip','afundo','superman','bird dog','russian twist','abdominal','crunch','mountain climber','jumping jack','polichinelo','ponte'];
   const TIMED_PATTERN = /^\d+s$/i;
+  const CARDIO_KEYWORDS = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
 
   // Obter aluno selecionado
   const studentId = document.querySelector('#macroForm [name="studentId"]')?.value;
   let forceAssessments = [];
+  let conconiAssessments = [];
   if (studentId) {
     try {
       const allAssessments = await db.getAll('assessments');
       forceAssessments = allAssessments.filter(a => a.studentId === studentId && a.type === 'forca');
+      conconiAssessments = allAssessments.filter(a => a.studentId === studentId && a.type === 'conconi');
     } catch (e) {
       console.warn('Erro ao carregar avaliações do aluno para 1RM:', e);
     }
@@ -1177,8 +1206,48 @@ async function renderLoadInputs(exercises) {
   let html = '';
   for (const ex of exercises) {
     const nameLower = ex.name.toLowerCase();
-    const isTimed = ex.loadType === 'time' || TIMED_PATTERN.test(String(ex.reps || ''));
-    const isBodyweight = ex.loadType === 'bodyweight' || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k));
+    const isCardio = CARDIO_KEYWORDS.some(k => nameLower.includes(k)) || 
+                     (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
+    const isTimed = !isCardio && (ex.loadType === 'time' || TIMED_PATTERN.test(String(ex.reps || '')));
+    const isBodyweight = !isCardio && (ex.loadType === 'bodyweight' || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k)));
+
+    if (isCardio) {
+      const conconiMatch = conconiAssessments.sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+      const hasAssessment = !!(conconiMatch && conconiMatch.fcPico);
+      const defaultValue = hasAssessment ? parseInt(conconiMatch.fcPico) : 180;
+
+      html += `
+        <div style="padding:7px 0;border-bottom:1px solid var(--border-color)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="flex:1">
+              <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
+              <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px">
+                Cardio / Endurance · ${ex.sets} séries × ${ex.reps} · ${ex.rest}s descanso
+                ${hasAssessment ? ` <span style="color:#10b981;font-weight:600">📊 FC Pico Avaliada (${conconiMatch.fcPico} bpm)</span>` : ''}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+                <div style="display:flex;align-items:center;gap:4px">
+                  <span style="font-size:0.68rem;color:var(--text-muted)">FC Máx</span>
+                  <input class="form-input load-input" data-ex-key="${ex.name}" data-type="cardio"
+                    type="number" min="80" max="250" step="1" value="${defaultValue}"
+                    style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem; ${hasAssessment ? 'border-color:#10b981;box-shadow:0 0 4px rgba(16,185,129,0.3);' : ''}"
+                    oninput="
+                      const pct = 65;
+                      const bpm = Math.round(parseFloat(this.value || 0) * (pct/100));
+                      const el = this.closest('div').parentNode.querySelector('.load-preview');
+                      if(el) el.textContent = 'Semana 1: ~' + bpm + ' bpm (' + pct + '% FC Máx)';
+                    " />
+                  <span style="font-size:0.72rem;color:var(--text-muted)">bpm</span>
+                </div>
+                <span class="load-preview" style="font-size:0.65rem;color:var(--primary)">Semana 1: ~${Math.round(defaultValue * 0.65)} bpm (65% FC Máx)</span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      continue;
+    }
 
     if (isTimed) {
       const defaultSec = parseInt(String(ex.reps).replace('s','')) || 30;

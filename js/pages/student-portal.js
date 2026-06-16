@@ -1508,7 +1508,7 @@ function initTreinar(workouts, schedules, student) {
                   <span class="portal-set-num" style="font-weight:700; color:var(--portal-primary); font-size:0.85rem">Série ${si+1}</span>
                   <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:0.72rem; color:var(--portal-text-secondary);">Meta: <strong style="color:var(--portal-text);">${repsVal || ex.reps || '—'}</strong></span>
-                    ${loadVal ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">Prescrita: <strong style="color:var(--portal-text);">${loadVal}${isTime?'':'kg'}</strong></span>` : ''}
+                    ${loadVal ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">Prescrita: <strong style="color:var(--portal-text);">${loadVal}${isCardioEx ? ' bpm' : (isTime ? '' : 'kg')}</strong></span>` : ''}
                   </div>
                 </div>
 
@@ -1554,7 +1554,7 @@ function initTreinar(workouts, schedules, student) {
                 <div style="display:flex; align-items:center; gap:6px; width:100%; flex-wrap:wrap; margin-top:4px; justify-content:space-between;">
                   <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:100px;">
                     <span style="font-size:0.65rem; color:var(--portal-text-secondary); white-space:nowrap;">Intensidade:</span>
-                    <input type="number" class="cardio-intensity-input portal-solo-input" data-ei="${ei}" data-si="${si}" placeholder="${parseFloat(loadVal) || 'Vel.'}" min="0" step="0.1" style="height:26px; font-size:0.8rem; margin:0; padding:2px 4px; text-align:center; flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff" value="${parseFloat(loadVal) || ''}" />
+                    <input type="number" class="cardio-intensity-input portal-solo-input" data-ei="${ei}" data-si="${si}" placeholder="${isCardioEx ? 'FC (bpm)' : (parseFloat(loadVal) || 'Vel.')}" min="0" step="0.1" style="height:26px; font-size:0.8rem; margin:0; padding:2px 4px; text-align:center; flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff" value="${parseFloat(loadVal) || ''}" />
                   </div>
 
                   <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
