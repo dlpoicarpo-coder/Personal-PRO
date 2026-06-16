@@ -8,7 +8,8 @@ import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { PERIODIZATION_MODELS, generateProgression } from '../utils/periodization-engine.js';
 import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
-import { METHOD_PROGRESSIONS } from './workouts.js';
+import { METHOD_PROGRESSIONS, METHOD_SCIDATA } from './workouts.js';
+
 
 // Adaptar BUILT_IN_TEMPLATES para o formato que o periodization espera
 function adaptTemplate(t) {
@@ -914,6 +915,22 @@ export function initPeriodization(navigateFn) {
                       const dur = Math.round(30 + (weekPlan.volumePct / 100) * 30);
                       weeklyReps = `${dur}min Z2 (${z2Min}-${z2Max}bpm)`;
                       enrichedSciNote = `FC Máx: ${fcMax}bpm | Z2: ${z2Min}-${z2Max}bpm`;
+                    }
+                  }
+
+                  // ── Enriquecimento científico por método (todos os exercícios não-cardio) ──
+                  // Para exercícios com método definido, busca dados do METHOD_SCIDATA e compõe sciNote
+                  if (!isCardioEx && ex.method && !enrichedSciNote) {
+                    const sciData = METHOD_SCIDATA[ex.method];
+                    if (sciData) {
+                      const cargaKg = load > 0 ? ` | Carga: ${load}kg` : '';
+                      const oneRMStr = oneRM > 0 ? ` (1RM: ${oneRM}kg)` : '';
+                      enrichedSciNote = [
+                        `Zona: ${sciData.zona}${cargaKg}${oneRMStr}`,
+                        `Protocolo: ${sciData.protocolo}`,
+                        `Fisiologia: ${sciData.fisiologia}`,
+                        `Descanso: ${sciData.descanso}`,
+                      ].join(' | ');
                     }
                   }
 

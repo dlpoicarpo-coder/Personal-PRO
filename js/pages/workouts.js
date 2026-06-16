@@ -336,7 +336,193 @@ export const METHOD_PROGRESSIONS = {
   },
   'FST-7': {
     desc: '7 séries do isolador com 30-45s descanso. Alta congestão.',
-    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))
+    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))\r
+  },
+};
+
+// ── DADOS CIENTÍFICOS DE CADA MÉTODO ─────────────────────────────
+// Fonte: ACSM Guidelines, NSCA CSCS, Brad Schoenfeld (2010), Kramer et al.,
+//        Fry (2004), Laurentino et al., Tabata (1996), Gibala (2012)
+// Usado pela geração de macrociclos para enriquecer o campo sciNote de cada exercício
+export const METHOD_SCIDATA = {
+  // ── HIPERTROFIA ──────────────────────────────────────────────
+  'Pirâmide Crescente': {
+    zona: '65–90% 1RM',
+    protocolo: '4 séries: 12×65% → 10×75% → 8×82% → 6×90% 1RM',
+    fisiologia: 'Recrutamento progressivo de fibras tipo II; maximiza hipertrofia sarcomérica',
+    descanso: '60-120s entre séries',
+  },
+  'Pirâmide Decrescente': {
+    zona: '90–60% 1RM',
+    protocolo: '4 séries: 6×90% → 8×80% → 10×72% → 12×60% 1RM',
+    fisiologia: 'Alta ativação neural inicial + volume residual; exaustão completa da unidade motora',
+    descanso: '90-120s entre séries',
+  },
+  'Pirâmide Dupla': {
+    zona: '55–85% 1RM',
+    protocolo: '7 séries: 15→12→10→8→10→12→15 reps (cargas inversamente proporcionais)',
+    fisiologia: 'Volume máximo + pico de intensidade; TUT (Tempo Sob Tensão) elevado — ideal para hipertrofia',
+    descanso: '60-90s entre séries',
+  },
+  'Pirâmide Completa': {
+    zona: '50–90% 1RM',
+    protocolo: '10 séries: Aquecimento ativo (50%) → pico (88%) → retorno à base (60%). TUT ~40min/exercício',
+    fisiologia: 'Exaustão metabólica total; máxima síntese proteica pós-treino (Schoenfeld 2010)',
+    descanso: '60-90s entre séries',
+  },
+  'Drop-set': {
+    zona: '100→80→64% da carga-alvo',
+    protocolo: '3 drops: falha na carga máx → -20% sem descanso → -20% sem descanso',
+    fisiologia: 'Recrutamento de fibras de baixo limiar após falha; EPOC elevado; VO₂ aumentado em 25%',
+    descanso: '0s entre drops / 2-3min até próximo exercício',
+  },
+  'Stripping': {
+    zona: '100→75→55→40% 1RM',
+    protocolo: 'Barra carregada: falha → remove anilhas dos dois lados → falha → repete 4x sem parar',
+    fisiologia: 'Variante do drop-set; máximo recrutamento residual de fibras; depleção total de glicogênio local',
+    descanso: '0s entre drops',
+  },
+  'Rest-Pause': {
+    zona: '80-90% 1RM',
+    protocolo: 'Até a falha → pausa 15-20s → até a falha → pausa 15-20s → até a falha (3 ondas)',
+    fisiologia: 'Ressíntese parcial de ATP; permite mais reps com carga máxima; ↑ tensão mecânica (Fry 2004)',
+    descanso: '15-20s entre ondas / 3-5min entre exercícios',
+  },
+  'Cluster': {
+    zona: '85-95% 1RM',
+    protocolo: '2-3 reps → pausa 10-15s (sem largar a barra) → repetir 5 blocos',
+    fisiologia: 'Ressíntese de fosfocreatina intrasérie; manutenção da velocidade de execução em cargas máximas',
+    descanso: '12-15s entre clusters / 3-5min entre séries',
+  },
+  'FST-7': {
+    zona: '60-70% 1RM',
+    protocolo: '7 séries de 12-15 reps no isolador final, com 30-45s de descanso + alongamento ativo entre séries',
+    fisiologia: 'Alta congestão e estresse metabólico; expansão da fáscia muscular (Hany Rambod, 2007)',
+    descanso: '30-45s entre as 7 séries',
+  },
+  // ── MÉTODOS GERAIS DO BANCO ──────────────────────────────────
+  'Tensão Contínua': {
+    zona: '60-70% 1RM',
+    protocolo: 'Sem fases de descanso na ROM; sem lockout articular; tempo eccêntrico controlado (3-4s)',
+    fisiologia: 'TUT máximo; oclusão vascular contínua → hipóxia local → resposta hipertrófica metabólica (EPOC +18%)',
+    descanso: '45-75s entre séries',
+  },
+  'Bi-set': {
+    zona: '70-80% 1RM',
+    protocolo: '2 exercícios diferentes (mesmo grupo muscular) sem descanso entre si; descanso após o par',
+    fisiologia: 'Potenciação pós-ativação (PAP); maior volume por unidade de tempo; depleção de glicogênio intramuscular',
+    descanso: '0s entre exercícios do par / 90s após par',
+  },
+  'Superset': {
+    zona: '70-80% 1RM',
+    protocolo: '2 exercícios AGONISTAS ANTAGONISTAS sem descanso (ex: bíceps + tríceps); descanso após par',
+    fisiologia: 'PAP recíproca; ↑ amplitude de movimento; ↓ fadiga acumulada vs. séries consecutivas',
+    descanso: '0s entre exercícios / 60-90s após par',
+  },
+  'Série Gigante': {
+    zona: '60-75% 1RM',
+    protocolo: '4+ exercícios para mesmo grupo muscular sem descanso entre si; alta densidade de treino',
+    fisiologia: 'Depleção máxima de glicogênio; hormônio de crescimento +300-400% (Kraemer 1991); ideal para emagrecimento',
+    descanso: '0s entre exercícios / 2-3min após circuito',
+  },
+  'Pré-exaustão': {
+    zona: '70-80% 1RM (isolador) → 80-90% (composto)',
+    protocolo: 'Isolador até falha → composto imediatamente (ex: crucifixo → supino)',
+    fisiologia: 'Fadiga seletiva do músculo-alvo antes do composto; força o agonista a trabalhar em exaustão',
+    descanso: '0s entre isolador e composto / 2-3min após par',
+  },
+  'Oclusão (BFR)': {
+    zona: '20-30% 1RM com torniquete a 50-80% oclusão venosa',
+    protocolo: '4 séries: 30 reps → 15 reps → 15 reps → 15 reps; manguito proximal do membro',
+    fisiologia: 'Hipóxia local → acúmulo de metabólitos → ativação de fibras tipo II com cargas leves (Laurentino et al., 2012)',
+    descanso: '30s entre séries (manguito não removido)',
+  },
+  'GVT (German Volume Training)': {
+    zona: '60% 1RM',
+    protocolo: '10 séries × 10 reps no mesmo exercício composto com 60-90s descanso',
+    fisiologia: 'Volume absurdo; Poliquin/Hatfield: máxima hipertrofia sarcoplasmática; adaptação a alta densidade de trabalho',
+    descanso: '60-90s entre séries',
+  },
+  'Isométrico': {
+    zona: '70-100% MVC (Contração Voluntária Máxima)',
+    protocolo: 'Contração estática em posição específica; 3-5 contrações de 6-10s por série',
+    fisiologia: 'Ganho de força ângulo-específico; ativação neural máxima; usado em reabilitação e potência',
+    descanso: '30-60s entre contrações',
+  },
+  'Excêntrico': {
+    zona: '100-120% do 1RM concêntrico',
+    protocolo: 'Fase de descida com 4-8s; necessita de spotters ou máquinas; fase concêntrica assistida',
+    fisiologia: 'Dano muscular maior; ↑ síntese proteica (48-72h); ↑ força máxima 1.2-1.4x vs. concêntrico',
+    descanso: '120-180s entre séries',
+  },
+  'Endurance (Resistência)': {
+    zona: '30-50% 1RM / 50-70% FC Máx',
+    protocolo: '3 séries × 20-30 reps ou 2-4min contínuos; descanso curto (30-45s)',
+    fisiologia: 'Adaptação mitocondrial; ↑ capilarização; melhora da eficiência oxidativa (ACSM Position Stand)',
+    descanso: '30-45s entre séries',
+  },
+  // ── CARDIO / ENDURANCE ──────────────────────────────────────
+  'Polarizado — Base Aeróbica': {
+    zona: 'Z1 (50-60% FCmáx) + Z2 (60-70% FCmáx)',
+    protocolo: '80% do volume em Z1/Z2; 20% em Z4/Z5. Sessões base: 45-90min em ritmo conversacional',
+    fisiologia: 'Maximiza mitocôndrias tipo I; ↑ limiar aeróbico; previne overtraining (Seiler & Tønnessen, 2009)',
+    descanso: 'Contínuo sem pausa',
+  },
+  'Polarizado — Alta Intensidade': {
+    zona: 'Z4 (80-90% FCmáx) + Z5 (90-100% FCmáx)',
+    protocolo: '4-6 intervalos de 4min em Z5 (90-100% FCmáx) com 2-3min de recuperação ativa em Z1',
+    fisiologia: 'Maximiza VO₂max; melhora capacidade tampão do lactato; recrutamento de fibras tipo IIx (Billat, 2001)',
+    descanso: '2-3min em Z1 entre intervalos',
+  },
+  'Zona 2 (Z2)': {
+    zona: '60-70% FCmáx',
+    protocolo: '30-90min contínuos; pace onde você consegue falar frases completas; FC estável',
+    fisiologia: 'Principal adaptador mitocondrial; ↑ oxidação de gordura; base de todos os programas de endurance (Inigo San Millán)',
+    descanso: 'Contínuo sem pausa',
+  },
+  'HIIT': {
+    zona: 'Z4-Z5 (80-95% FCmáx) / ≥85% VO₂max',
+    protocolo: 'Protocolo Tabata: 8×20s all-out + 10s repouso = 4min total; alternativas: 30-30, 60-60',
+    fisiologia: 'Melhora VO₂max +15% em 6 semanas; EPOC alto; adaptação central e periférica (Tabata et al., 1996)',
+    descanso: '10-60s entre esforços (conforme protocolo)',
+  },
+  'LSD (Longa Duração)': {
+    zona: 'Z1-Z2 (50-70% FCmáx)',
+    protocolo: '60-180min contínuos; ritmo conservador; usado para base aeróbica em endurance atlético',
+    fisiologia: 'Máxima oxidação de ácidos graxos; ↑ VO₂max basal; adaptação cardiovascular de longo prazo',
+    descanso: 'Contínuo sem pausa',
+  },
+  'Fartlek': {
+    zona: 'Varia: Z1-Z5 (livre, por terreno ou feeling)',
+    protocolo: 'Corrida contínua com acelerações livres — sem protocolo rígido; 30-60min',
+    fisiologia: 'Estimula múltiplos sistemas energéticos; melhora capacidade de mudança de ritmo; divertido e sustentável',
+    descanso: 'Nenhum (apenas mudança de intensidade)',
+  },
+  // ── CORE / ESTABILIZAÇÃO ─────────────────────────────────────
+  'Estabilização Core': {
+    zona: '30-50% MVC / RPE 5-6',
+    protocolo: '3 séries × 30-60s isométrico; ativação profunda (transverso, multífido)',
+    fisiologia: 'Estabilização lombar; proteção da coluna durante cargas; prevenção de lesão (McGill, 2010)',
+    descanso: '30-60s entre séries',
+  },
+  'Anti-Rotacional': {
+    zona: 'RPE 6-7',
+    protocolo: 'Pallof Press, Cabo lateral: 3×12-15 reps por lado com pausa de 2s na posição isométrica',
+    fisiologia: 'Fortalece oblíquos e estabilizadores laterais; padrão funcional para esportes e vida diária',
+    descanso: '45-60s entre séries',
+  },
+  // ── FORÇA / POTÊNCIA ────────────────────────────────────────
+  'Contraste (PAP)': {
+    zona: '85-95% 1RM (composto) + movimento explosivo (30-50% 1RM)',
+    protocolo: 'Série pesada → 3-6min → exercício explosivo similar (ex: agachamento pesado → salto com caixa)',
+    fisiologia: 'Potenciação Pós-Ativação: ↑ recrutamento neural residual; ↑ RFD em 10-20% (Hamada et al., 2000)',
+    descanso: '3-6min entre composto e exercício explosivo',
+  },
+  'Velocidade (Dinâmico)': {
+    zona: '55-70% 1RM, executado com máxima velocidade',
+    protocolo: '8-10×2-3 reps; foco total em velocidade de execução; fase eccêntrica controlada',
+    fisiologia: 'Westside Method: ↑ taxa de desenvolvimento de força (RFD); melhora o pico de potência',
+    descanso: '45-90s entre séries',
   },
 };
 

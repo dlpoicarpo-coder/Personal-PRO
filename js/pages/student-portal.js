@@ -2375,11 +2375,27 @@ async function showExerciseModal(ex) {
 
         ${ex.sciNote ? `
         <div style="margin-top:10px;background:rgba(6,182,212,0.08);border-radius:10px;padding:12px 14px;border:1px solid rgba(6,182,212,0.2)">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            <span style="font-size:0.75rem;color:#06b6d4;font-weight:700">Zonas de Frequência Cardíaca</span>
+            <span style="font-size:0.75rem;color:#06b6d4;font-weight:700">Dados Científicos do Método</span>
           </div>
-          <div style="font-size:0.78rem;color:rgba(255,255,255,0.8);line-height:1.6;font-family:monospace">${ex.sciNote.replace(/\|/g,'<br>·')}</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${ex.sciNote.split(' | ').map(part => {
+              const [label, ...rest] = part.split(': ');
+              const val = rest.join(': ');
+              const icons = { 'Zona':'🎯','Protocolo':'📋','Fisiologia':'🔬','Descanso':'⏱️','FC Máx':'❤️','Z1':'💚','Z2':'💛','Z4':'🧡','Z5':'🔴','Carga':'💪' };
+              const colors = { 'Zona':'#f59e0b','Protocolo':'#818cf8','Fisiologia':'#10b981','Descanso':'#06b6d4','FC Máx':'#f43f5e','Carga':'#f97316' };
+              const icon = Object.entries(icons).find(([k]) => label?.startsWith(k))?.[1] || '·';
+              const color = Object.entries(colors).find(([k]) => label?.startsWith(k))?.[1] || '#94a3b8';
+              return val ? `<div style="display:flex;gap:6px;align-items:flex-start">
+                <span style="flex-shrink:0;font-size:0.8rem">${icon}</span>
+                <div>
+                  <span style="font-size:0.65rem;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.06em">${label}: </span>
+                  <span style="font-size:0.72rem;color:rgba(255,255,255,0.82);line-height:1.5">${val}</span>
+                </div>
+              </div>` : '';
+            }).join('')}
+          </div>
         </div>` : ''}
       </div>
     </div>
