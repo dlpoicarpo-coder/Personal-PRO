@@ -591,7 +591,20 @@ class Database {
 
   async getAll(storeName) {
     const trainerId = await this._getTrainerId();
-    const local     = this._getLocal(storeName, trainerId) || [];
+    let local       = this._getLocal(storeName, trainerId) || [];
+
+    if (storeName === 'exercises' || storeName === 'methods') {
+      const seenName = new Set();
+      local = local.filter(item => {
+        if (!item) return false;
+        const name = item.name ? String(item.name).toLowerCase().trim() : '';
+        if (name) {
+          if (seenName.has(name)) return false;
+          seenName.add(name);
+        }
+        return true;
+      });
+    }
 
     if (!this.supabase || !this.SUPABASE_TABLES.has(storeName)) return fixObjectEncoding(local);
 
@@ -1282,8 +1295,8 @@ class Database {
     ];
     const existing = await this.getAll('methods');
     
-    // Clean up legacy non-deterministic default methods for this trainer
-    const defaultToClean = existing.filter(m => m.is_default && !m.id.startsWith('met_'));
+    // Clean up legacy default methods for this trainer
+    const defaultToClean = existing.filter(m => m.is_default);
     for (const m of defaultToClean) {
       await this.delete('methods', m.id);
     }
