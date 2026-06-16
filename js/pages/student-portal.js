@@ -821,7 +821,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
   const todaySched = schedules.find(s => s.date === todayStr);
   let checkinBanner = '';
   if (todaySched) {
-    const checkedIn = biofeedbacks.find(b => b.date?.startsWith(todayStr) && b.formType === 'pre');
+    const checkedIn = biofeedbacks.find(b => b.date?.startsWith(todayStr) && (b.formType === 'pre' || b.formType === 'complete'));
     checkinBanner = checkedIn
       ? `<div class="portal-reminder portal-reminder-success">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -3930,8 +3930,10 @@ function showPortalCheckoutModal(session) {
 
       // Sincronizar com tabela biofeedback
       try {
+        const studentId = session.studentId || session.student_id || portalState.studentId;
+        const trainerId = session.trainerId || session.trainer_id || portalState.trainerId;
         const sessDateStr = (session.date || Calc.nowISO()).slice(0, 10);
-        const bfId = `bf_${session.studentId}_${sessDateStr}`;
+        const bfId = `bf_${studentId}_${sessDateStr}`;
         const preBf = await db.get('biofeedback', bfId) || {};
         
         const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
@@ -3940,20 +3942,20 @@ function showPortalCheckoutModal(session) {
         const newBfData = {
           ...preBf,
           id: bfId,
-          studentId: session.studentId,
-          trainerId: session.trainerId || portalState.trainerId,
-          trainer_id: session.trainerId || portalState.trainerId,
+          studentId: studentId,
+          trainerId: trainerId,
+          trainer_id: trainerId,
           date: session.date || preBf.date || Calc.nowISO(),
-          sleep: preBf.sleep || session.preBiofeedback?.sleep || 7,
-          tqr: preBf.tqr || preBf.energy || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
-          energy: preBf.energy || preBf.tqr || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
-          stress: preBf.stress || session.preBiofeedback?.stress || 5,
-          food: preBf.food || session.preBiofeedback?.food || 5,
-          motivation: preBf.motivation || session.preBiofeedback?.motivation || 7,
-          menstrualCycle: preBf.menstrualCycle || session.preBiofeedback?.menstrualCycle || '',
-          pain: preBf.pain || session.preBiofeedback?.pain || 1,
-          painRegions: preBf.painRegions || session.preBiofeedback?.painRegions || [],
-          painDescription: preBf.painDescription || session.preBiofeedback?.painDescription || '',
+          sleep: preBf.sleep ?? session.preBiofeedback?.sleep ?? 7,
+          tqr: preBf.tqr ?? preBf.energy ?? session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy ?? 5,
+          energy: preBf.energy ?? preBf.tqr ?? session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy ?? 5,
+          stress: preBf.stress ?? session.preBiofeedback?.stress ?? 5,
+          food: preBf.food ?? session.preBiofeedback?.food ?? 5,
+          motivation: preBf.motivation ?? session.preBiofeedback?.motivation ?? 7,
+          menstrualCycle: preBf.menstrualCycle ?? session.preBiofeedback?.menstrualCycle ?? '',
+          pain: preBf.pain ?? session.preBiofeedback?.pain ?? 1,
+          painRegions: preBf.painRegions ?? session.preBiofeedback?.painRegions ?? [],
+          painDescription: preBf.painDescription ?? session.preBiofeedback?.painDescription ?? '',
           pse,
           feeling: selectedFeeling,
           satisfaction: selectedFeeling * 2,

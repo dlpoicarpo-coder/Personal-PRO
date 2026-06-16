@@ -946,7 +946,9 @@ export function initPostForm() {
         await publicPut('sessions', session);
 
         // Atualizar ou criar registro biofeedback
-        const bfId = 'bf_' + session.studentId + '_' + (session.date||Calc.nowISO()).substring(0, 10);
+        const studentId = session.studentId || session.student_id || '';
+        const trainerId = data.trainerId || session.trainerId || session.trainer_id || '';
+        const bfId = 'bf_' + studentId + '_' + (session.date||Calc.nowISO()).substring(0, 10);
         let existingBf = null;
         try { existingBf = await publicGetWithRetry('biofeedback', bfId); } catch(e) {}
 
@@ -964,7 +966,7 @@ export function initPostForm() {
         } else {
           await publicAdd('biofeedback', {
             id: bfId,
-            studentId: session.studentId, trainerId: data.trainerId||session.trainerId||'',
+            studentId: studentId, trainerId: trainerId,
             date: session.date||Calc.nowISO(),
             pse, tqrPost, duration: dur, trainingLoad: pse*dur,
             satisfaction,

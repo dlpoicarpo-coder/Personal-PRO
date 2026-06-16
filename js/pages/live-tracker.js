@@ -677,7 +677,7 @@ export function initTracker(navigateFn) {
       const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
       const todayPre = allBf.find(f =>
         f.studentId === sid &&
-        (f.formType === 'pre' || f.formType == null) && // formType null = registro antigo
+        (f.formType === 'pre' || f.formType === 'complete' || f.formType == null) && // formType null = registro antigo
         (f.date||'').slice(0,10) === todayStr
       );
       const statusEl  = document.getElementById('preBioStatus');
@@ -772,7 +772,7 @@ export function initTracker(navigateFn) {
     const allBf = await db.getAllForStudent('biofeedback', wk.studentId);
     const todayPre = allBf.find(f =>
       f.studentId === wk.studentId &&
-      (f.formType === 'pre' || f.formType == null) &&
+      (f.formType === 'pre' || f.formType === 'complete' || f.formType == null) &&
       (f.date||'').slice(0,10) === todayStr2
     );
     if (todayPre) {
