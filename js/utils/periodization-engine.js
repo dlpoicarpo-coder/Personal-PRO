@@ -132,7 +132,22 @@ export const PERIODIZATION_MODELS = {
         : { phase: 'Semana Metabólica', sets: 3, repsMin: 15, repsMax: 20, intensityPct: 58, restSeconds: 30, rpe: '6-7', volDelta: +5 };
     }
   },
+
+  // 7. PERSONALIZADA — Ajuste manual semana a semana
+  custom: {
+    id: 'custom', label: 'Periodização Personalizada',
+    color: '#14b8a6', icon: '⚙️',
+    desc: 'Periodização personalizada definida manualmente pelo treinador semana a semana.',
+    buildWeek: (week, totalWeeks, deloadEvery) => {
+      const isDeload = deloadEvery > 0 && week % deloadEvery === 0;
+      if (isDeload) {
+        return { phase: 'Deload', sets: 2, repsMin: 12, repsMax: 15, intensityPct: 50, restSeconds: 60, rpe: '4-5', volDelta: -40 };
+      }
+      return { phase: 'Adaptação', sets: 3, repsMin: 10, repsMax: 12, intensityPct: 70, restSeconds: 90, rpe: '7-8', volDelta: 0 };
+    }
+  },
 };
+
 
 // ── OBJETIVOS DISPONÍVEIS ────────────────────────────────────
 export const TRAINING_GOALS = [

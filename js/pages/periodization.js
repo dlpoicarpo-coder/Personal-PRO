@@ -127,6 +127,15 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
       const phase = progress < 0.3 ? 'Tempo Runs' : progress < 0.7 ? 'Threshold Intervals' : 'Threshold Pico';
       weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: Math.round(75 + progress * 10), volumePct: Math.round(70 + progress * 15), repsRange: `${thMin}min limiar` });
 
+    } else if (modelType === 'custom') {
+      for (let w = 1; w <= totalWeeks; w++) {
+        const isDeload = deloadEvery > 0 && w % deloadEvery === 0;
+        if (isDeload) {
+          weeks.push({ week: w, phase: 'Deload', label: `Semana ${w}`, intensityPct: 50, volumePct: 40, repsRange: '12-15' });
+        } else {
+          weeks.push({ week: w, phase: 'Hipertrofia', label: `Semana ${w}`, intensityPct: 70, volumePct: 80, repsRange: '10-12' });
+        }
+      }
     } else {
       // Modelos lineares e outros
       const models = {
@@ -332,13 +341,15 @@ function renderMacroCard(m, students) {
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           Plano semanal detalhado
         </summary>
-        ${m.weekDetails ? `
-        <div style="overflow-x:auto;margin-top:10px">
-          <table class="data-table" style="font-size:0.76rem">
-            <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Exercícios A</th><th>Exercícios B</th></tr></thead>
-            <tbody>${m.weekDetails.map(wd => {
-              const isCur = wd.week === currentWeek && isActive;
-              const c = wd.phase === 'Deload' ? '#3b82f6' : (wd.intensity||0) >= 85 ? '#ef4444' : (wd.intensity||0) >= 75 ? '#f97316' : (wd.intensity||0) >= 65 ? '#eab308' : '#22c55e';
+        ${m.weekDetails ? (() => {
+          const isCardio = ['polarized', 'hiit', 'sit', 'lvhiit', 'zone2', 'pyramidal', 'threshold', 'lsd', 'fartlek'].includes(m.type);
+          return `
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="data-table" style="font-size:0.76rem">
+              <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>${isCardio ? 'Alvo' : 'Reps'}</th><th>${isCardio ? '% FC Máx' : '%1RM'}</th><th>RPE</th><th>Exercícios A</th><th>Exercícios B</th></tr></thead>
+              <tbody>${m.weekDetails.map(wd => {
+                const isCur = wd.week === currentWeek && isActive;
+                const c = wd.phase === 'Deload' ? '#3b82f6' : (wd.intensity||0) >= 85 ? '#ef4444' : (wd.intensity||0) >= 75 ? '#f97316' : (wd.intensity||0) >= 65 ? '#eab308' : '#22c55e';
               return `<tr style="${isCur ? `background:${c}11;font-weight:600;` : ''}">
                 <td><strong style="color:${c}">S${wd.week}${isCur ? ' ←' : ''}</strong></td>
                 <td style="color:${c}">${wd.phase}</td>
@@ -351,7 +362,8 @@ function renderMacroCard(m, students) {
               </tr>`;
             }).join('')}</tbody>
           </table>
-        </div>` : '<p class="text-xs text-muted mt-sm">Detalhamento não disponível</p>'}
+        </div>`;
+        })() : '<p class="text-xs text-muted mt-sm">Detalhamento não disponível</p>'}
       </details>
 
       <!-- Gráfico de linha Chart.js -->
@@ -558,6 +570,9 @@ export function initPeriodization(navigateFn) {
                     <option value="lsd">LSD — Longa Duração e Baixa Intensidade</option>
                     <option value="threshold">Limiar Anaeróbio</option>
                     <option value="fartlek">Fartlek — Variações de ritmo livres</option>
+                  </optgroup>
+                  <optgroup label="── Personalizado ──">
+                    <option value="custom">Periodização Personalizada (Ajuste Manual)</option>
                   </optgroup>
                 </select>
               </div>
@@ -792,7 +807,7 @@ export function initPeriodization(navigateFn) {
                     if (isDeload) load = Math.round(oneRM * 0.5 * 2) / 2;
                   }
 
-                  const progression = METHOD_PROGRESSIONS[ex.method];
+                   const progression = METHOD_PROGRESSIONS[ex.method];
                   if (progression) {
                     const seriesProgression = progression.series.map((s, si) => {
                       let sLoad;
@@ -815,19 +830,27 @@ export function initPeriodization(navigateFn) {
                       };
                     });
 
+                    // Scale progression sets count according to the week volume percentage
+                    const finalSetsCount = Math.max(1, Math.round(seriesProgression.length * (weekPlan.volumePct / 100)));
+                    const finalSeriesProgression = seriesProgression.slice(0, finalSetsCount);
+                    finalSeriesProgression.forEach((s, si) => { s.set = si + 1; });
+
                     return {
                       ...ex,
-                      load: seriesProgression[0]?.load || load,
+                      load: finalSeriesProgression[0]?.load || load,
                       oneRM,
                       week: w + 1,
-                      sets: seriesProgression.length,
-                      reps: seriesProgression.map(s => s.reps).join('→'),
-                      rest: seriesProgression[0]?.rest || ex.rest || 60,
-                      seriesProgression
+                      sets: finalSeriesProgression.length,
+                      reps: finalSeriesProgression.map(s => s.reps).join('→'),
+                      rest: finalSeriesProgression[0]?.rest || ex.rest || 60,
+                      seriesProgression: finalSeriesProgression
                     };
                   }
 
-                  return { ...ex, load, oneRM, week: w + 1 };
+                  const weeklySets = Math.max(1, Math.round((parseInt(ex.sets) || 3) * (weekPlan.volumePct / 100)));
+                  const weeklyReps = weekPlan.repsRange || ex.reps;
+
+                  return { ...ex, sets: weeklySets, reps: weeklyReps, load, oneRM, week: w + 1 };
                 });
 
                 const savedWorkout = await db.add('workouts', {
@@ -941,7 +964,7 @@ export function initPeriodization(navigateFn) {
     };
 
     setTimeout(() => {
-      // ── GERADOR DE GRID SEMANAL INTERATIVO ──
+       // ── GERADOR DE GRID SEMANAL INTERATIVO ──
       const renderWeeklyPlanGrid = () => {
         const typeSelect = document.querySelector('#macroForm [name="type"]');
         const type = typeSelect ? typeSelect.value : 'linear';
@@ -954,7 +977,10 @@ export function initPeriodization(navigateFn) {
         const gridContainer = document.getElementById('weeklyPlanGrid');
         if (!gridContainer) return;
 
-        const phases = ['Adaptação', 'Hipertrofia', 'Força', 'Pico/RML', 'Deload', 'Resistência', 'Aeróbico', 'Cardio HIIT'];
+        const isCardio = ['polarized', 'hiit', 'sit', 'lvhiit', 'zone2', 'pyramidal', 'threshold', 'lsd', 'fartlek'].includes(type);
+        const phases = isCardio 
+          ? ['Base Aeróbica', 'Acumulação de Volume', 'Zona Limiar', 'HIIT', 'Deload'] 
+          : ['Adaptação', 'Hipertrofia', 'Força', 'Pico/RML', 'Deload', 'Resistência'];
 
         let html = `
           <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%">
@@ -962,9 +988,9 @@ export function initPeriodization(navigateFn) {
               <tr style="background:var(--bg-card)">
                 <th style="width:70px; padding:6px">Semana</th>
                 <th style="padding:6px">Fase / Trabalho Principal</th>
-                <th style="width:100px; padding:6px">Intensidade %</th>
+                <th style="width:100px; padding:6px">${isCardio ? 'Intensidade % (FC)' : 'Intensidade %'}</th>
                 <th style="width:100px; padding:6px">Volume %</th>
-                <th style="width:110px; padding:6px">Repetições</th>
+                <th style="width:110px; padding:6px">${isCardio ? 'Duração / Alvo' : 'Repetições'}</th>
               </tr>
             </thead>
             <tbody>
@@ -977,8 +1003,12 @@ export function initPeriodization(navigateFn) {
               <td style="padding:6px">
                 <select class="form-select week-phase" style="padding:4px 6px; font-size:0.75rem; width:100%; height:auto; background:var(--bg-card)">
                   ${phases.map(p => {
-                    const selected = w.phase.toLowerCase().includes(p.toLowerCase().substring(0, 4)) || 
-                                     (p === 'Deload' && w.phase === 'deload');
+                    const normP = p.toLowerCase();
+                    const normW = w.phase.toLowerCase();
+                    const selected = normW.includes(normP.substring(0, 4)) || 
+                                     (p === 'Deload' && normW === 'deload') ||
+                                     (p === 'Base Aeróbica' && normW.includes('aerób')) ||
+                                     (p === 'Zona Limiar' && normW.includes('limi'));
                     return `<option value="${p}" ${selected ? 'selected' : ''}>${p}</option>`;
                   }).join('')}
                 </select>

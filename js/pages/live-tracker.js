@@ -264,7 +264,16 @@ function renderLiveView(students) {
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
               ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}kg</span>` : ''}
-              ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
+              ${ex.oneRM ? (() => {
+                const nameLower = (ex.name || '').toLowerCase().trim();
+                const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
+                const isCardioEx = (ex.loadType === 'cardio') || 
+                                   cardioKeywords.some(k => nameLower.includes(k)) || 
+                                   (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
+                return isCardioEx 
+                  ? `<span style="color:var(--text-muted);font-size:0.75rem">FC Máx: ${ex.oneRM} bpm</span>`
+                  : `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>`;
+              })() : ''}
               <span>${ex.rest || 60}s desc.</span>
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
             </div>

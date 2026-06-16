@@ -7,6 +7,7 @@ export const PERIODIZATION_TYPES = [
   { id: 'undulating_daily', name: 'Ondulatória Diária (DUP)', desc: 'Varia estímulo a cada sessão: força, hipertrofia, resistência' },
   { id: 'undulating_weekly', name: 'Ondulatória Semanal', desc: 'Varia foco a cada semana dentro do mesociclo' },
   { id: 'block', name: 'Em Bloco', desc: 'Blocos focados: Acumulação → Intensificação → Pico' },
+  { id: 'custom', name: 'Personalizada', desc: 'Ajuste manual de fase, intensidade, volume e repetições' },
 ];
 
 export const MESOCYCLE_PHASES = [
