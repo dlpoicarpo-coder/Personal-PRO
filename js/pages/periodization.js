@@ -756,6 +756,11 @@ export function initPeriodization(navigateFn) {
             d.id = savedMacro.id;
             d.generatedWorkouts = 0;
 
+            // Contador global de treinos gerados para rotacionar sessões corretamente
+            // ao longo de TODAS as semanas, garantindo que todas as sessões do template
+            // (ex: Core, Cardio Leve) sejam geradas mesmo quando trainingDays.length < sessions.length
+            let globalSessionIndex = 0;
+
             for (let w = 0; w < d.totalWeeks; w++) {
               const weekPlan = d.weeks[w] || {
                 week: w + 1, phase: 'training', label: 'Treino',
@@ -772,7 +777,10 @@ export function initPeriodization(navigateFn) {
                 : 1 + ((weekPlan.intensityPct - baseIntensity) / 100);
 
               for (let di = 0; di < d.trainingDays.length; di++) {
-                const session = sessions[di % sessions.length];
+                // Usa globalSessionIndex para rotacionar por TODAS as sessões do template
+                // ao longo das semanas, não apenas dentro de uma semana
+                const session = sessions[globalSessionIndex % sessions.length];
+                globalSessionIndex++;
                 const dayOfWeek = d.trainingDays[di];
                 const date = new Date(weekStart);
                 const currentDay = date.getDay();
@@ -847,10 +855,72 @@ export function initPeriodization(navigateFn) {
                     };
                   }
 
-                  const weeklySets = Math.max(1, Math.round((parseInt(ex.sets) || 3) * (weekPlan.volumePct / 100)));
-                  const weeklyReps = weekPlan.repsRange || ex.reps;
 
-                  return { ...ex, sets: weeklySets, reps: weeklyReps, load, oneRM, week: w + 1 };
+                  const weeklySets = Math.max(1, Math.round((parseInt(ex.sets) || 3) * (weekPlan.volumePct / 100)));
+                  let weeklyReps = weekPlan.repsRange || ex.reps;
+                  let enrichedMethod = ex.method || '';
+                  let enrichedSciNote = ex.sciNote || '';
+
+                  // ── Enriquecimento de zonas de FC para exercícios de cardio polarizado ──
+                  // Calcula as faixas de bpm baseadas no oneRM (= FC Máxima do aluno)
+                  if (isCardioEx && oneRM > 0) {
+                    const fcMax = oneRM; // oneRM representa FC Máx para exercícios cardio
+                    const isPolarized = ex.method && ex.method.toLowerCase().includes('polariz');
+                    const isLightCardio = ex.method && (
+                      ex.method.toLowerCase().includes('zona 2') ||
+                      ex.method.toLowerCase().includes('z2') ||
+                      ex.method.toLowerCase().includes('leve') ||
+                      ex.method.toLowerCase().includes('continuo') ||
+                      ex.method.toLowerCase().includes('contínuo') ||
+                      ex.method.toLowerCase().includes('liss') ||
+                      ex.method.toLowerCase().includes('steady')
+                    );
+                    const isHighInt = weekPlan.phase && (
+                      weekPlan.phase.toLowerCase().includes('alta int') ||
+                      weekPlan.phase.toLowerCase().includes('z4') ||
+                      weekPlan.phase.toLowerCase().includes('z5') ||
+                      weekPlan.phase.toLowerCase().includes('hiit') ||
+                      weekPlan.phase.toLowerCase().includes('pico')
+                    );
+
+                    // Zonas de FC calculadas
+                    const z1Min = Math.round(fcMax * 0.50);
+                    const z1Max = Math.round(fcMax * 0.60);
+                    const z2Min = Math.round(fcMax * 0.60);
+                    const z2Max = Math.round(fcMax * 0.70);
+                    const z4Min = Math.round(fcMax * 0.80);
+                    const z4Max = Math.round(fcMax * 0.90);
+                    const z5Min = Math.round(fcMax * 0.90);
+                    const z5Max = Math.round(fcMax * 1.00);
+
+                    if (isPolarized) {
+                      if (isHighInt || weekPlan.intensityPct >= 80) {
+                        // Semana de alta intensidade: intervalos Z4/Z5
+                        const intervals = Math.round(4 + ((weekPlan.intensityPct - 80) / 5));
+                        weeklyReps = `${intervals}×4min Z5 (${z5Min}-${z5Max}bpm) / 2min Z1 (${z1Min}-${z1Max}bpm)`;
+                        enrichedMethod = `Polarizado — Alta Intensidade`;
+                        enrichedSciNote = `FC Máx: ${fcMax}bpm | Z1: ${z1Min}-${z1Max}bpm | Z5: ${z5Min}-${z5Max}bpm`;
+                      } else {
+                        // Semana base aeróbica: Z1/Z2 contínuo
+                        const totalMin = Math.round(30 + (weekPlan.volumePct / 100) * 60);
+                        const z1Min10 = Math.round(totalMin * 0.10);
+                        const z2Min80 = Math.round(totalMin * 0.80);
+                        weeklyReps = `${totalMin}min | Z1: ${z1Min10}min (${z1Min}-${z1Max}bpm) + Z2: ${z2Min80}min (${z2Min}-${z2Max}bpm)`;
+                        enrichedMethod = `Polarizado — Base Aeróbica`;
+                        enrichedSciNote = `FC Máx: ${fcMax}bpm | Z1: ${z1Min}-${z1Max}bpm | Z2: ${z2Min}-${z2Max}bpm`;
+                      }
+                    } else if (isLightCardio) {
+                      // Cardio leve contínuo (Zona 2)
+                      const dur = Math.round(30 + (weekPlan.volumePct / 100) * 30);
+                      weeklyReps = `${dur}min Z2 (${z2Min}-${z2Max}bpm)`;
+                      enrichedSciNote = `FC Máx: ${fcMax}bpm | Z2: ${z2Min}-${z2Max}bpm`;
+                    }
+                  }
+
+                  return { ...ex, sets: weeklySets, reps: weeklyReps, load, oneRM, week: w + 1,
+                           method: enrichedMethod || ex.method || '',
+                           sciNote: enrichedSciNote || ex.sciNote || '' };
+
                 });
 
                 const savedWorkout = await db.add('workouts', {

@@ -288,7 +288,13 @@ function renderLiveView(students) {
               })()}
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
             </div>
+            ${ex.sciNote ? `
+            <div style="margin-top:8px;padding:8px 12px;background:rgba(6,182,212,0.08);border-radius:8px;border-left:3px solid var(--accent)">
+              <div style="font-size:0.65rem;font-weight:700;color:var(--accent);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">⚡ Zonas de FC</div>
+              <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;font-family:monospace">${ex.sciNote.replace(/\|/g,'<br>·')}</div>
+            </div>` : ''}
           </div>
+
 
           <div id="setArea" style="display:flex;flex-direction:column;gap:6px">
             ${Array.from({ length: exSets }, (_, i) => {

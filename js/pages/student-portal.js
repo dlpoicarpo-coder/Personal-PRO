@@ -1407,18 +1407,25 @@ function initTreinar(workouts, schedules, student) {
       if (selInput) selInput.value = wid;
       const w = workouts.find(w => w.id === wid);
     if (w && w.exercises?.length) {
-        exBlock.innerHTML = `
+          exBlock.innerHTML = `
           <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do Treino</div>
-          ${w.exercises.map((ex,i) => `
+          ${w.exercises.map((ex,i) => {
+            const exNameLower = (ex.name||'').toLowerCase();
+            const isCardioItem = (ex.loadType==='time') ||
+              (ex.method && ['zona','polariz','hiit','tabata','z1','z2','z3','z4','z5','liss','steady','leve','continuo'].some(k=>ex.method.toLowerCase().includes(k))) ||
+              ['esteira','corrida','caminhada','bicicleta','bike','elípt','natação','remo','spinning','hiit','tabata','assault','ski erg','air runner'].some(k=>exNameLower.includes(k));
+            const loadSuffix = isCardioItem ? 'bpm' : 'kg';
+            const loadStr = ex.load ? ` &middot; ${ex.load}${loadSuffix}` : '';
+            return `
             <div class="glass-card portal-ex-pick-card" data-ei="${i}" data-wid="${w.id}" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.2s">
               <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
               <div style="flex:1;min-width:0">
                 <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
-                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+ex.load+'kg':''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
+                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${loadStr}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
               </div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-          `).join('')}`;
+            </div>`;
+          }).join('')}`;
         // Bind info tap
         exBlock.querySelectorAll('.portal-ex-pick-card').forEach(card => {
           card.addEventListener('click', async () => {
@@ -2288,10 +2295,18 @@ async function showExerciseModal(ex) {
           <div style="font-size:1.1rem;font-weight:800;color:#10b981">${ex.reps}</div>
           <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Reps</div>
         </div>` : ''}
-        ${ex.load ? `<div style="background:rgba(249,115,22,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:800;color:#f97316">${ex.load}${ex.loadType!=='bodyweight'?'kg':'%'}</div>
-          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">${loadTypeLabel}</div>
-        </div>` : ''}
+        ${ex.load ? (() => {
+          const isCardioLoad = ex.loadType === 'time' ||
+            (ex.method && ['polariz','zona','hiit','tabata','z1','z2','z3','z4','z5','liss','steady','leve','continuo'].some(k=>ex.method.toLowerCase().includes(k))) ||
+            ['esteira','corrida','caminhada','bicicleta','bike','elípt','natação','remo','spinning','hiit','assault','ski erg'].some(k=>(ex.name||'').toLowerCase().includes(k));
+          const loadUnit = isCardioLoad ? 'bpm' : (ex.loadType==='bodyweight' ? '%' : 'kg');
+          const loadLabel = isCardioLoad ? 'FC Alvo' : loadTypeLabel;
+          return `<div style="background:rgba(249,115,22,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+            <div style="font-size:1.1rem;font-weight:800;color:#f97316">${ex.load}${loadUnit}</div>
+            <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">${loadLabel}</div>
+          </div>`;
+        })() : ''}
+
         ${ex.rest ? `<div style="background:rgba(6,182,212,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
           <div style="font-size:1.1rem;font-weight:800;color:#06b6d4">${ex.rest}s</div>
           <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Descanso</div>
@@ -2356,6 +2371,15 @@ async function showExerciseModal(ex) {
             <span style="font-size:0.8rem;color:#a78bfa;font-weight:700">${ex.method}</span>
           </div>
           ${methodDesc ? `<div style="font-size:0.75rem;color:rgba(255,255,255,0.75);line-height:1.45;margin-top:4px">${methodDesc}</div>` : ''}
+        </div>` : ''}
+
+        ${ex.sciNote ? `
+        <div style="margin-top:10px;background:rgba(6,182,212,0.08);border-radius:10px;padding:12px 14px;border:1px solid rgba(6,182,212,0.2)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <span style="font-size:0.75rem;color:#06b6d4;font-weight:700">Zonas de Frequência Cardíaca</span>
+          </div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.8);line-height:1.6;font-family:monospace">${ex.sciNote.replace(/\|/g,'<br>·')}</div>
         </div>` : ''}
       </div>
     </div>
