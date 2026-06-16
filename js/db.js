@@ -251,6 +251,7 @@ class Database {
               return {
                 id: item.id,
                 trainer_id: trainerId,
+                is_default: item.is_default || false,
                 data: cleanItem
               };
             });
@@ -446,6 +447,7 @@ class Database {
             return {
               id: item.id,
               trainer_id: trainerId || null,
+              is_default: item.is_default || false,
               data: cleanItem
             };
           });
@@ -594,8 +596,16 @@ class Database {
     let local       = this._getLocal(storeName, trainerId) || [];
 
     if (storeName === 'exercises' || storeName === 'methods') {
+      const prefix = storeName === 'methods' ? 'met_' : 'ex_';
+      const sortedLocal = [...local].sort((a, b) => {
+        const aPrefix = a && a.id && a.id.startsWith(prefix);
+        const bPrefix = b && b.id && b.id.startsWith(prefix);
+        if (aPrefix && !bPrefix) return -1;
+        if (!aPrefix && bPrefix) return 1;
+        return 0;
+      });
       const seenName = new Set();
-      local = local.filter(item => {
+      local = sortedLocal.filter(item => {
         if (!item) return false;
         const name = item.name ? String(item.name).toLowerCase().trim() : '';
         if (name) {
@@ -618,11 +628,18 @@ class Database {
           : this.supabase.from(storeName).select('*').eq('is_default', true);
         const q2 = this.supabase.from(storeName).select('*').eq('is_default', true);
         const [r1, r2] = await Promise.all([q1, q2]);
-        const all = [...(r1.data||[]), ...(r2.data||[])];
+        const prefix = storeName === 'methods' ? 'met_' : 'ex_';
+        const sortedAll = [...(r1.data||[]), ...(r2.data||[])].sort((a, b) => {
+          const aPrefix = a.id && a.id.startsWith(prefix);
+          const bPrefix = b.id && b.id.startsWith(prefix);
+          if (aPrefix && !bPrefix) return -1;
+          if (!aPrefix && bPrefix) return 1;
+          return 0;
+        });
         // Deduplicar por id e por nome (evita duplicatas de global vs personal)
         const seenId = new Set();
         const seenName = new Set();
-        data  = all.filter(r => { 
+        data  = sortedAll.filter(r => { 
           if (!r) return false;
           const rName = r.data && r.data.name ? String(r.data.name).toLowerCase().trim() : '';
           if (seenId.has(r.id) || (rName && seenName.has(rName))) return false; 
@@ -686,9 +703,17 @@ class Database {
 
       // Deduplicar por nome para exercises e methods
       if (storeName === 'exercises' || storeName === 'methods') {
+        const prefix = storeName === 'methods' ? 'met_' : 'ex_';
+        const sortedResult = [...result].sort((a, b) => {
+          const aPrefix = a.id && a.id.startsWith(prefix);
+          const bPrefix = b.id && b.id.startsWith(prefix);
+          if (aPrefix && !bPrefix) return -1;
+          if (!aPrefix && bPrefix) return 1;
+          return 0;
+        });
         const seenName = new Set();
         const deduped = [];
-        for (const item of result) {
+        for (const item of sortedResult) {
           const name = item.name ? String(item.name).toLowerCase().trim() : '';
           if (name) {
             if (seenName.has(name)) continue;
@@ -775,7 +800,7 @@ class Database {
     if (!this.supabase) return item;
 
     try {
-      const payload = { id: item.id, trainer_id: trainerId || null, data: item };
+      const payload = { id: item.id, trainer_id: trainerId || null, is_default: item.is_default || false, data: item };
       const { error } = await this.supabase.from(storeName).upsert(payload);
       if (error) {
         console.warn(`Supabase put error (${storeName}):`, error.message);
@@ -1190,11 +1215,20 @@ class Database {
       ];
 
       const existing = await this.getAll('exercises');
+      const newExerciseIds = new Set(exercises.map(ex => 'ex_' + slugify(ex.name) + '_' + trainerId));
       
-      // Clean up legacy non-deterministic default templates for this trainer
-      const defaultToClean = existing.filter(e => e.is_default && (!e.id.startsWith('ex_') || !e.id.endsWith('_' + trainerId)));
+      // Clean up legacy/removed default templates for this trainer
+      const defaultToClean = existing.filter(e => 
+        e.is_default && 
+        (!e.id.startsWith('ex_') || !e.id.endsWith('_' + trainerId) || !newExerciseIds.has(e.id))
+      );
       for (const ex of defaultToClean) {
         await this.delete('exercises', ex.id);
+      }
+
+      // Clear any accidental tombstones for the seeded exercises to prevent sync from deleting them
+      for (const id of newExerciseIds) {
+        this._removeTombstone('exercises', id, trainerId);
       }
 
       // Seed exercises deterministically
@@ -1294,11 +1328,20 @@ class Database {
       { name: 'Excêntrico Lento (Rehab)', category: 'Reabilitação / Preventivo', description: 'Foco exclusivo na fase de estiramento controlado (4-6 segundos) para tratamento de tendinopatias.', sets: '3-4', repsHint: '8-10', restHint: '60s' }
     ];
     const existing = await this.getAll('methods');
+    const newMethodIds = new Set(methods.map(m => 'met_' + slugify(m.name) + '_' + trainerId));
     
-    // Clean up legacy default methods for this trainer
-    const defaultToClean = existing.filter(m => m.is_default);
+    // Clean up legacy/removed default methods for this trainer
+    const defaultToClean = existing.filter(m => 
+      m.is_default && 
+      (!m.id.startsWith('met_') || !m.id.endsWith('_' + trainerId) || !newMethodIds.has(m.id))
+    );
     for (const m of defaultToClean) {
       await this.delete('methods', m.id);
+    }
+
+    // Clear any accidental tombstones for the seeded methods to prevent sync from deleting them
+    for (const id of newMethodIds) {
+      this._removeTombstone('methods', id, trainerId);
     }
 
     // Seed methods deterministically

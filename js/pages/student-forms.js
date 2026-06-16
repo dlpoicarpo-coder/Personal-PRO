@@ -845,7 +845,7 @@ export async function renderPostForm(sessionId) {
           </div>` : ''}
 
           <form id="postStudentForm">
-            <input type="hidden" name="sessionId" value="${sessionId}" />
+            <input type="hidden" name="sessionId" value="${cleanSessionId}" />
             ${preBf ? `<input type="hidden" name="preBiofeedbackId" value="${preBf.id}" />` : ''}
             <input type="hidden" name="trainerId" value="${student?.trainer_id||student?.trainerId||''}" />
 
@@ -924,7 +924,9 @@ export function initPostForm() {
     try {
       const fd      = new FormData(e.target);
       const data    = Object.fromEntries(fd);
-      const session = await publicGetWithRetry('sessions', data.sessionId);
+      const cleanSessionId = (data.sessionId || '').split('?')[0].split('&')[0].trim();
+      data.sessionId = cleanSessionId;
+      const session = await publicGetWithRetry('sessions', cleanSessionId);
 
       if (!session) throw new Error('Sessão não encontrada. O link pode ter expirado.');
       {

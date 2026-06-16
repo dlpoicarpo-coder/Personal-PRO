@@ -412,6 +412,8 @@ function renderLiveView(students) {
               <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep ? `${Math.round(s.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
               <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
               <span>Estresse <strong style="color:${(s.preBiofeedback.stress||0)>=7?'var(--warning)':'inherit'}">${s.preBiofeedback.stress||'-'}</strong></span>
+              <span>Alimentação <strong style="color:${(s.preBiofeedback.food||0)<3?'var(--danger)':'var(--success)'}">${s.preBiofeedback.food ? `${s.preBiofeedback.food}/5` : '—'}</strong></span>
+              <span>Motivação <strong style="color:${(s.preBiofeedback.motivation||0)<6?'var(--danger)':'var(--success)'}">${s.preBiofeedback.motivation ? `${Math.round(s.preBiofeedback.motivation / 2)}/5` : '—'}</strong></span>
               ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 8 ? 5 : s.preBiofeedback.pain > 6 ? 4 : s.preBiofeedback.pain > 4 ? 3 : s.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
             </div>
           </div>` : ''}
@@ -1552,6 +1554,8 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
             <span>Sono <strong>${session.preBiofeedback.sleep ? `${Math.round(session.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
             <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
             <span>Est. Mental <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
+            <span>Alimentação <strong>${session.preBiofeedback.food ? `${session.preBiofeedback.food}/5` : '—'}</strong></span>
+            <span>Motivação <strong>${session.preBiofeedback.motivation ? `${Math.round(session.preBiofeedback.motivation / 2)}/5` : '—'}</strong></span>
             ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain > 8 ? 5 : session.preBiofeedback.pain > 6 ? 4 : session.preBiofeedback.pain > 4 ? 3 : session.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
           </div>
         </div>`:''}
@@ -1687,6 +1691,8 @@ function generateSessionPDF(session, student) {
         pre.sleep?`Sono ${Math.round(pre.sleep/2)}/5`:'',
         pre.tqr!=null?`TQR ${pre.tqr??pre.energy}/10`:'',
         pre.stress?`Est.Mental ${pre.stress}/10`:'',
+        pre.food?`Alim. ${pre.food}/5`:'',
+        pre.motivation?`Motiv. ${Math.round(pre.motivation/2)}/5`:'',
         (pre.pain||0)>=3?`Dor ${pre.pain > 8 ? 5 : pre.pain > 6 ? 4 : pre.pain > 4 ? 3 : pre.pain > 2 ? 2 : 1}/5`:'',
         kcal?`Kcal est. ${kcal}`:'',
       ].filter(Boolean).join('  ·  ');
