@@ -967,6 +967,21 @@ export function initPeriodization(navigateFn) {
             }
 
             await db.put('macrocycles', { ...savedMacro, ...d });
+
+            // ── Sincronização forçada: envia os treinos gerados ao Supabase ──
+            // Garante que os dados não fiquem apenas no localStorage
+            try {
+              const trainerId = await db._getTrainerId();
+              if (trainerId && db.supabase) {
+                console.log('[Periodization] Iniciando sync forçado após geração...');
+                await db.syncStudentData(d.studentId, trainerId);
+                console.log('[Periodization] Sync concluído com sucesso');
+              }
+            } catch (syncErr) {
+              console.warn('[Periodization] Erro ao sincronizar treinos gerados:', syncErr);
+              notify.warning('Treinos criados localmente. Sincronização com servidor pendente.');
+            }
+
             notify.success(`Macrociclo gerado — ${d.generatedWorkouts} treinos criados`);
             closeModal();
             navigateFn('/periodizacao');

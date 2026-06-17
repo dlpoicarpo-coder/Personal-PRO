@@ -243,17 +243,15 @@ class Database {
         // 4. Perform upload if needed
         if (toUpload.length > 0) {
           console.log(`[Sync] Uploading ${toUpload.length} items to ${storeName}...`);
+          const tablesWithIsDefault = new Set(['exercises', 'methods']);
           const chunkSize = 50;
           for (let i = 0; i < toUpload.length; i += chunkSize) {
             const chunk = toUpload.slice(i, i + chunkSize);
             const payloads = chunk.map(item => {
               const { _synced, ...cleanItem } = item;
-              return {
-                id: item.id,
-                trainer_id: trainerId,
-                is_default: item.is_default || false,
-                data: cleanItem
-              };
+              const base = { id: item.id, trainer_id: trainerId, data: cleanItem };
+              if (tablesWithIsDefault.has(storeName)) base.is_default = item.is_default || false;
+              return base;
             });
             const { error: upsertError } = await this.supabase
               .from(storeName)
@@ -442,14 +440,12 @@ class Database {
         // 4. Perform upload if needed
         if (toUpload.length > 0) {
           console.log(`[Student Sync] Uploading ${toUpload.length} items to ${storeName}...`);
+          const tablesWithIsDefault = new Set(['exercises', 'methods']);
           const payloads = toUpload.map(item => {
             const { _synced, ...cleanItem } = item;
-            return {
-              id: item.id,
-              trainer_id: trainerId || null,
-              is_default: item.is_default || false,
-              data: cleanItem
-            };
+            const base = { id: item.id, trainer_id: trainerId || null, data: cleanItem };
+            if (tablesWithIsDefault.has(storeName)) base.is_default = item.is_default || false;
+            return base;
           });
           const { error: upsertError } = await this.supabase
             .from(storeName)
@@ -800,7 +796,13 @@ class Database {
     if (!this.supabase) return item;
 
     try {
-      const payload = { id: item.id, trainer_id: trainerId || null, is_default: item.is_default || false, data: item };
+      // Apenas exercises e methods têm coluna is_default no schema do Supabase
+      // Incluir is_default em outras tabelas causa erro 400 (schema cache error)
+      const tablesWithIsDefault = new Set(['exercises', 'methods']);
+      const payload = tablesWithIsDefault.has(storeName)
+        ? { id: item.id, trainer_id: trainerId || null, is_default: item.is_default || false, data: item }
+        : { id: item.id, trainer_id: trainerId || null, data: item };
+
       const { error } = await this.supabase.from(storeName).upsert(payload);
       if (error) {
         console.warn(`Supabase put error (${storeName}):`, error.message);
