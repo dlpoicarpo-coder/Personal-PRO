@@ -2431,7 +2431,7 @@ function renderAvaliacoes(assessments) {
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--portal-text-muted)">
                       <th style="padding:6px 4px">Data</th>
                       <th style="padding:6px 4px">Peso</th>
-                      <th style="padding:6px 4px">% BF</th>
+                      <th style="padding:6px 4px">% Gordura</th>
                       <th style="padding:6px 4px">M. Magra</th>
                     </tr>
                   </thead>
@@ -3313,15 +3313,27 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
 
     // Body composition
     const measCtx = document.getElementById('portalMeasuresChart');
-    if (measCtx && compAss.length>=2) {
-      const ds=[];
-      if (compAss.some(a=>a.peso)) ds.push({label:'Peso (kg)', data:compAss.map(a=>a.peso||null), borderColor:'#10b981', tension:0.3, yAxisID:'y'});
-      if (compAss.some(a=>a.percentualGordura)) ds.push({label:'BF %', data:compAss.map(a=>a.percentualGordura||null), borderColor:'#f59e0b', tension:0.3, yAxisID:'y1'});
-      if (ds.length) createPortalChart('portalMeasuresChart', measCtx, { type:'line', data:{ labels:compAss.map(a=>fmtDate(a.date)), datasets:ds },
-        options:{ responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
-          scales:{y:{position:'left',ticks:{color:'#10b981',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:9}},grid:{display:false}},x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}}
-        }});
+    if (measCtx && compAss.length >= 2) {
+      const ds = [];
+      if (compAss.some(a => a.peso))
+        ds.push({ label: 'Peso (kg)', data: compAss.map(a => a.peso || null), borderColor: '#10b981', fill: false, tension: 0.3, yAxisID: 'y', pointRadius: 3 });
+      if (compAss.some(a => a.percentualGordura)) {
+        ds.push({ label: '% Gordura', data: compAss.map(a => a.percentualGordura || null), borderColor: '#f59e0b', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [5,3], pointRadius: 3 });
+        ds.push({ label: '% Massa Magra', data: compAss.map(a => a.percentualGordura ? parseFloat((100 - a.percentualGordura).toFixed(1)) : null), borderColor: '#06b6d4', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [2,2], pointRadius: 3 });
+      }
+      if (ds.length) createPortalChart('portalMeasuresChart', measCtx, {
+        type: 'line',
+        data: { labels: compAss.map(a => fmtDate(a.date)), datasets: ds },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } },
+          scales: {
+            y:  { position: 'left',  title: { display: true, text: 'kg', color: '#10b981', font: { size: 9 } }, ticks: { color: '#10b981', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            y1: { position: 'right', title: { display: true, text: '%', color: '#94a3b8', font: { size: 9 } }, ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + '%' }, grid: { display: false }, min: 0, max: 100 },
+            x:  { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } }
+          }
+        }
+      });
     }
   };
 
