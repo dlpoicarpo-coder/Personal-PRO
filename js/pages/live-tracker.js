@@ -322,37 +322,54 @@ function renderLiveView(students) {
               const loadVal  = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
               const pseVal   = done ? done.pse  : (temp.pse !== undefined ? temp.pse : '');
               const rirVal   = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
+              const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
               return `
               <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
-                style="display:flex;align-items:center;gap:7px;padding:8px;border-radius:8px;
+                style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;
+                border:1px solid ${isActive ? 'rgba(16,185,129,0.35)' : done ? 'rgba(16,185,129,0.15)' : 'var(--border-color)'};
                 background:${isActive ? 'rgba(16,185,129,0.08)' : done ? 'rgba(16,185,129,0.04)' : 'var(--bg-page)'}">
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:flex-start;min-width:48px">
-                  <span style="font-size:0.85rem;font-weight:700;color:${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)'}">${i + 1}</span>
-                  ${setLabel ? `<span style="font-size:0.55rem;color:var(--text-muted);white-space:nowrap">${setLabel}</span>` : ''}
+
+                <!-- Número da Série: S1, S2, S3... -->
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                  min-width:36px;width:36px;height:36px;border-radius:8px;flex-shrink:0;
+                  background:${done ? 'rgba(16,185,129,0.15)' : isActive ? 'rgba(16,185,129,0.12)' : 'var(--bg-card)'};
+                  border:1px solid ${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--border-color)'}">
+                  <span style="font-size:0.65rem;font-weight:800;color:${setColor};letter-spacing:-0.02em;line-height:1">S${i + 1}</span>
+                  ${setLabel ? `<span style="font-size:0.42rem;color:var(--text-muted);white-space:nowrap;line-height:1;margin-top:1px;text-align:center">${setLabel}</span>` : ''}
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">Reps</span>
-                  <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+
+                <!-- Reps -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
+                  <span style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Reps</span>
+                  <input class="form-input set-reps" style="width:100%;min-width:48px;text-align:center;padding:5px 4px;font-size:0.92rem;font-weight:700;border-radius:7px" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">${ex.loadType === 'time' ? 'Zona' : (ex.loadType === 'bodyweight' ? 'Extra' : 'kg')}</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+
+                <!-- Carga -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1.2">
+                  <span style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
+                  <input class="form-input set-load" style="width:100%;min-width:54px;text-align:center;padding:5px 4px;font-size:0.92rem;font-weight:700;border-radius:7px" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
-                  <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
-                  <input class="form-input set-pse" style="width:46px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.3)" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
+
+                <!-- PSE -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.9" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
+                  <span style="font-size:0.5rem;color:var(--warning);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">PSE</span>
+                  <input class="form-input set-pse" style="width:100%;min-width:40px;text-align:center;padding:5px 4px;font-size:0.92rem;border-color:rgba(245,158,11,0.35);border-radius:7px" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR — Reps in Reserve: quantas repetições ainda sobravam no tanque (0=falha, 1=1 rep sobrando...)">
-                  <span style="font-size:0.55rem;color:var(--accent);font-weight:600">RIR</span>
-                  <input class="form-input set-rir" style="width:42px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4)" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
+
+                <!-- RIR -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.9" title="RIR — Reps sobrando no tanque (0=falha, 5+=fácil)">
+                  <span style="font-size:0.5rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">RIR</span>
+                  <input class="form-input set-rir" style="width:100%;min-width:38px;text-align:center;padding:5px 4px;font-size:0.92rem;border-color:rgba(6,182,212,0.4);border-radius:7px" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
                 </div>
+
+                <!-- Botão ✓ ou Badge feito -->
                 ${done
-                  ? `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:38px">
-                      ${done.pse ? `<span style="font-size:0.6rem;color:var(--warning)">PSE ${done.pse}</span>` : ''}
-                      <span class="badge badge-success" style="text-align:center;font-size:0.72rem;padding:2px 6px">✓</span>
-                      ${done.rir != null ? `<span style="font-size:0.6rem;color:var(--accent)">RIR ${done.rir}</span>` : ''}
+                  ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:32px;flex-shrink:0">
+                      ${done.pse ? `<span style="font-size:0.52rem;color:var(--warning);font-weight:600">P${done.pse}</span>` : ''}
+                      <span style="background:var(--success);color:#fff;border-radius:6px;font-size:0.7rem;font-weight:700;width:28px;height:28px;display:flex;align-items:center;justify-content:center">✓</span>
+                      ${done.rir != null ? `<span style="font-size:0.52rem;color:var(--accent);font-weight:600">R${done.rir}</span>` : ''}
                     </div>`
-                  : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:36px;align-self:flex-end">✓</button>`}
+                  : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:34px;width:34px;height:34px;padding:0;border-radius:8px;font-size:1rem;align-self:flex-end;flex-shrink:0">✓</button>`}
               </div>`;
             }).join('')}
           </div>
