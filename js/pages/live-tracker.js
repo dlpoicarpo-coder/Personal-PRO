@@ -245,10 +245,10 @@ function renderLiveView(students) {
 
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
         <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DURAÇÃO</div><div class="stat-value text-gradient" id="liveTotal" style="font-size:1.3rem">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Tempo efetivo em exercícios"><div class="stat-label">💪 TRABALHO</div><div class="stat-value" id="liveWork" style="font-size:1.3rem;color:var(--success)">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Tempo total em descanso entre séries"><div class="stat-label">🙏 DESCANSO</div><div class="stat-value" id="liveRest" style="font-size:1.3rem;color:var(--warning)">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Densidade = Trabalho ÷ Total (ideal: > 0.50)"><div class="stat-label">📊 DENSIDADE</div><div class="stat-value" id="liveDens" style="font-size:1.3rem;color:var(--accent)">0.00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Reps × Carga somadas de todas as séries"><div class="stat-label">🏋 VOLUME</div><div class="stat-value" id="liveVol" style="font-size:1.3rem;color:var(--primary)">${totalVolume()} kg</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px" title="Tempo efetivo em exercícios"><div class="stat-label">TRABALHO</div><div class="stat-value" id="liveWork" style="font-size:1.3rem;color:var(--success)">00:00</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px" title="Tempo total em descanso entre séries"><div class="stat-label">DESCANSO</div><div class="stat-value" id="liveRest" style="font-size:1.3rem;color:var(--warning)">00:00</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px" title="Densidade = Trabalho ÷ Total (ideal: > 0.50)"><div class="stat-label">DENSIDADE</div><div class="stat-value" id="liveDens" style="font-size:1.3rem;color:var(--accent)">0.00</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px" title="Reps × Carga somadas de todas as séries"><div class="stat-label">VOLUME</div><div class="stat-value" id="liveVol" style="font-size:1.3rem;color:var(--primary)">${totalVolume()} kg</div></div>
       </div>
 
       <div style="position:relative;margin-bottom:4px">
@@ -304,7 +304,7 @@ function renderLiveView(students) {
                 ${ex.sciNote.split(' | ').map(part => {
                   const [label, ...rest] = part.split(': ');
                   const val = rest.join(': ');
-                  const icons = {'Zona':'🎯','Protocolo':'📋','Fisiologia':'🔬','Descanso':'⏱️','FC Máx':'❤️','Carga':'💪'};
+                  const icons = {'Zona':'▸','Protocolo':'▸','Fisiologia':'▸','Descanso':'▸','FC Máx':'▸','Carga':'▸'};
                   const colors = {'Zona':'var(--warning)','Protocolo':'#818cf8','Fisiologia':'var(--primary)','Descanso':'var(--accent)','FC Máx':'#f43f5e','Carga':'#f97316'};
                   const icon = Object.entries(icons).find(([k]) => label?.startsWith(k))?.[1] || '·';
                   const color = Object.entries(colors).find(([k]) => label?.startsWith(k))?.[1] || 'var(--text-muted)';
@@ -413,9 +413,9 @@ function renderLiveView(students) {
               </div>`;
             }).join('')}
           </div>
-          <div style="margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:0.65rem;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:8px">
-            <span>📊 <strong style="color:var(--warning)">PSE</strong> = Percepção de Esforço (1–10)</span>
-            <span>🧪 <strong style="color:var(--accent)">RIR</strong> = Reps sobrando (0=falha, 5+=fácil)</span>
+          <div style="margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:0.65rem;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:12px">
+            <span><strong style="color:var(--warning)">PSE</strong> &mdash; Percepção de Esforço (1–10)</span>
+            <span><strong style="color:var(--accent)">RIR</strong> &mdash; Repetições na reserva (0=falha, 5+=fácil)</span>
           </div>
 
           <div style="border-top:1px solid var(--border-color);margin-top:12px;padding-top:10px">
@@ -449,11 +449,11 @@ function renderLiveView(students) {
 
         <div class="card">
           <div class="card-header">
-            <span class="card-title">⏱ Descanso</span>
+            <span class="card-title">Descanso</span>
             <div class="flex items-center gap-sm">
-              <span id="restStateTag" style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(16,185,129,0.1);color:var(--success)">▶ TRABALHANDO</span>
+              <span id="restStateTag" style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(16,185,129,0.1);color:var(--success)">TRABALHANDO</span>
               <label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;cursor:pointer" title="Ativar/desativar bipe ao fim do descanso">
-                <input type="checkbox" id="sndToggle" ${s.soundEnabled !== false ? 'checked' : ''} /> 🔔
+                <input type="checkbox" id="sndToggle" ${s.soundEnabled !== false ? 'checked' : ''} /> Som
               </label>
             </div>
           </div>
@@ -486,7 +486,7 @@ function renderLiveView(students) {
           </div>
 
           <div style="border-top:1px solid var(--border-color);padding-top:12px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">📝 Anotações</div>
+            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Anotações</div>
             <textarea id="setNotes" class="form-textarea" rows="2" placeholder="Observações técnicas do exercício atual..." style="font-size:0.82rem"></textarea>
           </div>
 
@@ -930,7 +930,7 @@ export function initTracker(navigateFn) {
     if (w) { w.textContent = formatTime(totalWork); w.style.color = state.isResting ? 'var(--text-muted)' : 'var(--success)'; }
     if (r) { r.textContent = formatTime(Math.max(0, tot - totalWork)); r.style.color = state.isResting ? 'var(--warning)' : 'var(--text-muted)'; }
     if (d) d.textContent = tot > 0 ? (totalWork / tot).toFixed(2) : '0.00';
-    if (tag) { tag.textContent = state.isResting ? '⏸ DESCANSANDO' : '▶ TRABALHANDO'; tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)'; }
+    if (tag) { tag.textContent = state.isResting ? 'DESCANSANDO' : 'TRABALHANDO'; tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)'; }
   };
   state._uiInterval = setInterval(updateUI, 500);
   updateUI();
@@ -977,13 +977,13 @@ export function initTracker(navigateFn) {
         const pf = document.getElementById('restProgressFill');
         const tag = document.getElementById('restStateTag');
         if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
-        if (l) { l.textContent = '🏋 HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
-        if (b) b.textContent = '▶ Iniciar Descanso';
+        if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
+        if (b) b.textContent = 'Iniciar Descanso';
         if (pf) { pf.style.width = '0%'; }
-        if (tag) { tag.textContent = '▶ TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
+        if (tag) { tag.textContent = 'TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
         state.isResting = false;
         state.workTimer?.start();
-        notify.success('Descanso finalizado! 💪');
+        notify.success('Descanso finalizado.');
       }
     });
   } else {
@@ -1006,13 +1006,13 @@ export function initTracker(navigateFn) {
       const pf = document.getElementById('restProgressFill');
       const tag = document.getElementById('restStateTag');
       if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
-      if (l) { l.textContent = '🏋 HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
-      if (b) b.textContent = '▶ Iniciar Descanso';
+      if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
+      if (b) b.textContent = 'Iniciar Descanso';
       if (pf) { pf.style.width = '0%'; }
-      if (tag) { tag.textContent = '▶ TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
+      if (tag) { tag.textContent = 'TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
       state.isResting = false;
       state.workTimer?.start();
-      notify.success('Descanso finalizado! 💪');
+      notify.success('Descanso finalizado.');
     };
     // Atualizar display com o tempo atual
     const c = document.getElementById('restCount');
@@ -1032,7 +1032,7 @@ export function initTracker(navigateFn) {
     if (state.restTimer.running) {
       state.restTimer.stop(); state.isResting = false; state.workTimer?.start();
       if (btn) btn.textContent = '▶ Iniciar Descanso';
-      if (tag) { tag.textContent = '▶ TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
+      if (tag) { tag.textContent = 'TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
     } else {
       state.restTimer.reset(); state.restTimer.start();
       state.isResting = true;
@@ -1041,7 +1041,7 @@ export function initTracker(navigateFn) {
       state.workTimer?.stop(); state.workTimer?.reset();
       if (btn) btn.textContent = '⏸ Pausar Descanso';
       if (pf) { pf.style.width = '100%'; pf.style.background = 'linear-gradient(90deg,var(--accent),rgba(99,102,241,0.8))'; }
-      if (tag) { tag.textContent = '⏸ DESCANSANDO'; tag.style.background = 'rgba(245,158,11,0.1)'; tag.style.color = 'var(--warning)'; }
+      if (tag) { tag.textContent = 'DESCANSANDO'; tag.style.background = 'rgba(245,158,11,0.1)'; tag.style.color = 'var(--warning)'; }
       const l = document.getElementById('restLbl');
       if (l) { l.textContent = 'Descansando...'; l.style.color = ''; }
     }

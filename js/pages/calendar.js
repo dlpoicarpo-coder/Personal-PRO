@@ -608,7 +608,7 @@ function autoSendWA(phone, msg, label, reminderKey) {
 
   // Notificação nativa do browser se permitida
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('📤 Personal PRO', {
+    new Notification('Personal PRO', {
       body: `${label} enviado via WhatsApp`,
       icon: '/icons/icon-192x192.png',
     });

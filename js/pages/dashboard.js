@@ -114,7 +114,10 @@ export async function renderDashboard() {
       <!-- Card 1: Inatividade de Alunos -->
       <div class="card" style="padding: 16px;">
         <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
-          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px;">⚠️ Inatividade de Alunos</span>
+          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Inatividade de Alunos
+          </span>
           <a href="#/alunos" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver todos</a>
         </div>
         <div class="flex flex-col gap-xs">
@@ -140,7 +143,10 @@ export async function renderDashboard() {
       <!-- Card 2: Mensalidades em Atraso -->
       <div class="card" style="padding: 16px;">
         <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
-          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px;">💰 Pagamentos em Atraso</span>
+          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Pagamentos em Atraso
+          </span>
           <a href="#/financeiro" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver todos</a>
         </div>
         <div class="flex flex-col gap-xs">
@@ -171,7 +177,10 @@ export async function renderDashboard() {
       <!-- Card 3: Macrociclos Críticos -->
       <div class="card" style="padding: 16px;">
         <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
-          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px;">⏰ Macrociclos Críticos</span>
+          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Macrociclos Críticos
+          </span>
           <a href="#/periodizacao" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver todos</a>
         </div>
         <div class="flex flex-col gap-xs">

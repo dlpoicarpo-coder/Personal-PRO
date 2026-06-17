@@ -32,7 +32,7 @@ function showPwaPopup() {
   el.className = 'portal-pwa-popup visible';
   el.innerHTML = `
     <div class="portal-pwa-popup-inner">
-      <div class="portal-pwa-icon">📲</div>
+      <div class="portal-pwa-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
       <div class="portal-pwa-text">
         <div class="portal-pwa-title">Instalar Personal PRO</div>
         <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
@@ -392,7 +392,7 @@ function renderPortalShell(student) {
       <!-- PWA Install Popup -->
       <div id="pwaInstallPopup" class="portal-pwa-popup">
         <div class="portal-pwa-popup-inner">
-          <div class="portal-pwa-icon">📲</div>
+          <div class="portal-pwa-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
           <div class="portal-pwa-text">
             <div class="portal-pwa-title">Instalar Personal PRO</div>
             <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
@@ -734,7 +734,7 @@ function checkSessionReminders(schedules, sessions) {
   const todaySessions = schedules.filter(s => s.date === todayStr);
   if (todaySessions.length > 0) {
     const s = todaySessions[0];
-    showToast(`📅 Você tem treino hoje${s.time ? ' às ' + s.time : ''}! Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
+    showToast(`Você tem treino hoje${s.time ? ' às ' + s.time : ''}. Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
   }
 
   // 2. Checkout reminder: sessions without student checkout
@@ -748,7 +748,7 @@ function checkSessionReminders(schedules, sessions) {
   });
   if (needsCheckout.length > 0) {
     setTimeout(() => {
-      showToast(`⚡ Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
+      showToast(`Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso.`, 'warning', 10000);
     }, 2000);
   }
 }
@@ -855,7 +855,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     checkinBanner = checkedIn
       ? `<div class="portal-reminder portal-reminder-success">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Check-in do treino de hoje já realizado ✅
+          Check-in do treino de hoje já realizado
         </div>`
       : `<div class="portal-reminder portal-reminder-info" id="checkinBanner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -891,7 +891,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
       <!-- Greeting -->
       <div class="portal-greeting-card glass-card">
         <div class="portal-greeting-text">
-          <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]} 👋</div>
+          <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]}</div>
           <div class="portal-greeting-date">${now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' })}</div>
         </div>
         ${lastSession ? `<div class="portal-last-session">Último treino: ${Math.abs(getDaysDifference(lastSession.date))}d atrás</div>` : ''}
@@ -1055,7 +1055,7 @@ function renderTreinar(workouts, schedules) {
       <div class="portal-suggested-label">
         ${todaySched
           ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Treino de HOJE`
-          : `📅 Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
+          : `Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
         ${suggestedSched.time ? ` · ${suggestedSched.time}` : ''}
       </div>
       <div class="portal-suggested-name">${suggestedWorkout.name || 'Treino'}</div>
@@ -1107,17 +1107,17 @@ function renderTreinar(workouts, schedules) {
         <div class="portal-live-panel">
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveTotal">00:00</div>
-            <div class="portal-live-lbl">⏱ Total</div>
+            <div class="portal-live-lbl">Total</div>
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveWork" style="color:#10b981">00:00</div>
-            <div class="portal-live-lbl">💪 Trabalho</div>
+            <div class="portal-live-lbl">Trabalho</div>
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveRest" style="color:#06b6d4">00:00</div>
-            <div class="portal-live-lbl">🙏 Descanso</div>
+            <div class="portal-live-lbl">Descanso</div>
           </div>
-          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer">🔔</button>
+          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
         </div>
 
         <!-- Rest timer overlay (hidden until set done) -->
@@ -1127,8 +1127,8 @@ function renderTreinar(workouts, schedules) {
           <div class="portal-rest-bar-track"><div class="portal-rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
           <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
-            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar ⏸</button>
-            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho 💪</button>
+            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar</button>
+            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Iniciar Trabalho</button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
         </div>
@@ -1138,7 +1138,7 @@ function renderTreinar(workouts, schedules) {
 
         <!-- Session notes -->
         <div class="glass-card" style="margin-top:12px">
-          <div class="portal-card-label">📝 Anotações da Sessão</div>
+          <div class="portal-card-label">Anotações da Sessão</div>
           <textarea id="soloNotes" class="portal-textarea" rows="3" placeholder="Observações gerais do treino..."></textarea>
         </div>
 
@@ -1722,8 +1722,8 @@ function initTreinar(workouts, schedules, student) {
             ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
             ${setsHTML}
             <div style="margin-top:6px;padding:5px 8px;background:rgba(255,255,255,0.02);border-radius:6px;font-size:0.6rem;color:var(--portal-text-muted);display:flex;flex-wrap:wrap;gap:8px">
-              <span>📊 <strong style="color:#f59e0b">PSE</strong> = Esforço percebido (1=leve, 10=máximo)</span>
-              <span>🧪 <strong style="color:var(--portal-accent)">RIR</strong> = Reps na reserva (0=falha, 5+=fácil)</span>
+              <span><strong style="color:#f59e0b">PSE</strong> &mdash; Esforço percebido (1=leve, 10=máximo)</span>
+              <span><strong style="color:var(--portal-accent)">RIR</strong> &mdash; Reps na reserva (0=falha, 5+=fácil)</span>
             </div>
             <div class="portal-live-ex-notes-wrap">
               <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício (opcional)..."></textarea>
@@ -2434,7 +2434,7 @@ async function showExerciseModal(ex) {
             ${ex.sciNote.split(' | ').map(part => {
               const [label, ...rest] = part.split(': ');
               const val = rest.join(': ');
-              const icons = { 'Zona':'🎯','Protocolo':'📋','Fisiologia':'🔬','Descanso':'⏱️','FC Máx':'❤️','Z1':'💚','Z2':'💛','Z4':'🧡','Z5':'🔴','Carga':'💪' };
+              const icons = { 'Zona':'▸','Protocolo':'▸','Fisiologia':'▸','Descanso':'▸','FC Máx':'▸','Z1':'▸','Z2':'▸','Z4':'▸','Z5':'▸','Carga':'▸' };
               const colors = { 'Zona':'#f59e0b','Protocolo':'#818cf8','Fisiologia':'#10b981','Descanso':'#06b6d4','FC Máx':'#f43f5e','Carga':'#f97316' };
               const icon = Object.entries(icons).find(([k]) => label?.startsWith(k))?.[1] || '·';
               const color = Object.entries(colors).find(([k]) => label?.startsWith(k))?.[1] || '#94a3b8';
@@ -2906,7 +2906,7 @@ function renderAvaliacoes(assessments) {
       <!-- FORÇA E 1RM -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          💪 Força (Carga Máxima Estimada - 1RM)
+          Força — Carga Máxima Estimada (1RM)
         </div>
         ${forcaAss.length === 0 ? `
           <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhum teste de força (1RM) registrado.</p>
@@ -3164,7 +3164,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (uniqueExercises.length > 0) {
     exerciseProgressionChartHtml = `
       <div class="glass-card" style="margin-bottom:12px">
-        <div class="portal-card-label">📊 Análise Multivariada por Exercício</div>
+        <div class="portal-card-label">Análise Multivariada por Exercício</div>
         <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">
           Compare a evolução da Carga (eixo esquerdo) vs PSE e RIR (eixo direito) ao longo do tempo.
         </p>

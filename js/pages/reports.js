@@ -28,8 +28,8 @@ export async function renderReports() {
           Enviar
         </button>
         <select class="form-select form-select-sm" id="pdfFormatSel" style="display:none; min-width:140px; border-color:var(--primary); color:var(--primary); font-weight:600">
-          <option value="mobile">📱 Celular (Vertical)</option>
-          <option value="a4">📄 A4 (Horizontal)</option>
+          <option value="mobile">Celular (Vertical)</option>
+          <option value="a4">A4 (Horizontal)</option>
         </select>
         <button class="btn btn-primary btn-sm" id="exportPdfBtn" style="display:none">Gerar PDF</button>
       </div>
@@ -184,7 +184,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     compareSessionsHtml = `
     <div class="card mb-lg">
       <div class="card-header">
-        <span class="card-title">📈 Comparativo de Sessões Idênticas</span>
+        <span class="card-title">Comparativo de Sessões Idênticas</span>
       </div>
       <p class="text-xs text-muted mb-md">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
       <div class="form-group" style="max-width:300px">
@@ -240,7 +240,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
 
     <!-- Motor de Insights -->
     <div class="card mb-lg" style="border:1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); position: relative; overflow: hidden;">
-      <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.05; user-select: none;">✨</div>
+      <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.04; user-select: none; color: var(--accent);">&#x2726;</div>
       <div class="card-header"><span class="card-title" style="color:var(--accent); display:flex; align-items:center; gap:8px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
         Resumo da Evolução (Últimas 4 semanas)
@@ -255,7 +255,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
 
       <button id="btnGenerateAI" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border:none; display:flex; align-items:center; gap:8px">
-        <span>Analisar Gráficos com IA ✨</span>
+        <span>Analisar Gráficos com IA</span>
       </button>
     </div>
 
