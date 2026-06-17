@@ -9,6 +9,12 @@ import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { METHOD_PROGRESSIONS } from './workouts.js';
 
+const isNumeric = (val) => {
+  if (val === undefined || val === null || val === '') return true;
+  const str = String(val).trim().replace(',', '.');
+  return !isNaN(str) && !isNaN(parseFloat(str));
+};
+
 // ── STATE ────────────────────────────────────────────────────
 const state = {
   session: null,
@@ -34,7 +40,12 @@ function resetState() {
 }
 
 function totalVolume() {
-  return state.setLog.reduce((t, s) => t + ((s.reps || 0) * (s.load || 0)), 0);
+  return state.setLog.reduce((t, s) => {
+    const reps = parseFloat(s.reps) || 0;
+    const loadStr = String(s.load || '').replace(',', '.');
+    const load = isNaN(loadStr) || isNaN(parseFloat(loadStr)) ? 0 : parseFloat(loadStr);
+    return t + (reps * load);
+  }, 0);
 }
 
 function saveCurrentInputs() {
@@ -263,7 +274,7 @@ function renderLiveView(students) {
             <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
-              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${ex.load}kg</span>` : ''}
+              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${isNumeric(ex.load) ? ex.load + 'kg' : ex.load}</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
               <span>${ex.rest || 60}s desc.</span>
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
@@ -324,8 +335,8 @@ function renderLiveView(students) {
                   <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">kg</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">${isNumeric(ex.load) ? 'kg' : 'Zona'}</span>
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${isNumeric(ex.load) ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
@@ -357,7 +368,7 @@ function renderLiveView(students) {
                 color:${done ? 'var(--success)' : isCur ? 'var(--primary)' : 'var(--text-secondary)'}">
                 <span style="font-size:0.7rem;min-width:12px">${done ? '✓' : isCur ? '●' : '○'}</span>
                 <span style="font-size:0.82rem;font-weight:${isCur ? 600 : 400}">${e.name}</span>
-                ${e.load ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto">${e.load}kg</span>` : ''}
+                ${e.load ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto">${isNumeric(e.load) ? e.load + 'kg' : e.load}</span>` : ''}
               </div>`;
             }).join('')}
           </div>
@@ -487,9 +498,9 @@ export function initTracker(navigateFn) {
                     style="padding:5px 8px;font-size:0.85rem;text-align:center" />
                 </div>
                 <div>
-                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Carga (kg)</label>
-                  <input type="number" class="form-input set-load" data-ei="${ei}" data-si="${si}"
-                    value="${s.load||0}" min="0" step="0.5"
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">${isNumeric(ex.load) ? 'Carga (kg)' : 'Intensidade'}</label>
+                  <input type="${isNumeric(ex.load) ? 'number' : 'text'}" class="form-input set-load" data-ei="${ei}" data-si="${si}"
+                    value="${s.load !== undefined ? s.load : 0}" ${isNumeric(ex.load) ? 'min="0" step="0.5"' : ''}
                     style="padding:5px 8px;font-size:0.85rem;text-align:center" />
                 </div>
                 <div>
@@ -559,7 +570,7 @@ export function initTracker(navigateFn) {
             document.querySelectorAll('.set-load').forEach(inp => {
               const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
               const idx = newSetLog.findIndex(s => s.exIdx===ei && s.setIdx===si);
-              if (idx >= 0) newSetLog[idx] = { ...newSetLog[idx], load: parseFloat(inp.value)||0 };
+              if (idx >= 0) newSetLog[idx] = { ...newSetLog[idx], load: isNumeric(inp.value) ? parseFloat(inp.value) : inp.value };
             });
             document.querySelectorAll('.set-pse').forEach(inp => {
               const ei = parseInt(inp.dataset.ei), si = parseInt(inp.dataset.si);
@@ -573,7 +584,7 @@ export function initTracker(navigateFn) {
             });
 
             // Recalcular totais
-            const newVol  = newSetLog.reduce((t,s) => t+((s.reps||0)*(s.load||0)), 0);
+            const newVol  = newSetLog.reduce((t,s) => t+((s.reps||0)*(isNumeric(s.load) ? parseFloat(s.load) : 0)), 0);
             const newSets = newSetLog.length;
             const pseParse = parseInt(document.getElementById('editSessPse')?.value)||session.postBiofeedback?.pse||0;
             const newDate  = document.getElementById('editSessDate')?.value || sessDate;
@@ -1023,8 +1034,8 @@ export function initTracker(navigateFn) {
             <input id="modalSetReps" type="number" value="${reps||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
           </div>
           <div style="flex:1">
-            <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Carga (kg)</label>
-            <input id="modalSetLoad" type="number" step="0.5" value="${load||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
+            <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">${isNumeric(ex.load) ? 'Carga (kg)' : 'Intensidade'}</label>
+            <input id="modalSetLoad" type="${isNumeric(ex.load) ? 'number' : 'text'}" ${isNumeric(ex.load) ? 'step="0.5"' : ''} value="${load||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
           </div>
         </div>
 
@@ -1143,7 +1154,8 @@ export function initTracker(navigateFn) {
 
   function completeSet(btn, i, row, pse, rir, notes) {
       const reps  = parseInt(row.querySelector('.set-reps')?.value) || 0;
-      const load  = parseFloat(row.querySelector('.set-load')?.value) || 0;
+      const load  = row.querySelector('.set-load')?.value;
+      const loadN = isNumeric(load) ? parseFloat(load) : 0;
 
       if (rir === 0 && pse > 0 && pse < 7) {
         notify.warning('RIR 0 (falha) com PSE baixo — verifique os valores.');
@@ -1151,8 +1163,8 @@ export function initTracker(navigateFn) {
 
       const ex = (state.session?.exercises || [])[state.exIdx] || {};
       let rm1Estimated = null;
-      if (load > 0 && reps > 0 && reps <= 12) {
-        rm1Estimated = Math.round((load * (1 + reps / 30)) * 2) / 2;
+      if (loadN > 0 && reps > 0 && reps <= 12) {
+        rm1Estimated = Math.round((loadN * (1 + reps / 30)) * 2) / 2;
       }
 
       state.setLog.push({ exIdx: state.exIdx, setIdx: i, reps, load, pse, rir, notes, rm1Estimated, time: Date.now() });
@@ -1179,7 +1191,8 @@ export function initTracker(navigateFn) {
       const exSets = parseInt(curEx.sets) || 3;
 
       const rirTxt = rir != null ? ` RIR ${rir}` : '';
-      notify.info(`Série ${i+1} ✓ — ${reps}×${load}kg PSE ${pse}${rirTxt}`);
+      const loadDisplay = isNumeric(load) ? `${load}kg` : load;
+      notify.info(`Série ${i+1} ✓ — ${reps}×${loadDisplay} PSE ${pse}${rirTxt}`);
 
       // Avançar para próxima série
       state.setIdx = i + 1;
@@ -1215,7 +1228,7 @@ export function initTracker(navigateFn) {
       const existing = state.tempSets[state.exIdx][si] || {};
       state.tempSets[state.exIdx][si] = {
         reps: repsInp?.value ? parseInt(repsInp.value) : existing.reps,
-        load: loadInp?.value ? parseFloat(loadInp.value) : existing.load,
+        load: loadInp?.value ? loadInp.value : existing.load,
         pse:  pseInp?.value  ? parseInt(pseInp.value)  : existing.pse,
         rir:  rirInp?.value  ? parseInt(rirInp.value)  : existing.rir,
       };
@@ -1258,8 +1271,8 @@ export function initTracker(navigateFn) {
             <input class="form-input" id="editExLiveReps" value="${curEx.reps||'12'}" />
           </div>
           <div class="form-group">
-            <label class="form-label">Carga (kg)</label>
-            <input class="form-input" type="number" step="0.5" id="editExLiveLoad" value="${curEx.load||''}" />
+            <label class="form-label">Carga/Zona</label>
+            <input class="form-input" id="editExLiveLoad" value="${curEx.load||''}" />
           </div>
           <div class="form-group">
             <label class="form-label">Descanso (s)</label>
@@ -1277,7 +1290,7 @@ export function initTracker(navigateFn) {
             curEx.name = document.getElementById('editExLiveName').value;
             curEx.sets = parseInt(document.getElementById('editExLiveSets').value) || 3;
             curEx.reps = document.getElementById('editExLiveReps').value;
-            curEx.load = parseFloat(document.getElementById('editExLiveLoad').value) || 0;
+            curEx.load = document.getElementById('editExLiveLoad').value;
             curEx.rest = parseInt(document.getElementById('editExLiveRest').value) || 60;
             
             state.setLog = state.setLog.filter(s => !(s.exIdx === state.exIdx && s.setIdx >= curEx.sets));
@@ -1356,7 +1369,7 @@ export function initTracker(navigateFn) {
             <textarea class="form-textarea" name="notes" rows="2" placeholder="Como foi o treino?"></textarea>
           </div>
           <div style="padding:8px 10px;background:rgba(37,211,102,0.07);border-radius:8px;border:1px solid rgba(37,211,102,0.2);font-size:0.75rem;color:var(--text-muted)">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#25d366" style="vertical-align:-1px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#25d366" style="vertical-align:-1px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.884 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             O formulário pós-treino será enviado automaticamente ao aluno via WhatsApp ao salvar.
           </div>
         </form>`,
@@ -1456,7 +1469,19 @@ function buildSessionSummary(session, student) {
   const exSummary = (session.exercises||[]).map((ex, i) => {
     const sets = (session.setLog||[]).filter(l => l.exIdx === i);
     if (!sets.length) return null;
-    return `${ex.name}: ${sets.length}x (${sets.reduce((t,s)=>t+(s.reps||0),0)} reps, ${Math.max(...sets.map(s=>s.load||0))}kg)`;
+    const hasNonNumeric = sets.some(s => {
+      const str = String(s.load || '').trim().replace(',', '.');
+      return str !== '' && (isNaN(str) || isNaN(parseFloat(str)));
+    });
+    let loadStr = '';
+    if (hasNonNumeric) {
+      const uniqueNonNumeric = [...new Set(sets.map(s => String(s.load || '').trim()).filter(Boolean))];
+      loadStr = uniqueNonNumeric.length ? `, ${uniqueNonNumeric.join(', ')}` : '';
+    } else {
+      const maxL = Math.max(...sets.map(s => parseFloat(String(s.load || 0).replace(',', '.')) || 0));
+      loadStr = maxL > 0 ? `, ${maxL}kg` : '';
+    }
+    return `${ex.name}: ${sets.length}x (${sets.reduce((t,s)=>t+(s.reps||0),0)} reps${loadStr})`;
   }).filter(Boolean);
 
   return [`PERSONAL PRO — Resumo da Sessão`,``,`Aluno: ${student?.name||'N/A'}`,`Treino: ${session.workoutName||'-'}`,`Data: ${(session.date.includes('T') ? new Date(session.date) : new Date(session.date + 'T12:00')).toLocaleDateString('pt-BR')}`,`Duração: ${durMin} min`,`Volume: ${Math.round(session.totalVolume || 0)} kg`,`Séries: ${session.totalSets||0}`,`PSE: ${session.postBiofeedback?.pse||'-'}/10`,``,`--- Exercícios ---`,...exSummary,``,`Bom treino!`].join('\n');
@@ -1483,14 +1508,42 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
   const exRows = exs.map((ex,i) => {
     const sets    = setLog.filter(l=>l.exIdx===i);
     if (!sets.length) return `<tr style="opacity:0.35"><td colspan="8" style="font-size:0.78rem">${ex.name} — não realizado</td></tr>`;
-    const maxLoad   = Math.max(...sets.map(s=>s.load||0));
-    const totalReps = sets.reduce((t,s)=>t+(s.reps||0),0);
-    const exVol     = sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
+    const hasNonNumeric = sets.some(s => {
+      const str = String(s.load || '').trim().replace(',', '.');
+      return str !== '' && (isNaN(str) || isNaN(parseFloat(str)));
+    });
+
+    let maxLoadDisplay = '';
+    if (hasNonNumeric) {
+      const uniqueNonNumeric = [...new Set(sets.map(s => String(s.load || '').trim()).filter(Boolean))];
+      maxLoadDisplay = uniqueNonNumeric.join(', ') || '—';
+    } else {
+      const numericLoads = sets.map(s => parseFloat(String(s.load || 0).replace(',', '.')) || 0);
+      const maxL = Math.max(...numericLoads);
+      maxLoadDisplay = maxL > 0 ? `${maxL}kg` : '—';
+    }
+
+    const totalReps = sets.reduce((t, s) => t + (s.reps || 0), 0);
+    
+    let exVolDisplay = '—';
+    if (!hasNonNumeric) {
+      const exVol = sets.reduce((t, s) => {
+        const loadVal = parseFloat(String(s.load || 0).replace(',', '.'));
+        return t + ((s.reps || 0) * (isNaN(loadVal) ? 0 : loadVal));
+      }, 0);
+      if (exVol > 0) exVolDisplay = `${exVol}kg`;
+    }
+
     const avgPse    = sets.filter(s=>s.pse).length ? (sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1) : '—';
     const avgRir    = sets.filter(s=>s.rir!=null).length ? (sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1) : '—';
     const rm1Est    = sets.find(s=>s.rm1Estimated)?.rm1Estimated;
     const pseColor  = parseFloat(avgPse)>8?'var(--danger)':parseFloat(avgPse)>6?'var(--warning)':'var(--success)';
-    const detail    = sets.map(s=>`<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${s.load}kg</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:''}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:''}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:''}${s.notes?` <span style="color:var(--text-muted);font-style:italic">"${s.notes}"</span>`:''}</div>`).join('');
+    
+    const detail    = sets.map(s=> {
+      const loadDisplay = isNumeric(s.load) ? `${s.load}kg` : s.load;
+      return `<div style="font-size:0.68rem;color:var(--text-muted);padding:2px 8px">S${s.setIdx+1}: <strong style="color:var(--text-primary)">${s.reps}×${loadDisplay}</strong>${s.pse?` <span style="color:var(--warning)">PSE ${s.pse}</span>`:''}${s.rir!=null?` <span style="color:var(--accent)">RIR ${s.rir}</span>`:''}${s.rm1Estimated?` <span style="color:var(--success)">~${s.rm1Estimated}kg</span>`:''}${s.notes?` <span style="color:var(--text-muted);font-style:italic">"${s.notes}"</span>`:''}</div>`;
+    }).join('');
+
     return `<tr>
       <td>
         <div style="font-weight:600;font-size:0.85rem">${ex.name}</div>
@@ -1500,8 +1553,8 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
       </td>
       <td style="text-align:center">${sets.length}</td>
       <td style="text-align:center">${totalReps}</td>
-      <td style="text-align:center;font-weight:600">${maxLoad}kg</td>
-      <td style="text-align:center;color:var(--primary);font-weight:600">${exVol}kg</td>
+      <td style="text-align:center;font-weight:600">${maxLoadDisplay}</td>
+      <td style="text-align:center;color:var(--primary);font-weight:600">${exVolDisplay}</td>
       <td style="text-align:center;color:${pseColor};font-weight:600">${avgPse}</td>
       <td style="text-align:center;color:var(--accent)">${avgRir}</td>
       <td style="text-align:center;color:var(--success);font-weight:600">${rm1Est?rm1Est+'kg':'—'}</td>
@@ -1689,22 +1742,47 @@ function generateSessionPDF(session, student) {
     exs.forEach((ex,i)=>{
       const sets=setLog.filter(l=>l.exIdx===i);
       if(!sets.length) return;
-      const maxLoad=Math.max(...sets.map(s=>s.load||0));
+      
+      const hasNonNumeric = sets.some(s => {
+        const str = String(s.load || '').trim().replace(',', '.');
+        return str !== '' && (isNaN(str) || isNaN(parseFloat(str)));
+      });
+
+      let maxLoadDisplay = '';
+      if (hasNonNumeric) {
+        const uniqueNonNumeric = [...new Set(sets.map(s => String(s.load || '').trim()).filter(Boolean))];
+        maxLoadDisplay = uniqueNonNumeric.join(', ') || '—';
+      } else {
+        const numericLoads = sets.map(s => parseFloat(String(s.load || 0).replace(',', '.')) || 0);
+        const maxL = Math.max(...numericLoads);
+        maxLoadDisplay = maxL > 0 ? `${maxL}kg` : '—';
+      }
+
       const tReps=sets.reduce((t,s)=>t+(s.reps||0),0);
-      const exVol=sets.reduce((t,s)=>t+((s.reps||0)*(s.load||0)),0);
+      
+      let exVolDisplay = '—';
+      if (!hasNonNumeric) {
+        const exVol = sets.reduce((t, s) => {
+          const loadVal = parseFloat(String(s.load || 0).replace(',', '.'));
+          return t + ((s.reps || 0) * (isNaN(loadVal) ? 0 : loadVal));
+        }, 0);
+        if (exVol > 0) exVolDisplay = `${exVol}kg`;
+      }
+
       const avgPse=sets.filter(s=>s.pse).length?(sets.reduce((t,s)=>t+(s.pse||0),0)/sets.filter(s=>s.pse).length).toFixed(1):'—';
       const avgRir=sets.filter(s=>s.rir!=null).length?(sets.reduce((t,s)=>t+(s.rir??0),0)/sets.filter(s=>s.rir!=null).length).toFixed(1):'—';
       const rm1=sets.find(s=>s.rm1Estimated)?.rm1Estimated;
       const rowH=ex.method?10:8;
       if(y>265){doc.addPage();y=20;}
+      doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255); doc.rect(14,y,rowH,'F'); // Fix fill rect height
       doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255); doc.rect(14,y,182,rowH,'F');
       doc.setTextColor(...DK); doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.text(ex.name||'—',15,y+5);
       if(ex.method){doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...AC);doc.text(ex.method,15,y+8.5);}
       doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...DK);
       doc.text(String(sets.length),89,y+5);
       doc.text(String(tReps),99,y+5);
-      doc.text(maxLoad+'kg',111,y+5);
-      doc.setTextColor(...G); doc.setFont('helvetica','bold'); doc.text(exVol+'kg',127,y+5);
+      doc.text(maxLoadDisplay,111,y+5);
+      doc.setTextColor(...G); doc.setFont('helvetica','bold'); doc.text(exVolDisplay,127,y+5);
       const pc=parseFloat(avgPse);
       doc.setTextColor(pc>8?220:pc>6?200:16,pc>8?50:pc>6?120:185,pc>8?50:pc>6?20:129);
       doc.text(String(avgPse),143,y+5);
@@ -1718,7 +1796,8 @@ function generateSessionPDF(session, student) {
           if(y>270){doc.addPage();y=20;}
           doc.setFillColor(250,252,255); doc.rect(18,y,178,4.5,'F');
           doc.setTextColor(...MU); doc.setFontSize(5.5); doc.setFont('helvetica','italic');
-          doc.text(`S${s.setIdx+1} (${s.reps}×${s.load}kg): ${s.notes}`,22,y+3.2);
+          const loadDisplay = isNumeric(s.load) ? `${s.load}kg` : s.load;
+          doc.text(`S${s.setIdx+1} (${s.reps}×${loadDisplay}): ${s.notes}`,22,y+3.2);
           y+=4.5;
         });
       }
