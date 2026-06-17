@@ -1081,6 +1081,7 @@ export function initPeriodization(navigateFn) {
       }
     };
 
+    setTimeout(() => {
       // ── INICIALIZAR SELETOR CUSTOMIZADO DE PERIODIZAÇÃO ──
       const optionsData = [
         {
