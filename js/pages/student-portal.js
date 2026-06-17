@@ -120,9 +120,39 @@ export async function renderStudentPortal(rawParam) {
   const params = new URLSearchParams(query || '');
   let trainerId = params.get('t') || '';
 
-  const student = await db.get('students', studentId).catch(() => null);
-  if (student && !trainerId) {
+  // ── CRÍTICO: configurar trainerId ANTES de qualquer db.get ──
+  // Garante que registros gravados pela aluna usem o trainer_id correto
+  if (trainerId) {
+    db.studentPortalTrainerId = trainerId;
+  }
+
+  // Tentar buscar aluno do localStorage; se vazio (primeiro acesso no dispositivo),
+  // buscar diretamente do Supabase via getAllForStudent
+  let student = await db.get('students', studentId).catch(() => null);
+
+  // Fallback: se não encontrou localmente e temos acesso ao Supabase, buscar remoto
+  if (!student && db.supabase && trainerId) {
+    try {
+      const { data } = await db.supabase.from('students').select('*').eq('id', studentId).maybeSingle();
+      if (data) {
+        student = data.data ? { ...data.data, id: data.id } : data;
+        // Salvar localmente para próximos acessos offline
+        await db.put('students', student).catch(() => {});
+      }
+    } catch (_) {}
+  }
+
+  // Se ainda sem trainerId, tentar pegar do registro do aluno
+  if (!trainerId && student) {
     trainerId = student.trainerId || student.trainer_id || '';
+  }
+
+  // Persistir trainerId no localStorage para uso offline futuro
+  if (trainerId && studentId) {
+    localStorage.setItem(`portal_tid_${studentId}`, trainerId);
+  } else if (!trainerId && studentId) {
+    // Tentar recuperar do localStorage salvo em sessão anterior
+    trainerId = localStorage.getItem(`portal_tid_${studentId}`) || '';
   }
 
   portalState.studentId = studentId;
