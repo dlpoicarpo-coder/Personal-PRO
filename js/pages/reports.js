@@ -1081,9 +1081,25 @@ async function initReportCharts(studentId, cycleFilter = '') {
   if (mCtx && assessments.length > 1) {
     const sorted = [...assessments].sort((a, b) => new Date(a.date) - new Date(b.date));
     const ds = [];
-    if (sorted.some(a => a.peso)) ds.push({ label: 'Peso (kg)', data: sorted.map(a => a.peso || null), borderColor: '#10b981', tension: 0.3, yAxisID: 'y' });
-    if (sorted.some(a => a.percentualGordura)) ds.push({ label: 'BF %', data: sorted.map(a => a.percentualGordura || null), borderColor: '#f59e0b', tension: 0.3, yAxisID: 'y1' });
-    if (ds.length) new Chart(mCtx, { type: 'line', data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y1: { position: 'right', ticks: { color: '#f59e0b' }, grid: { display: false } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } } });
+    if (sorted.some(a => a.peso))
+      ds.push({ label: 'Peso (kg)', data: sorted.map(a => a.peso || null), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', fill: false, tension: 0.3, yAxisID: 'y', pointRadius: 4 });
+    if (sorted.some(a => a.percentualGordura)) {
+      ds.push({ label: '% Gordura', data: sorted.map(a => a.percentualGordura || null), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [5,3], pointRadius: 4 });
+      ds.push({ label: '% Massa Magra', data: sorted.map(a => a.percentualGordura ? parseFloat((100 - a.percentualGordura).toFixed(1)) : null), borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [2,2], pointRadius: 4 });
+    }
+    if (ds.length) new Chart(mCtx, {
+      type: 'line',
+      data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+        scales: {
+          y:  { position: 'left',  title: { display: true, text: 'Peso (kg)', color: '#10b981', font: { size: 10 } }, ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y1: { position: 'right', title: { display: true, text: '%', color: '#94a3b8', font: { size: 10 } }, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { display: false }, min: 0, max: 100 },
+          x:  { ticks: { color: '#94a3b8' }, grid: { display: false } }
+        }
+      }
+    });
   }
 
   const kcCtx = document.getElementById('kcalChart');
