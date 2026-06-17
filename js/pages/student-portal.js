@@ -1537,25 +1537,21 @@ function initTreinar(workouts, schedules, student) {
             
             const metaDisplay = repsVal || ex.reps || '—';
             const loadDisplay = loadVal || ex.load || '';
-            const isSwapped = /[%z]/i.test(String(metaDisplay)) && /^\d+$/.test(String(loadDisplay).trim());
             
-            // Extract initial distance/time numeric value for hidden inputs
-            const checkVal = isSwapped ? String(loadDisplay) : targetRepsStr;
-            const initialNumericVal = parseFloat(checkVal.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
-            const finalRepsVal = (isSwapped ? loadDisplay : repsVal) === '' ? initialNumericVal : (isSwapped ? loadDisplay : repsVal);
-            const finalLoadVal = isSwapped ? (parseFloat(metaDisplay) || 0) : (parseFloat(loadVal) || 0);
+            // Extract only the first numeric value from targetRepsStr to avoid extracting multiple numbers (e.g. from 56min Z2 (108-126bpm))
+            const repsMatch = String(metaDisplay).match(/(\d+([\.,]\d+)?)/);
+            const initialNumericVal = repsMatch ? parseFloat(repsMatch[1].replace(',', '.')) : 0;
+            const finalRepsVal = repsVal === '' ? initialNumericVal : repsVal;
+            const finalLoadVal = parseFloat(loadVal) || 0;
 
-            const repsLabel = isSwapped ? 'Intensidade' : 'Duração';
-            const loadLabel = isSwapped ? 'Duração' : 'Intensidade';
+            const repsLabel = 'Duração';
+            const loadLabel = 'Intensidade';
             
             let repsText = metaDisplay;
-            if (!isSwapped && /^\d+$/.test(String(repsText).trim())) {
+            if (/^\d+$/.test(String(repsText).trim())) {
               repsText = String(repsText).trim() + ' min';
             }
             let loadText = loadDisplay;
-            if (isSwapped && /^\d+$/.test(String(loadText).trim())) {
-              loadText = String(loadText).trim() + ' min';
-            }
 
             return `
               <div class="portal-solo-set-row cardio-set-row" id="setrow_${ei}_${si}" style="display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); margin-bottom:8px; width:100%; box-sizing:border-box;">
@@ -1563,7 +1559,7 @@ function initTreinar(workouts, schedules, student) {
                   <span class="portal-set-num" style="font-weight:700; color:var(--portal-primary); font-size:0.85rem">Série ${si+1}</span>
                   <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:0.72rem; color:var(--portal-text-secondary);">${repsLabel}: <strong style="color:var(--portal-text);">${repsText}</strong></span>
-                    ${loadDisplay ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">${loadLabel}: <strong style="color:var(--portal-text);">${loadText}${isCardioEx && !isSwapped ? ' bpm' : ''}</strong></span>` : ''}
+                    ${loadDisplay ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">${loadLabel}: <strong style="color:var(--portal-text);">${loadText}${isCardioEx ? ' bpm' : ''}</strong></span>` : ''}
                   </div>
                 </div>
 
@@ -1650,7 +1646,21 @@ function initTreinar(workouts, schedules, student) {
               </div>`;
           }
 
-          return `
+          let headerHTML = '';
+          if (si === 0) {
+            headerHTML = `
+              <div class="portal-solo-set-header" style="display:flex; align-items:center; gap:6px; margin-bottom:4px; padding:0 2px; font-size:0.65rem; color:var(--portal-text-muted); font-weight:600; text-align:center;">
+                <span style="min-width:28px; text-align:left;">Série</span>
+                <span style="flex:1;">Reps</span>
+                <span style="flex:1;">Carga (kg)</span>
+                <span style="flex:0 0 60px;">Esforço</span>
+                <span style="flex:0 0 60px;">Reserva</span>
+                <span style="width:32px; flex-shrink:0;">Ok</span>
+              </div>
+            `;
+          }
+
+          return headerHTML + `
             <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
               <span class="portal-set-num">S${si+1}</span>
               <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">

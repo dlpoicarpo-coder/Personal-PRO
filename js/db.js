@@ -1079,9 +1079,7 @@ class Database {
       console.warn('Erro na migração de imagens de exercícios:', err);
     }
 
-    const exercisesCount = await this.count('exercises');
-    if (exercisesCount < 80) {
-      const exercises = [
+    const exercises = [
         // PEITO
         { name: 'Supino Reto com Barra',         muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício base para desenvolvimento do peitoral maior.' },
         { name: 'Supino Inclinado com Halteres',  muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Foco na porção clavicular do peitoral.' },
@@ -1094,6 +1092,9 @@ class Database {
         { name: 'Flexão de Braços',               muscleGroup: 'Peito',        category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Exercício funcional básico para peitoral.' },
         { name: 'Flexão Diamante',                muscleGroup: 'Peito',        category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Variação com ênfase no tríceps.' },
         { name: 'Supino com Halteres',            muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Maior amplitude de movimento que a barra.' },
+        { name: 'Crucifixo Máquina',               muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Crucifixo isolado na máquina (Peck Deck).' },
+        { name: 'Supino Reto com Halteres',         muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Supino reto usando halteres.' },
+        
         // COSTAS
         { name: 'Puxada Frontal',                 muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Desenvolvimento dos dorsais.' },
         { name: 'Puxada Fechada',                 muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Ênfase na espessura das costas.' },
@@ -1105,6 +1106,9 @@ class Database {
         { name: 'Levantamento Terra',             muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício composto para toda a cadeia posterior.' },
         { name: 'Levantamento Terra Romeno',      muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Ênfase nos isquiotibiais e glúteos.' },
         { name: 'Pullover com Halter',            muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Trabalha serrátil e dorsal.' },
+        { name: 'Barra Fixa',                      muscleGroup: 'Costas',       category: 'Calistenia', equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Barra fixa tradicional de calistenia.' },
+        { name: 'Remada Baixa',                    muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Remada baixa com puxador na polia.' },
+        
         // OMBROS
         { name: 'Desenvolvimento com Halteres',   muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Exercício base para deltoides.' },
         { name: 'Desenvolvimento com Barra',      muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Maior sobrecarga no desenvolvimento.' },
@@ -1114,6 +1118,7 @@ class Database {
         { name: 'Face Pull',                      muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Saúde do ombro e deltoide posterior.' },
         { name: 'Arnold Press',                   muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Variação do desenvolvimento com rotação.' },
         { name: 'Encolhimento de Ombros',         muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento do trapézio.' },
+        
         // BÍCEPS
         { name: 'Rosca Direta com Barra',         muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício base para bíceps.' },
         { name: 'Rosca Alternada com Halteres',   muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Permite foco unilateral e maior amplitude.' },
@@ -1122,6 +1127,7 @@ class Database {
         { name: 'Rosca Concentrada',              muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Máximo isolamento do bíceps.' },
         { name: 'Rosca no Cabo',                  muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Tensão constante no bíceps.' },
         { name: 'Rosca 21',                       muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Técnica avançada: 7 parciais baixo + 7 alto + 7 completas.' },
+        
         // TRÍCEPS
         { name: 'Tríceps Pulley',                 muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Exercício padrão para tríceps.' },
         { name: 'Tríceps Testa',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Foco na cabeça longa do tríceps.' },
@@ -1130,6 +1136,8 @@ class Database {
         { name: 'Mergulho (Dip)',                 muscleGroup: 'Tríceps',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Exercício composto para tríceps e peito inferior.' },
         { name: 'Extensão de Tríceps no Cabo',    muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Extensão unilateral no cabo.' },
         { name: 'Tríceps Coice',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento da cabeça lateral do tríceps.' },
+        { name: 'Supino Fechado',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Supino com pegada fechada para foco no tríceps.' },
+        
         // QUADRÍCEPS
         { name: 'Agachamento Livre com Barra',    muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Rei dos exercícios de perna.' },
         { name: 'Agachamento Frontal',            muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Maior ativação do quadríceps.' },
@@ -1140,12 +1148,15 @@ class Database {
         { name: 'Afundo com Barra',               muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Variação do afundo com maior carga.' },
         { name: 'Hack Squat',                     muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Agachamento guiado com ênfase no quadríceps.' },
         { name: 'Agachamento Sumô',               muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Enfatiza glúteos e adutores.' },
+        { name: 'Passada/Avanço com Halteres',      muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Passada dinâmica caminhando com halteres.' },
+        
         // POSTERIOR
         { name: 'Mesa Flexora',                   muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento dos isquiotibiais deitado.' },
         { name: 'Cadeira Flexora',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento dos isquiotibiais sentado.' },
-        { name: 'Stiff com Barra',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Alongamento ativo dos isquiotibiais.' },
+        { name: 'Stiff com Barra',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Alongamento active dos isquiotibiais.' },
         { name: 'Stiff Unilateral',               muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Versão unilateral para equilíbrio.' },
         { name: 'Good Morning',                   muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Fortalece eretores e isquiotibiais.' },
+        
         // GLÚTEOS
         { name: 'Hip Thrust',                     muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Melhor exercício para glúteos.' },
         { name: 'Hip Thrust com Halteres',        muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Versão com halteres para variação.' },
@@ -1153,10 +1164,14 @@ class Database {
         { name: 'Coice no Cabo',                  muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Isolamento do glúteo máximo.' },
         { name: 'Ponte de Glúteos',               muscleGroup: 'Glúteos',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Versão sem carga do hip thrust.' },
         { name: 'Agachamento Sumô com Halter',    muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Enfatiza glúteos e adutores.' },
+        { name: 'Elevação de Pelve',                muscleGroup: 'Glúteos',      category: 'Calistenia', equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Elevação pélvica básica sem carga para calistenia.' },
+        
         // PANTURRILHA
         { name: 'Panturrilha em Pé',              muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Foco no gastrocnêmio.' },
         { name: 'Panturrilha Sentado',            muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Foco no sóleo.' },
         { name: 'Panturrilha no Leg Press',       muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Variação com maior amplitude.' },
+        { name: 'Panturrilha em Pé na Máquina',     muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Exercício para panturrilhas na máquina em pé.' },
+        
         // CORE / ABDÔMEN
         { name: 'Abdominal Crunch',               muscleGroup: 'Abdômen',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Flexão do tronco para reto abdominal.' },
         { name: 'Abdominal Infra',                muscleGroup: 'Abdômen',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Elevação de pernas para abdômen inferior.' },
@@ -1169,7 +1184,9 @@ class Database {
         { name: 'Bird Dog',                       muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Coordenação e estabilidade lombo-pélvica.' },
         { name: 'Rollout com Roda',               muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Roda abdominal',loadType: 'bodyweight', description: 'Anti-extensão avançada para core.' },
         { name: 'Rotação com Cabo',               muscleGroup: 'Core',         category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Rotação de tronco com resistência.' },
-        // CARDIO / ENDURANCE — expandido
+        { name: 'Prancha',                         muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Prancha frontal estática para estabilização do core.' },
+        
+        // CARDIO / ENDURANCE
         { name: 'Esteira - Corrida',               muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '20min', intensityField: 'speed_kmh',  description: 'Corrida aeróbica. Registre velocidade (km/h).' },
         { name: 'Esteira - Caminhada',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '30min', intensityField: 'speed_kmh',  description: 'Caminhada aeróbica de baixa intensidade.' },
         { name: 'Esteira - Intervalado (HIIT)',    muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '30s',   intensityField: 'speed_kmh',  description: 'Sprint + recuperação. Ex: 30s rápido / 90s lento.' },
@@ -1204,21 +1221,38 @@ class Database {
         { name: 'Assault Bike',                    muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Assault Bike',   loadType: 'time',       defaultReps: '20s',   intensityField: 'calories',   description: 'Bicicleta com braços. Exige todo o corpo. Alta intensidade.' },
         { name: 'Ski Erg',                         muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Ski Erg',        loadType: 'time',       defaultReps: '500m',  intensityField: 'pace_500m',  description: 'Simulador de esqui nórdico. Core + cardio.' },
         { name: 'Air Runner',                      muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Air Runner',     loadType: 'time',       defaultReps: '200m',  intensityField: 'pace_min_km',description: 'Esteira não motorizada. Mais demanda do que a convencional.' },
-        // FUNCIONAIS já existentes mantidos abaixo
+        { name: 'Aquecimento (Cardio)',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '5 min', intensityField: 'level', description: 'Aquecimento cardiovascular geral.' },
+        { name: 'Treino Contínuo (Cardio)',         muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '30 min', intensityField: 'level', description: 'Treino cardiovascular contínuo.' },
+        { name: 'Desaquecimento (Cardio)',          muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '5 min', intensityField: 'level', description: 'Desaquecimento cardiovascular geral (cool down).' },
+        { name: 'Tiro/Sprint (Cardio)',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '30 seg', intensityField: 'level', description: 'Tiro de corrida/esforço de alta intensidade.' },
+        { name: 'Recuperação Ativa (Cardio)',       muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '60 seg', intensityField: 'level', description: 'Recuperação ativa em intensidade baixa.' },
+        
+        // POTÊNCIA
+        { name: 'Salto na Caixa (Box Jump)',        muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Caixote',        loadType: 'bodyweight', defaultReps: '5', intensityField: 'height_cm', description: 'Salto explosivo na caixa para potência.' },
+        { name: 'Arremesso de Medicine Ball',       muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Medicine Ball',  loadType: 'weight',     defaultReps: '5', description: 'Arremesso explosivo de bola medicinal.' },
+        { name: 'Flexão de Braço com Salto',        muscleGroup: 'Peito',        category: 'Potência',   equipment: 'Peso corporal', loadType: 'bodyweight', defaultReps: '5', description: 'Flexão pliométrica com empurrão explosivo.' },
+        { name: 'Arranco (Snatch)',                 muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Barra',         loadType: 'weight',     defaultReps: '3', description: 'Levantamento olímpico completo em um único movimento.' },
+        { name: 'Arremesso (Clean & Jerk)',         muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Barra',         loadType: 'weight',     defaultReps: '3', description: 'Levantamento olímpico em dois tempos.' },
+        
+        // FUNCIONAIS
         { name: 'Kettlebell Goblet Squat',         muscleGroup: 'Quadríceps',    category: 'Funcional',  equipment: 'Kettlebell',     loadType: 'weight',     description: 'Agachamento com kettlebell.' },
         { name: 'Turkish Get-Up',                  muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Kettlebell',     loadType: 'weight',     description: 'Movimento complexo para estabilidade total.' },
         { name: 'Farmer Walk',                     muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Halteres',       loadType: 'weight',     description: 'Caminhada com carga para força funcional.' },
         { name: 'Slam Ball',                       muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Medicine Ball',  loadType: 'weight',     description: 'Potência e força explosiva.' },
+        
         // MOBILIDADE
         { name: 'Alongamento de Quadril',          muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Flexibilidade do flexor do quadril.' },
         { name: 'Rotação Torácica',                muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Mobilidade da coluna torácica.' },
         { name: 'Hip 90/90',                       muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '45s', description: 'Mobilidade de quadril em rotação interna/externa.' },
         { name: 'Abertura de Quadril com Haltere', muscleGroup: 'Glúteos',       category: 'Mobilidade', equipment: 'Halteres',       loadType: 'weight',     description: 'Fortalecimento e mobilidade do glúteo médio.' },
-      ];
+    ];
 
-      const existing = await this.getAll('exercises');
-      const newExerciseIds = new Set(exercises.map(ex => 'ex_' + slugify(ex.name) + '_' + trainerId));
-      
+    const existing = await this.getAll('exercises');
+    const newExerciseIds = new Set(exercises.map(ex => 'ex_' + slugify(ex.name) + '_' + trainerId));
+    const hasAllDefault = [...newExerciseIds].every(id => existing.some(e => e.id === id));
+
+    if (!hasAllDefault) {
+      console.log('[Seed] Seeding missing default exercises...');
       // Clean up legacy/removed default templates for this trainer
       const defaultToClean = existing.filter(e => 
         e.is_default && 

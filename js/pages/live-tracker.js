@@ -316,7 +316,8 @@ function renderLiveView(students) {
               const isActive = !done && i === state.setIdx;
               const temp     = state.tempSets[state.exIdx]?.[i] || {};
 
-              let defaultReps = (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
+              let repsMatch = String(ex.reps || '').match(/(\d+([\.,]\d+)?)/);
+              let defaultReps = repsMatch ? parseFloat(repsMatch[1].replace(',', '.')) : 12;
               let defaultLoad = ex.load || '';
               let setLabel = '';
 
