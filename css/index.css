@@ -444,6 +444,19 @@ h4 {
   cursor: pointer;
 }
 
+.form-select optgroup {
+  background: var(--bg-tertiary);
+  color: var(--primary);
+  font-weight: 700;
+  font-style: normal;
+}
+
+.form-select option {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: normal;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

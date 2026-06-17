@@ -743,8 +743,8 @@ export function initExercisesLibrary(navigateFn) {
       let wkCount  = tpl.workouts ? tpl.workouts.length : 0;
       
       const workoutsHTML = tpl.workouts && tpl.workouts.length
-        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, allMet, w)).join('')
-        : buildTplWorkoutHTML(0, allMet);
+        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, allMet, w, allEx)).join('')
+        : buildTplWorkoutHTML(0, allMet, null, allEx);
 
       openModal({
         title: 'Editar Modelo de Treino', size: 'xl',
@@ -768,7 +768,6 @@ export function initExercisesLibrary(navigateFn) {
             ${workoutsHTML}
           </div>
           <button type="button" class="btn btn-secondary btn-sm mt-sm" id="addTplWorkoutEdit">+ Adicionar Treino</button>
-          <datalist id="tplExList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>
         </form>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
@@ -783,12 +782,44 @@ export function initExercisesLibrary(navigateFn) {
               wkEl.querySelectorAll('.tpl-ex-row').forEach(exEl => {
                 const ei = exEl.dataset.ei;
                 const n  = fd.get(`wk_${wi}_ex_${ei}`);
-                if (n) exercises.push({
-                  name: n, sets: parseInt(fd.get(`wk_${wi}_sets_${ei}`))||3,
-                  reps: fd.get(`wk_${wi}_reps_${ei}`)||'12',
-                  rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
-                  method: fd.get(`wk_${wi}_method_${ei}`)||'', load:'',
-                });
+                if (n) {
+                  const selectEl = exEl.querySelector('.tpl-ex-select');
+                  const opt = selectEl?.selectedOptions[0];
+                  const loadType = opt?.dataset.loadType || 'weight';
+                  
+                  let reps = '';
+                  let load = '';
+                  let duration = '';
+                  let speed = '';
+                  let fc = '';
+
+                  if (loadType === 'time') {
+                    duration = fd.get(`wk_${wi}_duration_${ei}`) || '';
+                    speed = fd.get(`wk_${wi}_speed_${ei}`) || '';
+                    fc = fd.get(`wk_${wi}_fc_${ei}`) || '';
+                    reps = duration;
+                    load = [speed, fc].filter(Boolean).join(' - ');
+                  } else if (loadType === 'bodyweight') {
+                    reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
+                    load = '';
+                  } else { // weight
+                    reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
+                    load = fd.get(`wk_${wi}_load_${ei}`) || '';
+                  }
+
+                  exercises.push({
+                    name: n,
+                    loadType,
+                    sets: parseInt(fd.get(`wk_${wi}_sets_${ei}`))||3,
+                    reps,
+                    load,
+                    duration,
+                    speed,
+                    fc,
+                    rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
+                    method: fd.get(`wk_${wi}_method_${ei}`)||'',
+                  });
+                }
               });
               const wn = fd.get(`wk_name_${wi}`) || `Treino ${parseInt(wi)+1}`;
               if (exercises.length) workouts.push({ name: wn, exercises });
@@ -801,32 +832,37 @@ export function initExercisesLibrary(navigateFn) {
 
       setTimeout(() => {
         document.getElementById('addTplWorkoutEdit')?.addEventListener('click', () => {
-          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet));
-          bindTplEventsEdit(allMet);
+          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet, null, allEx));
+          bindTplEventsEdit(allMet, allEx);
         });
-        bindTplEventsEdit(allMet);
+        bindTplEventsEdit(allMet, allEx);
       }, 100);
     });
   });
 
   // Helper bindings for editing
-  function bindTplEventsEdit(allMethods = []) {
+  function bindTplEventsEdit(allMethods = [], allEx = []) {
     document.querySelectorAll('#tplWorkoutsEdit .add-tpl-ex').forEach(btn => {
       btn.onclick = () => {
         const wi  = btn.dataset.wi;
         const cnt = document.querySelector(`#tplWorkoutsEdit .tpl-exercises[data-wi="${wi}"]`);
         if (!cnt) return;
         const ei  = cnt.querySelectorAll('.tpl-ex-row').length;
-        cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods));
+        cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods, null, allEx));
         bindRemoveTplExEdit();
-        bindMethodAutoFill(cnt.lastElementChild);
+        const lastRow = cnt.lastElementChild;
+        bindMethodAutoFill(lastRow);
+        bindExSelectListener(lastRow);
       };
     });
     document.querySelectorAll('#tplWorkoutsEdit .rm-tpl-workout').forEach(btn => {
       btn.onclick = () => btn.closest('.tpl-workout')?.remove();
     });
     bindRemoveTplExEdit();
-    document.querySelectorAll('#tplWorkoutsEdit .tpl-ex-row').forEach(row => bindMethodAutoFill(row));
+    document.querySelectorAll('#tplWorkoutsEdit .tpl-ex-row').forEach(row => {
+      bindMethodAutoFill(row);
+      bindExSelectListener(row);
+    });
   }
 
   function bindRemoveTplExEdit() {
@@ -860,10 +896,9 @@ export function initExercisesLibrary(navigateFn) {
           <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem é indicado, observações..."></textarea>
         </div>
         <div id="tplWorkouts">
-          ${buildTplWorkoutHTML(0, allMet)}
+          ${buildTplWorkoutHTML(0, allMet, null, allEx)}
         </div>
         <button type="button" class="btn btn-secondary btn-sm mt-sm" id="addTplWorkout">+ Adicionar Treino</button>
-        <datalist id="tplExList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>
       </form>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
@@ -878,12 +913,44 @@ export function initExercisesLibrary(navigateFn) {
             wkEl.querySelectorAll('.tpl-ex-row').forEach(exEl => {
               const ei = exEl.dataset.ei;
               const n  = fd.get(`wk_${wi}_ex_${ei}`);
-              if (n) exercises.push({
-                name: n, sets: parseInt(fd.get(`wk_${wi}_sets_${ei}`))||3,
-                reps: fd.get(`wk_${wi}_reps_${ei}`)||'12',
-                rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
-                method: fd.get(`wk_${wi}_method_${ei}`)||'', load:'',
-              });
+              if (n) {
+                const selectEl = exEl.querySelector('.tpl-ex-select');
+                const opt = selectEl?.selectedOptions[0];
+                const loadType = opt?.dataset.loadType || 'weight';
+                
+                let reps = '';
+                let load = '';
+                let duration = '';
+                let speed = '';
+                let fc = '';
+
+                if (loadType === 'time') {
+                  duration = fd.get(`wk_${wi}_duration_${ei}`) || '';
+                  speed = fd.get(`wk_${wi}_speed_${ei}`) || '';
+                  fc = fd.get(`wk_${wi}_fc_${ei}`) || '';
+                  reps = duration;
+                  load = [speed, fc].filter(Boolean).join(' - ');
+                } else if (loadType === 'bodyweight') {
+                  reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
+                  load = '';
+                } else { // weight
+                  reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
+                  load = fd.get(`wk_${wi}_load_${ei}`) || '';
+                }
+
+                exercises.push({
+                  name: n,
+                  loadType,
+                  sets: parseInt(fd.get(`wk_${wi}_sets_${ei}`))||3,
+                  reps,
+                  load,
+                  duration,
+                  speed,
+                  fc,
+                  rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
+                  method: fd.get(`wk_${wi}_method_${ei}`)||'',
+                });
+              }
             });
             const wn = fd.get(`wk_name_${wi}`) || `Treino ${parseInt(wi)+1}`;
             if (exercises.length) workouts.push({ name: wn, exercises });
@@ -895,21 +962,70 @@ export function initExercisesLibrary(navigateFn) {
     });
     setTimeout(() => {
       document.getElementById('addTplWorkout')?.addEventListener('click', () => {
-        document.getElementById('tplWorkouts').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet));
-        bindTplEvents(allMet);
+        document.getElementById('tplWorkouts').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet, null, allEx));
+        bindTplEvents(allMet, allEx);
       });
-      bindTplEvents(allMet);
+      bindTplEvents(allMet, allEx);
     }, 100);
   };
   document.getElementById('addCustomTplBtn')?.addEventListener('click', openCustomTpl);
   document.getElementById('addCustomTplBtnEmpty')?.addEventListener('click', openCustomTpl);
 }
 
-function buildTplWorkoutHTML(wi, allMethods = [], wk = null) {
+function getTplExRowFieldsHTML(wi, ei, loadType, ex = null) {
+  const setsVal = ex && ex.sets !== undefined ? ex.sets : 3;
+  const repsVal = ex && ex.reps !== undefined ? ex.reps : '12';
+  const restVal = ex && ex.rest !== undefined ? ex.rest : '60';
+  const loadVal = ex && ex.load !== undefined ? ex.load : '';
+  const durationVal = ex ? (ex.duration || (loadType === 'time' ? ex.reps : '')) : '';
+  const speedVal = ex ? (ex.speed || (loadType === 'time' ? (ex.load ? ex.load.split(' - ')[0] : '') : '')) : '';
+  const fcVal = ex ? (ex.fc || (loadType === 'time' ? (ex.load && ex.load.includes(' - ') ? ex.load.split(' - ')[1] : '') : '')) : '';
+
+  if (loadType === 'time') {
+    return `
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" placeholder="Séries" />
+      <input class="form-input" name="wk_${wi}_duration_${ei}" value="${durationVal}" style="width:70px;text-align:center;font-size:0.82rem" title="Duração" placeholder="Duração" />
+      <input class="form-input" name="wk_${wi}_speed_${ei}" value="${speedVal}" style="width:80px;text-align:center;font-size:0.82rem" title="Velocidade/Watts" placeholder="Vel/Watts" />
+      <input class="form-input" name="wk_${wi}_fc_${ei}" value="${fcVal}" style="width:65px;text-align:center;font-size:0.82rem" title="FC Alvo" placeholder="FC Alvo" />
+      <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
+    `;
+  } else if (loadType === 'bodyweight') {
+    return `
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" placeholder="Séries" />
+      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Repetições" placeholder="Reps" />
+      <input class="form-input" name="wk_${wi}_load_${ei}" value="" style="width:60px;text-align:center;font-size:0.82rem" title="Sem Carga" placeholder="—" disabled />
+      <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
+    `;
+  } else { // weight
+    return `
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" placeholder="Séries" />
+      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Repetições" placeholder="Reps" />
+      <input class="form-input" name="wk_${wi}_load_${ei}" value="${loadVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Carga (kg)" placeholder="kg" />
+      <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
+    `;
+  }
+}
+
+function bindExSelectListener(row) {
+  const select = row.querySelector('.tpl-ex-select');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    const wi = row.dataset.wi || select.name.split('_')[1];
+    const ei = row.dataset.ei || select.name.split('_')[3];
+    const opt = select.selectedOptions[0];
+    const loadType = opt?.dataset.loadType || 'weight';
+    const fieldsContainer = row.querySelector('.tpl-ex-fields');
+    if (fieldsContainer) {
+      fieldsContainer.innerHTML = getTplExRowFieldsHTML(wi, ei, loadType, null);
+    }
+  });
+}
+
+function buildTplWorkoutHTML(wi, allMethods = [], wk = null, allEx = []) {
   const nameVal = wk ? wk.name : '';
   const exercisesHTML = wk && wk.exercises && wk.exercises.length
-    ? wk.exercises.map((e, ei) => buildTplExRowHTML(wi, ei, allMethods, e)).join('')
-    : buildTplExRowHTML(wi, 0, allMethods);
+    ? wk.exercises.map((e, ei) => buildTplExRowHTML(wi, ei, allMethods, e, allEx)).join('')
+    : buildTplExRowHTML(wi, 0, allMethods, null, allEx);
   
   return `
     <div class="card mb-md tpl-workout" data-wi="${wi}" style="border:1px solid var(--border-active)">
@@ -924,44 +1040,84 @@ function buildTplWorkoutHTML(wi, allMethods = [], wk = null) {
     </div>`;
 }
 
-function buildTplExRowHTML(wi, ei, allMethods = [], ex = null) {
+function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
   const nameVal = ex ? ex.name : '';
-  const setsVal = ex && ex.sets !== undefined ? ex.sets : 3;
-  const repsVal = ex && ex.reps !== undefined ? ex.reps : '12';
-  const restVal = ex && ex.rest !== undefined ? ex.rest : '60';
   const methodVal = ex ? ex.method : '';
-  
+  const foundEx = allEx.find(e => e.name === nameVal);
+  const loadType = ex ? (ex.loadType || foundEx?.loadType || 'weight') : 'weight';
+
+  // Agrupar exercícios por tipo de carga
+  const bodyweightExs = allEx.filter(e => e.loadType === 'bodyweight').sort((a,b)=>a.name.localeCompare(b.name));
+  const weightExs = allEx.filter(e => !e.loadType || e.loadType === 'weight').sort((a,b)=>a.name.localeCompare(b.name));
+  const timeExs = allEx.filter(e => e.loadType === 'time').sort((a,b)=>a.name.localeCompare(b.name));
+
+  const knownNames = new Set(allEx.map(e => e.name));
+  let extraOption = '';
+  if (nameVal && !knownNames.has(nameVal)) {
+    extraOption = `<option value="${nameVal}" selected>${nameVal}</option>`;
+  }
+
+  // Agrupar métodos
+  const musculoMet = allMethods.filter(m => m.category !== 'Cardio');
+  const cardioMet = allMethods.filter(m => m.category === 'Cardio');
+
+  const fieldsHTML = getTplExRowFieldsHTML(wi, ei, loadType, ex);
+
   return `
-    <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-ei="${ei}" style="flex-wrap:wrap">
-      <input class="form-input" name="wk_${wi}_ex_${ei}" value="${nameVal}" list="tplExList" placeholder="Exercício" style="flex:2;min-width:150px;font-size:0.82rem" />
-      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" />
-      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Reps/Tempo" />
-      <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" />
+    <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-wi="${wi}" data-ei="${ei}" style="flex-wrap:wrap">
+      <select class="form-select tpl-ex-select" name="wk_${wi}_ex_${ei}" style="flex:2;min-width:150px;font-size:0.82rem">
+        <option value="">— Exercício —</option>
+        ${extraOption}
+        <optgroup label="── Peso Corporal ──">
+          ${bodyweightExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="bodyweight">${e.name}</option>`).join('')}
+        </optgroup>
+        <optgroup label="── Peso (kg) ──">
+          ${weightExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="weight">${e.name}</option>`).join('')}
+        </optgroup>
+        <optgroup label="── Tempo / Intensidade ──">
+          ${timeExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="time">${e.name}</option>`).join('')}
+        </optgroup>
+      </select>
+      
+      <div class="tpl-ex-fields flex items-center gap-xs">
+        ${fieldsHTML}
+      </div>
+
       <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem">
         <option value="">— Método —</option>
-        ${allMethods.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
+        <optgroup label="── Musculação ──">
+          ${musculoMet.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
+        </optgroup>
+        <optgroup label="── Cardio ──">
+          ${cardioMet.map(m=>`<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
+        </optgroup>
       </select>
       <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">✕</button>
     </div>`;
 }
 
-function bindTplEvents(allMethods = []) {
+function bindTplEvents(allMethods = [], allEx = []) {
   document.querySelectorAll('.add-tpl-ex').forEach(btn => {
     btn.onclick = () => {
       const wi  = btn.dataset.wi;
       const cnt = document.querySelector(`.tpl-exercises[data-wi="${wi}"]`);
       if (!cnt) return;
       const ei  = cnt.querySelectorAll('.tpl-ex-row').length;
-      cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods));
+      cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods, null, allEx));
       bindRemoveTplEx();
-      bindMethodAutoFill(cnt.lastElementChild);
+      const lastRow = cnt.lastElementChild;
+      bindMethodAutoFill(lastRow);
+      bindExSelectListener(lastRow);
     };
   });
   document.querySelectorAll('.rm-tpl-workout').forEach(btn => {
     btn.onclick = () => btn.closest('.tpl-workout')?.remove();
   });
   bindRemoveTplEx();
-  document.querySelectorAll('#tplWorkouts .tpl-ex-row').forEach(row => bindMethodAutoFill(row));
+  document.querySelectorAll('#tplWorkouts .tpl-ex-row').forEach(row => {
+    bindMethodAutoFill(row);
+    bindExSelectListener(row);
+  });
 }
 
 function bindRemoveTplEx() {
