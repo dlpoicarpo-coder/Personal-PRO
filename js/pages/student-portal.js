@@ -1651,10 +1651,10 @@ function initTreinar(workouts, schedules, student) {
             headerHTML = `
               <div class="portal-solo-set-header" style="display:flex; align-items:center; gap:6px; margin-bottom:4px; padding:0 2px; font-size:0.65rem; color:var(--portal-text-muted); font-weight:600; text-align:center;">
                 <span style="min-width:28px; text-align:left;">Série</span>
-                <span style="flex:1;">Reps</span>
-                <span style="flex:1;">Carga (kg)</span>
-                <span style="flex:0 0 60px;">Esforço</span>
-                <span style="flex:0 0 60px;">Reserva</span>
+                <span style="flex:1;" title="Número de repetições realizadas">Reps</span>
+                <span style="flex:1;" title="Peso utilizado em quilogramas">Carga (kg)</span>
+                <span style="flex:0 0 60px;" title="PSE — Percepção Subjetiva de Esforço&#10;1=Muito leve · 5=Moderado · 10=Máximo absoluto" style="cursor:help; border-bottom:1px dotted">PSE ⓘ</span>
+                <span style="flex:0 0 60px;" title="RIR — Reps In Reserve (Reserva)&#10;0=Falha total · 1=1 rep sobrando · 5+=Muitas sobrando" style="cursor:help; border-bottom:1px dotted">RIR ⓘ</span>
                 <span style="width:32px; flex-shrink:0;">Ok</span>
               </div>
             `;
@@ -1704,18 +1704,29 @@ function initTreinar(workouts, schedules, student) {
               <div class="portal-ex-num">${ei+1}</div>
               <div style="flex:1;min-width:0">
                 <div class="portal-ex-name">${ex.name}</div>
-                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}${isTime?'':'kg'}`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
-                ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
+                <div class="portal-ex-detail" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:2px">
+                  <span>${ex.sets||3} séries × ${ex.reps||'10-12'}</span>
+                  ${ex.load ? `<span style="color:var(--portal-primary);font-weight:600">${ex.load}${isTime ? ' bpm' : 'kg'}</span>` : ''}
+                  ${ex.rest ? `<span title="Tempo de descanso entre séries">⏱ ${ex.rest}s descanso</span>` : ''}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+                  ${ex.method ? `<span class="portal-ex-method">${ex.method}</span>` : ''}
+                  ${ex.muscleGroup ? `<span style="font-size:0.62rem;padding:1px 6px;border-radius:8px;background:rgba(16,185,129,0.1);color:#10b981;font-weight:600">${ex.muscleGroup}</span>` : ''}
+                </div>
               </div>
-              <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes e execução" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </button>
               ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
             </div>
             ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
             ${setsHTML}
+            <div style="margin-top:6px;padding:5px 8px;background:rgba(255,255,255,0.02);border-radius:6px;font-size:0.6rem;color:var(--portal-text-muted);display:flex;flex-wrap:wrap;gap:8px">
+              <span>📊 <strong style="color:#f59e0b">PSE</strong> = Esforço percebido (1=leve, 10=máximo)</span>
+              <span>🧪 <strong style="color:var(--portal-accent)">RIR</strong> = Reps na reserva (0=falha, 5+=fácil)</span>
+            </div>
             <div class="portal-live-ex-notes-wrap">
-              <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
+              <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício (opcional)..."></textarea>
             </div>
           </div>
         `;
