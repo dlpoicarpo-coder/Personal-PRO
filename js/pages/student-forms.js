@@ -954,7 +954,7 @@ export function initPostForm() {
           await publicPut('biofeedback', {
             ...existingBf,
             pse, tqrPost, duration: dur,
-            trainingLoad: pse * dur,
+            trainingLoad: Math.round(pse * dur),
             satisfaction,
             notes: existingBf.notes ? existingBf.notes + (data.notes ? ' | Pós: '+data.notes : '') : data.notes||'',
             postNotes: data.notes||'',
@@ -966,7 +966,7 @@ export function initPostForm() {
             id: bfId,
             studentId: session.studentId, trainerId: data.trainerId||session.trainerId||'',
             date: session.date||Calc.nowISO(),
-            pse, tqrPost, duration: dur, trainingLoad: pse*dur,
+            pse, tqrPost, duration: dur, trainingLoad: Math.round(pse*dur),
             satisfaction,
             notes: data.notes||'',
             formType:'post', sessionId: data.sessionId,
