@@ -143,7 +143,19 @@ export const PERIODIZATION_MODELS = {
       if (isDeload) {
         return { phase: 'Deload', sets: 2, repsMin: 12, repsMax: 15, intensityPct: 50, restSeconds: 60, rpe: '4-5', volDelta: -40 };
       }
-      return { phase: 'Adaptação', sets: 3, repsMin: 10, repsMax: 12, intensityPct: 70, restSeconds: 90, rpe: '7-8', volDelta: 0 };
+      return { phase: 'Hipertrofia', sets: 3, repsMin: 10, repsMax: 12, intensityPct: 70, restSeconds: 90, rpe: '7-8', volDelta: 0 };
+    }
+  },
+  // 7b. PERSONALIZADO / MANUAL ALIAS
+  manual: {
+    id: 'manual', label: 'Personalizado (Ajuste Manual)',
+    color: '#94a3b8', icon: '⚙️',
+    desc: 'Periodização personalizada. Permite ajuste manual de cada semana.',
+    buildWeek: (week, totalWeeks, deloadEvery) => {
+      if (deloadEvery > 0 && week % deloadEvery === 0) {
+        return { phase: 'Deload', sets: 2, repsMin: 12, repsMax: 15, intensityPct: 50, restSeconds: 60, rpe: '4-5', volDelta: -40 };
+      }
+      return { phase: 'Hipertrofia', sets: 3, repsMin: 10, repsMax: 12, intensityPct: 70, restSeconds: 90, rpe: '7-8', volDelta: 0 };
     }
   },
 };

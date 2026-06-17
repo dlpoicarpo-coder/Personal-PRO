@@ -128,7 +128,7 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
       const phase = progress < 0.3 ? 'Tempo Runs' : progress < 0.7 ? 'Threshold Intervals' : 'Threshold Pico';
       weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: Math.round(75 + progress * 10), volumePct: Math.round(70 + progress * 15), repsRange: `${thMin}min limiar` });
 
-    } else if (modelType === 'custom') {
+    } else if (modelType === 'custom' || modelType === 'manual') {
       for (let w = 1; w <= totalWeeks; w++) {
         const isDeload = deloadEvery > 0 && w % deloadEvery === 0;
         if (isDeload) {
@@ -144,6 +144,7 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
         reverse_linear: { start: 85, end: 50, volStart: 55, volEnd: 90 },
         lsd:            { start: 50, end: 70, volStart: 90, volEnd: 80 },
         fartlek:        { start: 58, end: 80, volStart: 82, volEnd: 68 },
+        manual:         { start: 70, end: 70, volStart: 70, volEnd: 70 },
       };
       const m = models[modelType] || models.linear;
       const intensityPct = Math.round(m.start + (m.end - m.start) * progress);
@@ -554,28 +555,43 @@ export function initPeriodization(navigateFn) {
                 <input class="form-input" name="name" value="Macrociclo 1" placeholder="Ex: Macrociclo 1 — Hipertrofia" />
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Modelo de periodização *</label>
-                <select class="form-select" name="type">
-                  <optgroup label="── Musculação ──">
-                    <option value="linear">Linear — Volume↓ Intensidade↑</option>
-                    <option value="reverse_linear">Linear Reversa — RML / Resistência</option>
-                    <option value="undulating">Ondulatória (DUP) — Oscilações diárias</option>
-                    <option value="block">Em Blocos — Acumulação → Intensificação → Realização</option>
-                    <option value="conjugate">Conjugada — Esforço Máximo + Dinâmico</option>
-                    <option value="concurrent">Concorrente — Força + Metabólico</option>
-                  </optgroup>
-                  <optgroup label="── Cardio / Endurance ──">
-                    <option value="polarized">Polarizado — 80% Z1/Z2 + 20% Z4/Z5</option>
-                    <option value="hiit">HIIT — Intervalado de Alta Intensidade</option>
-                    <option value="lsd">LSD — Longa Duração e Baixa Intensidade</option>
-                    <option value="threshold">Limiar Anaeróbio</option>
-                    <option value="fartlek">Fartlek — Variações de ritmo livres</option>
-                  </optgroup>
-                  <optgroup label="── Personalizado ──">
-                    <option value="custom">Periodização Personalizada (Ajuste Manual)</option>
-                  </optgroup>
-                </select>
+                <div class="custom-select-container" id="perioModelSelectContainer">
+                  <select class="form-select" name="type" style="display:none">
+                    <optgroup label="── Musculação ──">
+                      <option value="linear">Linear — Volume↓ Intensidade↑</option>
+                      <option value="reverse_linear">Linear Reversa — RML / Resistência</option>
+                      <option value="undulating">Ondulatória (DUP) — Oscilações diárias</option>
+                      <option value="block">Em Blocos — Acumulação → Intensificação → Realização</option>
+                      <option value="conjugate">Conjugada — Esforço Máximo + Dinâmico</option>
+                      <option value="concurrent">Concorrente — Força + Metabólico</option>
+                    </optgroup>
+                    <optgroup label="── Cardio / Endurance ──">
+                      <option value="polarized">Polarizado — 80% Z1/Z2 + 20% Z4/Z5</option>
+                      <option value="hiit">HIIT — Intervalado de Alta Intensidade</option>
+                      <option value="lsd">LSD — Longa Duração e Baixa Intensidade</option>
+                      <option value="threshold">Limiar Anaeróbio</option>
+                      <option value="fartlek">Fartlek — Variações de ritmo livres</option>
+                    </optgroup>
+                    <optgroup label="── Personalizado ──">
+                      <option value="manual">Periodização Personalizada (Ajuste Manual)</option>
+                    </optgroup>
+                  </select>
+
+                  <div class="custom-select-trigger" id="customPerioTrigger">
+                    <div style="display:flex; align-items:center; gap:10px" id="customPerioVal">
+                      <span class="option-icon" style="color:#3b82f6; display:flex; align-items:center">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                      </span>
+                      <div style="display:flex; flex-direction:column; text-align:left">
+                        <span class="option-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary)">Linear Clássica</span>
+                        <span class="option-desc" style="font-size:0.7rem; color:var(--text-muted)">Volume↓ Intensidade↑</span>
+                      </div>
+                    </div>
+                    <span class="arrow">▼</span>
+                  </div>
+
+                  <div class="custom-select-dropdown" id="customPerioDropdown"></div>
+                </div>
               </div>
 
               <div class="form-row">
@@ -1065,8 +1081,113 @@ export function initPeriodization(navigateFn) {
       }
     };
 
-    setTimeout(() => {
-       // ── GERADOR DE GRID SEMANAL INTERATIVO ──
+      // ── INICIALIZAR SELETOR CUSTOMIZADO DE PERIODIZAÇÃO ──
+      const optionsData = [
+        {
+          group: 'Musculação',
+          options: [
+            { value: 'linear', label: 'Linear Clássica', desc: 'Volume↓ Intensidade↑', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>` },
+            { value: 'reverse_linear', label: 'Linear Reversa', desc: 'RML / Resistência', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>` },
+            { value: 'undulating', label: 'Ondulatória (DUP)', desc: 'Oscilações diárias', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>` },
+            { value: 'block', label: 'Em Blocos (MST)', desc: 'Acumulação → Intensificação → Realização', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>` },
+            { value: 'conjugate', label: 'Conjugada', desc: 'Esforço Máximo + Dinâmico', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>` },
+            { value: 'concurrent', label: 'Concorrente', desc: 'Força + Metabólico', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>` }
+          ]
+        },
+        {
+          group: 'Cardio / Endurance',
+          options: [
+            { value: 'polarized', label: 'Polarizado', desc: '80% Z1/Z2 + 20% Z4/Z5', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4L12 12M20 20L12 12M4 12h8"></path></svg>` },
+            { value: 'hiit', label: 'HIIT', desc: 'Intervalado de Alta Intensidade', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c0 0-4 4-4 8a4 4 0 0 0 8 0c0-4-4-8-4-8z"></path><path d="M12 10c0 0-2 2-2 4a2 2 0 0 0 4 0c0-2-2-2-2-2z"></path></svg>` },
+            { value: 'lsd', label: 'LSD', desc: 'Longa Duração e Baixa Intensidade', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>` },
+            { value: 'threshold', label: 'Limiar Anaeróbio', desc: 'Treino no limiar de lactato', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>` },
+            { value: 'fartlek', label: 'Fartlek', desc: 'Variações de ritmo livres', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path></svg>` }
+          ]
+        },
+        {
+          group: 'Personalizado',
+          options: [
+            { value: 'manual', label: 'Periodização Personalizada', desc: 'Ajuste Manual', icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>` }
+          ]
+        }
+      ];
+
+      const selectContainer = document.getElementById('perioModelSelectContainer');
+      const trigger = document.getElementById('customPerioTrigger');
+      const dropdown = document.getElementById('customPerioDropdown');
+      const realSelect = document.querySelector('#macroForm [name="type"]');
+
+      if (selectContainer && trigger && dropdown && realSelect) {
+        let dropdownHTML = '';
+        optionsData.forEach(grp => {
+          dropdownHTML += `<div class="custom-select-group-title">${grp.group}</div>`;
+          grp.options.forEach(opt => {
+            dropdownHTML += `
+              <div class="custom-select-option" data-value="${opt.value}">
+                <span class="option-icon">${opt.icon}</span>
+                <div class="option-content">
+                  <div class="option-title">${opt.label}</div>
+                  <div class="option-desc">${opt.desc}</div>
+                </div>
+              </div>
+            `;
+          });
+        });
+        dropdown.innerHTML = dropdownHTML;
+
+        const syncCustomSelect = (val) => {
+          const allOpts = optionsData.flatMap(g => g.options);
+          const found = allOpts.find(o => o.value === val) || allOpts[0];
+          
+          const triggerVal = document.getElementById('customPerioVal');
+          if (triggerVal) {
+            triggerVal.innerHTML = `
+              <span class="option-icon" style="display:flex; align-items:center">${found.icon}</span>
+              <div style="display:flex; flex-direction:column; text-align:left">
+                <span class="option-title" style="font-size:0.82rem; font-weight:600; color:var(--text-primary)">${found.label}</span>
+                <span class="option-desc" style="font-size:0.7rem; color:var(--text-muted)">${found.desc}</span>
+              </div>
+            `;
+          }
+
+          dropdown.querySelectorAll('.custom-select-option').forEach(opt => {
+            if (opt.dataset.value === val) {
+              opt.classList.add('selected');
+            } else {
+              opt.classList.remove('selected');
+            }
+          });
+        };
+
+        syncCustomSelect(realSelect.value);
+
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectContainer.classList.toggle('open');
+        });
+
+        dropdown.querySelectorAll('.custom-select-option').forEach(opt => {
+          opt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newVal = opt.dataset.value;
+            realSelect.value = newVal;
+            realSelect.dispatchEvent(new Event('change'));
+            selectContainer.classList.remove('open');
+          });
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!selectContainer.contains(e.target)) {
+            selectContainer.classList.remove('open');
+          }
+        });
+
+        realSelect.addEventListener('change', () => {
+          syncCustomSelect(realSelect.value);
+        });
+      }
+
+      // ── GERADOR DE GRID SEMANAL INTERATIVO ──
       const renderWeeklyPlanGrid = () => {
         const typeSelect = document.querySelector('#macroForm [name="type"]');
         const type = typeSelect ? typeSelect.value : 'linear';
@@ -1241,7 +1362,10 @@ export function initPeriodization(navigateFn) {
             if (selectedTemplate) {
               if (selectedTemplate.perioModel) {
                 const typeSelect = document.querySelector('#macroForm [name="type"]');
-                if (typeSelect) typeSelect.value = selectedTemplate.perioModel;
+                if (typeSelect) {
+                  typeSelect.value = selectedTemplate.perioModel;
+                  typeSelect.dispatchEvent(new Event('change'));
+                }
               }
 
               const isCardio   = selectedTemplate.category === 'Cardio / Endurance';
