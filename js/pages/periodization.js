@@ -190,7 +190,7 @@ export async function renderPeriodization() {
   return `
     <div class="page-header">
       <div><h1>Periodização</h1><p class="subtitle">Planejamento científico de macrociclos</p></div>
-      <div class="flex gap-sm" style="flex-wrap:wrap">
+      <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
         <select class="form-select" id="perioStudentFilter" style="min-width:180px">
           <option value="">Todos os alunos</option>
           ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
@@ -427,22 +427,28 @@ export function initPeriodization(navigateFn) {
       const exCount  = t.sessions.reduce((a,s) => a + s.exercises.length, 0);
       const catColor = isCardio ? 'var(--accent)' : 'var(--primary)';
       return `
-        <div class="periodo-tpl-card" data-tpl-id="${t.id}" style="
-          padding:10px 14px;border:1px solid var(--border-color);
+        <label class="periodo-tpl-card" data-tpl-id="${t.id}" style="
+          display:flex;align-items:center;gap:10px;
+          padding:7px 10px;border:1px solid var(--border-color);
           border-radius:var(--radius-md);cursor:pointer;
           transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-            <div style="font-weight:600;font-size:0.83rem;color:var(--text-primary);flex:1">${t.name}</div>
-            ${isCardio ? `<span style="font-size:0.6rem;background:rgba(6,182,212,0.12);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:600">Cardio</span>` : ''}
+          <span class="tpl-radio" style="
+            width:16px;height:16px;border-radius:50%;border:2px solid var(--border-color);
+            flex-shrink:0;display:flex;align-items:center;justify-content:center;
+            transition:border-color 0.15s,background 0.15s">
+          </span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="font-weight:600;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+              ${isCardio ? `<span style="font-size:0.55rem;background:rgba(6,182,212,0.12);color:var(--accent);padding:1px 5px;border-radius:8px;font-weight:600;flex-shrink:0">Cardio</span>` : ''}
+            </div>
+            <div style="font-size:0.64rem;color:var(--text-muted);display:flex;gap:6px;margin-top:1px;flex-wrap:wrap">
+              <span style="color:${catColor}">${t.sessions.length} sessão(ões)</span>
+              <span>·</span><span>${exCount} ex.</span>
+              ${t.days ? `<span>·</span><span>${t.days}×/sem</span>` : ''}
+            </div>
           </div>
-          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${t.desc}</div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">
-            <span style="color:${catColor}">${t.sessions.length} sessão(ões)</span>
-            <span>·</span>
-            <span>${exCount} exercícios</span>
-            ${t.days ? `<span>·</span><span>${t.days}×/sem</span>` : ''}
-          </div>
-        </div>`;
+        </label>`;
     }
 
     const CAT_ORDER = ['Iniciante', 'Intermediário', 'Avançado', 'Hipertrofia', 'Força', 'Emagrecimento', 'Funcional', 'Reabilitação', 'Cardio / Endurance'];
@@ -723,21 +729,39 @@ export function initPeriodization(navigateFn) {
             // Obter plano semanal ajustado no grid pelo treinador
             const weeks = [];
             const weekRows = document.querySelectorAll('#weeklyPlanGrid .week-row');
-            weekRows.forEach(row => {
-              const weekNum = parseInt(row.dataset.week);
-              const phase = row.querySelector('.week-phase').value;
-              const intensityPct = parseInt(row.querySelector('.week-intensity').value) || 70;
-              const volumePct = parseInt(row.querySelector('.week-volume').value) || 70;
-              const repsRange = row.querySelector('.week-reps').value || '10-12';
-              weeks.push({
-                week: weekNum,
-                phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
-                label: `Semana ${weekNum} — ${phase}`,
-                intensityPct,
-                volumePct,
-                repsRange
+
+            // Bug fix: se o grid não tem linhas (não foi renderizado ainda), gerar internamente
+            if (weekRows.length === 0) {
+              const typeVal = document.querySelector('#macroForm [name="type"]')?.value || 'linear';
+              const deloadVal = d.deloadEvery ?? 4;
+              const generated = generateInternalWeeklyPlan(typeVal, d.totalWeeks, deloadVal);
+              weeks.push(...generated);
+            } else {
+              weekRows.forEach(row => {
+                const weekNum = parseInt(row.dataset.week);
+                const phase = row.querySelector('.week-phase').value;
+                const intensityPct = parseInt(row.querySelector('.week-intensity').value) || 70;
+                const volumePct = parseInt(row.querySelector('.week-volume').value) || 70;
+                const repsRange = row.querySelector('.week-reps').value || '10-12';
+                weeks.push({
+                  week: weekNum,
+                  phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
+                  label: `Semana ${weekNum} — ${phase}`,
+                  intensityPct,
+                  volumePct,
+                  repsRange
+                });
               });
-            });
+            }
+
+            // Garantir que o número de semanas bate com totalWeeks
+            if (weeks.length < d.totalWeeks) {
+              const typeVal = document.querySelector('#macroForm [name="type"]')?.value || 'linear';
+              const extra = generateInternalWeeklyPlan(typeVal, d.totalWeeks, d.deloadEvery ?? 4);
+              for (let wi = weeks.length; wi < d.totalWeeks; wi++) {
+                weeks.push(extra[wi] || { week: wi+1, phase:'Hipertrofia', label:`Semana ${wi+1}`, intensityPct:70, volumePct:75, repsRange:'10-12' });
+              }
+            }
             d.weeks = weeks;
 
             const allExercises = sessions.flatMap(s => s.exercises);
@@ -763,8 +787,9 @@ export function initPeriodization(navigateFn) {
             d.generatedWorkouts = 0;
 
             for (let w = 0; w < d.totalWeeks; w++) {
+              // Usar o plano da semana por índice (weeks[w]) pois weeks é ordenado por semana
               const weekPlan = d.weeks[w] || {
-                week: w + 1, phase: 'training', label: 'Treino',
+                week: w + 1, phase: 'Hipertrofia', label: `Semana ${w+1} — Hipertrofia`,
                 intensityPct: 65 + Math.round((w / d.totalWeeks) * 25),
                 volumePct: 70, repsRange: '10-12'
               };
@@ -1120,7 +1145,29 @@ export function initPeriodization(navigateFn) {
       };
 
       // Bind events to update grid automatically
-      document.querySelector('#macroForm [name="type"]')?.addEventListener('change', renderWeeklyPlanGrid);
+      document.querySelector('#macroForm [name="type"]')?.addEventListener('change', (e) => {
+        renderWeeklyPlanGrid();
+        // Auto-selecionar template padrão conforme método de periodização
+        const method = e.target.value;
+        const DEFAULT_TEMPLATES_BY_METHOD = {
+          'linear':          'hipertrofia_feminino_inter',
+          'reverse_linear':  'funcional_iniciante',
+          'undulating':      'hipertrofia_avancado',
+          'block':           'forca_maxima_uni',
+          'conjugate':       'forca_maxima_uni',
+          'concurrent':      'hipertrofia_avancado',
+          'polarized':       'cardio_polarizado',
+          'hiit':            'cardio_hiit',
+          'lsd':             'cardio_lsd',
+          'threshold':       'cardio_limiar',
+          'fartlek':         'cardio_fartlek',
+        };
+        const defaultTplId = DEFAULT_TEMPLATES_BY_METHOD[method];
+        if (defaultTplId && !selectedTemplate) {
+          const card = document.querySelector(`.periodo-tpl-card[data-tpl-id="${defaultTplId}"]`);
+          if (card) card.click();
+        }
+      });
       document.querySelector('#macroForm [name="totalWeeks"]')?.addEventListener('input', renderWeeklyPlanGrid);
       document.querySelector('#macroForm [name="deloadEvery"]')?.addEventListener('input', renderWeeklyPlanGrid);
 
@@ -1182,14 +1229,24 @@ export function initPeriodization(navigateFn) {
           }
         });
         card.addEventListener('click', () => {
+          // Reset all cards
           document.querySelectorAll('.periodo-tpl-card').forEach(c => {
             c.classList.remove('selected');
             c.style.borderColor = 'var(--border-color)';
             c.style.background = 'var(--bg-card)';
+            const radio = c.querySelector('.tpl-radio');
+            if (radio) { radio.style.borderColor = 'var(--border-color)'; radio.style.background = ''; radio.innerHTML = ''; }
           });
+          // Highlight selected
           card.classList.add('selected');
           card.style.borderColor = 'var(--primary)';
           card.style.background = 'var(--primary-glow)';
+          const radio = card.querySelector('.tpl-radio');
+          if (radio) {
+            radio.style.borderColor = 'var(--primary)';
+            radio.style.background = 'var(--primary)';
+            radio.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#fff;display:block"></span>';
+          }
 
           const tplId = card.dataset.tplId;
           if (tplId.startsWith('cycle_')) {
