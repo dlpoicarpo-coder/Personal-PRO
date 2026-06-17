@@ -274,7 +274,7 @@ function renderLiveView(students) {
             <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
-              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${isNumeric(ex.load) ? ex.load + 'kg' : ex.load}</span>` : ''}
+              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${(isNumeric(ex.load) && ex.loadType !== 'time') ? ex.load + 'kg' : ex.load}</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
               <span>${ex.rest || 60}s desc.</span>
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
@@ -335,8 +335,8 @@ function renderLiveView(students) {
                   <input class="form-input set-reps" style="width:58px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">${isNumeric(ex.load) ? 'kg' : 'Zona'}</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${isNumeric(ex.load) ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  <span style="font-size:0.55rem;color:var(--text-muted)">${ex.loadType === 'time' ? 'Zona' : (ex.loadType === 'bodyweight' ? 'Extra' : 'kg')}</span>
+                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
                 <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
                   <span style="font-size:0.55rem;color:var(--warning)">PSE</span>
@@ -498,9 +498,9 @@ export function initTracker(navigateFn) {
                     style="padding:5px 8px;font-size:0.85rem;text-align:center" />
                 </div>
                 <div>
-                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">${isNumeric(ex.load) ? 'Carga (kg)' : 'Intensidade'}</label>
-                  <input type="${isNumeric(ex.load) ? 'number' : 'text'}" class="form-input set-load" data-ei="${ei}" data-si="${si}"
-                    value="${s.load !== undefined ? s.load : 0}" ${isNumeric(ex.load) ? 'min="0" step="0.5"' : ''}
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">${ex.loadType === 'time' ? 'Intensidade' : (ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)')}</label>
+                  <input type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" class="form-input set-load" data-ei="${ei}" data-si="${si}"
+                    value="${s.load !== undefined ? s.load : 0}" ${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'min="0" step="0.5"' : ''}
                     style="padding:5px 8px;font-size:0.85rem;text-align:center" />
                 </div>
                 <div>
@@ -1034,8 +1034,8 @@ export function initTracker(navigateFn) {
             <input id="modalSetReps" type="number" value="${reps||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
           </div>
           <div style="flex:1">
-            <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">${isNumeric(ex.load) ? 'Carga (kg)' : 'Intensidade'}</label>
-            <input id="modalSetLoad" type="${isNumeric(ex.load) ? 'number' : 'text'}" ${isNumeric(ex.load) ? 'step="0.5"' : ''} value="${load||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
+            <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">${ex.loadType === 'time' ? 'Intensidade' : (ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)')}</label>
+            <input id="modalSetLoad" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" ${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'step="0.5"' : ''} value="${load||''}" style="width:100%;padding:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:1rem;text-align:center" />
           </div>
         </div>
 
