@@ -463,18 +463,41 @@ export function initPeriodization(navigateFn) {
         </div>`).join('');
 
     const personalHTML = customCycles.length
-      ? `<div style="display:flex;flex-direction:column;gap:4px">${customCycles.map(c => {
+      ? `<div style="display:flex;flex-direction:column;gap:6px">${customCycles.map(c => {
           const totalEx = (c.workouts || []).reduce((a, w) => a + (w.exercises || []).length, 0);
-          return tplCardHTML({
-            id: `cycle_${c.id}`,
-            name: c.name,
-            category: c.goal || 'Personalizado',
-            sessions: c.workouts || [],
-            days: c.daysPerWeek || null,
-            _customDesc: c.description || ''
-          });
+          const sessions = c.workouts || [];
+          const goalColor = c.goal?.toLowerCase().includes('força') ? 'var(--warning)'
+            : c.goal?.toLowerCase().includes('cardio') || c.goal?.toLowerCase().includes('emagrec') ? 'var(--accent)'
+            : 'var(--primary)';
+          return `
+          <label class="periodo-tpl-card" data-tpl-id="cycle_${c.id}" style="
+            display:flex;align-items:center;gap:12px;
+            padding:10px 14px;border:1px solid var(--border-color);
+            border-radius:var(--radius-md);cursor:pointer;
+            transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
+            <!-- Radio -->
+            <span class="tpl-radio" style="
+              width:16px;height:16px;border-radius:50%;border:2px solid var(--border-color);
+              flex-shrink:0;display:flex;align-items:center;justify-content:center;
+              transition:border-color 0.15s,background 0.15s"></span>
+            <!-- Conteúdo -->
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+                <span style="font-weight:600;font-size:0.82rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</span>
+                <span style="font-size:0.6rem;font-weight:700;padding:1px 7px;border-radius:10px;
+                  background:${goalColor}1a;color:${goalColor};flex-shrink:0;white-space:nowrap">${c.goal || 'Geral'}</span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center">
+                <span style="font-size:0.67rem;color:var(--text-muted)">${sessions.length} treino${sessions.length !== 1 ? 's' : ''}</span>
+                <span style="width:3px;height:3px;border-radius:50%;background:var(--text-muted);flex-shrink:0"></span>
+                <span style="font-size:0.67rem;color:var(--text-muted)">${totalEx} exercícios</span>
+                ${c.daysPerWeek ? `<span style="width:3px;height:3px;border-radius:50%;background:var(--text-muted);flex-shrink:0"></span><span style="font-size:0.67rem;color:var(--text-muted)">${c.daysPerWeek}×/sem</span>` : ''}
+              </div>
+              ${c.description ? `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:340px">${c.description}</div>` : ''}
+            </div>
+          </label>`;
         }).join('')}</div>`
-      : `<div style="padding:10px;border:1px dashed var(--border-color);border-radius:var(--radius-md);text-align:center">
+      : `<div style="padding:14px;border:1px dashed var(--border-color);border-radius:var(--radius-md);text-align:center">
           <p class="text-xs text-muted" style="margin:0 0 4px">Nenhum modelo criado ainda.</p>
           <a href="#/exercicios" style="font-size:0.72rem;color:var(--primary);text-decoration:none">Ir para Exercícios → Meus Modelos</a>
         </div>`;
