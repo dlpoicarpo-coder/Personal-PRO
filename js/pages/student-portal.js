@@ -1458,7 +1458,7 @@ function initTreinar(workouts, schedules, student) {
     const exLogEl = document.getElementById('soloExerciseLog');
     if (w && w.exercises?.length) {
       exLogEl.innerHTML = w.exercises.map((ex, ei) => `
-        <div class="glass-card portal-live-ex-card">
+        <div class="glass-card portal-live-ex-card" id="excard_${ei}">
           <div class="portal-live-ex-header">
             <div class="portal-ex-num">${ei+1}</div>
             <div style="flex:1;min-width:0">
@@ -1471,73 +1471,77 @@ function initTreinar(workouts, schedules, student) {
             </button>
             ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
           </div>
+
           ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
-          ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
-            let repsVal = '';
-            let loadVal = '';
-            let restVal = ex.rest || 60;
-            
-            if (ex.seriesProgression && ex.seriesProgression[si]) {
-              const sp = ex.seriesProgression[si];
-              repsVal = parseInt(sp.reps) || '';
-              loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
-              restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
-            } else {
-              if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
-                const parts = ex.reps.split('→');
-                if (parts[si]) {
-                  repsVal = parseInt(parts[si]) || '';
+
+          <!-- Sets container (suporta séries extras adicionadas dinamicamente) -->
+          <div id="sets_container_${ei}">
+            ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
+              let repsVal = '';
+              let loadVal = '';
+              let restVal = ex.rest || 60;
+
+              if (ex.seriesProgression && ex.seriesProgression[si]) {
+                const sp = ex.seriesProgression[si];
+                repsVal = parseInt(sp.reps) || '';
+                loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
+                restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
+              } else {
+                if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+                  const parts = ex.reps.split('→');
+                  repsVal = parseInt(parts[si] || ex.reps) || '';
                 } else {
                   repsVal = parseInt(ex.reps) || '';
                 }
-              } else {
-                repsVal = parseInt(ex.reps) || '';
+                loadVal = ex.load || '';
               }
-              loadVal = ex.load || '';
-            }
 
-            return `
-              <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-                <span class="portal-set-num">S${si+1}</span>
-                <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
-                <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
-                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
-                  <option value="" disabled selected>PSE</option>
-                  <option value="1">1 - M. Leve</option>
-                  <option value="2">2 - Leve</option>
-                  <option value="3">3 - Moderado</option>
-                  <option value="4">4 - A. Pesado</option>
-                  <option value="5">5 - Forte</option>
-                  <option value="6">6 - Forte+</option>
-                  <option value="7">7 - M. Forte</option>
-                  <option value="8">8 - M. Forte+</option>
-                  <option value="9">9 - Extr. Forte</option>
-                  <option value="10">10 - Máximo</option>
-                </select>
-                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
-                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
-                  <option value="" disabled selected>RIR</option>
-                  <option value="0">0 RIR (Falha)</option>
-                  <option value="1">1 RIR</option>
-                  <option value="2">2 RIR</option>
-                  <option value="3">3 RIR</option>
-                  <option value="4">4 RIR</option>
-                  <option value="5">5 RIR</option>
-                  <option value="6">6 RIR</option>
-                  <option value="7">7 RIR</option>
-                  <option value="8">8 RIR</option>
-                  <option value="9">9 RIR</option>
-                  <option value="10">10+ RIR</option>
-                </select>
-                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
-                <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
-              </div>`;
-          }).join('')}
-          <div class="portal-live-ex-notes-wrap">
-            <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
+              return `
+                <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
+                  <span class="portal-set-num">S${si+1}</span>
+                  <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
+                  <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
+                  <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
+                    <option value="" disabled selected>PSE</option>
+                    ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+                  </select>
+                  <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+                  <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display:none;">
+                    <option value="" disabled selected>RIR</option>
+                    ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}
+                  </select>
+                  <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+                  <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
+                </div>`;
+            }).join('')}
+          </div>
+
+          <!-- + Série -->
+          <button type="button" class="portal-add-set-btn" id="addset_${ei}" data-ei="${ei}" data-rest="${ex.rest||60}"
+            style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + Série extra
+          </button>
+
+          <!-- Observações do exercício -->
+          <div style="margin-top:8px">
+            <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">📝 Observações</div>
+            <textarea class="portal-textarea" id="exnotes_${ei}" rows="2"
+              placeholder="Sensação na série, ajuste de técnica, dor, carga ideal..."
+              style="font-size:0.8rem;resize:none;background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:var(--portal-text)"></textarea>
           </div>
         </div>
       `).join('');
+
+      // Botão flutuante "+ Exercício extra" ao fim da lista
+      exLogEl.insertAdjacentHTML('beforeend', `
+        <button id="addExtraExBtn" type="button"
+          style="width:100%;padding:10px;background:rgba(16,185,129,0.08);border:1px dashed rgba(16,185,129,0.3);border-radius:10px;color:#10b981;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + Exercício extra
+        </button>
+        <div id="extraExercisesBlock"></div>
+      `);
     } else {
       // Free log
       exLogEl.innerHTML = `
@@ -1667,10 +1671,122 @@ function initTreinar(workouts, schedules, student) {
         });
       });
     });
+    // ── + SÉRIE EXTRA por exercício ──
+    exLogEl.querySelectorAll('.portal-add-set-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ei = parseInt(btn.dataset.ei);
+        const restSec = btn.dataset.rest || 60;
+        const container = document.getElementById(`sets_container_${ei}`);
+        if (!container) return;
+        const existing = container.querySelectorAll('.portal-solo-set-row').length;
+        const si = existing; // próximo índice
+        const row = document.createElement('div');
+        row.className = 'portal-solo-set-row';
+        row.id = `setrow_${ei}_${si}`;
+        row.style.cssText = 'border-left:2px solid rgba(99,102,241,0.4);padding-left:4px';
+        row.innerHTML = `
+          <span class="portal-set-num" style="color:#818cf8">S${si+1}</span>
+          <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0">
+          <input type="number" placeholder="kg"   class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5">
+          <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+          </select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+          <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display:none;">
+            ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}
+          </select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+          <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restSec}">&#10003;</button>
+        `;
+        container.appendChild(row);
+        // Bind done button
+        row.querySelector(`#sdb_${ei}_${si}`)?.addEventListener('click', (e) => {
+          const doneBtn = e.currentTarget;
+          const isDone = doneBtn.classList.toggle('done');
+          if (isDone) { workSeconds += 30; startRestTimer(parseInt(restSec)||60); }
+          else if (activeRestingRowId === row.id) stopRestTimer();
+        });
+        // Bind PSE/RIR
+        const pseBtn = row.querySelector(`#psebtn_${ei}_${si}`);
+        const pseSelect = row.querySelector(`#sr_${ei}_${si}_pse`);
+        if (pseBtn && pseSelect) {
+          updatePseButton(pseBtn, '');
+          pseBtn.addEventListener('click', () => openCustomSelector('PSE', PSE_OPTIONS, pseSelect.value, val => { pseSelect.value = val; updatePseButton(pseBtn, val); }));
+        }
+        const rirBtn = row.querySelector(`#rirbtn_${ei}_${si}`);
+        const rirSelect = row.querySelector(`#sr_${ei}_${si}_rir`);
+        if (rirBtn && rirSelect) {
+          updateRirButton(rirBtn, '');
+          rirBtn.addEventListener('click', () => openCustomSelector('RIR', RIR_OPTIONS, rirSelect.value, val => { rirSelect.value = val; updateRirButton(rirBtn, val); }));
+        }
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+
+    // ── + EXERCÍCIO EXTRA durante sessão ──
+    let extraExCount = 0;
+    document.getElementById('addExtraExBtn')?.addEventListener('click', () => {
+      const block = document.getElementById('extraExercisesBlock');
+      if (!block) return;
+      const xei = `x${extraExCount++}`;
+      const card = document.createElement('div');
+      card.className = 'glass-card portal-live-ex-card';
+      card.style.borderLeft = '2px solid rgba(16,185,129,0.4)';
+      card.id = `extracard_${xei}`;
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input type="text" placeholder="Nome do exercício" class="portal-textarea" id="extraex_${xei}_name"
+            style="margin-bottom:0;flex:1;font-weight:600;font-size:0.88rem;padding:8px 10px">
+          <button type="button" style="background:rgba(239,68,68,0.12);border:none;border-radius:50%;width:26px;height:26px;color:#ef4444;cursor:pointer;font-size:0.9rem;flex-shrink:0" onclick="this.closest('.portal-live-ex-card').remove()">×</button>
+        </div>
+        <div id="extrasets_${xei}" style="display:flex;flex-direction:column;gap:5px"></div>
+        <button type="button" class="extra-addset-btn" data-xei="${xei}" data-rest="60"
+          style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + Série
+        </button>
+        <div style="margin-top:8px">
+          <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">📝 Observações</div>
+          <textarea class="portal-textarea" id="extraex_${xei}_notes" rows="2"
+            placeholder="Sensação, carga ideal, observações técnicas..."
+            style="font-size:0.8rem;resize:none"></textarea>
+        </div>
+      `;
+      block.appendChild(card);
+      // Add first set automatically
+      card.querySelector('.extra-addset-btn').click();
+      // Bind future + Série buttons
+      card.querySelector('.extra-addset-btn').addEventListener('click', () => {
+        const setsBlock = document.getElementById(`extrasets_${xei}`);
+        const si = setsBlock.querySelectorAll('.portal-solo-set-row').length;
+        const row = document.createElement('div');
+        row.className = 'portal-solo-set-row';
+        row.id = `extrarow_${xei}_${si}`;
+        row.innerHTML = `
+          <span class="portal-set-num">S${si+1}</span>
+          <input type="number" placeholder="Reps" class="portal-solo-input" id="extra_${xei}_${si}_reps" min="0">
+          <input type="number" placeholder="kg"   class="portal-solo-input" id="extra_${xei}_${si}_load" min="0" step="0.5">
+          <select class="portal-solo-input portal-solo-pse" id="extra_${xei}_${si}_pse" style="display:none;">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="extra_psebtn_${xei}_${si}">PSE</button>
+          <select class="portal-solo-input portal-solo-pse" id="extra_${xei}_${si}_rir" style="display:none;">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}</select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="extra_rirbtn_${xei}_${si}">RIR</button>
+          <button class="portal-solo-done-btn" data-ei="${xei}" data-si="${si}" data-rest="60">&#10003;</button>
+        `;
+        setsBlock.appendChild(row);
+        const pb = row.querySelector(`.portal-solo-pse-btn`);
+        const ps = row.querySelector(`#extra_${xei}_${si}_pse`);
+        if (pb && ps) { updatePseButton(pb,''); pb.addEventListener('click', ()=>openCustomSelector('PSE',PSE_OPTIONS,ps.value,v=>{ps.value=v;updatePseButton(pb,v);})); }
+        const rb = row.querySelector(`.portal-solo-rir-btn`);
+        const rs = row.querySelector(`#extra_${xei}_${si}_rir`);
+        if (rb && rs) { updateRirButton(rb,''); rb.addEventListener('click', ()=>openCustomSelector('RIR',RIR_OPTIONS,rs.value,v=>{rs.value=v;updateRirButton(rb,v);})); }
+        row.querySelector('.portal-solo-done-btn')?.addEventListener('click', e => {
+          const isDone = e.currentTarget.classList.toggle('done');
+          if (isDone) { workSeconds += 30; startRestTimer(60); }
+        });
+      });
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
-
-
-  // Main timer
   function startMainTimer() {
     soloStartTime = new Date();
     soloTimerInterval = setInterval(() => {
@@ -1730,27 +1846,50 @@ function initTreinar(workouts, schedules, student) {
           load: parseFloat(ex.load) || 0,
           method: ex.method || ''
         });
-        const sets = parseInt(ex.sets) || 3;
-        for (let si = 0; si < sets; si++) {
-          const reps = document.getElementById(`sr_${ei}_${si}_reps`)?.value;
-          const load = document.getElementById(`sr_${ei}_${si}_load`)?.value;
-          const psei = document.getElementById(`sr_${ei}_${si}_pse`)?.value;
-          const rir = document.getElementById(`sr_${ei}_${si}_rir`)?.value;
-          const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
-          
+        const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
+        // Collect all set rows (including extra sets added with + Série)
+        const container = document.getElementById(`sets_container_${ei}`);
+        const rows = container ? container.querySelectorAll('.portal-solo-set-row') : [];
+        rows.forEach((row, si) => {
+          const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value || document.getElementById(`sr_${ei}_${si}_reps`)?.value;
+          const load = row.querySelector(`[id$="_${si}_load"]`)?.value || document.getElementById(`sr_${ei}_${si}_load`)?.value;
+          const psei = row.querySelector(`[id$="_${si}_pse"]`)?.value || document.getElementById(`sr_${ei}_${si}_pse`)?.value;
+          const rir  = row.querySelector(`[id$="_${si}_rir"]`)?.value  || document.getElementById(`sr_${ei}_${si}_rir`)?.value;
           setLog.push({
-            exIdx: ei,
-            exerciseIdx: ei,
-            exerciseName: ex.name,
-            setIdx: si,
-            reps: parseInt(reps)||0,
-            load: parseFloat(load)||0,
+            exIdx: ei, exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
+            reps: parseInt(reps)||0, load: parseFloat(load)||0,
             pse: psei ? parseInt(psei) : null,
             rir: rir !== '' && rir != null ? parseInt(rir) : null,
-            notes: exNotes
+            notes: exNotes, isExtra: si >= (parseInt(ex.sets)||3)
           });
-        }
+        });
       });
+
+      // Collect extra exercises added during session
+      const extraBlock = document.getElementById('extraExercisesBlock');
+      if (extraBlock) {
+        extraBlock.querySelectorAll('.portal-live-ex-card').forEach((card, xIdx) => {
+          const xei = card.id.replace('extracard_', '');
+          const nameEl = card.querySelector(`#extraex_${xei}_name`);
+          const name = nameEl?.value || `Exercício Extra ${xIdx+1}`;
+          const exNotes = card.querySelector(`#extraex_${xei}_notes`)?.value || '';
+          const rows = card.querySelectorAll('.portal-solo-set-row');
+          const baseExIdx = (w.exercises?.length || 0) + xIdx;
+          exercisesList.push({ name, sets: String(rows.length), reps: '10', load: 0, method: '', isExtra: true });
+          rows.forEach((row, si) => {
+            const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value;
+            const load = row.querySelector(`[id$="_${si}_load"]`)?.value;
+            const psei = row.querySelector(`[id*="_pse"]`)?.value;
+            const rir  = row.querySelector(`[id*="_rir"]`)?.value;
+            setLog.push({
+              exIdx: baseExIdx, exerciseName: name, setIdx: si,
+              reps: parseInt(reps)||0, load: parseFloat(load)||0,
+              pse: psei ? parseInt(psei) : null, rir: rir ? parseInt(rir) : null,
+              notes: exNotes, isExtra: true
+            });
+          });
+        });
+      }
     } else {
       // Collect from free exercises
       const freeCards = document.getElementById('soloFreeExercises')?.children || [];
