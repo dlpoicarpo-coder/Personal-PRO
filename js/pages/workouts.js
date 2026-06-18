@@ -340,217 +340,10 @@ export const METHOD_PROGRESSIONS = {
   },
 };
 
-// ── DADOS CIENTÍFICOS DE CADA MÉTODO ─────────────────────────────
-// Fonte: ACSM Guidelines, NSCA CSCS, Brad Schoenfeld (2010), Kramer et al.,
-//        Fry (2004), Laurentino et al., Tabata (1996), Gibala (2012)
-// Usado pela geração de macrociclos para enriquecer o campo sciNote de cada exercício
-export const METHOD_SCIDATA = {
-  // ── HIPERTROFIA ──────────────────────────────────────────────
-  'Pirâmide Crescente': {
-    zona: '65–90% 1RM',
-    protocolo: '4 séries: 12×65% → 10×75% → 8×82% → 6×90% 1RM',
-    fisiologia: 'Recrutamento progressivo de fibras tipo II; maximiza hipertrofia sarcomérica',
-    descanso: '60-120s entre séries',
-  },
-  'Pirâmide Decrescente': {
-    zona: '90–60% 1RM',
-    protocolo: '4 séries: 6×90% → 8×80% → 10×72% → 12×60% 1RM',
-    fisiologia: 'Alta ativação neural inicial + volume residual; exaustão completa da unidade motora',
-    descanso: '90-120s entre séries',
-  },
-  'Pirâmide Dupla': {
-    zona: '55–85% 1RM',
-    protocolo: '7 séries: 15→12→10→8→10→12→15 reps (cargas inversamente proporcionais)',
-    fisiologia: 'Volume máximo + pico de intensidade; TUT (Tempo Sob Tensão) elevado — ideal para hipertrofia',
-    descanso: '60-90s entre séries',
-  },
-  'Pirâmide Completa': {
-    zona: '50–90% 1RM',
-    protocolo: '10 séries: Aquecimento ativo (50%) → pico (88%) → retorno à base (60%). TUT ~40min/exercício',
-    fisiologia: 'Exaustão metabólica total; máxima síntese proteica pós-treino (Schoenfeld 2010)',
-    descanso: '60-90s entre séries',
-  },
-  'Drop-set': {
-    zona: '100→80→64% da carga-alvo',
-    protocolo: '3 drops: falha na carga máx → -20% sem descanso → -20% sem descanso',
-    fisiologia: 'Recrutamento de fibras de baixo limiar após falha; EPOC elevado; VO₂ aumentado em 25%',
-    descanso: '0s entre drops / 2-3min até próximo exercício',
-  },
-  'Stripping': {
-    zona: '100→75→55→40% 1RM',
-    protocolo: 'Barra carregada: falha → remove anilhas dos dois lados → falha → repete 4x sem parar',
-    fisiologia: 'Variante do drop-set; máximo recrutamento residual de fibras; depleção total de glicogênio local',
-    descanso: '0s entre drops',
-  },
-  'Rest-Pause': {
-    zona: '80-90% 1RM',
-    protocolo: 'Até a falha → pausa 15-20s → até a falha → pausa 15-20s → até a falha (3 ondas)',
-    fisiologia: 'Ressíntese parcial de ATP; permite mais reps com carga máxima; ↑ tensão mecânica (Fry 2004)',
-    descanso: '15-20s entre ondas / 3-5min entre exercícios',
-  },
-  'Cluster': {
-    zona: '85-95% 1RM',
-    protocolo: '2-3 reps → pausa 10-15s (sem largar a barra) → repetir 5 blocos',
-    fisiologia: 'Ressíntese de fosfocreatina intrasérie; manutenção da velocidade de execução em cargas máximas',
-    descanso: '12-15s entre clusters / 3-5min entre séries',
-  },
-  'FST-7': {
-    zona: '60-70% 1RM',
-    protocolo: '7 séries de 12-15 reps no isolador final, com 30-45s de descanso + alongamento ativo entre séries',
-    fisiologia: 'Alta congestão e estresse metabólico; expansão da fáscia muscular (Hany Rambod, 2007)',
-    descanso: '30-45s entre as 7 séries',
-  },
-  // ── MÉTODOS GERAIS DO BANCO ──────────────────────────────────
-  'Tensão Contínua': {
-    zona: '60-70% 1RM',
-    protocolo: 'Sem fases de descanso na ROM; sem lockout articular; tempo eccêntrico controlado (3-4s)',
-    fisiologia: 'TUT máximo; oclusão vascular contínua → hipóxia local → resposta hipertrófica metabólica (EPOC +18%)',
-    descanso: '45-75s entre séries',
-  },
-  'Bi-set': {
-    zona: '70-80% 1RM',
-    protocolo: '2 exercícios diferentes (mesmo grupo muscular) sem descanso entre si; descanso após o par',
-    fisiologia: 'Potenciação pós-ativação (PAP); maior volume por unidade de tempo; depleção de glicogênio intramuscular',
-    descanso: '0s entre exercícios do par / 90s após par',
-  },
-  'Superset': {
-    zona: '70-80% 1RM',
-    protocolo: '2 exercícios AGONISTAS ANTAGONISTAS sem descanso (ex: bíceps + tríceps); descanso após par',
-    fisiologia: 'PAP recíproca; ↑ amplitude de movimento; ↓ fadiga acumulada vs. séries consecutivas',
-    descanso: '0s entre exercícios / 60-90s após par',
-  },
-  'Série Gigante': {
-    zona: '60-75% 1RM',
-    protocolo: '4+ exercícios para mesmo grupo muscular sem descanso entre si; alta densidade de treino',
-    fisiologia: 'Depleção máxima de glicogênio; hormônio de crescimento +300-400% (Kraemer 1991); ideal para emagrecimento',
-    descanso: '0s entre exercícios / 2-3min após circuito',
-  },
-  'Pré-exaustão': {
-    zona: '70-80% 1RM (isolador) → 80-90% (composto)',
-    protocolo: 'Isolador até falha → composto imediatamente (ex: crucifixo → supino)',
-    fisiologia: 'Fadiga seletiva do músculo-alvo antes do composto; força o agonista a trabalhar em exaustão',
-    descanso: '0s entre isolador e composto / 2-3min após par',
-  },
-  'Oclusão (BFR)': {
-    zona: '20-30% 1RM com torniquete a 50-80% oclusão venosa',
-    protocolo: '4 séries: 30 reps → 15 reps → 15 reps → 15 reps; manguito proximal do membro',
-    fisiologia: 'Hipóxia local → acúmulo de metabólitos → ativação de fibras tipo II com cargas leves (Laurentino et al., 2012)',
-    descanso: '30s entre séries (manguito não removido)',
-  },
-  'GVT (German Volume Training)': {
-    zona: '60% 1RM',
-    protocolo: '10 séries × 10 reps no mesmo exercício composto com 60-90s descanso',
-    fisiologia: 'Volume absurdo; Poliquin/Hatfield: máxima hipertrofia sarcoplasmática; adaptação a alta densidade de trabalho',
-    descanso: '60-90s entre séries',
-  },
-  'Isométrico': {
-    zona: '70-100% MVC (Contração Voluntária Máxima)',
-    protocolo: 'Contração estática em posição específica; 3-5 contrações de 6-10s por série',
-    fisiologia: 'Ganho de força ângulo-específico; ativação neural máxima; usado em reabilitação e potência',
-    descanso: '30-60s entre contrações',
-  },
-  'Excêntrico': {
-    zona: '100-120% do 1RM concêntrico',
-    protocolo: 'Fase de descida com 4-8s; necessita de spotters ou máquinas; fase concêntrica assistida',
-    fisiologia: 'Dano muscular maior; ↑ síntese proteica (48-72h); ↑ força máxima 1.2-1.4x vs. concêntrico',
-    descanso: '120-180s entre séries',
-  },
-  'Endurance (Resistência)': {
-    zona: '30-50% 1RM / 50-70% FC Máx',
-    protocolo: '3 séries × 20-30 reps ou 2-4min contínuos; descanso curto (30-45s)',
-    fisiologia: 'Adaptação mitocondrial; ↑ capilarização; melhora da eficiência oxidativa (ACSM Position Stand)',
-    descanso: '30-45s entre séries',
-  },
-  // ── CARDIO / ENDURANCE ──────────────────────────────────────
-  'Polarizado — Base Aeróbica': {
-    zona: 'Z1 (50-60% FCmáx) + Z2 (60-70% FCmáx)',
-    protocolo: '80% do volume em Z1/Z2; 20% em Z4/Z5. Sessões base: 45-90min em ritmo conversacional',
-    fisiologia: 'Maximiza mitocôndrias tipo I; ↑ limiar aeróbico; previne overtraining (Seiler & Tønnessen, 2009)',
-    descanso: 'Contínuo sem pausa',
-  },
-  'Polarizado — Alta Intensidade': {
-    zona: 'Z4 (80-90% FCmáx) + Z5 (90-100% FCmáx)',
-    protocolo: '4-6 intervalos de 4min em Z5 (90-100% FCmáx) com 2-3min de recuperação ativa em Z1',
-    fisiologia: 'Maximiza VO₂max; melhora capacidade tampão do lactato; recrutamento de fibras tipo IIx (Billat, 2001)',
-    descanso: '2-3min em Z1 entre intervalos',
-  },
-  'Zona 2 (Z2)': {
-    zona: '60-70% FCmáx',
-    protocolo: '30-90min contínuos; pace onde você consegue falar frases completas; FC estável',
-    fisiologia: 'Principal adaptador mitocondrial; ↑ oxidação de gordura; base de todos os programas de endurance (Inigo San Millán)',
-    descanso: 'Contínuo sem pausa',
-  },
-  'HIIT': {
-    zona: 'Z4-Z5 (80-95% FCmáx) / ≥85% VO₂max',
-    protocolo: 'Protocolo Tabata: 8×20s all-out + 10s repouso = 4min total; alternativas: 30-30, 60-60',
-    fisiologia: 'Melhora VO₂max +15% em 6 semanas; EPOC alto; adaptação central e periférica (Tabata et al., 1996)',
-    descanso: '10-60s entre esforços (conforme protocolo)',
-  },
-  'LSD (Longa Duração)': {
-    zona: 'Z1-Z2 (50-70% FCmáx)',
-    protocolo: '60-180min contínuos; ritmo conservador; usado para base aeróbica em endurance atlético',
-    fisiologia: 'Máxima oxidação de ácidos graxos; ↑ VO₂max basal; adaptação cardiovascular de longo prazo',
-    descanso: 'Contínuo sem pausa',
-  },
-  'Fartlek': {
-    zona: 'Varia: Z1-Z5 (livre, por terreno ou feeling)',
-    protocolo: 'Corrida contínua com acelerações livres — sem protocolo rígido; 30-60min',
-    fisiologia: 'Estimula múltiplos sistemas energéticos; melhora capacidade de mudança de ritmo; divertido e sustentável',
-    descanso: 'Nenhum (apenas mudança de intensidade)',
-  },
-  // ── CORE / ESTABILIZAÇÃO ─────────────────────────────────────
-  'Estabilização Core': {
-    zona: '30-50% MVC / RPE 5-6',
-    protocolo: '3 séries × 30-60s isométrico; ativação profunda (transverso, multífido)',
-    fisiologia: 'Estabilização lombar; proteção da coluna durante cargas; prevenção de lesão (McGill, 2010)',
-    descanso: '30-60s entre séries',
-  },
-  'Anti-Rotacional': {
-    zona: 'RPE 6-7',
-    protocolo: 'Pallof Press, Cabo lateral: 3×12-15 reps por lado com pausa de 2s na posição isométrica',
-    fisiologia: 'Fortalece oblíquos e estabilizadores laterais; padrão funcional para esportes e vida diária',
-    descanso: '45-60s entre séries',
-  },
-  // ── FORÇA / POTÊNCIA ────────────────────────────────────────
-  'Contraste (PAP)': {
-    zona: '85-95% 1RM (composto) + movimento explosivo (30-50% 1RM)',
-    protocolo: 'Série pesada → 3-6min → exercício explosivo similar (ex: agachamento pesado → salto com caixa)',
-    fisiologia: 'Potenciação Pós-Ativação: ↑ recrutamento neural residual; ↑ RFD em 10-20% (Hamada et al., 2000)',
-    descanso: '3-6min entre composto e exercício explosivo',
-  },
-  'Velocidade (Dinâmico)': {
-    zona: '55-70% 1RM, executado com máxima velocidade',
-    protocolo: '8-10×2-3 reps; foco total em velocidade de execução; fase eccêntrica controlada',
-    fisiologia: 'Westside Method: ↑ taxa de desenvolvimento de força (RFD); melhora o pico de potência',
-    descanso: '45-90s entre séries',
-  },
-};
-
-export const METHOD_COLORS = {
-  'Cardio / Endurance': { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.3)', text: '#10b981' },
-  'Hipertrofia': { bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.3)', text: '#8b5cf6' },
-  'Força / Potência': { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.3)', text: '#ef4444' },
-  'Resistência / RML': { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)', text: '#f59e0b' },
-  'Mobilidade / Flexibilidade': { bg: 'rgba(2,132,199,0.08)', border: 'rgba(2,132,199,0.3)', text: '#0284c7' },
-  'Core / Estabilização': { bg: 'rgba(219,39,119,0.08)', border: 'rgba(219,39,119,0.3)', text: '#db2777' },
-  'Regenerativo / Recovery': { bg: 'rgba(13,148,136,0.08)', border: 'rgba(13,148,136,0.3)', text: '#0d9488' },
-  'Aquecimento / Preparação': { bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.3)', text: '#f97316' },
-  'Calistenia / Ginástica': { bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.3)', text: '#6366f1' },
-  'LPO / Levantamento Olímpico': { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.3)', text: '#eab308' },
-  'Coordenação / Agilidade': { bg: 'rgba(132,204,22,0.08)', border: 'rgba(132,204,22,0.3)', text: '#84cc16' },
-  'Reabilitação / Preventivo': { bg: 'rgba(244,63,94,0.08)', border: 'rgba(244,63,94,0.3)', text: '#f43f5e' },
-  'Geral': { bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.3)', text: '#64748b' }
-};
-
 function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const loadType = ex.loadType || 'weight';
-  const isBW     = ex.loadType === 'bodyweight';
-
-  const selectedMethodOpt = allMethods.find(m => m.name === ex.method);
-  const methodCategory = selectedMethodOpt?.category || 'Geral';
-  const colors = METHOD_COLORS[methodCategory] || METHOD_COLORS['Geral'];
-  const isCardioMethod = methodCategory === 'Cardio / Endurance';
-  const isTime   = loadType === 'time' || isCardioMethod;
+  const isTime   = loadType === 'time';
+  const isBW     = loadType === 'bodyweight';
 
   const progression = ex.method ? METHOD_PROGRESSIONS[ex.method] : null;
   let methodPanelHTML = '';
@@ -584,11 +377,10 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
     }).join('');
 
     methodPanelHTML = `
-      <div class="method-series-panel" style="grid-column:1/-1;margin-top:6px;background:${colors.bg};border:1px solid ${colors.border};border-radius:8px;padding:10px 12px">
+      <div class="method-series-panel" style="grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div>
-            <span style="font-size:0.6rem;text-transform:uppercase;font-weight:800;color:${colors.text};background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;margin-right:6px;border:1px solid ${colors.border}">${methodCategory}</span>
-            <span style="font-size:0.75rem;font-weight:700;color:${colors.text}">${ex.method}</span>
+            <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${ex.method}</span>
             <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
@@ -609,42 +401,15 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       </div>
     `;
   } else if (ex.method) {
-    const desc = selectedMethodOpt?.description;
+    const methodOpt = allMethods.find(m => m.name === ex.method);
+    const desc = methodOpt?.description;
     if (desc) {
       methodPanelHTML = `
-        <div class="method-tip" style="font-size:0.72rem;color:${colors.text};margin-top:4px;grid-column:1/-1;padding:6px 8px;background:${colors.bg};border-radius:6px;border-left:3px solid ${colors.text};display:flex;align-items:center;gap:6px;border:1px solid ${colors.border};border-left-width:3px">
-          <span style="font-size:0.6rem;text-transform:uppercase;font-weight:800;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;color:${colors.text};border:1px solid ${colors.border}">${methodCategory}</span>
+        <div class="method-tip" style="font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)">
           <strong>${ex.method}</strong> — ${desc}
         </div>`;
     }
   }
-
-  // Sort and group methods by category
-  const categoryOrder = [
-    'Hipertrofia',
-    'Força / Potência',
-    'Resistência / RML',
-    'Cardio / Endurance',
-    'Mobilidade / Flexibilidade',
-    'Core / Estabilização',
-    'Regenerativo / Recovery',
-    'Aquecimento / Preparação',
-    'Calistenia / Ginástica',
-    'LPO / Levantamento Olímpico',
-    'Coordenação / Agilidade',
-    'Reabilitação / Preventivo',
-    'Geral'
-  ];
-  const sortedMethods = [...allMethods].sort((a, b) => {
-    const catA = a.category || 'Geral';
-    const catB = b.category || 'Geral';
-    const idxA = categoryOrder.indexOf(catA);
-    const idxB = categoryOrder.indexOf(catB);
-    const orderA = idxA !== -1 ? idxA : 99;
-    const orderB = idxB !== -1 ? idxB : 99;
-    if (orderA !== orderB) return orderA - orderB;
-    return a.name.localeCompare(b.name);
-  });
 
   return `
     <div class="exercise-row" style="
@@ -662,11 +427,9 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
-        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65" id="repsLbl_${index}">
-          ${isTime ? 'Duração' : 'Reps/Tempo'}
-        </label>
-        <input class="form-input" name="ex_reps_${index}" value="${ex.reps || ex.defaultReps || (isTime ? '20min' : '12')}"
-          placeholder="${isTime ? '20min / 30s' : '12'}" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Reps/Tempo</label>
+        <input class="form-input" name="ex_reps_${index}" value="${ex.reps || ex.defaultReps || '12'}"
+          placeholder="12" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65" id="loadLbl_${index}">
@@ -703,9 +466,9 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         <select class="form-select ex-method" name="ex_method_${index}" data-index="${index}"
           style="font-size:0.78rem;padding:4px 6px">
           <option value="">— Nenhum —</option>
-          ${sortedMethods.map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
+          ${allMethods.map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
             data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
-            data-desc="${m.description||''}" data-category="${m.category||'Geral'}">[${m.category||'Geral'}] ${m.name}</option>`).join('')}
+            data-desc="${m.description||''}">${m.name}</option>`).join('')}
         </select>
       </div>
       <button type="button" class="btn btn-ghost btn-icon remove-exercise" data-index="${index}"
@@ -994,66 +757,108 @@ export function initWorkouts(navigateFn) {
 
           ${doneSessions.length ? `
             <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:16px">
-              <h4 class="mb-sm" style="color:var(--success)">📊 Evolução & Histórico de Realizações</h4>
-              <p class="text-xs text-muted mb-md">Comparações entre o treino prescrito (teórico) e o executado pelo aluno.</p>
-              <div style="display:flex;flex-direction:column;gap:12px">
+              <h4 class="mb-sm" style="color:var(--success)">📊 Histórico de Realizações</h4>
+              <div style="display:flex;flex-direction:column;gap:14px">
                 ${doneSessions.map((se, si) => {
                   const setLog = se.setLog || [];
                   const sessionWorkout = allWorkouts.find(xw => xw.id === se.workoutId);
                   const displaySessionName = sessionWorkout ? sessionWorkout.name : se.workoutName || w.name;
-                  return `
-                    <div style="background:var(--bg-page);border:1px solid var(--border-color);border-radius:8px;padding:12px">
-                      <div class="flex justify-between items-center mb-xs" style="flex-wrap:wrap;gap:6px">
-                        <div>
-                          <span class="badge badge-success" style="font-size:0.7rem;text-transform:none">Realizado</span>
-                          <strong style="font-size:0.8rem;margin-left:6px">${displaySessionName}</strong>
-                        </div>
-                        <span style="font-size:0.78rem;color:var(--text-muted)">${Calc.formatDate(se.date || se.createdAt)} · Volume Total: <strong style="color:var(--primary)">${se.totalVolume || 0}kg</strong></span>
-                      </div>
-                      ${se.postBiofeedback?.pse ? `
-                        <div class="text-xs text-muted mb-sm" style="background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:4px">
-                          Esforço (PSE): <strong style="color:var(--warning)">${se.postBiofeedback.pse}/10</strong> · 
-                          Recuperação (TQR): <strong>${se.postBiofeedback.tqrPost || '-'}</strong> · 
-                          Duração: <strong>${se.totalDuration ? Math.round(se.totalDuration/60) : '-'} min</strong>
-                        </div>` : ''}
-                      
-                      <!-- Tabela de comparação -->
-                      <div class="table-container">
-                        <table class="data-table" style="font-size:0.75rem;width:100%">
-                          <thead><tr><th>Exercício</th><th>Séries Prescritas</th><th>Realizadas</th><th>Carga Prescrita</th><th>Carga Média Real</th></tr></thead>
-                          <tbody>
-                            ${(w.exercises||[]).map(ex => {
-                              // Tentar dar match nas séries feitas para este exercício
-                              const exSets = setLog.filter(s => s.exName === ex.name || (w.exercises[s.exIdx] && w.exercises[s.exIdx].name === ex.name));
-                              const realSets = exSets.length;
-                              const avgRealLoad = realSets ? Math.round(exSets.reduce((sum, s) => sum + (s.load || 0), 0) / realSets * 10) / 10 : '-';
-                              
-                              const setsDetailsHTML = realSets ? `
-                                <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
-                                  ${exSets.map((s, idx) => `
-                                    <span style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:4px;padding:2px 5px;white-space:nowrap">
-                                      <strong>S${s.setIdx != null ? s.setIdx + 1 : idx + 1}:</strong> ${s.reps || 0} reps × ${s.load || 0}kg ${ex.rest ? ` <span style="color:var(--text-muted);font-size:0.62rem">(${ex.rest}s)</span>` : ''}
-                                    </span>
-                                  `).join('')}
-                                </div>
-                              ` : '';
+                  const durMin = se.totalDuration ? Math.round(se.totalDuration / 60) : null;
+                  const density = (se.totalVolume && durMin) ? Math.round(se.totalVolume / durMin) : null;
+                  const pse = se.postBiofeedback?.pse;
+                  const postNotes = se.postBiofeedback?.notes || se.trainerNotes || '';
 
-                              return `<tr>
-                                <td>
-                                  <strong>${ex.name}</strong>
-                                  ${setsDetailsHTML}
-                                </td>
-                                <td>${ex.sets}</td>
-                                <td style="font-weight:700;color:${realSets >= ex.sets ? 'var(--success)' : 'var(--text-muted)'}">${realSets || '0'}</td>
-                                <td>${ex.load ? ex.load + 'kg' : '-'}</td>
-                                <td style="color:var(--primary);font-weight:700">${avgRealLoad ? avgRealLoad + 'kg' : '-'}</td>
-                              </tr>`;
-                            }).join('')}
-                          </tbody>
-                        </table>
+                  return `
+                  <div style="background:var(--bg-page);border:1px solid var(--border-color);border-radius:10px;overflow:hidden">
+
+                    <!-- Header da sessão -->
+                    <div style="padding:10px 14px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="badge badge-success" style="font-size:0.65rem">Realizado</span>
+                        <strong style="font-size:0.82rem">${displaySessionName}</strong>
                       </div>
+                      <span style="font-size:0.75rem;color:var(--text-muted)">${Calc.formatDate(se.date || se.createdAt)} · Volume: <strong style="color:var(--primary)">${se.totalVolume || 0}kg</strong></span>
                     </div>
-                  `;
+
+                    <!-- Check-in Pós -->
+                    ${(pse || density || postNotes) ? `
+                    <div style="padding:8px 14px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border-color);display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+                      <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Check-in Pós</span>
+                      ${pse ? `<span style="font-size:0.8rem">PSE <strong style="color:var(--warning)">${pse}/10</strong></span>` : ''}
+                      ${density ? `<span style="font-size:0.8rem">Densid. <strong style="color:var(--accent)">${density} kg/m</strong></span>` : ''}
+                      ${durMin ? `<span style="font-size:0.8rem">Dur. <strong>${durMin} min</strong></span>` : ''}
+                      ${postNotes ? `<span style="font-size:0.75rem;color:var(--text-muted);font-style:italic;flex-basis:100%">"${postNotes}"</span>` : ''}
+                    </div>` : ''}
+
+                    <!-- Tabela de exercícios -->
+                    <div style="padding:10px 14px">
+                      <!-- Legenda -->
+                      <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+                        <span style="font-size:0.62rem;color:var(--warning)">■ PSE — esforço percebido</span>
+                        <span style="font-size:0.62rem;color:var(--accent)">■ RIR — reps no tanque</span>
+                        <span style="font-size:0.62rem;color:var(--text-muted)">■ 1RM — estimativa Epley</span>
+                      </div>
+
+                      <table style="width:100%;border-collapse:collapse;font-size:0.75rem">
+                        <thead>
+                          <tr style="border-bottom:1px solid var(--border-color);color:var(--text-muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em">
+                            <th style="padding:5px 6px;text-align:left;font-weight:600">Exercício</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Séries</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Reps</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Carga Máx</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Volume</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--warning)">PSE</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--accent)">RIR</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--text-muted)">1RM</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${(w.exercises||[]).map(ex => {
+                            const exSets = setLog.filter(s => s.exName === ex.name || (w.exercises[s.exIdx]?.name === ex.name));
+                            const realSets = exSets.length;
+                            const maxLoad = realSets ? Math.max(...exSets.map(s => s.load || 0)) : null;
+                            const totalVol = realSets ? exSets.reduce((sum, s) => sum + ((s.load || 0) * (s.reps || 0)), 0) : 0;
+                            const totalReps = realSets ? exSets.reduce((sum, s) => sum + (s.reps || 0), 0) : 0;
+                            const avgPse = realSets ? (exSets.reduce((sum, s) => sum + (s.pse || 0), 0) / exSets.filter(s => s.pse).length || 0) : 0;
+                            const avgRir = realSets ? (exSets.reduce((sum, s) => sum + (s.rir ?? 0), 0) / exSets.filter(s => s.rir != null).length || 0) : 0;
+                            // 1RM Epley: w × (1 + reps/30) — usar série com maior carga
+                            const bestSet = exSets.reduce((best, s) => (!best || (s.load||0) > (best.load||0)) ? s : best, null);
+                            const oneRM = (bestSet && bestSet.load > 0 && bestSet.reps > 0) ? Math.round(bestSet.load * (1 + bestSet.reps / 30)) : null;
+
+                            const methodLabel = ex.method ? `<div style="font-size:0.62rem;color:var(--primary);margin-top:1px">${ex.method}</div>` : '';
+                            const setsExpanded = realSets ? `
+                              <div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">
+                                ${exSets.map((s, idx) => {
+                                  const pseColor = !s.pse ? 'var(--text-muted)' : s.pse >= 8 ? 'var(--danger)' : s.pse >= 6 ? 'var(--warning)' : 'var(--success)';
+                                  const rirColor = s.rir == null ? 'var(--text-muted)' : s.rir <= 1 ? 'var(--danger)' : s.rir <= 3 ? 'var(--warning)' : 'var(--success)';
+                                  return `<span style="font-size:0.67rem;color:var(--text-muted)">
+                                    · <strong style="color:var(--text-primary)">S${s.setIdx != null ? s.setIdx + 1 : idx + 1}:</strong>
+                                    <strong>${s.reps || 0}×${s.load || 0}kg</strong>
+                                    ${s.pse ? `<span style="color:${pseColor};font-weight:600"> PSE ${s.pse}</span>` : ''}
+                                    ${s.rir != null ? `<span style="color:${rirColor};font-weight:600"> RIR ${s.rir}</span>` : ''}
+                                  </span>`;
+                                }).join('')}
+                              </div>` : '';
+
+                            return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                              <td style="padding:7px 6px;vertical-align:top">
+                                <strong style="font-size:0.78rem">${ex.name}</strong>
+                                ${methodLabel}
+                                ${setsExpanded}
+                              </td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top">${realSets || '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top">${totalReps || '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;font-weight:700;color:var(--primary)">${maxLoad ? maxLoad + 'kg' : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--success);font-weight:600">${totalVol ? totalVol + 'kg' : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--warning);font-weight:700">${avgPse ? avgPse.toFixed(1) : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--accent);font-weight:700">${(avgRir || avgRir === 0) && exSets.some(s => s.rir != null) ? avgRir.toFixed(1) : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--text-muted);font-weight:600">${oneRM ? oneRM + 'kg' : '—'}</td>
+                            </tr>`;
+                          }).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>`;
                 }).join('')}
               </div>
             </div>` : `<div style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px"><p class="text-xs text-muted">Nenhuma sessão executada deste treino ainda. Inicie o Treino ao Vivo para registrar as cargas reais praticadas.</p></div>`}
@@ -1259,34 +1064,16 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       const i        = sel.dataset.index;
       const row      = sel.closest('.exercise-row');
       const methodName = opt?.value || '';
-      const category   = opt?.dataset.category || 'Geral';
-      const isCardioMethod = category === 'Cardio / Endurance';
 
       // Remover painel de sub-séries anterior
       row?.querySelectorAll('.method-series-panel').forEach(p => p.remove());
       row?.querySelectorAll('.method-tip').forEach(p => p.remove());
 
-      const repsLbl = document.getElementById(`repsLbl_${i}`);
-      const loadLbl = document.getElementById(`loadLbl_${i}`);
-      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
-      const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
-      const ltSel = document.querySelector(`[name="ex_loadtype_${i}"]`);
-
-      if (isCardioMethod) {
-        if (ltSel) ltSel.value = 'time';
-        if (repsLbl) repsLbl.textContent = 'Duração';
-        if (loadLbl) loadLbl.textContent = 'Intensidade';
-        if (loadEl) loadEl.placeholder = 'km/h/W';
-      } else {
-        const currentLt = ltSel?.value || 'weight';
-        if (repsLbl) repsLbl.textContent = currentLt === 'time' ? 'Duração' : 'Reps/Tempo';
-        if (loadLbl) loadLbl.textContent = currentLt === 'time' ? 'Intensidade' : currentLt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
-        if (loadEl) loadEl.placeholder = currentLt === 'time' ? 'km/h/W' : currentLt === 'bodyweight' ? '+kg' : 'kg';
-      }
-
       if (!methodName) {
         // Limpar indicação de método
         const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
+        const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
+        const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
         if (setsEl) setsEl.closest('div').style.opacity = '';
         if (repsEl) repsEl.closest('div').style.opacity = '';
         if (loadEl) loadEl.closest('div').style.opacity = '';
@@ -1295,6 +1082,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
 
       // Preencher séries/reps/descanso padrão
       const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
+      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
       const restEl = document.querySelector(`[name="ex_rest_${i}"]`);
       const sets   = opt?.dataset.sets;
       const reps   = opt?.dataset.reps;
@@ -1313,11 +1101,10 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
         // Método simples — apenas dica de descrição
         const desc = opt?.dataset.desc;
         if (desc) {
-          const colors = METHOD_COLORS[category] || METHOD_COLORS['Geral'];
           const tip = document.createElement('div');
           tip.className = 'method-tip';
-          tip.style.cssText = `font-size:0.72rem;color:${colors.text};margin-top:4px;grid-column:1/-1;padding:6px 8px;background:${colors.bg};border-radius:6px;border-left:3px solid ${colors.text};display:flex;align-items:center;gap:6px;border:1px solid ${colors.border};border-left-width:3px`;
-          tip.innerHTML = `<span style="font-size:0.6rem;text-transform:uppercase;font-weight:800;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px;color:${colors.text};border:1px solid ${colors.border}">${category}</span> <strong>${methodName}</strong> — ${desc}`;
+          tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
+          tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
           row?.appendChild(tip);
         }
         return;
