@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
-import { METHOD_PROGRESSIONS } from './workouts.js';
+import { METHOD_PROGRESSIONS, METHOD_CARDIO_META } from './workouts.js';
 
 const isNumeric = (val) => {
   if (val === undefined || val === null || val === '') return true;
@@ -278,6 +278,11 @@ function renderLiveView(students) {
               ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
               <span>${ex.rest || 60}s desc.</span>
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
+              ${(() => {
+                const cm = METHOD_CARDIO_META?.[ex.method];
+                if (!cm) return '';
+                return `<span style="font-size:0.68rem;color:var(--accent);font-weight:600">🫀 ${cm.fcPct[0]}-${cm.fcPct[1]}% FCmáx · RPE ${cm.rpe}</span>`;
+              })()}
             </div>
             ${(() => {
               const wk = s.weekPlan;
