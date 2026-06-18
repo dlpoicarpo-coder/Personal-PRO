@@ -1465,6 +1465,21 @@ function initTreinar(workouts, schedules, student) {
               <div class="portal-ex-name">${ex.name}</div>
               <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
               ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
+              ${(() => {
+                // Lazy import approach — cardio meta embedded inline for portal
+                const CARDIO = {
+                  'Zona 1 (Z1)':{fc:'50-65'},  'Zona 2 (Z2)':{fc:'65-75'},
+                  'Zona 3 (Z3)':{fc:'75-80'},  'Zona 4 (Z4) — Limiar':{fc:'80-90'},
+                  'Zona 5 (Z5) — VO2max':{fc:'90-100'}, 'Tabata':{fc:'85-100'},
+                  'HIIT 1:2':{fc:'85-95'}, 'HIIT 1:1':{fc:'85-95'},
+                  'SIT (Sprint Interval Training)':{fc:'95-100'},
+                  'Série de Repetição (VO2max)':{fc:'90-100'},
+                  'Steady State':{fc:'65-80'}, 'Progressivo':{fc:'60-90'},
+                };
+                const cm = CARDIO[ex.method];
+                if (!cm) return '';
+                return `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600">🫀 ${cm.fc}% FC Máx</div>`;
+              })()}
             </div>
             <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
