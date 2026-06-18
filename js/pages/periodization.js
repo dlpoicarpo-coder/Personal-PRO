@@ -1114,52 +1114,94 @@ export function initPeriodization(navigateFn) {
         const gridContainer = document.getElementById('weeklyPlanGrid');
         if (!gridContainer) return;
 
-        const phases = ['Adaptação', 'Hipertrofia', 'Força', 'Pico/RML', 'Deload', 'Resistência', 'Aeróbico', 'Cardio HIIT'];
+        const PHASE_META = {
+          'Adaptação':      { color: '#22c55e',  bg: 'rgba(34,197,94,0.08)',   icon: '🌱', rpe: '5-6' },
+          'Hipertrofia':    { color: '#f59e0b',  bg: 'rgba(245,158,11,0.08)',  icon: '💪', rpe: '7-8' },
+          'Força':          { color: '#f97316',  bg: 'rgba(249,115,22,0.08)',  icon: '🏋️', rpe: '8-9' },
+          'Pico/RML':       { color: '#ef4444',  bg: 'rgba(239,68,68,0.08)',   icon: '🔥', rpe: '9-10' },
+          'Deload':         { color: '#3b82f6',  bg: 'rgba(59,130,246,0.08)',  icon: '😴', rpe: '4-5' },
+          'Resistência':    { color: '#06b6d4',  bg: 'rgba(6,182,212,0.08)',   icon: '⚡', rpe: '6-7' },
+          'Aeróbico':       { color: '#10b981',  bg: 'rgba(16,185,129,0.08)',  icon: '🏃', rpe: '4-6' },
+          'Cardio HIIT':    { color: '#ec4899',  bg: 'rgba(236,72,153,0.08)',  icon: '🔴', rpe: '8-9' },
+          'Acumulação':     { color: '#22c55e',  bg: 'rgba(34,197,94,0.08)',   icon: '📦', rpe: '6-7' },
+          'Intensificação': { color: '#f97316',  bg: 'rgba(249,115,22,0.08)', icon: '⬆️', rpe: '8-9' },
+          'Realização':     { color: '#ef4444',  bg: 'rgba(239,68,68,0.08)',   icon: '🏆', rpe: '9-10' },
+          'DUP':            { color: '#8b5cf6',  bg: 'rgba(139,92,246,0.08)',  icon: '🌊', rpe: '6-9' },
+          'Concorrente':    { color: '#10b981',  bg: 'rgba(16,185,129,0.08)', icon: '🌀', rpe: '6-8' },
+          'Conjugada':      { color: '#ec4899',  bg: 'rgba(236,72,153,0.08)', icon: '⚡', rpe: '5-10' },
+          'Polarizado':     { color: '#06b6d4',  bg: 'rgba(6,182,212,0.08)',   icon: '◎', rpe: '4-9' },
+          'Fartlek Livre':  { color: '#ec4899',  bg: 'rgba(236,72,153,0.08)', icon: '🎲', rpe: '4-8' },
+          'Tempo Run Z3':   { color: '#a855f7',  bg: 'rgba(168,85,247,0.08)', icon: '⏱', rpe: '7-8' },
+          'LSD Z2':         { color: '#22c55e',  bg: 'rgba(34,197,94,0.08)',   icon: '🏃', rpe: '4-5' },
+          'HIIT':           { color: '#f97316',  bg: 'rgba(249,115,22,0.08)', icon: '🔥', rpe: '8-9' },
+        };
+
+        const getPhaseColor = (phase, intensityPct) => {
+          const meta = PHASE_META[phase];
+          if (meta) return meta.color;
+          if (phase?.toLowerCase().includes('deload') || phase?.toLowerCase().includes('recuper')) return '#3b82f6';
+          if (intensityPct >= 88) return '#ef4444';
+          if (intensityPct >= 78) return '#f97316';
+          if (intensityPct >= 65) return '#f59e0b';
+          return '#22c55e';
+        };
+
+        const phases = ['Adaptação','Hipertrofia','Força','Pico/RML','Deload','Resistência','Aeróbico','Cardio HIIT','Acumulação','Intensificação','Realização','DUP','Concorrente'];
 
         let html = `
-          <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%">
+          <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%; border-collapse:separate; border-spacing:0 2px">
             <thead>
               <tr style="background:var(--bg-card)">
-                <th style="width:70px; padding:6px">Semana</th>
-                <th style="padding:6px">Fase / Trabalho Principal</th>
-                <th style="width:100px; padding:6px">Intensidade %</th>
-                <th style="width:100px; padding:6px">Volume %</th>
-                <th style="width:110px; padding:6px">Repetições</th>
+                <th style="width:54px; padding:5px 6px">Sem</th>
+                <th style="width:14px; padding:5px 2px"></th>
+                <th style="padding:5px 6px">Fase / Trabalho Principal</th>
+                <th style="width:90px; padding:5px 6px">Int %</th>
+                <th style="width:90px; padding:5px 6px">Vol %</th>
+                <th style="width:100px; padding:5px 6px">Reps</th>
               </tr>
             </thead>
             <tbody>
         `;
 
         baseWeeks.forEach(w => {
+          const c = getPhaseColor(w.phase, w.intensityPct);
+          const meta = PHASE_META[w.phase] || {};
+          const icon = meta.icon || '●';
           html += `
-            <tr class="week-row" data-week="${w.week}">
-              <td style="padding:6px"><strong>Sem ${w.week}</strong></td>
-              <td style="padding:6px">
-                <select class="form-select week-phase" style="padding:4px 6px; font-size:0.75rem; width:100%; height:auto; background:var(--bg-card)">
+            <tr class="week-row" data-week="${w.week}" style="background:${meta.bg || 'transparent'};border-radius:6px">
+              <td style="padding:5px 6px;border-radius:6px 0 0 6px">
+                <strong style="font-size:0.78rem;color:${c}">S${w.week}</strong>
+              </td>
+              <td style="padding:5px 2px" title="${w.phase}">
+                <div style="width:4px;height:28px;background:${c};border-radius:2px;opacity:0.8"></div>
+              </td>
+              <td style="padding:5px 6px">
+                <select class="form-select week-phase" style="padding:3px 5px;font-size:0.73rem;width:100%;height:auto;background:var(--bg-card);border-color:${c}40;color:${c};font-weight:600">
                   ${phases.map(p => {
-                    const selected = w.phase.toLowerCase().includes(p.toLowerCase().substring(0, 4)) || 
-                                     (p === 'Deload' && w.phase === 'deload');
-                    return `<option value="${p}" ${selected ? 'selected' : ''}>${p}</option>`;
+                    const isSelected = w.phase === p ||
+                      w.phase.toLowerCase().includes(p.toLowerCase().substring(0,4)) ||
+                      (p === 'Deload' && w.phase === 'deload');
+                    return `<option value="${p}" ${isSelected ? 'selected' : ''}>${icon} ${p}</option>`;
                   }).join('')}
                 </select>
               </td>
-              <td style="padding:6px">
-                <input class="form-input week-intensity" type="number" min="30" max="100" value="${w.intensityPct}" style="padding:4px 6px; font-size:0.75rem; text-align:center; width:100%; height:auto; background:var(--bg-card)" />
+              <td style="padding:5px 6px">
+                <input class="form-input week-intensity" type="number" min="30" max="100" value="${w.intensityPct}"
+                  style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card);border-color:${c}40;color:${c};font-weight:600" />
               </td>
-              <td style="padding:6px">
-                <input class="form-input week-volume" type="number" min="10" max="100" value="${w.volumePct}" style="padding:4px 6px; font-size:0.75rem; text-align:center; width:100%; height:auto; background:var(--bg-card)" />
+              <td style="padding:5px 6px">
+                <input class="form-input week-volume" type="number" min="10" max="100" value="${w.volumePct}"
+                  style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card)" />
               </td>
-              <td style="padding:6px">
-                <input class="form-input week-reps" value="${w.repsRange}" style="padding:4px 6px; font-size:0.75rem; text-align:center; width:100%; height:auto; background:var(--bg-card)" />
+              <td style="padding:5px 6px;border-radius:0 6px 6px 0">
+                <input class="form-input week-reps" value="${w.repsRange}"
+                  style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card)" />
               </td>
             </tr>
           `;
         });
 
-        html += `
-            </tbody>
-          </table>
-        `;
+        html += `</tbody></table>`;
 
         gridContainer.innerHTML = html;
       };
