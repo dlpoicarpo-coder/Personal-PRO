@@ -416,22 +416,23 @@ export function initPeriodization(navigateFn) {
 
     // Agrupar templates por categoria
     const tplByCategory = {};
-    BUILT_IN_WORKOUT_TEMPLATES.forEach(t => {
+    BUILT_IN_TEMPLATES.forEach(t => {
       const cat = t.category || 'Musculação';
       if (!tplByCategory[cat]) tplByCategory[cat] = [];
       tplByCategory[cat].push(t);
     });
 
     function tplCardHTML(t) {
-      const isCardio = t.category === 'Cardio / Endurance';
-      const exCount  = t.sessions.reduce((a,s) => a + s.exercises.length, 0);
+      const isCardio = t.category === 'Cardio Endurance' || t.category === 'Cardio / Endurance';
+      const exCount  = t.sessions ? t.sessions.reduce((a,s) => a + s.exercises.length, 0)
+                     : (t.workouts || []).reduce((a,w) => a + (w.exercises||[]).length, 0);
       const catColor = isCardio ? 'var(--accent)' : 'var(--primary)';
       return `
         <label class="periodo-tpl-card" data-tpl-id="${t.id}" style="
           display:flex;align-items:center;gap:10px;
           padding:7px 10px;border:1px solid var(--border-color);
           border-radius:var(--radius-md);cursor:pointer;
-          transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
+          transition:border-color 0.15s,background 0.15s,opacity 0.15s;background:var(--bg-card)">
           <span class="tpl-radio" style="
             width:16px;height:16px;border-radius:50%;border:2px solid var(--border-color);
             flex-shrink:0;display:flex;align-items:center;justify-content:center;
@@ -443,15 +444,15 @@ export function initPeriodization(navigateFn) {
               ${isCardio ? `<span style="font-size:0.55rem;background:rgba(6,182,212,0.12);color:var(--accent);padding:1px 5px;border-radius:8px;font-weight:600;flex-shrink:0">Cardio</span>` : ''}
             </div>
             <div style="font-size:0.64rem;color:var(--text-muted);display:flex;gap:6px;margin-top:1px;flex-wrap:wrap">
-              <span style="color:${catColor}">${t.sessions.length} sessão(ões)</span>
+              <span style="color:${catColor}">${(t.sessions || t.workouts || []).length} sessão(ões)</span>
               <span>·</span><span>${exCount} ex.</span>
-              ${t.days ? `<span>·</span><span>${t.days}×/sem</span>` : ''}
+              ${t.days || t.daysPerWeek ? `<span>·</span><span>${t.days || t.daysPerWeek}×/sem</span>` : ''}
             </div>
           </div>
         </label>`;
     }
 
-    const CAT_ORDER = ['Iniciante', 'Intermediário', 'Avançado', 'Hipertrofia', 'Força', 'Emagrecimento', 'Funcional', 'Reabilitação', 'Cardio / Endurance'];
+    const CAT_ORDER = ['Hipertrofia','Força','Resistência','Potência','Cardio Endurance','Cardio / Endurance'];
     const builtInHTML = CAT_ORDER
       .filter(cat => tplByCategory[cat]?.length)
       .map(cat => `
