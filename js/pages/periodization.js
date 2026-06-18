@@ -8,7 +8,7 @@ import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { PERIODIZATION_MODELS, generateProgression } from '../utils/periodization-engine.js';
 import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
-import { METHOD_PROGRESSIONS } from './workouts.js';
+import { METHOD_PROGRESSIONS, METHOD_CARDIO_META } from './workouts.js';
 
 // Adaptar BUILT_IN_TEMPLATES para o formato que o periodization espera
 function adaptTemplate(t) {
@@ -1487,7 +1487,32 @@ async function renderLoadInputs(exercises) {
       continue;
     }
 
-    // Tenta encontrar avaliação física para esse exercício (match parcial ou exato)
+    // ── Cardio method: show FC target instead of 1RM ──
+    const cardioMeta = METHOD_CARDIO_META?.[ex.method];
+    if (cardioMeta || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k) && (nameLower.includes('cardio') || nameLower.includes('corrida') || nameLower.includes('esteira') || nameLower.includes('bike') || nameLower.includes('sprint') || nameLower.includes('hiit')))) {
+      const meta = cardioMeta || {};
+      const fcRange = meta.fcPct ? `${meta.fcPct[0]}-${meta.fcPct[1]}% FC Máx` : '65-80% FC Máx';
+      const durRange = meta.durationMin ? `${meta.durationMin[0]}-${meta.durationMin[1]} min` : '';
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
+          <div style="flex:1">
+            <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
+            <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">
+              ${ex.method ? `<span style="font-weight:600">${ex.method}</span> · ` : ''}${fcRange}${durRange ? ` · ${durRange}` : ''}
+              ${meta.rpe ? ` · RPE ${meta.rpe}` : ''}
+            </div>
+            ${meta.note ? `<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;font-style:italic">${meta.note}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
+            <span style="font-size:0.68rem;color:var(--text-muted)">FC Máx</span>
+            <input class="form-input load-input" data-ex-key="${ex.name}" data-type="cardio"
+              type="number" min="100" max="220" value="180"
+              style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem;border-color:var(--accent)40" />
+            <span style="font-size:0.72rem;color:var(--text-muted);min-width:22px">bpm</span>
+          </div>
+        </div>`;
+      continue;
+    }
     const match = forceAssessments.find(a => 
       a.exercise && (
         a.exercise.toLowerCase() === nameLower ||
