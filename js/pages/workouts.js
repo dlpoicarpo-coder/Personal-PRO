@@ -338,6 +338,131 @@ export const METHOD_PROGRESSIONS = {
     desc: '7 séries do isolador com 30-45s descanso. Alta congestão.',
     series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))
   },
+
+  // ── MÉTODOS SEM VARIAÇÃO DE CARGA POR SÉRIE ───────────────────────────────
+  // Usam carga constante — loadPct 1.0 em todas as séries
+  'Unilateral': {
+    desc: 'Executa de um lado de cada vez. Mesmo 1RM para cada lado.',
+    series: [
+      { reps:'10-12', loadPct:0.70, label:'Lado D — S1', rest:60 },
+      { reps:'10-12', loadPct:0.70, label:'Lado E — S1', rest:60 },
+      { reps:'10-12', loadPct:0.70, label:'Lado D — S2', rest:60 },
+      { reps:'10-12', loadPct:0.70, label:'Lado E — S2', rest:60 },
+    ]
+  },
+  'Excêntrico Acentuado': {
+    desc: '4-6s na descida. Carga 70-80% 1RM. Máximo dano muscular.',
+    series: [
+      { reps:'6-8', loadPct:0.75, label:'S1 — 4s excêntrico', rest:120 },
+      { reps:'6-8', loadPct:0.75, label:'S2 — 4s excêntrico', rest:120 },
+      { reps:'6-8', loadPct:0.75, label:'S3 — 4s excêntrico', rest:120 },
+      { reps:'6-8', loadPct:0.75, label:'S4 — 4s excêntrico', rest:120 },
+    ]
+  },
+  'Isometria': {
+    desc: 'Sustentação estática. Carga moderada. 30-60s por posição.',
+    series: [
+      { reps:'45s', loadPct:0.50, label:'S1 — 45s sustentação', rest:90 },
+      { reps:'45s', loadPct:0.50, label:'S2 — 45s sustentação', rest:90 },
+      { reps:'45s', loadPct:0.50, label:'S3 — 45s sustentação', rest:90 },
+    ]
+  },
+  '21s': {
+    desc: '7 parcial baixo + 7 parcial cima + 7 completas. Carga ~50-55% 1RM.',
+    series: [
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S1 — 21s', rest:90 },
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S2 — 21s', rest:90 },
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S3 — 21s', rest:90 },
+    ]
+  },
+  'Pré-exaustão': {
+    desc: 'Isolamento (~65%) → composto (~75%) sem descanso. Fadiga o músculo-alvo primeiro.',
+    series: [
+      { reps:'12', loadPct:0.65, label:'Isolamento',  rest:0   },
+      { reps:'8-10', loadPct:0.75, label:'Composto',  rest:120 },
+      { reps:'12', loadPct:0.65, label:'Isolamento',  rest:0   },
+      { reps:'8-10', loadPct:0.75, label:'Composto',  rest:120 },
+      { reps:'12', loadPct:0.65, label:'Isolamento',  rest:0   },
+      { reps:'8-10', loadPct:0.75, label:'Composto',  rest:120 },
+    ]
+  },
+  'Super-série Agonista': {
+    desc: '2 exercícios do mesmo grupo sem pausa. Informe a carga de cada exercício separadamente.',
+    series: [
+      { reps:'10-12', loadPct:0.70, label:'Ex A — S1', rest:0   },
+      { reps:'10-12', loadPct:0.68, label:'Ex B — S1', rest:90  },
+      { reps:'10-12', loadPct:0.70, label:'Ex A — S2', rest:0   },
+      { reps:'10-12', loadPct:0.68, label:'Ex B — S2', rest:90  },
+      { reps:'10-12', loadPct:0.70, label:'Ex A — S3', rest:0   },
+      { reps:'10-12', loadPct:0.68, label:'Ex B — S3', rest:90  },
+    ]
+  },
+  'Super-série Antagonista': {
+    desc: 'Grupos opostos alternados sem pausa. Ex: Rosca + Tríceps.',
+    series: [
+      { reps:'10-12', loadPct:0.70, label:'Agonista S1',   rest:0   },
+      { reps:'10-12', loadPct:0.70, label:'Antagonista S1',rest:60  },
+      { reps:'10-12', loadPct:0.70, label:'Agonista S2',   rest:0   },
+      { reps:'10-12', loadPct:0.70, label:'Antagonista S2',rest:60  },
+      { reps:'10-12', loadPct:0.70, label:'Agonista S3',   rest:0   },
+      { reps:'10-12', loadPct:0.70, label:'Antagonista S3',rest:60  },
+    ]
+  },
+  'Bi-set': {
+    desc: 'Dois exercícios para o mesmo músculo sem pausa.',
+    series: [
+      { reps:'10', loadPct:0.72, label:'Ex A — S1', rest:0   },
+      { reps:'10', loadPct:0.68, label:'Ex B — S1', rest:90  },
+      { reps:'10', loadPct:0.72, label:'Ex A — S2', rest:0   },
+      { reps:'10', loadPct:0.68, label:'Ex B — S2', rest:90  },
+      { reps:'10', loadPct:0.72, label:'Ex A — S3', rest:0   },
+      { reps:'10', loadPct:0.68, label:'Ex B — S3', rest:90  },
+    ]
+  },
+  'Tri-set': {
+    desc: '3 exercícios consecutivos sem descanso. Alto estímulo metabólico.',
+    series: [
+      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S1', rest:0   },
+      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S1', rest:0   },
+      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S1', rest:120 },
+      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S2', rest:0   },
+      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S2', rest:0   },
+      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S2', rest:120 },
+      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S3', rest:0   },
+      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S3', rest:0   },
+      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S3', rest:120 },
+    ]
+  },
+  'Série Gigante': {
+    desc: '4 exercícios consecutivos. Reduzir cargas (~60-65% 1RM). Alto volume.',
+    series: [
+      { reps:'10-15', loadPct:0.62, label:'Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.58, label:'Ex 4', rest:180 },
+      { reps:'10-15', loadPct:0.62, label:'Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.58, label:'Ex 4', rest:180 },
+    ]
+  },
+};
+
+// ── METADADOS DE CARDIO (FC Alvo, duração, zonas) ─────────────────────────────
+// Usado na seleção de carga da periodização para métodos de cardio
+export const METHOD_CARDIO_META = {
+  'Zona 1 (Z1)':            { fcPct:[50,65], durationMin:[20,60],  rpe:'2-3', note:'Recuperação ativa. Conversa fácil.' },
+  'Zona 2 (Z2)':            { fcPct:[65,75], durationMin:[30,90],  rpe:'3-4', note:'Base aeróbica. Frase completa possível.' },
+  'Zona 3 (Z3)':            { fcPct:[75,80], durationMin:[20,40],  rpe:'5-6', note:'Limiar aeróbico inferior. Difícil conversar.' },
+  'Zona 4 (Z4) — Limiar':   { fcPct:[80,90], durationMin:[10,20],  rpe:'7-8', note:'OBLA. Apenas palavras soltas.' },
+  'Zona 5 (Z5) — VO2max':   { fcPct:[90,100],durationMin:[3,8],    rpe:'9-10',note:'Máximo esforço. Intervalos curtos.' },
+  'Tabata':                  { fcPct:[85,100],durationMin:[4,12],   rpe:'9-10',note:'20s esforço / 10s repouso × 8 rounds.' },
+  'HIIT 1:2':                { fcPct:[85,95], durationMin:[12,20],  rpe:'8-9', note:'30s esforço / 60s recuperação. 8-12 rounds.' },
+  'HIIT 1:1':                { fcPct:[85,95], durationMin:[12,20],  rpe:'8-9', note:'30s esforço / 30s recuperação. Mais intenso.' },
+  'SIT (Sprint Interval Training)': { fcPct:[95,100],durationMin:[5,15], rpe:'10', note:'10-30s máximos. 2-4min recuperação.' },
+  'Série de Repetição (VO2max)': { fcPct:[90,100],durationMin:[12,30], rpe:'9-10',note:'3-5min a 95% VO2max. Igual ao esforço.' },
+  'Steady State':            { fcPct:[65,80], durationMin:[20,60],  rpe:'4-6', note:'Ritmo constante. Zona 2-3.' },
+  'Progressivo':             { fcPct:[60,90], durationMin:[20,60],  rpe:'3-8', note:'+0.5km/h a cada 5min. Cobre Z2→Z4.' },
 };
 
 function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
