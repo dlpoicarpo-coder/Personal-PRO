@@ -117,9 +117,11 @@ export async function renderFinancial() {
       <button id="finPrevMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="Mês anterior">◀</button>
       <div style="text-align:center;min-width:180px">
         <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);text-transform:capitalize">${monthLabel}</div>
-        ${isCurrentMonth ? '<div style="font-size:0.7rem;color:var(--primary);font-weight:600">Mês Atual</div>' : ''}
+        ${isCurrentMonth ? '<div style="font-size:0.7rem;color:var(--primary);font-weight:600">Mês Atual</div>'
+          : selDate > now ? '<div style="font-size:0.7rem;color:var(--accent);font-weight:600">Mês Futuro</div>'
+          : '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:500">Mês Passado</div>'}
       </div>
-      <button id="finNextMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="Próximo mês" ${isCurrentMonth ? 'disabled style="opacity:0.3;cursor:default"' : ''}>▶</button>
+      <button id="finNextMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="Próximo mês">▶</button>
     </div>
 
     <!-- Stats -->
