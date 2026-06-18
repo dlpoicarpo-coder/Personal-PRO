@@ -32,7 +32,7 @@ function showPwaPopup() {
   el.className = 'portal-pwa-popup visible';
   el.innerHTML = `
     <div class="portal-pwa-popup-inner">
-      <div class="portal-pwa-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+      <div class="portal-pwa-icon">📲</div>
       <div class="portal-pwa-text">
         <div class="portal-pwa-title">Instalar Personal PRO</div>
         <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
@@ -120,39 +120,9 @@ export async function renderStudentPortal(rawParam) {
   const params = new URLSearchParams(query || '');
   let trainerId = params.get('t') || '';
 
-  // ── CRÍTICO: configurar trainerId ANTES de qualquer db.get ──
-  // Garante que registros gravados pela aluna usem o trainer_id correto
-  if (trainerId) {
-    db.studentPortalTrainerId = trainerId;
-  }
-
-  // Tentar buscar aluno do localStorage; se vazio (primeiro acesso no dispositivo),
-  // buscar diretamente do Supabase via getAllForStudent
-  let student = await db.get('students', studentId).catch(() => null);
-
-  // Fallback: se não encontrou localmente e temos acesso ao Supabase, buscar remoto
-  if (!student && db.supabase && trainerId) {
-    try {
-      const { data } = await db.supabase.from('students').select('*').eq('id', studentId).maybeSingle();
-      if (data) {
-        student = data.data ? { ...data.data, id: data.id } : data;
-        // Salvar localmente para próximos acessos offline
-        await db.put('students', student).catch(() => {});
-      }
-    } catch (_) {}
-  }
-
-  // Se ainda sem trainerId, tentar pegar do registro do aluno
-  if (!trainerId && student) {
+  const student = await db.get('students', studentId).catch(() => null);
+  if (student && !trainerId) {
     trainerId = student.trainerId || student.trainer_id || '';
-  }
-
-  // Persistir trainerId no localStorage para uso offline futuro
-  if (trainerId && studentId) {
-    localStorage.setItem(`portal_tid_${studentId}`, trainerId);
-  } else if (!trainerId && studentId) {
-    // Tentar recuperar do localStorage salvo em sessão anterior
-    trainerId = localStorage.getItem(`portal_tid_${studentId}`) || '';
   }
 
   portalState.studentId = studentId;
@@ -392,7 +362,7 @@ function renderPortalShell(student) {
       <!-- PWA Install Popup -->
       <div id="pwaInstallPopup" class="portal-pwa-popup">
         <div class="portal-pwa-popup-inner">
-          <div class="portal-pwa-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+          <div class="portal-pwa-icon">📲</div>
           <div class="portal-pwa-text">
             <div class="portal-pwa-title">Instalar Personal PRO</div>
             <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
@@ -734,7 +704,7 @@ function checkSessionReminders(schedules, sessions) {
   const todaySessions = schedules.filter(s => s.date === todayStr);
   if (todaySessions.length > 0) {
     const s = todaySessions[0];
-    showToast(`Você tem treino hoje${s.time ? ' às ' + s.time : ''}. Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
+    showToast(`📅 Você tem treino hoje${s.time ? ' às ' + s.time : ''}! Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
   }
 
   // 2. Checkout reminder: sessions without student checkout
@@ -748,7 +718,7 @@ function checkSessionReminders(schedules, sessions) {
   });
   if (needsCheckout.length > 0) {
     setTimeout(() => {
-      showToast(`Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso.`, 'warning', 10000);
+      showToast(`⚡ Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
     }, 2000);
   }
 }
@@ -851,11 +821,11 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
   const todaySched = schedules.find(s => s.date === todayStr);
   let checkinBanner = '';
   if (todaySched) {
-    const checkedIn = biofeedbacks.find(b => b.date?.startsWith(todayStr) && (b.formType === 'pre' || b.formType === 'complete'));
+    const checkedIn = biofeedbacks.find(b => b.date?.startsWith(todayStr) && b.formType === 'pre');
     checkinBanner = checkedIn
       ? `<div class="portal-reminder portal-reminder-success">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Check-in do treino de hoje já realizado
+          Check-in do treino de hoje já realizado ✅
         </div>`
       : `<div class="portal-reminder portal-reminder-info" id="checkinBanner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -891,7 +861,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
       <!-- Greeting -->
       <div class="portal-greeting-card glass-card">
         <div class="portal-greeting-text">
-          <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]}</div>
+          <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]} 👋</div>
           <div class="portal-greeting-date">${now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' })}</div>
         </div>
         ${lastSession ? `<div class="portal-last-session">Último treino: ${Math.abs(getDaysDifference(lastSession.date))}d atrás</div>` : ''}
@@ -941,18 +911,30 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
           weekTimelineHtml = `
             <div class="week-timeline" style="margin: 14px 0 8px; display: flex; gap: 4px; align-items: flex-end; min-height: 60px;">
               ${currentMacro.weeks.map((w, i) => {
-                const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
-                return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; min-width:20px; border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label} — Vol: ${w.volumePct}% | Int: ${w.intensityPct}%">
+                const isDeload = w.phase === 'Deload' || w.phase?.includes('Deload') || w.phase?.includes('Recuper');
+                const intColor = isDeload ? '#3b82f6'
+                  : w.intensityPct >= 88 ? '#ef4444'
+                  : w.intensityPct >= 78 ? '#f97316'
+                  : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
+                // Tooltip com info de sub-sessões (DUP, Conjugada, Concorrente)
+                const dupInfo = w.dupSessions?.length
+                  ? w.dupSessions.map(ds => `${ds.label}: ${ds.intensityPct}% · RPE ${ds.rpe}`).join(' | ')
+                  : null;
+                const tooltipText = dupInfo
+                  ? `Sem ${w.week}: ${w.label||w.phase} — ${dupInfo}`
+                  : `Sem ${w.week}: ${w.label||w.phase} — ${w.intensityPct}% Int · ${w.volumePct||'—'}% Vol`;
+                const barHeight = Math.max(4, Math.round((w.intensityPct || 60) * 0.28));
+                return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; min-width:20px; border-bottom:3px solid ${intColor}" title="${tooltipText}">
                   <div class="week-num" style="font-size:0.6rem; font-weight:600; color:${intColor}">S${w.week}</div>
-                  <div class="week-bar-int" style="height:${w.intensityPct * 0.3}px; background:${intColor}; width:100%; max-width:16px; border-radius:2px; min-height:2px;"></div>
+                  <div style="height:${barHeight}px; background:${intColor}; width:100%; max-width:16px; border-radius:2px; min-height:2px;"></div>
                 </div>`;
               }).join('')}
             </div>
             <div class="flex gap-md mt-xs text-xs text-muted" style="flex-wrap:wrap; display:flex; gap:8px; margin-bottom:12px;">
               <span style="color:#22c55e; font-size:0.65rem;">● Leve</span>
-              <span style="color:#eab308; font-size:0.65rem;">● Mod</span>
+              <span style="color:#eab308; font-size:0.65rem;">● Moderada</span>
               <span style="color:#f97316; font-size:0.65rem;">● Alta</span>
-              <span style="color:#ef4444; font-size:0.65rem;">● M.Alta</span>
+              <span style="color:#ef4444; font-size:0.65rem;">● Máxima</span>
               <span style="color:#3b82f6; font-size:0.65rem;">● Deload</span>
             </div>
           `;
@@ -1055,7 +1037,7 @@ function renderTreinar(workouts, schedules) {
       <div class="portal-suggested-label">
         ${todaySched
           ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Treino de HOJE`
-          : `Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
+          : `📅 Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
         ${suggestedSched.time ? ` · ${suggestedSched.time}` : ''}
       </div>
       <div class="portal-suggested-name">${suggestedWorkout.name || 'Treino'}</div>
@@ -1107,17 +1089,17 @@ function renderTreinar(workouts, schedules) {
         <div class="portal-live-panel">
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveTotal">00:00</div>
-            <div class="portal-live-lbl">Total</div>
+            <div class="portal-live-lbl">⏱ Total</div>
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveWork" style="color:#10b981">00:00</div>
-            <div class="portal-live-lbl">Trabalho</div>
+            <div class="portal-live-lbl">💪 Trabalho</div>
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveRest" style="color:#06b6d4">00:00</div>
-            <div class="portal-live-lbl">Descanso</div>
+            <div class="portal-live-lbl">🙏 Descanso</div>
           </div>
-          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer">🔔</button>
         </div>
 
         <!-- Rest timer overlay (hidden until set done) -->
@@ -1127,8 +1109,8 @@ function renderTreinar(workouts, schedules) {
           <div class="portal-rest-bar-track"><div class="portal-rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
           <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
-            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar</button>
-            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Iniciar Trabalho</button>
+            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar ⏸</button>
+            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho 💪</button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
         </div>
@@ -1138,7 +1120,7 @@ function renderTreinar(workouts, schedules) {
 
         <!-- Session notes -->
         <div class="glass-card" style="margin-top:12px">
-          <div class="portal-card-label">Anotações da Sessão</div>
+          <div class="portal-card-label">📝 Anotações da Sessão</div>
           <textarea id="soloNotes" class="portal-textarea" rows="3" placeholder="Observações gerais do treino..."></textarea>
         </div>
 
@@ -1437,25 +1419,18 @@ function initTreinar(workouts, schedules, student) {
       if (selInput) selInput.value = wid;
       const w = workouts.find(w => w.id === wid);
     if (w && w.exercises?.length) {
-          exBlock.innerHTML = `
+        exBlock.innerHTML = `
           <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do Treino</div>
-          ${w.exercises.map((ex,i) => {
-            const exNameLower = (ex.name||'').toLowerCase();
-            const isCardioItem = (ex.loadType==='time') ||
-              (ex.method && ['zona','polariz','hiit','tabata','z1','z2','z3','z4','z5','liss','steady','leve','continuo'].some(k=>ex.method.toLowerCase().includes(k))) ||
-              ['esteira','corrida','caminhada','bicicleta','bike','elípt','natação','remo','spinning','hiit','tabata','assault','ski erg','air runner'].some(k=>exNameLower.includes(k));
-            const loadSuffix = isCardioItem ? 'bpm' : 'kg';
-            const loadStr = ex.load ? ` &middot; ${ex.load}${loadSuffix}` : '';
-            return `
+          ${w.exercises.map((ex,i) => `
             <div class="glass-card portal-ex-pick-card" data-ei="${i}" data-wid="${w.id}" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.2s">
               <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
               <div style="flex:1;min-width:0">
                 <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
-                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${loadStr}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
+                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+ex.load+'kg':''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
               </div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>`;
-          }).join('')}`;
+            </div>
+          `).join('')}`;
         // Bind info tap
         exBlock.querySelectorAll('.portal-ex-pick-card').forEach(card => {
           card.addEventListener('click', async () => {
@@ -1482,255 +1457,87 @@ function initTreinar(workouts, schedules, student) {
   function buildExerciseLog(w) {
     const exLogEl = document.getElementById('soloExerciseLog');
     if (w && w.exercises?.length) {
-      exLogEl.innerHTML = w.exercises.map((ex, ei) => {
-        const loadType = ex.loadType || '';
-        const isTime = loadType === 'time';
-        
-        const cardioMethods = [
-          'zona 1', 'zona 2', 'zona 3', 'zona 4', 'zona 5',
-          'tabata', 'hiit', 'sit ', 'sprint', 'steady state',
-          'progressivo', 'polarizado', 'gibala'
-        ];
-        const isCardioMethod = ex.method && cardioMethods.some(m => ex.method.toLowerCase().includes(m));
-        
-        const isCardioEx = isTime || isCardioMethod || 
-                           (ex.name && (ex.name.toLowerCase().includes('esteira') || 
-                                       ex.name.toLowerCase().includes('corrida') || 
-                                       ex.name.toLowerCase().includes('caminhada') || 
-                                       ex.name.toLowerCase().includes('bicicleta') || 
-                                       ex.name.toLowerCase().includes('elíptico') || 
-                                       ex.name.toLowerCase().includes('remo ergométrico') || 
-                                       ex.name.toLowerCase().includes('natação') || 
-                                       ex.name.toLowerCase().includes('pular corda') || 
-                                       ex.name.toLowerCase().includes('spinning') || 
-                                       ex.name.toLowerCase().includes('assault bike') || 
-                                       ex.name.toLowerCase().includes('ski erg') || 
-                                       ex.name.toLowerCase().includes('air runner') ||
-                                       ex.name.toLowerCase().includes('hiit') ||
-                                       ex.name.toLowerCase().includes('tabata')));
-
-        const isTimedOrCardio = isTime || isCardioEx;
-
-        const setsHTML = Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
-          let repsVal = '';
-          let loadVal = '';
-          let restVal = ex.rest || 60;
-          
-          if (ex.seriesProgression && ex.seriesProgression[si]) {
-            const sp = ex.seriesProgression[si];
-            repsVal = sp.reps !== undefined && sp.reps !== null ? sp.reps : '';
-            loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
-            restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
-          } else {
-            if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
-              const parts = ex.reps.split('→');
-              repsVal = parts[si] !== undefined ? parts[si] : ex.reps;
+      exLogEl.innerHTML = w.exercises.map((ex, ei) => `
+        <div class="glass-card portal-live-ex-card">
+          <div class="portal-live-ex-header">
+            <div class="portal-ex-num">${ei+1}</div>
+            <div style="flex:1;min-width:0">
+              <div class="portal-ex-name">${ex.name}</div>
+              <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
+              ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
+            </div>
+            <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </button>
+            ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
+          </div>
+          ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
+          ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
+            let repsVal = '';
+            let loadVal = '';
+            let restVal = ex.rest || 60;
+            
+            if (ex.seriesProgression && ex.seriesProgression[si]) {
+              const sp = ex.seriesProgression[si];
+              repsVal = parseInt(sp.reps) || '';
+              loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
+              restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
             } else {
-              repsVal = ex.reps || '';
+              if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+                const parts = ex.reps.split('→');
+                if (parts[si]) {
+                  repsVal = parseInt(parts[si]) || '';
+                } else {
+                  repsVal = parseInt(ex.reps) || '';
+                }
+              } else {
+                repsVal = parseInt(ex.reps) || '';
+              }
+              loadVal = ex.load || '';
             }
-            loadVal = ex.load || '';
-          }
-
-          if (isTimedOrCardio) {
-            const targetRepsStr = String(repsVal || ex.reps || '').toLowerCase().trim();
-            const isDistance = (targetRepsStr.endsWith('m') && !targetRepsStr.endsWith('min')) || targetRepsStr.endsWith('km');
-            
-            const metaDisplay = repsVal || ex.reps || '—';
-            const loadDisplay = loadVal || ex.load || '';
-            
-            // Extract only the first numeric value from targetRepsStr to avoid extracting multiple numbers (e.g. from 56min Z2 (108-126bpm))
-            const repsMatch = String(metaDisplay).match(/(\d+([\.,]\d+)?)/);
-            const initialNumericVal = repsMatch ? parseFloat(repsMatch[1].replace(',', '.')) : 0;
-            const finalRepsVal = repsVal === '' ? initialNumericVal : repsVal;
-            const finalLoadVal = parseFloat(loadVal) || 0;
-
-            const repsLabel = 'Duração';
-            const loadLabel = 'Intensidade';
-            
-            let repsText = metaDisplay;
-            if (/^\d+$/.test(String(repsText).trim())) {
-              repsText = String(repsText).trim() + ' min';
-            }
-            let loadText = loadDisplay;
 
             return `
-              <div class="portal-solo-set-row cardio-set-row" id="setrow_${ei}_${si}" style="display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); margin-bottom:8px; width:100%; box-sizing:border-box;">
-                <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                  <span class="portal-set-num" style="font-weight:700; color:var(--portal-primary); font-size:0.85rem">Série ${si+1}</span>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:0.72rem; color:var(--portal-text-secondary);">${repsLabel}: <strong style="color:var(--portal-text);">${repsText}</strong></span>
-                    ${loadDisplay ? `<span style="font-size:0.72rem; color:var(--portal-text-secondary);">${loadLabel}: <strong style="color:var(--portal-text);">${loadText}${isCardioEx ? ' bpm' : ''}</strong></span>` : ''}
-                  </div>
-                </div>
-
-                <input type="hidden" id="sr_${ei}_${si}_reps" value="${finalRepsVal}">
-                <input type="hidden" id="sr_${ei}_${si}_load" value="${finalLoadVal}">
-
-                ${isDistance ? `
-                  <div class="cardio-distance-container" style="display:flex; flex-direction:column; gap:6px; width:100%;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                      <div style="display:flex; align-items:center; gap:4px;">
-                        <input type="number" class="distance-progress-input portal-solo-input" data-ei="${ei}" data-si="${si}" style="width:75px; text-align:center; font-size:1.05rem; font-weight:bold; height:28px; margin:0; padding:2px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff" value="${parseFloat(repsVal) || initialNumericVal}" />
-                        <span style="font-size:0.8rem; font-weight:600; color:var(--portal-text-secondary)">m / km</span>
-                      </div>
-                      <span class="distance-pct-display" style="font-size:0.75rem; font-weight:600; color:var(--portal-accent);">0%</span>
-                    </div>
-                    <div class="cardio-progress-bar-bg" style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden;">
-                      <div class="cardio-progress-bar-fill" id="progress_fill_${ei}_${si}" style="width:0%; height:100%; background:linear-gradient(90deg, var(--portal-accent), var(--portal-primary)); transition:width 0.3s ease;"></div>
-                    </div>
-                    <div style="display:flex; gap:6px; justify-content:center; align-items:center; margin-top:4px; width:100%;">
-                      <button type="button" class="btn-dist-step minus-btn" data-ei="${ei}" data-si="${si}" data-step="-50" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">-50m</button>
-                      <button type="button" class="btn-dist-step minus-btn" data-ei="${ei}" data-si="${si}" data-step="-10" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">-10m</button>
-                      <button type="button" class="btn-dist-step plus-btn" data-ei="${ei}" data-si="${si}" data-step="10" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">+10m</button>
-                      <button type="button" class="btn-dist-step plus-btn" data-ei="${ei}" data-si="${si}" data-step="50" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text); width:46px; height:26px; border-radius:6px; font-size:0.7rem; cursor:pointer; font-weight:bold;">+50m</button>
-                    </div>
-                  </div>
-                ` : `
-                  <div class="cardio-timer-container" style="display:flex; flex-direction:column; gap:6px; width:100%;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                      <span class="timer-display" id="timer_display_${ei}_${si}" style="font-family: monospace; font-size:1.4rem; font-weight:bold; color:var(--portal-primary); text-shadow:0 0- 10px var(--portal-primary-glow);">00:00</span>
-                      <span class="timer-pct-display" id="timer_pct_${ei}_${si}" style="font-size:0.75rem; font-weight:600; color:var(--portal-primary);">0%</span>
-                    </div>
-                    <div class="cardio-progress-bar-bg" style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; position:relative;">
-                      <div class="cardio-progress-bar-fill" id="progress_fill_${ei}_${si}" style="width:0%; height:100%; background:linear-gradient(90deg, var(--portal-primary), var(--portal-accent)); transition:width 0.2s ease; box-shadow:0 0 8px var(--portal-primary-glow);"></div>
-                    </div>
-                    <div style="display:flex; gap:8px; justify-content:center; margin-top:4px;">
-                      <button type="button" class="btn-timer-ctrl play-btn" id="play_${ei}_${si}" data-ei="${ei}" data-si="${si}" style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:var(--portal-primary); padding:4px 10px; border-radius:6px; font-size:0.72rem; cursor:pointer; display:flex; align-items:center; gap:4px; font-weight:bold;">▶ Iniciar</button>
-                      <button type="button" class="btn-timer-ctrl pause-btn" id="pause_${ei}_${si}" data-ei="${ei}" data-si="${si}" style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); color:var(--portal-warning); padding:4px 10px; border-radius:6px; font-size:0.72rem; cursor:pointer; display:none; align-items:center; gap:4px; font-weight:bold;">⏸ Pausar</button>
-                      <button type="button" class="btn-timer-ctrl reset-btn" id="reset_${ei}_${si}" data-ei="${ei}" data-si="${si}" style="background:rgba(255,255,255,0.05); border:1px solid var(--portal-border); color:var(--portal-text-secondary); padding:4px 10px; border-radius:6px; font-size:0.72rem; cursor:pointer;">↺ Reset</button>
-                    </div>
-                  </div>
-                `}
-
-                <div style="display:flex; align-items:center; gap:6px; width:100%; flex-wrap:wrap; margin-top:4px; justify-content:space-between;">
-                  <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:100px;">
-                    <span style="font-size:0.65rem; color:var(--portal-text-secondary); white-space:nowrap;">Intensidade:</span>
-                    <input type="number" class="cardio-intensity-input portal-solo-input" data-ei="${ei}" data-si="${si}" placeholder="${isCardioEx ? 'FC (bpm)' : (parseFloat(loadVal) || 'Vel.')}" min="0" step="0.1" style="height:26px; font-size:0.8rem; margin:0; padding:2px 4px; text-align:center; flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff" value="${parseFloat(loadVal) || ''}" />
-                  </div>
-
-                  <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
-                    <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
-                      <option value="" disabled selected>PSE</option>
-                      <option value="1">1 - M. Leve</option>
-                      <option value="2">2 - Leve</option>
-                      <option value="3">3 - Moderado</option>
-                      <option value="4">4 - A. Pesado</option>
-                      <option value="5">5 - Forte</option>
-                      <option value="6">6 - Forte+</option>
-                      <option value="7">7 - M. Forte</option>
-                      <option value="8">8 - M. Forte+</option>
-                      <option value="9">9 - Extr. Forte</option>
-                      <option value="10">10 - Máximo</option>
-                    </select>
-                    <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}" style="height:26px; padding:0 8px; font-size:0.75rem; border-radius:6px; border:1px solid var(--portal-border); background:var(--portal-surface); color:var(--portal-text)">PSE</button>
-
-                    <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
-                      <option value="" disabled selected>RIR</option>
-                      <option value="0">0 RIR (Falha)</option>
-                      <option value="1">1 RIR</option>
-                      <option value="2">2 RIR</option>
-                      <option value="3">3 RIR</option>
-                      <option value="4">4 RIR</option>
-                      <option value="5">5 RIR</option>
-                      <option value="6">6 RIR</option>
-                      <option value="7">7 RIR</option>
-                      <option value="8">8 RIR</option>
-                      <option value="9">9 RIR</option>
-                      <option value="10">10+ RIR</option>
-                    </select>
-                    <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}" style="height:26px; padding:0 8px; font-size:0.75rem; border-radius:6px; border:1px solid var(--portal-border); background:var(--portal-surface); color:var(--portal-text)">RIR</button>
-
-                    <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}" style="height:26px; width:26px; font-size:0.75rem; border-radius:6px; display:flex; align-items:center; justify-content:center;">&#10003;</button>
-                  </div>
-                </div>
+              <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
+                <span class="portal-set-num">S${si+1}</span>
+                <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
+                <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
+                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
+                  <option value="" disabled selected>PSE</option>
+                  <option value="1">1 - M. Leve</option>
+                  <option value="2">2 - Leve</option>
+                  <option value="3">3 - Moderado</option>
+                  <option value="4">4 - A. Pesado</option>
+                  <option value="5">5 - Forte</option>
+                  <option value="6">6 - Forte+</option>
+                  <option value="7">7 - M. Forte</option>
+                  <option value="8">8 - M. Forte+</option>
+                  <option value="9">9 - Extr. Forte</option>
+                  <option value="10">10 - Máximo</option>
+                </select>
+                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
+                  <option value="" disabled selected>RIR</option>
+                  <option value="0">0 RIR (Falha)</option>
+                  <option value="1">1 RIR</option>
+                  <option value="2">2 RIR</option>
+                  <option value="3">3 RIR</option>
+                  <option value="4">4 RIR</option>
+                  <option value="5">5 RIR</option>
+                  <option value="6">6 RIR</option>
+                  <option value="7">7 RIR</option>
+                  <option value="8">8 RIR</option>
+                  <option value="9">9 RIR</option>
+                  <option value="10">10+ RIR</option>
+                </select>
+                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+                <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
               </div>`;
-          }
-
-          let headerHTML = '';
-          if (si === 0) {
-            headerHTML = `
-              <div class="portal-solo-set-header" style="display:flex; align-items:center; gap:6px; margin-bottom:4px; padding:0 2px; font-size:0.65rem; color:var(--portal-text-muted); font-weight:600; text-align:center;">
-                <span style="min-width:28px; text-align:left;">Série</span>
-                <span style="flex:1;" title="Número de repetições realizadas">Reps</span>
-                <span style="flex:1;" title="Peso utilizado em quilogramas">Carga (kg)</span>
-                <span style="flex:0 0 60px;" title="PSE — Percepção Subjetiva de Esforço&#10;1=Muito leve · 5=Moderado · 10=Máximo absoluto" style="cursor:help; border-bottom:1px dotted">PSE ⓘ</span>
-                <span style="flex:0 0 60px;" title="RIR — Reps In Reserve (Reserva)&#10;0=Falha total · 1=1 rep sobrando · 5+=Muitas sobrando" style="cursor:help; border-bottom:1px dotted">RIR ⓘ</span>
-                <span style="width:32px; flex-shrink:0;">Ok</span>
-              </div>
-            `;
-          }
-
-          return headerHTML + `
-            <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-              <span class="portal-set-num">S${si+1}</span>
-              <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
-              <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
-              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
-                <option value="" disabled selected>PSE</option>
-                <option value="1">1 - M. Leve</option>
-                <option value="2">2 - Leve</option>
-                <option value="3">3 - Moderado</option>
-                <option value="4">4 - A. Pesado</option>
-                <option value="5">5 - Forte</option>
-                <option value="6">6 - Forte+</option>
-                <option value="7">7 - M. Forte</option>
-                <option value="8">8 - M. Forte+</option>
-                <option value="9">9 - Extr. Forte</option>
-                <option value="10">10 - Máximo</option>
-              </select>
-              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
-              <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
-                <option value="" disabled selected>RIR</option>
-                <option value="0">0 RIR (Falha)</option>
-                <option value="1">1 RIR</option>
-                <option value="2">2 RIR</option>
-                <option value="3">3 RIR</option>
-                <option value="4">4 RIR</option>
-                <option value="5">5 RIR</option>
-                <option value="6">6 RIR</option>
-                <option value="7">7 RIR</option>
-                <option value="8">8 RIR</option>
-                <option value="9">9 RIR</option>
-                <option value="10">10+ RIR</option>
-              </select>
-              <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
-              <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
-            </div>`;
-        }).join('');
-
-        return `
-          <div class="glass-card portal-live-ex-card">
-            <div class="portal-live-ex-header">
-              <div class="portal-ex-num">${ei+1}</div>
-              <div style="flex:1;min-width:0">
-                <div class="portal-ex-name">${ex.name}</div>
-                <div class="portal-ex-detail" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:2px">
-                  <span>${ex.sets||3} séries × ${ex.reps||'10-12'}</span>
-                  ${ex.load ? `<span style="color:var(--portal-primary);font-weight:600">${ex.load}${isTime ? ' bpm' : 'kg'}</span>` : ''}
-                  ${ex.rest ? `<span title="Tempo de descanso entre séries">⏱ ${ex.rest}s descanso</span>` : ''}
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
-                  ${ex.method ? `<span class="portal-ex-method">${ex.method}</span>` : ''}
-                  ${ex.muscleGroup ? `<span style="font-size:0.62rem;padding:1px 6px;border-radius:8px;background:rgba(16,185,129,0.1);color:#10b981;font-weight:600">${ex.muscleGroup}</span>` : ''}
-                </div>
-              </div>
-              <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes e execução" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              </button>
-              ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
-            </div>
-            ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
-            ${setsHTML}
-            <div style="margin-top:6px;padding:5px 8px;background:rgba(255,255,255,0.02);border-radius:6px;font-size:0.6rem;color:var(--portal-text-muted);display:flex;flex-wrap:wrap;gap:8px">
-              <span><strong style="color:#f59e0b">PSE</strong> &mdash; Esforço percebido (1=leve, 10=máximo)</span>
-              <span><strong style="color:var(--portal-accent)">RIR</strong> &mdash; Reps na reserva (0=falha, 5+=fácil)</span>
-            </div>
-            <div class="portal-live-ex-notes-wrap">
-              <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício (opcional)..."></textarea>
-            </div>
+          }).join('')}
+          <div class="portal-live-ex-notes-wrap">
+            <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
           </div>
-        `;
-      }).join('');
+        </div>
+      `).join('');
     } else {
       // Free log
       exLogEl.innerHTML = `
@@ -1860,219 +1667,6 @@ function initTreinar(workouts, schedules, student) {
         });
       });
     });
-
-    // ── NATIVE CARDIO PROGRESS PANEL EVENT BINDINGS ──
-    if (w && w.exercises?.length) {
-      // Helper to format MM:SS
-      const formatMMSS = (sec) => {
-        const m = Math.floor(sec / 60);
-        const s = sec % 60;
-        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-      };
-
-      // Helper to parse target
-      const parseDurationToSeconds = (repsStr, isTimeOrCardio = false) => {
-        if (!repsStr) return 0;
-        const str = String(repsStr).toLowerCase().trim();
-        if (str.includes('min') || str.endsWith('m')) {
-          const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
-          return isNaN(num) ? 0 : Math.round(num * 60);
-        }
-        if (str.includes('h')) {
-          const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
-          return isNaN(num) ? 0 : Math.round(num * 3600);
-        }
-        if (str.endsWith('s') || str.includes('seg')) {
-          const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
-          return isNaN(num) ? 0 : Math.round(num);
-        }
-        const match = str.match(/^(\d+):(\d+)$/);
-        if (match) return parseInt(match[1]) * 60 + parseInt(match[2]);
-        
-        if (/[%z/]/i.test(str)) {
-          return 0; // Invalid as duration (e.g. "80% Z2 / 20% Z5")
-        }
-
-        const num = parseFloat(str.replace(/[^0-9.,]/g, '').replace(',', '.'));
-        if (isNaN(num)) return 0;
-        
-        if (isTimeOrCardio) {
-          return Math.round(num * 60); // Default to minutes for raw numbers in cardio/time
-        }
-        return num < 15 ? Math.round(num * 60) : Math.round(num);
-      };
-
-      const getTargetVal = (ex, si) => {
-        let r = ex.reps;
-        if (ex.seriesProgression && ex.seriesProgression[si] && ex.seriesProgression[si].reps) {
-          r = ex.seriesProgression[si].reps;
-        }
-        return r;
-      };
-
-      // Clean old timers on rebuild
-      if (window.portalCardioTimers) {
-        Object.values(window.portalCardioTimers).forEach(t => { if (t.interval) clearInterval(t.interval); });
-      }
-      window.portalCardioTimers = {};
-
-      // 1. Intensity input sync
-      exLogEl.querySelectorAll('.cardio-intensity-input').forEach(inp => {
-        inp.addEventListener('input', () => {
-          const { ei, si } = inp.dataset;
-          const hiddenLoad = document.getElementById(`sr_${ei}_${si}_load`);
-          if (hiddenLoad) hiddenLoad.value = inp.value;
-        });
-      });
-
-      // 2. Distance progression sync
-      exLogEl.querySelectorAll('.distance-progress-input').forEach(inp => {
-        const { ei, si } = inp.dataset;
-        const ex = w.exercises[ei];
-        const targetStr = getTargetVal(ex, si);
-        const targetVal = parseFloat(targetStr.replace(/[^0-9.,]/g, '')) || 400; // fallback target
-
-        const updateDistanceProgress = (val) => {
-          inp.value = val;
-          const hiddenReps = document.getElementById(`sr_${ei}_${si}_reps`);
-          if (hiddenReps) hiddenReps.value = val;
-          
-          const pct = Math.min(100, Math.round((val / targetVal) * 100));
-          const fill = exLogEl.querySelector(`#progress_fill_${ei}_${si}`);
-          if (fill) fill.style.width = `${pct}%`;
-          const rowEl = document.getElementById(`setrow_${ei}_${si}`);
-          const pctDisplay = rowEl?.querySelector('.distance-pct-display');
-          if (pctDisplay) pctDisplay.textContent = `${pct}%`;
-        };
-
-        // Initial update
-        updateDistanceProgress(parseFloat(inp.value) || 0);
-
-        inp.addEventListener('input', () => {
-          updateDistanceProgress(parseFloat(inp.value) || 0);
-        });
-      });
-
-      exLogEl.querySelectorAll('.btn-dist-step').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const { ei, si, step } = btn.dataset;
-          const inp = exLogEl.querySelector(`.distance-progress-input[data-ei="${ei}"][data-si="${si}"]`);
-          if (inp) {
-            const newVal = Math.max(0, (parseFloat(inp.value) || 0) + parseFloat(step));
-            inp.value = newVal;
-            inp.dispatchEvent(new Event('input'));
-          }
-        });
-      });
-
-      // 3. Timer progression sync
-      exLogEl.querySelectorAll('.btn-timer-ctrl').forEach(btn => {
-        const { ei, si } = btn.dataset;
-        const key = `${ei}_${si}`;
-        const ex = w.exercises[ei];
-        const targetStr = getTargetVal(ex, si);
-        const loadVal = ex.seriesProgression && ex.seriesProgression[si] ? ex.seriesProgression[si].load : ex.load;
-        const isCardioEx = ex.muscleGroup === 'Cardio' || ex.category === 'Cardio';
-        const isTimeOrCardio = ex.loadType === 'time' || isCardioEx;
-        
-        let targetSeconds = parseDurationToSeconds(targetStr, isTimeOrCardio);
-        if (targetSeconds === 0 && loadVal && /^\d+$/.test(String(loadVal).trim())) {
-          targetSeconds = parseDurationToSeconds(loadVal, true);
-        }
-        if (!targetSeconds) targetSeconds = 60; // default 60s
-        
-        if (!window.portalCardioTimers[key]) {
-          window.portalCardioTimers[key] = {
-            elapsed: 0,
-            target: targetSeconds,
-            interval: null,
-            running: false
-          };
-        }
-
-        const timerState = window.portalCardioTimers[key];
-        const displayEl = exLogEl.querySelector(`#timer_display_${ei}_${si}`);
-        const fillEl = exLogEl.querySelector(`#progress_fill_${ei}_${si}`);
-        const pctEl = exLogEl.querySelector(`#timer_pct_${ei}_${si}`);
-        
-        const updateTimerUI = () => {
-          if (displayEl) displayEl.textContent = formatMMSS(timerState.elapsed);
-          const pct = Math.min(100, Math.round((timerState.elapsed / timerState.target) * 100));
-          if (fillEl) fillEl.style.width = `${pct}%`;
-          if (pctEl) pctEl.textContent = `${pct}%`;
-          
-          // update hidden reps input (duration in target unit format)
-          const hiddenReps = document.getElementById(`sr_${ei}_${si}_reps`);
-          if (hiddenReps) {
-            // Save as minutes if target is in minutes, else seconds
-            const isMinTarget = targetStr.includes('min') || targetStr.endsWith('m');
-            hiddenReps.value = isMinTarget ? Math.round(timerState.elapsed / 60) : timerState.elapsed;
-          }
-        };
-
-        // Set initial state
-        updateTimerUI();
-
-        if (btn.classList.contains('play-btn')) {
-          btn.addEventListener('click', () => {
-            if (timerState.running) return;
-            timerState.running = true;
-            
-            btn.style.display = 'none';
-            exLogEl.querySelector(`#pause_${ei}_${si}`).style.display = 'flex';
-            
-            timerState.interval = setInterval(() => {
-              timerState.elapsed++;
-              updateTimerUI();
-              
-              if (timerState.elapsed >= timerState.target) {
-                clearInterval(timerState.interval);
-                timerState.interval = null;
-                timerState.running = false;
-                
-                exLogEl.querySelector(`#pause_${ei}_${si}`).style.display = 'none';
-                exLogEl.querySelector(`#play_${ei}_${si}`).style.display = 'flex';
-                
-                // Trigger success beep & complete set!
-                playBeep(880, 0.15, 2);
-                const doneBtn = document.getElementById(`sdb_${ei}_${si}`);
-                if (doneBtn && !doneBtn.classList.contains('done')) {
-                  doneBtn.click();
-                }
-              }
-            }, 1000);
-          });
-        }
-
-        if (btn.classList.contains('pause-btn')) {
-          btn.addEventListener('click', () => {
-            if (!timerState.running) return;
-            timerState.running = false;
-            if (timerState.interval) {
-              clearInterval(timerState.interval);
-              timerState.interval = null;
-            }
-            btn.style.display = 'none';
-            exLogEl.querySelector(`#play_${ei}_${si}`).style.display = 'flex';
-          });
-        }
-
-        if (btn.classList.contains('reset-btn')) {
-          btn.addEventListener('click', () => {
-            timerState.running = false;
-            if (timerState.interval) {
-              clearInterval(timerState.interval);
-              timerState.interval = null;
-            }
-            timerState.elapsed = 0;
-            updateTimerUI();
-            
-            exLogEl.querySelector(`#pause_${ei}_${si}`).style.display = 'none';
-            exLogEl.querySelector(`#play_${ei}_${si}`).style.display = 'flex';
-          });
-        }
-      });
-    }
   }
 
 
@@ -2346,18 +1940,10 @@ async function showExerciseModal(ex) {
           <div style="font-size:1.1rem;font-weight:800;color:#10b981">${ex.reps}</div>
           <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Reps</div>
         </div>` : ''}
-        ${ex.load ? (() => {
-          const isCardioLoad = ex.loadType === 'time' ||
-            (ex.method && ['polariz','zona','hiit','tabata','z1','z2','z3','z4','z5','liss','steady','leve','continuo'].some(k=>ex.method.toLowerCase().includes(k))) ||
-            ['esteira','corrida','caminhada','bicicleta','bike','elípt','natação','remo','spinning','hiit','assault','ski erg'].some(k=>(ex.name||'').toLowerCase().includes(k));
-          const loadUnit = isCardioLoad ? 'bpm' : (ex.loadType==='bodyweight' ? '%' : 'kg');
-          const loadLabel = isCardioLoad ? 'FC Alvo' : loadTypeLabel;
-          return `<div style="background:rgba(249,115,22,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-            <div style="font-size:1.1rem;font-weight:800;color:#f97316">${ex.load}${loadUnit}</div>
-            <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">${loadLabel}</div>
-          </div>`;
-        })() : ''}
-
+        ${ex.load ? `<div style="background:rgba(249,115,22,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:#f97316">${ex.load}${ex.loadType!=='bodyweight'?'kg':'%'}</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">${loadTypeLabel}</div>
+        </div>` : ''}
         ${ex.rest ? `<div style="background:rgba(6,182,212,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
           <div style="font-size:1.1rem;font-weight:800;color:#06b6d4">${ex.rest}s</div>
           <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Descanso</div>
@@ -2422,31 +2008,6 @@ async function showExerciseModal(ex) {
             <span style="font-size:0.8rem;color:#a78bfa;font-weight:700">${ex.method}</span>
           </div>
           ${methodDesc ? `<div style="font-size:0.75rem;color:rgba(255,255,255,0.75);line-height:1.45;margin-top:4px">${methodDesc}</div>` : ''}
-        </div>` : ''}
-
-        ${ex.sciNote ? `
-        <div style="margin-top:10px;background:rgba(6,182,212,0.08);border-radius:10px;padding:12px 14px;border:1px solid rgba(6,182,212,0.2)">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            <span style="font-size:0.75rem;color:#06b6d4;font-weight:700">Dados Científicos do Método</span>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            ${ex.sciNote.split(' | ').map(part => {
-              const [label, ...rest] = part.split(': ');
-              const val = rest.join(': ');
-              const icons = { 'Zona':'▸','Protocolo':'▸','Fisiologia':'▸','Descanso':'▸','FC Máx':'▸','Z1':'▸','Z2':'▸','Z4':'▸','Z5':'▸','Carga':'▸' };
-              const colors = { 'Zona':'#f59e0b','Protocolo':'#818cf8','Fisiologia':'#10b981','Descanso':'#06b6d4','FC Máx':'#f43f5e','Carga':'#f97316' };
-              const icon = Object.entries(icons).find(([k]) => label?.startsWith(k))?.[1] || '·';
-              const color = Object.entries(colors).find(([k]) => label?.startsWith(k))?.[1] || '#94a3b8';
-              return val ? `<div style="display:flex;gap:6px;align-items:flex-start">
-                <span style="flex-shrink:0;font-size:0.8rem">${icon}</span>
-                <div>
-                  <span style="font-size:0.65rem;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.06em">${label}: </span>
-                  <span style="font-size:0.72rem;color:rgba(255,255,255,0.82);line-height:1.5">${val}</span>
-                </div>
-              </div>` : '';
-            }).join('')}
-          </div>
         </div>` : ''}
       </div>
     </div>
@@ -2882,7 +2443,7 @@ function renderAvaliacoes(assessments) {
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--portal-text-muted)">
                       <th style="padding:6px 4px">Data</th>
                       <th style="padding:6px 4px">Peso</th>
-                      <th style="padding:6px 4px">% BF</th>
+                      <th style="padding:6px 4px">% Gordura</th>
                       <th style="padding:6px 4px">M. Magra</th>
                     </tr>
                   </thead>
@@ -2906,7 +2467,7 @@ function renderAvaliacoes(assessments) {
       <!-- FORÇA E 1RM -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          Força — Carga Máxima Estimada (1RM)
+          💪 Força (Carga Máxima Estimada - 1RM)
         </div>
         ${forcaAss.length === 0 ? `
           <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhum teste de força (1RM) registrado.</p>
@@ -3164,7 +2725,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (uniqueExercises.length > 0) {
     exerciseProgressionChartHtml = `
       <div class="glass-card" style="margin-bottom:12px">
-        <div class="portal-card-label">Análise Multivariada por Exercício</div>
+        <div class="portal-card-label">📊 Análise Multivariada por Exercício</div>
         <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">
           Compare a evolução da Carga (eixo esquerdo) vs PSE e RIR (eixo direito) ao longo do tempo.
         </p>
@@ -3764,15 +3325,27 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
 
     // Body composition
     const measCtx = document.getElementById('portalMeasuresChart');
-    if (measCtx && compAss.length>=2) {
-      const ds=[];
-      if (compAss.some(a=>a.peso)) ds.push({label:'Peso (kg)', data:compAss.map(a=>a.peso||null), borderColor:'#10b981', tension:0.3, yAxisID:'y'});
-      if (compAss.some(a=>a.percentualGordura)) ds.push({label:'BF %', data:compAss.map(a=>a.percentualGordura||null), borderColor:'#f59e0b', tension:0.3, yAxisID:'y1'});
-      if (ds.length) createPortalChart('portalMeasuresChart', measCtx, { type:'line', data:{ labels:compAss.map(a=>fmtDate(a.date)), datasets:ds },
-        options:{ responsive:true, maintainAspectRatio:false,
-          plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},
-          scales:{y:{position:'left',ticks:{color:'#10b981',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:9}},grid:{display:false}},x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}}
-        }});
+    if (measCtx && compAss.length >= 2) {
+      const ds = [];
+      if (compAss.some(a => a.peso))
+        ds.push({ label: 'Peso (kg)', data: compAss.map(a => a.peso || null), borderColor: '#10b981', fill: false, tension: 0.3, yAxisID: 'y', pointRadius: 3 });
+      if (compAss.some(a => a.percentualGordura)) {
+        ds.push({ label: '% Gordura', data: compAss.map(a => a.percentualGordura || null), borderColor: '#f59e0b', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [5,3], pointRadius: 3 });
+        ds.push({ label: '% Massa Magra', data: compAss.map(a => a.percentualGordura ? parseFloat((100 - a.percentualGordura).toFixed(1)) : null), borderColor: '#06b6d4', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [2,2], pointRadius: 3 });
+      }
+      if (ds.length) createPortalChart('portalMeasuresChart', measCtx, {
+        type: 'line',
+        data: { labels: compAss.map(a => fmtDate(a.date)), datasets: ds },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } },
+          scales: {
+            y:  { position: 'left',  title: { display: true, text: 'kg', color: '#10b981', font: { size: 9 } }, ticks: { color: '#10b981', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            y1: { position: 'right', title: { display: true, text: '%', color: '#94a3b8', font: { size: 9 } }, ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + '%' }, grid: { display: false }, min: 0, max: 100 },
+            x:  { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } }
+          }
+        }
+      });
     }
   };
 
@@ -4381,10 +3954,8 @@ function showPortalCheckoutModal(session) {
 
       // Sincronizar com tabela biofeedback
       try {
-        const studentId = session.studentId || session.student_id || portalState.studentId;
-        const trainerId = session.trainerId || session.trainer_id || portalState.trainerId;
         const sessDateStr = (session.date || Calc.nowISO()).slice(0, 10);
-        const bfId = `bf_${studentId}_${sessDateStr}`;
+        const bfId = `bf_${session.studentId}_${sessDateStr}`;
         const preBf = await db.get('biofeedback', bfId) || {};
         
         const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
@@ -4393,20 +3964,20 @@ function showPortalCheckoutModal(session) {
         const newBfData = {
           ...preBf,
           id: bfId,
-          studentId: studentId,
-          trainerId: trainerId,
-          trainer_id: trainerId,
+          studentId: session.studentId,
+          trainerId: session.trainerId || portalState.trainerId,
+          trainer_id: session.trainerId || portalState.trainerId,
           date: session.date || preBf.date || Calc.nowISO(),
-          sleep: preBf.sleep ?? session.preBiofeedback?.sleep ?? 7,
-          tqr: preBf.tqr ?? preBf.energy ?? session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy ?? 5,
-          energy: preBf.energy ?? preBf.tqr ?? session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy ?? 5,
-          stress: preBf.stress ?? session.preBiofeedback?.stress ?? 5,
-          food: preBf.food ?? session.preBiofeedback?.food ?? 5,
-          motivation: preBf.motivation ?? session.preBiofeedback?.motivation ?? 7,
-          menstrualCycle: preBf.menstrualCycle ?? session.preBiofeedback?.menstrualCycle ?? '',
-          pain: preBf.pain ?? session.preBiofeedback?.pain ?? 1,
-          painRegions: preBf.painRegions ?? session.preBiofeedback?.painRegions ?? [],
-          painDescription: preBf.painDescription ?? session.preBiofeedback?.painDescription ?? '',
+          sleep: preBf.sleep || session.preBiofeedback?.sleep || 7,
+          tqr: preBf.tqr || preBf.energy || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
+          energy: preBf.energy || preBf.tqr || (session.preBiofeedback?.tqr ?? session.preBiofeedback?.energy) || 5,
+          stress: preBf.stress || session.preBiofeedback?.stress || 5,
+          food: preBf.food || session.preBiofeedback?.food || 5,
+          motivation: preBf.motivation || session.preBiofeedback?.motivation || 7,
+          menstrualCycle: preBf.menstrualCycle || session.preBiofeedback?.menstrualCycle || '',
+          pain: preBf.pain || session.preBiofeedback?.pain || 1,
+          painRegions: preBf.painRegions || session.preBiofeedback?.painRegions || [],
+          painDescription: preBf.painDescription || session.preBiofeedback?.painDescription || '',
           pse,
           feeling: selectedFeeling,
           satisfaction: selectedFeeling * 2,
