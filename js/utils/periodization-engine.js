@@ -40,7 +40,7 @@ export const PERIODIZATION_MODELS = {
         // Deload correto: ~50% da fase ativa anterior (não fixo em 55%)
         const progress = (week - 1) / (totalWeeks - 1);
         const activeIntensity = Math.round(85 - progress * 35); // espelha a progressão inversa
-        return { phase: 'Deload', sets: 2, repsMin: 12, repsMax: 15, intensityPct: Math.round(activeIntensity * 0.55), restSeconds: 60, rpe: '4-5', volDelta: -40 };
+        return { phase: 'Deload', sets: 2, repsMin: 12, repsMax: 15, intensityPct: Math.max(42, Math.round(activeIntensity * 0.55)), restSeconds: 60, rpe: '4-5', volDelta: -40 };
       }
       const progress = (week - 1) / (totalWeeks - 1);
       const phases = [
