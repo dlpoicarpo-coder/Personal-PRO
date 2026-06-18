@@ -41,15 +41,6 @@ function resetState() {
 
 function totalVolume() {
   return state.setLog.reduce((t, s) => {
-    const ex = state.session?.exercises?.[s.exIdx];
-    if (ex) {
-      const nameLower = (ex.name || '').toLowerCase().trim();
-      const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
-      const isCardioEx = (ex.loadType === 'cardio') || 
-                         cardioKeywords.some(k => nameLower.includes(k)) || 
-                         (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
-      if (isCardioEx) return t;
-    }
     const reps = parseFloat(s.reps) || 0;
     const loadStr = String(s.load || '').replace(',', '.');
     const load = isNaN(loadStr) || isNaN(parseFloat(loadStr)) ? 0 : parseFloat(loadStr);
@@ -254,30 +245,21 @@ function renderLiveView(students) {
 
       <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
         <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DURAÇÃO</div><div class="stat-value text-gradient" id="liveTotal" style="font-size:1.3rem">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Tempo efetivo em exercícios"><div class="stat-label">TRABALHO</div><div class="stat-value" id="liveWork" style="font-size:1.3rem;color:var(--success)">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Tempo total em descanso entre séries"><div class="stat-label">DESCANSO</div><div class="stat-value" id="liveRest" style="font-size:1.3rem;color:var(--warning)">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Densidade = Trabalho ÷ Total (ideal: > 0.50)"><div class="stat-label">DENSIDADE</div><div class="stat-value" id="liveDens" style="font-size:1.3rem;color:var(--accent)">0.00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px" title="Reps × Carga somadas de todas as séries"><div class="stat-label">VOLUME</div><div class="stat-value" id="liveVol" style="font-size:1.3rem;color:var(--primary)">${totalVolume()} kg</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">TRABALHO</div><div class="stat-value" id="liveWork" style="font-size:1.3rem;color:var(--success)">00:00</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DESCANSO</div><div class="stat-value" id="liveRest" style="font-size:1.3rem;color:var(--warning)">00:00</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DENSIDADE</div><div class="stat-value" id="liveDens" style="font-size:1.3rem;color:var(--accent)">0.00</div></div>
+        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">VOLUME</div><div class="stat-value" id="liveVol" style="font-size:1.3rem;color:var(--primary)">${totalVolume()} kg</div></div>
       </div>
 
-      <div style="position:relative;margin-bottom:4px">
-        <div class="progress-bar" style="height:8px;border-radius:4px;overflow:visible">
-          <div class="progress-fill" style="width:${pct}%;border-radius:4px;transition:width 0.4s ease;box-shadow:0 0 8px var(--primary-glow,rgba(99,102,241,0.5))"></div>
-        </div>
+      <div class="progress-bar mb-xs" style="height:6px;border-radius:3px">
+        <div class="progress-fill" style="width:${pct}%;border-radius:3px"></div>
       </div>
-      <div class="text-center text-xs text-muted mb-md" style="font-weight:600">
-        ${doneSets}/${totalSets} séries concluídas &nbsp;·&nbsp; <span style="color:${pct>=100?'var(--success)':pct>=50?'var(--warning)':'var(--text-muted)'}">${pct}%</span>
-      </div>
+      <div class="text-center text-xs text-muted mb-md">${doneSets}/${totalSets} séries · ${pct}% concluído</div>
 
       <div class="grid-2">
         <div class="card">
           <div class="card-header">
-            <div style="display:flex;flex-direction:column;gap:2px">
-              <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
-              <span style="font-size:0.7rem;color:var(--text-muted);font-weight:400">
-                ${(() => { const done = state.setLog.filter(l => l.exIdx === state.exIdx).length; return `${done}/${exSets} séries feitas`; })()}
-              </span>
-            </div>
+            <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
             <div class="flex gap-xs">
               <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar Exercício" style="display:flex;align-items:center;justify-content:center">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -289,65 +271,51 @@ function renderLiveView(students) {
 
           <div style="margin-bottom:12px">
             <div style="font-size:1.15rem;font-weight:700;color:var(--primary);margin-bottom:4px">${ex.name || '—'}</div>
-              ${(() => {
-                const nameLower = (ex.name || '').toLowerCase().trim();
-                const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
-                const isCardioEx = (ex.loadType === 'cardio' || ex.loadType === 'time') || 
-                                   cardioKeywords.some(k => nameLower.includes(k)) || 
-                                   (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
-                
-                const repsDisplay = ex.reps || '12';
-                const loadDisplay = ex.load ? (isNumeric(ex.load) && !isCardioEx ? ex.load + 'kg' : ex.load + (isCardioEx ? ' bpm' : '')) : '';
-                const oneRMDisplay = ex.oneRM ? `${isCardioEx ? 'FC Máx' : '1RM'}: ${ex.oneRM}${isCardioEx ? ' bpm' : 'kg'}` : '';
-
-                return `
-                  <span>${exSets} séries</span>
-                  <span>${repsDisplay}${isCardioEx ? '' : ' reps'}</span>
-                  ${loadDisplay ? `<span style="color:var(--accent);font-weight:600">${loadDisplay}</span>` : ''}
-                  ${oneRMDisplay ? `<span style="color:var(--text-muted);font-size:0.75rem">${oneRMDisplay}</span>` : ''}
-                  <span>${ex.rest || 60}s desc.</span>
-                `;
-              })()}
+            <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
+              <span>${exSets} séries</span>
+              <span>${ex.reps || '12'} reps</span>
+              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${(isNumeric(ex.load) && ex.loadType !== 'time') ? ex.load + 'kg' : ex.load}</span>` : ''}
+              ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
+              <span>${ex.rest || 60}s desc.</span>
               ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
             </div>
-            ${ex.sciNote ? `
-            <div style="margin-top:8px;padding:10px 12px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid var(--accent)">
-              <div style="font-size:0.65rem;font-weight:700;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Dados Científicos</div>
-              <div style="display:flex;flex-direction:column;gap:4px">
-                ${ex.sciNote.split(' | ').map(part => {
-                  const [label, ...rest] = part.split(': ');
-                  const val = rest.join(': ');
-                  const icons = {'Zona':'▸','Protocolo':'▸','Fisiologia':'▸','Descanso':'▸','FC Máx':'▸','Carga':'▸'};
-                  const colors = {'Zona':'var(--warning)','Protocolo':'#818cf8','Fisiologia':'var(--primary)','Descanso':'var(--accent)','FC Máx':'#f43f5e','Carga':'#f97316'};
-                  const icon = Object.entries(icons).find(([k]) => label?.startsWith(k))?.[1] || '·';
-                  const color = Object.entries(colors).find(([k]) => label?.startsWith(k))?.[1] || 'var(--text-muted)';
-                  return val ? `<div style="display:flex;gap:5px;align-items:flex-start">
-                    <span style="flex-shrink:0;font-size:0.75rem">${icon}</span>
-                    <span style="font-size:0.68rem;color:${color};font-weight:700">${label}:</span>
-                    <span style="font-size:0.68rem;color:var(--text-secondary);line-height:1.4">${val}</span>
-                  </div>` : '';
-                }).join('')}
-              </div>
-            </div>` : ''}
+            ${(() => {
+              const wk = s.weekPlan;
+              if (!wk) return '';
+              const isDeload = wk.phase === 'Deload' || wk.phase?.includes('Deload');
+              // Para modelos com sub-sessões (DUP, Conjugada, Concorrente)
+              const dupSess = wk.dupSessions;
+              if (dupSess?.length) {
+                return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${dupSess.map(ds => {
+                  const c = ds.type === 'ME' || ds.intensityPct >= 85 ? '#ef4444'
+                    : ds.type === 'DE' || ds.type === 'Z5' ? '#3b82f6'
+                    : ds.type === 'C' || ds.type === 'M' || ds.type === 'Cardio' ? '#10b981'
+                    : '#f59e0b';
+                  return `<span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:8px;background:${c}20;color:${c};border:1px solid ${c}40">${ds.label} · ${ds.intensityPct}% · RPE ${ds.rpe}</span>`;
+                }).join('')}</div>`;
+              }
+              if (!wk.phase || wk.phase === 'DUP') return '';
+              const phaseColor = isDeload ? '#3b82f6'
+                : (wk.intensityPct >= 85) ? '#ef4444'
+                : (wk.intensityPct >= 75) ? '#f97316'
+                : (wk.intensityPct >= 65) ? '#eab308' : '#22c55e';
+              const rpeDisplay = wk.rpe ? ` · RPE ${wk.rpe}` : '';
+              const noteDisplay = wk.note ? `<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;font-style:italic">${wk.note}</div>` : '';
+              return `<div style="margin-top:6px">
+                <span style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:8px;background:${phaseColor}20;color:${phaseColor};border:1px solid ${phaseColor}40">
+                  ${wk.phase} · ${wk.intensityPct}%${rpeDisplay}
+                </span>${noteDisplay}
+              </div>`;
+            })()}
           </div>
 
-
-          <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:6px;display:grid;grid-template-columns:48px 1fr 1fr auto auto auto;gap:4px;text-align:center">
-            <span style="text-align:left">Série</span>
-            <span>Reps</span>
-            <span>Carga</span>
-            <span title="PSE — Percepção Subjetiva de Esforço&#10;1=Muito leve · 5=Moderado · 10=Máximo" style="cursor:help;border-bottom:1px dotted var(--text-muted)">PSE ⓘ</span>
-            <span title="RIR — Repetições na Reserva&#10;0=Falha total · 1=1 rep sobrando · 5+=Muitas sobrando" style="cursor:help;border-bottom:1px dotted var(--text-muted)">RIR ⓘ</span>
-            <span></span>
-          </div>
           <div id="setArea" style="display:flex;flex-direction:column;gap:6px">
             ${Array.from({ length: exSets }, (_, i) => {
               const done     = state.setLog.find(l => l.exIdx === state.exIdx && l.setIdx === i);
               const isActive = !done && i === state.setIdx;
               const temp     = state.tempSets[state.exIdx]?.[i] || {};
 
-              let repsMatch = String(ex.reps || '').match(/(\d+([\.,]\d+)?)/);
-              let defaultReps = repsMatch ? parseFloat(repsMatch[1].replace(',', '.')) : 12;
+              let defaultReps = (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
               let defaultLoad = ex.load || '';
               let setLabel = '';
 
@@ -378,75 +346,74 @@ function renderLiveView(students) {
                 }
               }
 
-              const cardioMethods = [
-                'zona 1', 'zona 2', 'zona 3', 'zona 4', 'zona 5',
-                'tabata', 'hiit', 'sit ', 'sprint', 'steady state',
-                'progressivo', 'polarizado', 'gibala'
-              ];
-              const isCardioMethod = ex.method && cardioMethods.some(m => ex.method.toLowerCase().includes(m));
-              const isTime = ex.loadType === 'time' || isCardioMethod;
               const repsVal  = done ? done.reps : (temp.reps !== undefined ? temp.reps : defaultReps);
               const loadVal  = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
               const pseVal   = done ? done.pse  : (temp.pse !== undefined ? temp.pse : '');
               const rirVal   = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
-              const borderStyle = done ? '2px solid rgba(16,185,129,0.3)' : isActive ? '2px solid rgba(99,102,241,0.4)' : '1px solid var(--border-color)';
+              const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
               return `
               <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
-                style="display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:10px;
-                border:${borderStyle};
-                background:${isActive ? 'rgba(99,102,241,0.06)' : done ? 'rgba(16,185,129,0.05)' : 'transparent'};
-                transition:all 0.2s ease">
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center">
-                  <span style="font-size:0.55rem;color:var(--text-muted)">${ex.loadType === 'time' ? 'Zona' : (ex.loadType === 'bodyweight' ? 'Extra' : 'kg')}</span>
-                  <input class="form-input set-load" style="width:66px;text-align:center;padding:4px 5px;font-size:0.9rem;font-weight:600" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;
+                border:1px solid ${isActive ? 'rgba(16,185,129,0.35)' : done ? 'rgba(16,185,129,0.15)' : 'var(--border-color)'};
+                background:${isActive ? 'rgba(16,185,129,0.08)' : done ? 'rgba(16,185,129,0.04)' : 'var(--bg-page)'}">
+
+                <!-- Número da Série: S1, S2, S3... -->
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                  min-width:36px;width:36px;height:36px;border-radius:8px;flex-shrink:0;
+                  background:${done ? 'rgba(16,185,129,0.15)' : isActive ? 'rgba(16,185,129,0.12)' : 'var(--bg-card)'};
+                  border:1px solid ${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--border-color)'}">
+                  <span style="font-size:0.65rem;font-weight:800;color:${setColor};letter-spacing:-0.02em;line-height:1">S${i + 1}</span>
+                  ${setLabel ? `<span style="font-size:0.42rem;color:var(--text-muted);white-space:nowrap;line-height:1;margin-top:1px;text-align:center">${setLabel}</span>` : ''}
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="PSE — Percepção Subjetiva de Esforço&#10;1=Muito leve, 5=Moderado, 10=Máximo absoluto">
-                  <input class="form-input set-pse" style="width:44px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(245,158,11,0.4);${done?'opacity:0.6':''}" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
-                  <span style="font-size:0.5rem;color:var(--warning);margin-top:1px;font-weight:600">PSE /10</span>
+
+                <!-- Reps -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
+                  <span style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Reps</span>
+                  <input class="form-input set-reps" style="width:100%;min-width:48px;text-align:center;padding:5px 4px;font-size:0.92rem;font-weight:700;border-radius:7px" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1px;align-items:center" title="RIR — Reps in Reserve&#10;0=Falha total, 1=1 rep sobrando, 5+=Muitas sobrando">
-                  <input class="form-input set-rir" style="width:40px;text-align:center;padding:4px 5px;font-size:0.9rem;border-color:rgba(6,182,212,0.4);${done?'opacity:0.6':''}" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
-                  <span style="font-size:0.5rem;color:var(--accent);margin-top:1px;font-weight:600">RIR</span>
+
+                <!-- Carga -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1.2">
+                  <span style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
+                  <input class="form-input set-load" style="width:100%;min-width:54px;text-align:center;padding:5px 4px;font-size:0.92rem;font-weight:700;border-radius:7px" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                 </div>
+
+                <!-- PSE -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.9" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
+                  <span style="font-size:0.5rem;color:var(--warning);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">PSE</span>
+                  <input class="form-input set-pse" style="width:100%;min-width:40px;text-align:center;padding:5px 4px;font-size:0.92rem;border-color:rgba(245,158,11,0.35);border-radius:7px" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
+                </div>
+
+                <!-- RIR -->
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.9" title="RIR — Reps sobrando no tanque (0=falha, 5+=fácil)">
+                  <span style="font-size:0.5rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">RIR</span>
+                  <input class="form-input set-rir" style="width:100%;min-width:38px;text-align:center;padding:5px 4px;font-size:0.92rem;border-color:rgba(6,182,212,0.4);border-radius:7px" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
+                </div>
+
+                <!-- Botão ✓ ou Badge feito -->
                 ${done
-                  ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:40px">
-                      <span class="badge badge-success" style="text-align:center;font-size:0.78rem;padding:3px 8px">✓ OK</span>
-                      ${done.pse ? `<span style="font-size:0.58rem;color:var(--warning)">PSE ${done.pse}</span>` : ''}
-                      ${done.rir != null ? `<span style="font-size:0.58rem;color:var(--accent)">RIR ${done.rir}</span>` : ''}
+                  ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:32px;flex-shrink:0">
+                      ${done.pse ? `<span style="font-size:0.52rem;color:var(--warning);font-weight:600">P${done.pse}</span>` : ''}
+                      <span style="background:var(--success);color:#fff;border-radius:6px;font-size:0.7rem;font-weight:700;width:28px;height:28px;display:flex;align-items:center;justify-content:center">✓</span>
+                      ${done.rir != null ? `<span style="font-size:0.52rem;color:var(--accent);font-weight:600">R${done.rir}</span>` : ''}
                     </div>`
-                  : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:40px;height:36px;align-self:center;font-size:0.8rem" title="Concluir série">✓</button>`}
+                  : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:34px;width:34px;height:34px;padding:0;border-radius:8px;font-size:1rem;align-self:flex-end;flex-shrink:0">✓</button>`}
               </div>`;
             }).join('')}
           </div>
-          <div style="margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:0.65rem;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:12px">
-            <span><strong style="color:var(--warning)">PSE</strong> &mdash; Percepção de Esforço (1–10)</span>
-            <span><strong style="color:var(--accent)">RIR</strong> &mdash; Repetições na reserva (0=falha, 5+=fácil)</span>
-          </div>
 
           <div style="border-top:1px solid var(--border-color);margin-top:12px;padding-top:10px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;letter-spacing:0.06em;text-transform:uppercase">Roteiro do Treino</div>
+            <div class="text-xs text-muted mb-xs" style="font-weight:600;letter-spacing:0.06em;text-transform:uppercase">Todos os exercícios</div>
             ${exs.map((e, i) => {
-              const doneCount = state.setLog.filter(l => l.exIdx === i).length;
-              const totalSetsE = parseInt(e.sets) || 3;
-              const isDone = doneCount >= totalSetsE;
+              const done = state.setLog.filter(l => l.exIdx === i).length >= (parseInt(e.sets) || 3);
               const isCur = i === state.exIdx;
-              const pctE = Math.min(100, Math.round((doneCount / totalSetsE) * 100));
-              const eNameLower = (e.name || '').toLowerCase().trim();
-              const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
-              const isCardioE = (e.loadType === 'cardio') || 
-                                cardioKeywords.some(k => eNameLower.includes(k)) || 
-                                (e.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => e.method.toLowerCase().includes(m)));
               return `<div class="go-ex" data-g="${i}" style="
-                display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;
-                border:1px solid ${isCur ? 'rgba(99,102,241,0.3)' : 'transparent'};
-                background:${isCur ? 'rgba(99,102,241,0.06)' : 'transparent'};
-                transition:all 0.15s ease">
-                <div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;background:${isDone?'rgba(16,185,129,0.2)':isCur?'rgba(99,102,241,0.2)':'rgba(255,255,255,0.05)'};color:${isDone?'var(--success)':isCur?'var(--primary)':'var(--text-muted)'}">${isDone?'✓':i+1}</div>
-                <div style="flex:1;min-width:0">
-                  <div style="font-size:0.82rem;font-weight:${isCur ? 600 : 400};color:${isDone?'var(--success)':isCur?'var(--text-primary)':'var(--text-secondary)'}">${e.name}</div>
-                  <div style="font-size:0.62rem;color:var(--text-muted)">${doneCount}/${totalSetsE} séries${e.load ? ' · ' + (isNumeric(e.load) && e.loadType !== 'bodyweight' && !isCardioE ? e.load + 'kg' : e.load + (isCardioE ? ' bpm' : '')) : ''}</div>
-                </div>
-                ${doneCount > 0 && !isDone ? `<div style="width:32px;height:4px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden"><div style="width:${pctE}%;height:100%;background:var(--warning);border-radius:2px"></div></div>` : ''}
+                display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;
+                background:${isCur ? 'rgba(16,185,129,0.08)' : 'transparent'};
+                color:${done ? 'var(--success)' : isCur ? 'var(--primary)' : 'var(--text-secondary)'}">
+                <span style="font-size:0.7rem;min-width:12px">${done ? '✓' : isCur ? '●' : '○'}</span>
+                <span style="font-size:0.82rem;font-weight:${isCur ? 600 : 400}">${e.name}</span>
+                ${e.load ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto">${isNumeric(e.load) ? e.load + 'kg' : e.load}</span>` : ''}
               </div>`;
             }).join('')}
           </div>
@@ -456,33 +423,25 @@ function renderLiveView(students) {
           <div class="card-header">
             <span class="card-title">Descanso</span>
             <div class="flex items-center gap-sm">
-              <span id="restStateTag" style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(16,185,129,0.1);color:var(--success)">TRABALHANDO</span>
-              <label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;cursor:pointer" title="Ativar/desativar bipe ao fim do descanso">
+              <span id="restStateTag" style="font-size:0.72rem;font-weight:700;color:var(--success)">▶ TRABALHANDO</span>
+              <label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;cursor:pointer">
                 <input type="checkbox" id="sndToggle" ${s.soundEnabled !== false ? 'checked' : ''} /> Som
               </label>
             </div>
           </div>
 
-          <div style="text-align:center;padding:16px 0 8px">
-            <div id="restCount" style="font-size:3.8rem;font-weight:900;font-family:monospace;color:var(--accent);transition:color 0.3s;letter-spacing:-2px">
+          <div style="text-align:center;padding:20px 0">
+            <div id="restCount" style="font-size:3.5rem;font-weight:800;font-family:monospace;color:var(--accent);transition:color 0.3s">
               ${formatTime(parseInt(ex.rest) || 60)}
             </div>
-            <div id="restLbl" style="font-size:0.82rem;color:var(--text-muted);margin-top:4px;font-weight:500">Pronto para descansar</div>
+            <div id="restLbl" style="font-size:0.85rem;color:var(--text-muted);margin-top:4px">Pronto para descansar</div>
           </div>
 
-          <!-- Barra de progresso do descanso -->
-          <div style="padding:0 8px;margin-bottom:12px">
-            <div id="restProgressBar" style="height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden">
-              <div id="restProgressFill" style="width:100%;height:100%;background:linear-gradient(90deg,var(--accent),rgba(99,102,241,0.8));border-radius:3px;transition:width 1s linear"></div>
-            </div>
+          <div class="flex gap-sm" style="justify-content:center;margin-bottom:12px">
+            <button class="btn btn-primary" id="goRest" style="min-width:140px">▶ Iniciar Descanso</button>
+            <button class="btn btn-secondary btn-sm" id="rstRest">↺ Reset</button>
           </div>
 
-          <div class="flex gap-sm" style="justify-content:center;margin-bottom:10px">
-            <button class="btn btn-primary" id="goRest" style="min-width:150px;font-size:0.9rem">▶ Iniciar Descanso</button>
-            <button class="btn btn-secondary btn-sm" id="rstRest" title="Resetar timer de descanso">↺ Reset</button>
-          </div>
-
-          <div style="font-size:0.68rem;color:var(--text-muted);text-align:center;margin-bottom:8px">Ajustar tempo de descanso:</div>
           <div class="flex gap-xs" style="justify-content:center;flex-wrap:wrap;margin-bottom:16px">
             ${[15, 30, 45, 60, 90, 120, 180].map(t => `
               <button class="btn btn-ghost btn-sm rp" data-t="${t}" style="font-size:0.75rem;padding:4px 8px">
@@ -492,7 +451,7 @@ function renderLiveView(students) {
 
           <div style="border-top:1px solid var(--border-color);padding-top:12px">
             <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Anotações</div>
-            <textarea id="setNotes" class="form-textarea" rows="2" placeholder="Observações técnicas do exercício atual..." style="font-size:0.82rem"></textarea>
+            <textarea id="setNotes" class="form-textarea" rows="2" placeholder="Observações técnicas..." style="font-size:0.82rem"></textarea>
           </div>
 
           ${s.preBiofeedback ? `
@@ -502,8 +461,6 @@ function renderLiveView(students) {
               <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep ? `${Math.round(s.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
               <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
               <span>Estresse <strong style="color:${(s.preBiofeedback.stress||0)>=7?'var(--warning)':'inherit'}">${s.preBiofeedback.stress||'-'}</strong></span>
-              <span>Alimentação <strong style="color:${(s.preBiofeedback.food||0)<3?'var(--danger)':'var(--success)'}">${s.preBiofeedback.food ? `${s.preBiofeedback.food}/5` : '—'}</strong></span>
-              <span>Motivação <strong style="color:${(s.preBiofeedback.motivation||0)<6?'var(--danger)':'var(--success)'}">${s.preBiofeedback.motivation ? `${Math.round(s.preBiofeedback.motivation / 2)}/5` : '—'}</strong></span>
               ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 8 ? 5 : s.preBiofeedback.pain > 6 ? 4 : s.preBiofeedback.pain > 4 ? 3 : s.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
             </div>
           </div>` : ''}
@@ -576,47 +533,34 @@ export function initTracker(navigateFn) {
               <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">${ex.name}</div>
               ${ex.method ? `<span style="font-size:0.68rem;color:var(--accent)">${ex.method}</span>` : ''}
             </div>
-            ${(() => {
-              const cardioMethods = [
-                'zona 1', 'zona 2', 'zona 3', 'zona 4', 'zona 5',
-                'tabata', 'hiit', 'sit ', 'sprint', 'steady state',
-                'progressivo', 'polarizado', 'gibala'
-              ];
-              const isCardioMethod = ex.method && cardioMethods.some(m => ex.method.toLowerCase().includes(m));
-              const isTime = ex.loadType === 'time' || isCardioMethod;
-              const loadLabel = isTime ? 'Intensidade' : (ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)');
-              const loadInputType = (isNumeric(ex.load) && ex.loadType !== 'time' && !isCardioMethod) ? 'number' : 'text';
-              const loadStepMin = (isNumeric(ex.load) && ex.loadType !== 'time' && !isCardioMethod) ? 'min="0" step="0.5"' : '';
-
-              return sets.map((s, si) => `
-                <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:5px" id="set_${ei}_${si}">
-                  <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;min-width:20px">S${si+1}</span>
-                  <div>
-                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">${isTime ? 'Duração' : 'Reps'}</label>
-                    <input type="number" class="form-input set-reps" data-ei="${ei}" data-si="${si}"
-                      value="${s.reps||0}" min="0" max="100"
-                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                  </div>
-                  <div>
-                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">${loadLabel}</label>
-                    <input type="${loadInputType}" class="form-input set-load" data-ei="${ei}" data-si="${si}"
-                      value="${s.load !== undefined ? s.load : 0}" ${loadStepMin}
-                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                  </div>
-                  <div>
-                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">PSE</label>
-                    <input type="number" class="form-input set-pse" data-ei="${ei}" data-si="${si}"
-                      value="${s.pse||''}" min="1" max="10" placeholder="—"
-                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                  </div>
-                  <div>
-                    <label style="font-size:0.6rem;color:var(--text-muted);display:block">RIR</label>
-                    <input type="number" class="form-input set-rir" data-ei="${ei}" data-si="${si}"
-                      value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="—"
-                      style="padding:5px 8px;font-size:0.85rem;text-align:center" />
-                  </div>
-                </div>`).join('');
-            })()}
+            ${sets.map((s, si) => `
+              <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:5px" id="set_${ei}_${si}">
+                <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;min-width:20px">S${si+1}</span>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">Reps</label>
+                  <input type="number" class="form-input set-reps" data-ei="${ei}" data-si="${si}"
+                    value="${s.reps||0}" min="0" max="100"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">${ex.loadType === 'time' ? 'Intensidade' : (ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)')}</label>
+                  <input type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" class="form-input set-load" data-ei="${ei}" data-si="${si}"
+                    value="${s.load !== undefined ? s.load : 0}" ${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'min="0" step="0.5"' : ''}
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">PSE</label>
+                  <input type="number" class="form-input set-pse" data-ei="${ei}" data-si="${si}"
+                    value="${s.pse||''}" min="1" max="10" placeholder="—"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+                <div>
+                  <label style="font-size:0.6rem;color:var(--text-muted);display:block">RIR</label>
+                  <input type="number" class="form-input set-rir" data-ei="${ei}" data-si="${si}"
+                    value="${s.rir!=null?s.rir:''}" min="0" max="10" placeholder="—"
+                    style="padding:5px 8px;font-size:0.85rem;text-align:center" />
+                </div>
+              </div>`).join('')}
           </div>`;
       }).join('');
 
@@ -789,7 +733,7 @@ export function initTracker(navigateFn) {
       const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
       const todayPre = allBf.find(f =>
         f.studentId === sid &&
-        (f.formType === 'pre' || f.formType === 'complete' || f.formType == null) && // formType null = registro antigo
+        (f.formType === 'pre' || f.formType == null) && // formType null = registro antigo
         (f.date||'').slice(0,10) === todayStr
       );
       const statusEl  = document.getElementById('preBioStatus');
@@ -884,7 +828,7 @@ export function initTracker(navigateFn) {
     const allBf = await db.getAllForStudent('biofeedback', wk.studentId);
     const todayPre = allBf.find(f =>
       f.studentId === wk.studentId &&
-      (f.formType === 'pre' || f.formType === 'complete' || f.formType == null) &&
+      (f.formType === 'pre' || f.formType == null) &&
       (f.date||'').slice(0,10) === todayStr2
     );
     if (todayPre) {
@@ -939,7 +883,7 @@ export function initTracker(navigateFn) {
     if (w) { w.textContent = formatTime(totalWork); w.style.color = state.isResting ? 'var(--text-muted)' : 'var(--success)'; }
     if (r) { r.textContent = formatTime(Math.max(0, tot - totalWork)); r.style.color = state.isResting ? 'var(--warning)' : 'var(--text-muted)'; }
     if (d) d.textContent = tot > 0 ? (totalWork / tot).toFixed(2) : '0.00';
-    if (tag) { tag.textContent = state.isResting ? 'DESCANSANDO' : 'TRABALHANDO'; tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)'; }
+    if (tag) { tag.textContent = state.isResting ? '⏸ DESCANSANDO' : '▶ TRABALHANDO'; tag.style.color = state.isResting ? 'var(--warning)' : 'var(--success)'; }
   };
   state._uiInterval = setInterval(updateUI, 500);
   updateUI();
@@ -974,25 +918,19 @@ export function initTracker(navigateFn) {
       onTick: (rem) => {
         const c = document.getElementById('restCount');
         const l = document.getElementById('restLbl');
-        const pf = document.getElementById('restProgressFill');
         if (c) { c.textContent = formatTime(rem); c.style.color = rem<=5?'var(--danger)':rem<=15?'var(--warning)':'var(--accent)'; }
-        if (l) l.textContent = `Descansando... ${rem}s`;
-        if (pf && state.restTimer) { const pct = (rem / state.restTimer.duration) * 100; pf.style.width = pct + '%'; pf.style.background = rem<=5?'linear-gradient(90deg,var(--danger),var(--warning))':rem<=15?'linear-gradient(90deg,var(--warning),var(--accent))':'linear-gradient(90deg,var(--accent),rgba(99,102,241,0.8))'; }
+        if (l) l.textContent = 'Descansando...';
       },
       onComplete: () => {
         const c = document.getElementById('restCount');
         const l = document.getElementById('restLbl');
         const b = document.getElementById('goRest');
-        const pf = document.getElementById('restProgressFill');
-        const tag = document.getElementById('restStateTag');
         if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
         if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
-        if (b) b.textContent = 'Iniciar Descanso';
-        if (pf) { pf.style.width = '0%'; }
-        if (tag) { tag.textContent = 'TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
+        if (b) b.textContent = '▶ Iniciar Descanso';
         state.isResting = false;
         state.workTimer?.start();
-        notify.success('Descanso finalizado.');
+        notify.success('Descanso finalizado!');
       }
     });
   } else {
@@ -1003,25 +941,19 @@ export function initTracker(navigateFn) {
     state.restTimer.onTick = (rem) => {
       const c = document.getElementById('restCount');
       const l = document.getElementById('restLbl');
-      const pf = document.getElementById('restProgressFill');
       if (c) { c.textContent = formatTime(rem); c.style.color = rem<=5?'var(--danger)':rem<=15?'var(--warning)':'var(--accent)'; }
-      if (l) l.textContent = `Descansando... ${rem}s`;
-      if (pf && state.restTimer) { const pct = (rem / state.restTimer.duration) * 100; pf.style.width = pct + '%'; pf.style.background = rem<=5?'linear-gradient(90deg,var(--danger),var(--warning))':rem<=15?'linear-gradient(90deg,var(--warning),var(--accent))':'linear-gradient(90deg,var(--accent),rgba(99,102,241,0.8))'; }
+      if (l) l.textContent = 'Descansando...';
     };
     state.restTimer.onComplete = () => {
       const c = document.getElementById('restCount');
       const l = document.getElementById('restLbl');
       const b = document.getElementById('goRest');
-      const pf = document.getElementById('restProgressFill');
-      const tag = document.getElementById('restStateTag');
       if (c) { c.textContent = '00:00'; c.style.color = 'var(--primary)'; }
       if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
-      if (b) b.textContent = 'Iniciar Descanso';
-      if (pf) { pf.style.width = '0%'; }
-      if (tag) { tag.textContent = 'TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
+      if (b) b.textContent = '▶ Iniciar Descanso';
       state.isResting = false;
       state.workTimer?.start();
-      notify.success('Descanso finalizado.');
+      notify.success('Descanso finalizado!');
     };
     // Atualizar display com o tempo atual
     const c = document.getElementById('restCount');
@@ -1036,12 +968,9 @@ export function initTracker(navigateFn) {
   document.getElementById('goRest')?.addEventListener('click', () => {
     state.restTimer.soundEnabled = document.getElementById('sndToggle')?.checked !== false;
     const btn = document.getElementById('goRest');
-    const tag = document.getElementById('restStateTag');
-    const pf  = document.getElementById('restProgressFill');
     if (state.restTimer.running) {
       state.restTimer.stop(); state.isResting = false; state.workTimer?.start();
       if (btn) btn.textContent = '▶ Iniciar Descanso';
-      if (tag) { tag.textContent = 'TRABALHANDO'; tag.style.background = 'rgba(16,185,129,0.1)'; tag.style.color = 'var(--success)'; }
     } else {
       state.restTimer.reset(); state.restTimer.start();
       state.isResting = true;
@@ -1049,8 +978,6 @@ export function initTracker(navigateFn) {
       state.workSec = (state.workSec || 0) + (state.workTimer?.getElapsed() || 0);
       state.workTimer?.stop(); state.workTimer?.reset();
       if (btn) btn.textContent = '⏸ Pausar Descanso';
-      if (pf) { pf.style.width = '100%'; pf.style.background = 'linear-gradient(90deg,var(--accent),rgba(99,102,241,0.8))'; }
-      if (tag) { tag.textContent = 'DESCANSANDO'; tag.style.background = 'rgba(245,158,11,0.1)'; tag.style.color = 'var(--warning)'; }
       const l = document.getElementById('restLbl');
       if (l) { l.textContent = 'Descansando...'; l.style.color = ''; }
     }
@@ -1159,11 +1086,8 @@ export function initTracker(navigateFn) {
 
         <!-- PSE -->
         <div style="margin-bottom:16px">
-          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
-            <div style="font-size:0.7rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em">
-              PSE — Percepção de Esforço
-            </div>
-            <div style="font-size:0.62rem;color:#64748b">1=mínimo · 10=máximo</div>
+          <div style="font-size:0.7rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
+            PSE — Percepção de Esforço
           </div>
           <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:6px">
             ${[1,2,3,4,5,6,7,8,9,10].map(n => {
@@ -1184,11 +1108,8 @@ export function initTracker(navigateFn) {
 
         <!-- RIR -->
         <div style="margin-bottom:20px">
-          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
-            <div style="font-size:0.7rem;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:.07em">
-              RIR — Reps sobrando no tanque
-            </div>
-            <div style="font-size:0.62rem;color:#64748b">0=falha · 5+=fácil</div>
+          <div style="font-size:0.7rem;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
+            RIR — Reps sobrando no tanque
           </div>
           <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px">
             ${[0,1,2,3,4,5].map(n => {
@@ -1464,21 +1385,21 @@ export function initTracker(navigateFn) {
     openModal({
       title: 'Finalizar Sessão', size: 'md',
       content: `
-        <div style="display:flex;justify-content:center;gap:12px;margin-bottom:20px">
+        <div style="display:flex;justify-content:center;gap:12px;margin-bottom:16px">
           ${[['Duração',Math.round(dur/60)+'min'],['Volume',vol+'kg'],['Séries',state.setLog.length]].map(([l,v])=>
-            `<div style="text-align:center;padding:12px 18px;background:var(--bg-page);border-radius:10px;border:1px solid var(--border-color)">
+            `<div style="text-align:center;padding:10px 14px;background:var(--bg-page);border-radius:8px">
               <div class="text-xs text-muted">${l}</div>
-              <div style="font-size:1.3rem;font-weight:700;color:var(--primary)">${v}</div>
+              <div style="font-size:1.2rem;font-weight:700;color:var(--primary)">${v}</div>
             </div>`).join('')}
         </div>
         <form id="postF">
           <div class="form-group">
-            <label class="form-label">Observações</label>
-            <textarea class="form-textarea" name="notes" rows="3" placeholder="Como foi o treino? Pontos de melhora, sensações..."></textarea>
+            <label class="form-label">Observações do professor</label>
+            <textarea class="form-textarea" name="notes" rows="3" placeholder="Anotações técnicas, ajustes para o próximo treino..."></textarea>
           </div>
           <div style="padding:8px 10px;background:rgba(37,211,102,0.07);border-radius:8px;border:1px solid rgba(37,211,102,0.2);font-size:0.75rem;color:var(--text-muted)">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#25d366" style="vertical-align:-1px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.884 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            O formulário pós-treino será enviado automaticamente ao aluno via WhatsApp ao salvar.
+            O formulário pós-treino (PSE, bem-estar) será enviado ao aluno via WhatsApp para ele responder.
           </div>
         </form>`,
       actions: [
@@ -1509,15 +1430,14 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   const s = state.session;
   if (!s) { notify.error('Sessão não encontrada'); return; }
 
-  const pseVal = post.pse ? parseInt(post.pse) : null;
-  const satVal = post.satisfaction ? parseInt(post.satisfaction) : null;
-
   const sessionData = {
     ...s, status: 'completed', endTime: Date.now(),
     totalDuration: dur, totalVolume: vol, density: dens,
     workSeconds: state.workSec, restSeconds: Math.max(0, dur - state.workSec),
     setLog: [...state.setLog], totalSets: state.setLog.length,
-    postBiofeedback: { pse: pseVal, satisfaction: satVal, notes: post.notes||'', submittedAt: Calc.nowISO() },
+    trainerNotes: post.notes || '',
+    // PSE e satisfação são preenchidos pelo aluno via formulário pós-treino
+    postBiofeedback: { ...(s.postBiofeedback || {}), notes: post.notes || '', pendingStudentForm: true },
   };
 
   await db.put('sessions', sessionData);
@@ -1530,9 +1450,8 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
     id: bfId,
     studentId: s.studentId, date: s.date,
     ...s.preBiofeedback,
-    pse: pseVal,
     duration: Math.round(dur/60),
-    trainingLoad: pseVal ? Calc.cargaTreino(pseVal, Math.round(dur/60)) : null,
+    trainingLoad: null, // será calculado após aluno preencher PSE no formulário pós-treino
     notes: post.notes, sessionId: s.id, formType: 'complete',
   });
 
@@ -1700,8 +1619,6 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
             <span>Sono <strong>${session.preBiofeedback.sleep ? `${Math.round(session.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
             <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
             <span>Est. Mental <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
-            <span>Alimentação <strong>${session.preBiofeedback.food ? `${session.preBiofeedback.food}/5` : '—'}</strong></span>
-            <span>Motivação <strong>${session.preBiofeedback.motivation ? `${Math.round(session.preBiofeedback.motivation / 2)}/5` : '—'}</strong></span>
             ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain > 8 ? 5 : session.preBiofeedback.pain > 6 ? 4 : session.preBiofeedback.pain > 4 ? 3 : session.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
           </div>
         </div>`:''}
@@ -1837,8 +1754,6 @@ function generateSessionPDF(session, student) {
         pre.sleep?`Sono ${Math.round(pre.sleep/2)}/5`:'',
         pre.tqr!=null?`TQR ${pre.tqr??pre.energy}/10`:'',
         pre.stress?`Est.Mental ${pre.stress}/10`:'',
-        pre.food?`Alim. ${pre.food}/5`:'',
-        pre.motivation?`Motiv. ${Math.round(pre.motivation/2)}/5`:'',
         (pre.pain||0)>=3?`Dor ${pre.pain > 8 ? 5 : pre.pain > 6 ? 4 : pre.pain > 4 ? 3 : pre.pain > 2 ? 2 : 1}/5`:'',
         kcal?`Kcal est. ${kcal}`:'',
       ].filter(Boolean).join('  ·  ');
