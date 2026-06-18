@@ -8,8 +8,7 @@ import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { PERIODIZATION_MODELS, generateProgression } from '../utils/periodization-engine.js';
 import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
-import { METHOD_PROGRESSIONS, METHOD_SCIDATA } from './workouts.js';
-
+import { METHOD_PROGRESSIONS } from './workouts.js';
 
 // Adaptar BUILT_IN_TEMPLATES para o formato que o periodization espera
 function adaptTemplate(t) {
@@ -128,15 +127,6 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
       const phase = progress < 0.3 ? 'Tempo Runs' : progress < 0.7 ? 'Threshold Intervals' : 'Threshold Pico';
       weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: Math.round(75 + progress * 10), volumePct: Math.round(70 + progress * 15), repsRange: `${thMin}min limiar` });
 
-    } else if (modelType === 'custom' || modelType === 'manual') {
-      for (let w = 1; w <= totalWeeks; w++) {
-        const isDeload = deloadEvery > 0 && w % deloadEvery === 0;
-        if (isDeload) {
-          weeks.push({ week: w, phase: 'Deload', label: `Semana ${w}`, intensityPct: 50, volumePct: 40, repsRange: '12-15' });
-        } else {
-          weeks.push({ week: w, phase: 'Hipertrofia', label: `Semana ${w}`, intensityPct: 70, volumePct: 80, repsRange: '10-12' });
-        }
-      }
     } else {
       // Modelos lineares e outros
       const models = {
@@ -200,7 +190,7 @@ export async function renderPeriodization() {
   return `
     <div class="page-header">
       <div><h1>Periodização</h1><p class="subtitle">Planejamento científico de macrociclos</p></div>
-      <div class="flex gap-sm" style="flex-wrap:wrap">
+      <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
         <select class="form-select" id="perioStudentFilter" style="min-width:180px">
           <option value="">Todos os alunos</option>
           ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
@@ -343,15 +333,13 @@ function renderMacroCard(m, students) {
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           Plano semanal detalhado
         </summary>
-        ${m.weekDetails ? (() => {
-          const isCardio = ['polarized', 'hiit', 'sit', 'lvhiit', 'zone2', 'pyramidal', 'threshold', 'lsd', 'fartlek'].includes(m.type);
-          return `
-          <div style="overflow-x:auto;margin-top:10px">
-            <table class="data-table" style="font-size:0.76rem">
-              <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>${isCardio ? 'Alvo' : 'Reps'}</th><th>${isCardio ? '% FC Máx' : '%1RM'}</th><th>RPE</th><th>Exercícios A</th><th>Exercícios B</th></tr></thead>
-              <tbody>${m.weekDetails.map(wd => {
-                const isCur = wd.week === currentWeek && isActive;
-                const c = wd.phase === 'Deload' ? '#3b82f6' : (wd.intensity||0) >= 85 ? '#ef4444' : (wd.intensity||0) >= 75 ? '#f97316' : (wd.intensity||0) >= 65 ? '#eab308' : '#22c55e';
+        ${m.weekDetails ? `
+        <div style="overflow-x:auto;margin-top:10px">
+          <table class="data-table" style="font-size:0.76rem">
+            <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Exercícios A</th><th>Exercícios B</th></tr></thead>
+            <tbody>${m.weekDetails.map(wd => {
+              const isCur = wd.week === currentWeek && isActive;
+              const c = wd.phase === 'Deload' ? '#3b82f6' : (wd.intensity||0) >= 85 ? '#ef4444' : (wd.intensity||0) >= 75 ? '#f97316' : (wd.intensity||0) >= 65 ? '#eab308' : '#22c55e';
               return `<tr style="${isCur ? `background:${c}11;font-weight:600;` : ''}">
                 <td><strong style="color:${c}">S${wd.week}${isCur ? ' ←' : ''}</strong></td>
                 <td style="color:${c}">${wd.phase}</td>
@@ -364,8 +352,7 @@ function renderMacroCard(m, students) {
               </tr>`;
             }).join('')}</tbody>
           </table>
-        </div>`;
-        })() : '<p class="text-xs text-muted mt-sm">Detalhamento não disponível</p>'}
+        </div>` : '<p class="text-xs text-muted mt-sm">Detalhamento não disponível</p>'}
       </details>
 
       <!-- Gráfico de linha Chart.js -->
@@ -440,22 +427,28 @@ export function initPeriodization(navigateFn) {
       const exCount  = t.sessions.reduce((a,s) => a + s.exercises.length, 0);
       const catColor = isCardio ? 'var(--accent)' : 'var(--primary)';
       return `
-        <div class="periodo-tpl-card" data-tpl-id="${t.id}" style="
-          padding:10px 14px;border:1px solid var(--border-color);
+        <label class="periodo-tpl-card" data-tpl-id="${t.id}" style="
+          display:flex;align-items:center;gap:10px;
+          padding:7px 10px;border:1px solid var(--border-color);
           border-radius:var(--radius-md);cursor:pointer;
           transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-            <div style="font-weight:600;font-size:0.83rem;color:var(--text-primary);flex:1">${t.name}</div>
-            ${isCardio ? `<span style="font-size:0.6rem;background:rgba(6,182,212,0.12);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:600">Cardio</span>` : ''}
+          <span class="tpl-radio" style="
+            width:16px;height:16px;border-radius:50%;border:2px solid var(--border-color);
+            flex-shrink:0;display:flex;align-items:center;justify-content:center;
+            transition:border-color 0.15s,background 0.15s">
+          </span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="font-weight:600;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+              ${isCardio ? `<span style="font-size:0.55rem;background:rgba(6,182,212,0.12);color:var(--accent);padding:1px 5px;border-radius:8px;font-weight:600;flex-shrink:0">Cardio</span>` : ''}
+            </div>
+            <div style="font-size:0.64rem;color:var(--text-muted);display:flex;gap:6px;margin-top:1px;flex-wrap:wrap">
+              <span style="color:${catColor}">${t.sessions.length} sessão(ões)</span>
+              <span>·</span><span>${exCount} ex.</span>
+              ${t.days ? `<span>·</span><span>${t.days}×/sem</span>` : ''}
+            </div>
           </div>
-          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${t.desc}</div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">
-            <span style="color:${catColor}">${t.sessions.length} sessão(ões)</span>
-            <span>·</span>
-            <span>${exCount} exercícios</span>
-            ${t.days ? `<span>·</span><span>${t.days}×/sem</span>` : ''}
-          </div>
-        </div>`;
+        </label>`;
     }
 
     const CAT_ORDER = ['Iniciante', 'Intermediário', 'Avançado', 'Hipertrofia', 'Força', 'Emagrecimento', 'Funcional', 'Reabilitação', 'Cardio / Endurance'];
@@ -470,24 +463,20 @@ export function initPeriodization(navigateFn) {
         </div>`).join('');
 
     const personalHTML = customCycles.length
-      ? customCycles.map(c => {
+      ? `<div style="display:flex;flex-direction:column;gap:4px">${customCycles.map(c => {
           const totalEx = (c.workouts || []).reduce((a, w) => a + (w.exercises || []).length, 0);
-          return `
-          <div class="periodo-tpl-card" data-tpl-id="cycle_${c.id}" style="
-            padding:10px 14px;border:1px solid var(--border-color);
-            border-radius:var(--radius-md);cursor:pointer;
-            transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
-            <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary)">${c.name}</div>
-            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;display:flex;gap:8px">
-              <span style="color:var(--primary)">${c.goal || 'Geral'}</span>
-              <span>·</span><span>${(c.workouts||[]).length} treinos</span>
-              <span>·</span><span>${totalEx} exercícios</span>
-            </div>
-            ${c.description ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${c.description}</div>` : ''}
-          </div>`;}).join('')
-      : `<div style="padding:12px;border:1px dashed var(--border-color);border-radius:var(--radius-md);text-align:center">
-          <p class="text-xs text-muted" style="margin:0">Nenhum modelo criado ainda.</p>
-          <a href="#/exercicios" style="font-size:0.75rem;color:var(--primary);text-decoration:none">Ir para Exercícios → Meus Modelos</a>
+          return tplCardHTML({
+            id: `cycle_${c.id}`,
+            name: c.name,
+            category: c.goal || 'Personalizado',
+            sessions: c.workouts || [],
+            days: c.daysPerWeek || null,
+            _customDesc: c.description || ''
+          });
+        }).join('')}</div>`
+      : `<div style="padding:10px;border:1px dashed var(--border-color);border-radius:var(--radius-md);text-align:center">
+          <p class="text-xs text-muted" style="margin:0 0 4px">Nenhum modelo criado ainda.</p>
+          <a href="#/exercicios" style="font-size:0.72rem;color:var(--primary);text-decoration:none">Ir para Exercícios → Meus Modelos</a>
         </div>`;
 
     openModal({
@@ -555,6 +544,8 @@ export function initPeriodization(navigateFn) {
                 <input class="form-input" name="name" value="Macrociclo 1" placeholder="Ex: Macrociclo 1 — Hipertrofia" />
               </div>
 
+              <div class="form-group">
+                <label class="form-label">Modelo de periodização *</label>
                 <div class="custom-select-container" id="perioModelSelectContainer">
                   <select class="form-select" name="type" style="display:none">
                     <optgroup label="── Musculação ──">
@@ -734,21 +725,39 @@ export function initPeriodization(navigateFn) {
             // Obter plano semanal ajustado no grid pelo treinador
             const weeks = [];
             const weekRows = document.querySelectorAll('#weeklyPlanGrid .week-row');
-            weekRows.forEach(row => {
-              const weekNum = parseInt(row.dataset.week);
-              const phase = row.querySelector('.week-phase').value;
-              const intensityPct = parseInt(row.querySelector('.week-intensity').value) || 70;
-              const volumePct = parseInt(row.querySelector('.week-volume').value) || 70;
-              const repsRange = row.querySelector('.week-reps').value || '10-12';
-              weeks.push({
-                week: weekNum,
-                phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
-                label: `Semana ${weekNum} — ${phase}`,
-                intensityPct,
-                volumePct,
-                repsRange
+
+            // Bug fix: se o grid não tem linhas (não foi renderizado ainda), gerar internamente
+            if (weekRows.length === 0) {
+              const typeVal = document.querySelector('#macroForm [name="type"]')?.value || 'linear';
+              const deloadVal = d.deloadEvery ?? 4;
+              const generated = generateInternalWeeklyPlan(typeVal, d.totalWeeks, deloadVal);
+              weeks.push(...generated);
+            } else {
+              weekRows.forEach(row => {
+                const weekNum = parseInt(row.dataset.week);
+                const phase = row.querySelector('.week-phase').value;
+                const intensityPct = parseInt(row.querySelector('.week-intensity').value) || 70;
+                const volumePct = parseInt(row.querySelector('.week-volume').value) || 70;
+                const repsRange = row.querySelector('.week-reps').value || '10-12';
+                weeks.push({
+                  week: weekNum,
+                  phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
+                  label: `Semana ${weekNum} — ${phase}`,
+                  intensityPct,
+                  volumePct,
+                  repsRange
+                });
               });
-            });
+            }
+
+            // Garantir que o número de semanas bate com totalWeeks
+            if (weeks.length < d.totalWeeks) {
+              const typeVal = document.querySelector('#macroForm [name="type"]')?.value || 'linear';
+              const extra = generateInternalWeeklyPlan(typeVal, d.totalWeeks, d.deloadEvery ?? 4);
+              for (let wi = weeks.length; wi < d.totalWeeks; wi++) {
+                weeks.push(extra[wi] || { week: wi+1, phase:'Hipertrofia', label:`Semana ${wi+1}`, intensityPct:70, volumePct:75, repsRange:'10-12' });
+              }
+            }
             d.weeks = weeks;
 
             const allExercises = sessions.flatMap(s => s.exercises);
@@ -773,14 +782,10 @@ export function initPeriodization(navigateFn) {
             d.id = savedMacro.id;
             d.generatedWorkouts = 0;
 
-            // Contador global de treinos gerados para rotacionar sessões corretamente
-            // ao longo de TODAS as semanas, garantindo que todas as sessões do template
-            // (ex: Core, Cardio Leve) sejam geradas mesmo quando trainingDays.length < sessions.length
-            let globalSessionIndex = 0;
-
             for (let w = 0; w < d.totalWeeks; w++) {
+              // Usar o plano da semana por índice (weeks[w]) pois weeks é ordenado por semana
               const weekPlan = d.weeks[w] || {
-                week: w + 1, phase: 'training', label: 'Treino',
+                week: w + 1, phase: 'Hipertrofia', label: `Semana ${w+1} — Hipertrofia`,
                 intensityPct: 65 + Math.round((w / d.totalWeeks) * 25),
                 volumePct: 70, repsRange: '10-12'
               };
@@ -794,10 +799,7 @@ export function initPeriodization(navigateFn) {
                 : 1 + ((weekPlan.intensityPct - baseIntensity) / 100);
 
               for (let di = 0; di < d.trainingDays.length; di++) {
-                // Usa globalSessionIndex para rotacionar por TODAS as sessões do template
-                // ao longo das semanas, não apenas dentro de uma semana
-                const session = sessions[globalSessionIndex % sessions.length];
-                globalSessionIndex++;
+                const session = sessions[di % sessions.length];
                 const dayOfWeek = d.trainingDays[di];
                 const date = new Date(weekStart);
                 const currentDay = date.getDay();
@@ -812,18 +814,8 @@ export function initPeriodization(navigateFn) {
                   const dbEx = allEx.find(e => e.name.toLowerCase().trim() === ex.name.toLowerCase().trim());
                   const exType = dbEx?.loadType || 'weight';
 
-                  const nameLower = ex.name.toLowerCase().trim();
-                  const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
-                  const isCardioEx = (dbEx?.category === 'Cardio') || 
-                                     (dbEx?.muscleGroup === 'Cardio') ||
-                                     cardioKeywords.some(k => nameLower.includes(k)) || 
-                                     (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
-
                   let load;
-                  if (isCardioEx) {
-                    load = Math.round(oneRM * (weekPlan.intensityPct / 100));
-                    if (isDeload) load = Math.round(oneRM * 0.5);
-                  } else if (exType === 'time') {
+                  if (exType === 'time') {
                     load = Math.round(oneRM * loadMultiplier);
                   } else if (exType === 'bodyweight') {
                     load = Math.round(oneRM * loadMultiplier * 2) / 2;
@@ -832,13 +824,11 @@ export function initPeriodization(navigateFn) {
                     if (isDeload) load = Math.round(oneRM * 0.5 * 2) / 2;
                   }
 
-                   const progression = METHOD_PROGRESSIONS[ex.method];
+                  const progression = METHOD_PROGRESSIONS[ex.method];
                   if (progression) {
                     const seriesProgression = progression.series.map((s, si) => {
                       let sLoad;
-                      if (isCardioEx) {
-                        sLoad = Math.round(load * s.loadPct);
-                      } else if (exType === 'time') {
+                      if (exType === 'time') {
                         sLoad = Math.round(oneRM * loadMultiplier * s.loadPct);
                       } else if (exType === 'bodyweight') {
                         sLoad = Math.round(oneRM * loadMultiplier * s.loadPct * 2) / 2;
@@ -855,105 +845,19 @@ export function initPeriodization(navigateFn) {
                       };
                     });
 
-                    // Scale progression sets count according to the week volume percentage
-                    const finalSetsCount = Math.max(1, Math.round(seriesProgression.length * (weekPlan.volumePct / 100)));
-                    const finalSeriesProgression = seriesProgression.slice(0, finalSetsCount);
-                    finalSeriesProgression.forEach((s, si) => { s.set = si + 1; });
-
                     return {
                       ...ex,
-                      load: finalSeriesProgression[0]?.load || load,
+                      load: seriesProgression[0]?.load || load,
                       oneRM,
                       week: w + 1,
-                      sets: finalSeriesProgression.length,
-                      reps: finalSeriesProgression.map(s => s.reps).join('→'),
-                      rest: finalSeriesProgression[0]?.rest || ex.rest || 60,
-                      seriesProgression: finalSeriesProgression
+                      sets: seriesProgression.length,
+                      reps: seriesProgression.map(s => s.reps).join('→'),
+                      rest: seriesProgression[0]?.rest || ex.rest || 60,
+                      seriesProgression
                     };
                   }
 
-
-                  const weeklySets = Math.max(1, Math.round((parseInt(ex.sets) || 3) * (weekPlan.volumePct / 100)));
-                  let weeklyReps = weekPlan.repsRange || ex.reps;
-                  let enrichedMethod = ex.method || '';
-                  let enrichedSciNote = ex.sciNote || '';
-
-                  // ── Enriquecimento de zonas de FC para exercícios de cardio polarizado ──
-                  // Calcula as faixas de bpm baseadas no oneRM (= FC Máxima do aluno)
-                  if (isCardioEx && oneRM > 0) {
-                    const fcMax = oneRM; // oneRM representa FC Máx para exercícios cardio
-                    const isPolarized = ex.method && ex.method.toLowerCase().includes('polariz');
-                    const isLightCardio = ex.method && (
-                      ex.method.toLowerCase().includes('zona 2') ||
-                      ex.method.toLowerCase().includes('z2') ||
-                      ex.method.toLowerCase().includes('leve') ||
-                      ex.method.toLowerCase().includes('continuo') ||
-                      ex.method.toLowerCase().includes('contínuo') ||
-                      ex.method.toLowerCase().includes('liss') ||
-                      ex.method.toLowerCase().includes('steady')
-                    );
-                    const isHighInt = weekPlan.phase && (
-                      weekPlan.phase.toLowerCase().includes('alta int') ||
-                      weekPlan.phase.toLowerCase().includes('z4') ||
-                      weekPlan.phase.toLowerCase().includes('z5') ||
-                      weekPlan.phase.toLowerCase().includes('hiit') ||
-                      weekPlan.phase.toLowerCase().includes('pico')
-                    );
-
-                    // Zonas de FC calculadas
-                    const z1Min = Math.round(fcMax * 0.50);
-                    const z1Max = Math.round(fcMax * 0.60);
-                    const z2Min = Math.round(fcMax * 0.60);
-                    const z2Max = Math.round(fcMax * 0.70);
-                    const z4Min = Math.round(fcMax * 0.80);
-                    const z4Max = Math.round(fcMax * 0.90);
-                    const z5Min = Math.round(fcMax * 0.90);
-                    const z5Max = Math.round(fcMax * 1.00);
-
-                    if (isPolarized) {
-                      if (isHighInt || weekPlan.intensityPct >= 80) {
-                        // Semana de alta intensidade: intervalos Z4/Z5
-                        const intervals = Math.round(4 + ((weekPlan.intensityPct - 80) / 5));
-                        weeklyReps = `${intervals}×4min Z5 (${z5Min}-${z5Max}bpm) / 2min Z1 (${z1Min}-${z1Max}bpm)`;
-                        enrichedMethod = `Polarizado — Alta Intensidade`;
-                        enrichedSciNote = `FC Máx: ${fcMax}bpm | Z1: ${z1Min}-${z1Max}bpm | Z5: ${z5Min}-${z5Max}bpm`;
-                      } else {
-                        // Semana base aeróbica: Z1/Z2 contínuo
-                        const totalMin = Math.round(30 + (weekPlan.volumePct / 100) * 60);
-                        const z1Min10 = Math.round(totalMin * 0.10);
-                        const z2Min80 = Math.round(totalMin * 0.80);
-                        weeklyReps = `${totalMin}min | Z1: ${z1Min10}min (${z1Min}-${z1Max}bpm) + Z2: ${z2Min80}min (${z2Min}-${z2Max}bpm)`;
-                        enrichedMethod = `Polarizado — Base Aeróbica`;
-                        enrichedSciNote = `FC Máx: ${fcMax}bpm | Z1: ${z1Min}-${z1Max}bpm | Z2: ${z2Min}-${z2Max}bpm`;
-                      }
-                    } else if (isLightCardio) {
-                      // Cardio leve contínuo (Zona 2)
-                      const dur = Math.round(30 + (weekPlan.volumePct / 100) * 30);
-                      weeklyReps = `${dur}min Z2 (${z2Min}-${z2Max}bpm)`;
-                      enrichedSciNote = `FC Máx: ${fcMax}bpm | Z2: ${z2Min}-${z2Max}bpm`;
-                    }
-                  }
-
-                  // ── Enriquecimento científico por método (todos os exercícios não-cardio) ──
-                  // Para exercícios com método definido, busca dados do METHOD_SCIDATA e compõe sciNote
-                  if (!isCardioEx && ex.method && !enrichedSciNote) {
-                    const sciData = METHOD_SCIDATA[ex.method];
-                    if (sciData) {
-                      const cargaKg = load > 0 ? ` | Carga: ${load}kg` : '';
-                      const oneRMStr = oneRM > 0 ? ` (1RM: ${oneRM}kg)` : '';
-                      enrichedSciNote = [
-                        `Zona: ${sciData.zona}${cargaKg}${oneRMStr}`,
-                        `Protocolo: ${sciData.protocolo}`,
-                        `Fisiologia: ${sciData.fisiologia}`,
-                        `Descanso: ${sciData.descanso}`,
-                      ].join(' | ');
-                    }
-                  }
-
-                  return { ...ex, sets: weeklySets, reps: weeklyReps, load, oneRM, week: w + 1,
-                           method: enrichedMethod || ex.method || '',
-                           sciNote: enrichedSciNote || ex.sciNote || '' };
-
+                  return { ...ex, load, oneRM, week: w + 1 };
                 });
 
                 const savedWorkout = await db.add('workouts', {
@@ -983,21 +887,6 @@ export function initPeriodization(navigateFn) {
             }
 
             await db.put('macrocycles', { ...savedMacro, ...d });
-
-            // ── Sincronização forçada: envia os treinos gerados ao Supabase ──
-            // Garante que os dados não fiquem apenas no localStorage
-            try {
-              const trainerId = await db._getTrainerId();
-              if (trainerId && db.supabase) {
-                console.log('[Periodization] Iniciando sync forçado após geração...');
-                await db.syncStudentData(d.studentId, trainerId);
-                console.log('[Periodization] Sync concluído com sucesso');
-              }
-            } catch (syncErr) {
-              console.warn('[Periodization] Erro ao sincronizar treinos gerados:', syncErr);
-              notify.warning('Treinos criados localmente. Sincronização com servidor pendente.');
-            }
-
             notify.success(`Macrociclo gerado — ${d.generatedWorkouts} treinos criados`);
             closeModal();
             navigateFn('/periodizacao');
@@ -1201,10 +1090,7 @@ export function initPeriodization(navigateFn) {
         const gridContainer = document.getElementById('weeklyPlanGrid');
         if (!gridContainer) return;
 
-        const isCardio = ['polarized', 'hiit', 'sit', 'lvhiit', 'zone2', 'pyramidal', 'threshold', 'lsd', 'fartlek'].includes(type);
-        const phases = isCardio 
-          ? ['Base Aeróbica', 'Acumulação de Volume', 'Zona Limiar', 'HIIT', 'Deload'] 
-          : ['Adaptação', 'Hipertrofia', 'Força', 'Pico/RML', 'Deload', 'Resistência'];
+        const phases = ['Adaptação', 'Hipertrofia', 'Força', 'Pico/RML', 'Deload', 'Resistência', 'Aeróbico', 'Cardio HIIT'];
 
         let html = `
           <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%">
@@ -1212,9 +1098,9 @@ export function initPeriodization(navigateFn) {
               <tr style="background:var(--bg-card)">
                 <th style="width:70px; padding:6px">Semana</th>
                 <th style="padding:6px">Fase / Trabalho Principal</th>
-                <th style="width:100px; padding:6px">${isCardio ? 'Intensidade % (FC)' : 'Intensidade %'}</th>
+                <th style="width:100px; padding:6px">Intensidade %</th>
                 <th style="width:100px; padding:6px">Volume %</th>
-                <th style="width:110px; padding:6px">${isCardio ? 'Duração / Alvo' : 'Repetições'}</th>
+                <th style="width:110px; padding:6px">Repetições</th>
               </tr>
             </thead>
             <tbody>
@@ -1227,12 +1113,8 @@ export function initPeriodization(navigateFn) {
               <td style="padding:6px">
                 <select class="form-select week-phase" style="padding:4px 6px; font-size:0.75rem; width:100%; height:auto; background:var(--bg-card)">
                   ${phases.map(p => {
-                    const normP = p.toLowerCase();
-                    const normW = w.phase.toLowerCase();
-                    const selected = normW.includes(normP.substring(0, 4)) || 
-                                     (p === 'Deload' && normW === 'deload') ||
-                                     (p === 'Base Aeróbica' && normW.includes('aerób')) ||
-                                     (p === 'Zona Limiar' && normW.includes('limi'));
+                    const selected = w.phase.toLowerCase().includes(p.toLowerCase().substring(0, 4)) || 
+                                     (p === 'Deload' && w.phase === 'deload');
                     return `<option value="${p}" ${selected ? 'selected' : ''}>${p}</option>`;
                   }).join('')}
                 </select>
@@ -1259,7 +1141,36 @@ export function initPeriodization(navigateFn) {
       };
 
       // Bind events to update grid automatically
-      document.querySelector('#macroForm [name="type"]')?.addEventListener('change', renderWeeklyPlanGrid);
+      document.querySelector('#macroForm [name="type"]')?.addEventListener('change', (e) => {
+        renderWeeklyPlanGrid();
+        const method = e.target.value;
+        // Destacar templates compatíveis com este método de periodização
+        document.querySelectorAll('.periodo-tpl-card[data-tpl-id]').forEach(card => {
+          const tplId = card.dataset.tplId;
+          if (tplId === 'custom_builder') return;
+          const tpl = BUILT_IN_TEMPLATES.find(t => t.id === tplId);
+          const compatible = tpl?.periodizationTypes?.includes(method);
+          const recommended = tpl?.periodizationTypes?.[0] === method; // primeiro = padrão
+          if (compatible) {
+            card.style.borderColor = recommended ? 'var(--primary)' : 'rgba(16,185,129,0.3)';
+            card.style.opacity = '1';
+          } else {
+            card.style.borderColor = 'var(--border-color)';
+            card.style.opacity = tpl ? '0.45' : '1'; // custom cycles sempre visíveis
+          }
+        });
+        // Auto-selecionar o template padrão (primeiro compatible) se nenhum estiver selecionado
+        if (!selectedTemplate) {
+          const firstCompatible = document.querySelector(`.periodo-tpl-card[style*="opacity: 1"]`) ||
+            document.querySelector(`.periodo-tpl-card[data-tpl-id]:not([data-tpl-id="custom_builder"])`);
+          // Encontrar pelo BUILT_IN_TEMPLATES
+          const defaultTpl = BUILT_IN_TEMPLATES.find(t => t.periodizationTypes?.[0] === method);
+          if (defaultTpl) {
+            const card = document.querySelector(`.periodo-tpl-card[data-tpl-id="${defaultTpl.id}"]`);
+            if (card) card.click();
+          }
+        }
+      });
       document.querySelector('#macroForm [name="totalWeeks"]')?.addEventListener('input', renderWeeklyPlanGrid);
       document.querySelector('#macroForm [name="deloadEvery"]')?.addEventListener('input', renderWeeklyPlanGrid);
 
@@ -1272,14 +1183,7 @@ export function initPeriodization(navigateFn) {
           const isCardio = selectedTemplate.category === 'Cardio / Endurance';
           if (!isCardio) {
             const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
-              .filter(e => {
-                const nameLower = e.name.toLowerCase().trim();
-                const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
-                const isCardioEx = (e.loadType === 'cardio') || 
-                                   cardioKeywords.some(k => nameLower.includes(k)) || 
-                                   (e.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => e.method.toLowerCase().includes(m)));
-                return isCardioEx || (e.loadType || 'weight') === 'weight';
-              });
+              .filter(e => (e.loadType || 'weight') === 'weight');
             renderLoadInputs(allEx);
           }
         }
@@ -1328,14 +1232,24 @@ export function initPeriodization(navigateFn) {
           }
         });
         card.addEventListener('click', () => {
+          // Reset all cards
           document.querySelectorAll('.periodo-tpl-card').forEach(c => {
             c.classList.remove('selected');
             c.style.borderColor = 'var(--border-color)';
             c.style.background = 'var(--bg-card)';
+            const radio = c.querySelector('.tpl-radio');
+            if (radio) { radio.style.borderColor = 'var(--border-color)'; radio.style.background = ''; radio.innerHTML = ''; }
           });
+          // Highlight selected
           card.classList.add('selected');
           card.style.borderColor = 'var(--primary)';
           card.style.background = 'var(--primary-glow)';
+          const radio = card.querySelector('.tpl-radio');
+          if (radio) {
+            radio.style.borderColor = 'var(--primary)';
+            radio.style.background = 'var(--primary)';
+            radio.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#fff;display:block"></span>';
+          }
 
           const tplId = card.dataset.tplId;
           if (tplId.startsWith('cycle_')) {
@@ -1418,14 +1332,7 @@ export function initPeriodization(navigateFn) {
                 selectedTemplate = { ...selectedTemplate, sessions: [allSess[0]] };
               } else {
                 const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
-                  .filter(e => {
-                    const nameLower = e.name.toLowerCase().trim();
-                    const cardioKeywords = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
-                    const isCardioEx = (e.loadType === 'cardio') || 
-                                       cardioKeywords.some(k => nameLower.includes(k)) || 
-                                       (e.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => e.method.toLowerCase().includes(m)));
-                    return isCardioEx || (e.loadType || 'weight') === 'weight';
-                  });
+                  .filter(e => (e.loadType || 'weight') === 'weight');
                 renderLoadInputs(allEx);
               }
             }
@@ -1442,19 +1349,26 @@ async function renderLoadInputs(exercises) {
   if (!preview || !container || !exercises.length) return;
   preview.style.display = '';
 
-  const BODYWEIGHT_KEYWORDS = ['prancha','flexão','burpee','barra fixa','pull-up','dip','afundo','superman','bird dog','russian twist','abdominal','crunch','mountain climber','jumping jack','polichinelo','ponte'];
+  const BODYWEIGHT_KEYWORDS = [
+    'prancha','flexão','flexao','burpee','barra fixa','pull-up','pull up','dip','afundo',
+    'superman','bird dog','russian twist','abdominal','crunch','mountain climber',
+    'jumping jack','polichinelo','ponte','elevação de pelve','elevacao de pelve',
+    'agachamento com salto','agachamento bulgaro','agachamento búlgaro',
+    'salto','box jump','pliométrico','pliometrico','arremesso','medicine ball',
+    'mergulho','paralelas','calistenia','corporal','aquecimento','desaquecimento',
+    'recuperação ativa','tiro','sprint','fartlek','cardio','endurance','corrida',
+    'step up','esteira','bike','ciclismo','natação','remo ergômetro',
+    'hiit genérico','hiit generico','exercício cardio','exercicio cardio'
+  ];
   const TIMED_PATTERN = /^\d+s$/i;
-  const CARDIO_KEYWORDS = ['esteira','corrida','caminhada','bicicleta','bike','elíptico','natação','remo','spinning','hiit','tabata','aerob'];
 
   // Obter aluno selecionado
   const studentId = document.querySelector('#macroForm [name="studentId"]')?.value;
   let forceAssessments = [];
-  let conconiAssessments = [];
   if (studentId) {
     try {
       const allAssessments = await db.getAll('assessments');
       forceAssessments = allAssessments.filter(a => a.studentId === studentId && a.type === 'forca');
-      conconiAssessments = allAssessments.filter(a => a.studentId === studentId && a.type === 'conconi');
     } catch (e) {
       console.warn('Erro ao carregar avaliações do aluno para 1RM:', e);
     }
@@ -1463,48 +1377,14 @@ async function renderLoadInputs(exercises) {
   let html = '';
   for (const ex of exercises) {
     const nameLower = ex.name.toLowerCase();
-    const isCardio = CARDIO_KEYWORDS.some(k => nameLower.includes(k)) || 
-                     (ex.method && ['zona', 'tabata', 'hiit', 'sprint', 'polarizado', 'gibala'].some(m => ex.method.toLowerCase().includes(m)));
-    const isTimed = !isCardio && (ex.loadType === 'time' || TIMED_PATTERN.test(String(ex.reps || '')));
-    const isBodyweight = !isCardio && (ex.loadType === 'bodyweight' || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k)));
-
-    if (isCardio) {
-      const conconiMatch = conconiAssessments.sort((a,b) => new Date(b.date) - new Date(a.date))[0];
-      const hasAssessment = !!(conconiMatch && conconiMatch.fcPico);
-      const defaultValue = hasAssessment ? parseInt(conconiMatch.fcPico) : 180;
-
-      html += `
-        <div style="padding:7px 0;border-bottom:1px solid var(--border-color)">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="flex:1">
-              <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
-              <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px">
-                Cardio / Endurance · ${ex.sets} séries × ${ex.reps} · ${ex.rest}s descanso
-                ${hasAssessment ? ` <span style="color:#10b981;font-weight:600">📊 FC Pico Avaliada (${conconiMatch.fcPico} bpm)</span>` : ''}
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-                <div style="display:flex;align-items:center;gap:4px">
-                  <span style="font-size:0.68rem;color:var(--text-muted)">FC Máx</span>
-                  <input class="form-input load-input" data-ex-key="${ex.name}" data-type="cardio"
-                    type="number" min="80" max="250" step="1" value="${defaultValue}"
-                    style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem; ${hasAssessment ? 'border-color:#10b981;box-shadow:0 0 4px rgba(16,185,129,0.3);' : ''}"
-                    oninput="
-                      const pct = 65;
-                      const bpm = Math.round(parseFloat(this.value || 0) * (pct/100));
-                      const el = this.closest('div').parentNode.querySelector('.load-preview');
-                      if(el) el.textContent = 'Semana 1: ~' + bpm + ' bpm (' + pct + '% FC Máx)';
-                    " />
-                  <span style="font-size:0.72rem;color:var(--text-muted)">bpm</span>
-                </div>
-                <span class="load-preview" style="font-size:0.65rem;color:var(--primary)">Semana 1: ~${Math.round(defaultValue * 0.65)} bpm (65% FC Máx)</span>
-              </div>
-            </div>
-          </div>
-        </div>`;
-      continue;
-    }
+    const isTimed = ex.loadType === 'time' || TIMED_PATTERN.test(String(ex.reps || ''));
+    const isBodyweight = ex.loadType === 'bodyweight'
+      || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k))
+      || (ex.load && String(ex.load).toLowerCase().includes('corporal'))
+      || (ex.load && String(ex.load).toLowerCase().includes('z1'))
+      || (ex.load && String(ex.load).toLowerCase().includes('z2'))
+      || (ex.load && String(ex.load).toLowerCase().includes('z3'))
+      || (ex.load && String(ex.load).toLowerCase().includes('z4'));
 
     if (isTimed) {
       const defaultSec = parseInt(String(ex.reps).replace('s','')) || 30;
