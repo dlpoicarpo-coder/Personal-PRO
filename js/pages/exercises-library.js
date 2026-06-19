@@ -1057,41 +1057,9 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
     extraOption = `<option value="${nameVal}" selected>${nameVal}</option>`;
   }
 
-  // Agrupar e ordenar métodos cientificamente por categoria
-  const categoryOrder = [
-    'Hipertrofia',
-    'Força / Potência',
-    'Resistência / RML',
-    'Cardio / Endurance',
-    'Mobilidade / Flexibilidade',
-    'Core / Estabilização',
-    'Regenerativo / Recovery',
-    'Aquecimento / Preparação',
-    'Calistenia / Ginástica',
-    'LPO / Levantamento Olímpico',
-    'Coordenação / Agilidade',
-    'Reabilitação / Preventivo',
-    'Geral'
-  ];
-
-  const methodsByCategory = {};
-  allMethods.forEach(m => {
-    const cat = m.category || 'Geral';
-    if (!methodsByCategory[cat]) methodsByCategory[cat] = [];
-    methodsByCategory[cat].push(m);
-  });
-
-  for (const cat in methodsByCategory) {
-    methodsByCategory[cat].sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  const sortedCategories = Object.keys(methodsByCategory).sort((a, b) => {
-    const idxA = categoryOrder.indexOf(a);
-    const idxB = categoryOrder.indexOf(b);
-    const orderA = idxA !== -1 ? idxA : 99;
-    const orderB = idxB !== -1 ? idxB : 99;
-    return orderA - orderB;
-  });
+  // Agrupar métodos
+  const musculoMet = allMethods.filter(m => m.category !== 'Cardio');
+  const cardioMet = allMethods.filter(m => m.category === 'Cardio');
 
   const fieldsHTML = getTplExRowFieldsHTML(wi, ei, loadType, ex);
 
@@ -1117,11 +1085,20 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
 
       <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem">
         <option value="">— Método —</option>
-        ${sortedCategories.map(cat => `
-          <optgroup label="── ${cat} ──">
-            ${methodsByCategory[cat].map(m => `<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
-          </optgroup>
-        `).join('')}
+        ${(() => {
+          const groups = {};
+          allMethods.forEach(m => {
+            const cat = m.category || 'Geral';
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(m);
+          });
+          const ORDER = ['Hipertrofia','Força','Geral','Cardio','Resistência','Potência'];
+          const sorted = [...ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !ORDER.includes(c))];
+          return sorted.map(cat => `
+            <optgroup label="${cat}">
+              ${groups[cat].map(m => `<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
+            </optgroup>`).join('');
+        })()}
       </select>
       <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">✕</button>
     </div>`;
