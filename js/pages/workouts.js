@@ -471,8 +471,11 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const isBW     = loadType === 'bodyweight';
 
   const progression = ex.method ? METHOD_PROGRESSIONS[ex.method] : null;
+  const isCombined  = COMBINED_METHODS.has(ex.method || '');
   let methodPanelHTML = '';
-  if (progression) {
+
+  if (progression && !isCombined) {
+    // Métodos NÃO combinados: mostrar painel de séries com % 1RM normalmente
     const baseLoad = parseFloat(ex.load) || 0;
     const restElVal = ex.rest || '60';
 
@@ -525,6 +528,28 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         ${seriesHTML}
       </div>
     `;
+  } else if (isCombined) {
+    // Métodos combinados: banner de pareamento — sem painel de séries individual
+    const COMBINED_LABELS = {
+      'Bi-set':                  'Execute este exercício imediatamente em sequência com o próximo da lista. Descanse apenas após completar o par.',
+      'Super-série Agonista':    'Mesmo grupo muscular, sem pausa entre os dois. Descanse após o segundo exercício do par.',
+      'Super-série Antagonista': 'Grupos opostos (ex: Bíceps → Tríceps) sem pausa. Descanse após o segundo.',
+      'Tri-set':                 '3 exercícios consecutivos sem pausa. Descanse apenas após o terceiro.',
+      'Série Gigante':           '4+ exercícios sem pausa, cargas reduzidas (~60%). Descanse após o último do grupo.',
+      'Pré-exaustão':            'Isolamento executado antes do composto, sem pausa. O isolamento fatiga o músculo-alvo primeiro.',
+    };
+    const desc = COMBINED_LABELS[ex.method] || `Execute em sequência com o exercício adjacente. Descanse apenas após o grupo completo.`;
+    methodPanelHTML = `
+      <div style="grid-column:1/-1;margin-top:4px;padding:8px 10px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:0.72rem;font-weight:700;color:#f59e0b">🔗 ${ex.method}</span>
+          <span style="font-size:0.65rem;color:var(--text-muted);background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:8px">Descanso pós-par: ${ex.rest || 90}s</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.4">${desc}</div>
+        <div style="font-size:0.65rem;color:var(--accent);margin-top:4px">
+          Certifique-se de que o exercício parceiro também está marcado com o mesmo método e logo abaixo na lista.
+        </div>
+      </div>`;
   } else if (ex.method) {
     const methodOpt = allMethods.find(m => m.name === ex.method);
     const desc = methodOpt?.description;
@@ -592,9 +617,22 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         <select class="form-select ex-method" name="ex_method_${index}" data-index="${index}"
           style="font-size:0.78rem;padding:4px 6px">
           <option value="">— Nenhum —</option>
-          ${allMethods.map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
-            data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
-            data-desc="${m.description||''}">${m.name}</option>`).join('')}
+          ${(() => {
+            const groups = {};
+            allMethods.forEach(m => {
+              const cat = m.category || 'Geral';
+              if (!groups[cat]) groups[cat] = [];
+              groups[cat].push(m);
+            });
+            const ORDER = ['Hipertrofia','Força','Geral','Cardio','Resistência','Potência'];
+            const sorted = [...ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !ORDER.includes(c))];
+            return sorted.map(cat => `
+              <optgroup label="${cat}">
+                ${groups[cat].map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
+                  data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
+                  data-desc="${m.description||''}">${m.name}</option>`).join('')}
+              </optgroup>`).join('');
+          })()}
         </select>
       </div>
       <button type="button" class="btn btn-ghost btn-icon remove-exercise" data-index="${index}"
@@ -668,6 +706,24 @@ function collectExercises() {
       });
     }
   });
+  // Atribuir groupId compartilhado para exercícios consecutivos com mesmo método combinado
+  let groupCounter = 0;
+  for (let i = 0; i < exercises.length; i++) {
+    const ex = exercises[i];
+    if (!COMBINED_METHODS.has(ex.method || '')) continue;
+    if (ex.groupId) continue; // já atribuído
+    // Agrupar todos os consecutivos com mesmo método
+    const groupId = `grp_${++groupCounter}`;
+    ex.groupId = groupId;
+    for (let j = i + 1; j < exercises.length; j++) {
+      if (exercises[j].method === ex.method) {
+        exercises[j].groupId = groupId;
+      } else {
+        break; // para na primeira quebra de sequência
+      }
+    }
+  }
+
   return exercises;
 }
 
