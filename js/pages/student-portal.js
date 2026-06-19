@@ -1523,9 +1523,28 @@ function initTreinar(workouts, schedules, student) {
                 loadVal = ex.load || '';
               }
 
+              // Badge inteligente para métodos com clusters (Rest-Pause, Cluster)
+              const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+              let setNumLabel = `S${si+1}`;
+              let setSubLabel = '';
+              if (isClusterMethod && ex.seriesProgression?.[si]?.label) {
+                const lbl = ex.seriesProgression[si].label;
+                const cMatch = lbl.match(/Cluster\s*(\d+)/i);
+                if (cMatch) {
+                  const cNum = cMatch[1];
+                  const isPausa = lbl.toLowerCase().includes('pausa');
+                  const miniIdx = ex.seriesProgression.slice(0, si).filter(s => s.label?.match(new RegExp(`Cluster\\s*${cNum}`, 'i'))).length + 1;
+                  setNumLabel = `C${cNum}`;
+                  setSubLabel = isPausa ? `P${miniIdx}` : `M1`;
+                }
+              }
+
               return `
                 <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-                  <span class="portal-set-num">S${si+1}</span>
+                  <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1">
+                    <span>${setNumLabel}</span>
+                    ${setSubLabel ? `<span style="font-size:0.55em;opacity:0.7">${setSubLabel}</span>` : ''}
+                  </span>
                   <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
                   <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
                   <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
