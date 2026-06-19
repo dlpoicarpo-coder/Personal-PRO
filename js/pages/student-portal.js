@@ -1419,6 +1419,19 @@ function initTreinar(workouts, schedules, student) {
       if (selInput) selInput.value = wid;
       const w = workouts.find(w => w.id === wid);
     if (w && w.exercises?.length) {
+        // Garantir groupId para métodos combinados (treinos salvos antes dessa feature)
+        const COMBO = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+        let gc = 0;
+        for (let i = 0; i < w.exercises.length; i++) {
+          if (!COMBO.has(w.exercises[i].method)) continue;
+          if (w.exercises[i].groupId) continue;
+          const gid = `grp_${++gc}`;
+          w.exercises[i].groupId = gid;
+          for (let j = i + 1; j < w.exercises.length; j++) {
+            if (w.exercises[j].method === w.exercises[i].method) w.exercises[j].groupId = gid;
+            else break;
+          }
+        }
         exBlock.innerHTML = `
           <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do Treino</div>
           ${w.exercises.map((ex,i) => `
