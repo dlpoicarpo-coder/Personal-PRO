@@ -1479,7 +1479,9 @@ function initTreinar(workouts, schedules, student) {
                 const cm = CARDIO[ex.method];
                 const isCombo = COMBINED.has(ex.method);
                 const nextEx2 = w.exercises[ei + 1];
-                const isLastOfGroup = !nextEx2 || !COMBINED.has(nextEx2.method) || nextEx2.method !== ex.method;
+                // Usar groupId se disponível, fallback para método consecutivo
+                const isLastOfGroup = !nextEx2
+                  || (ex.groupId ? nextEx2.groupId !== ex.groupId : (!COMBINED.has(nextEx2.method) || nextEx2.method !== ex.method));
                 return [
                   cm ? `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600">🫀 ${cm.fc}% FC Máx</div>` : '',
                   isCombo ? `<div style="font-size:0.62rem;font-weight:700;color:#f59e0b;margin-top:3px;padding:2px 6px;background:rgba(245,158,11,0.12);border-radius:6px;display:inline-block">🔗 ${ex.method} · ${isLastOfGroup ? `${ex.rest||90}s descanso pós-par` : '→ próximo exercício'}</div>` : '',
@@ -1639,7 +1641,9 @@ function initTreinar(workouts, schedules, student) {
             const ex = w?.exercises?.[ei];
             const isCombined = COMBINED_SET.has(ex?.method);
             const nextEx = w?.exercises?.[ei + 1];
-            const isLastOfGroup = !nextEx || !COMBINED_SET.has(nextEx?.method) || nextEx?.method !== ex?.method;
+            // Usar groupId se disponível
+            const isLastOfGroup = !nextEx
+              || (ex?.groupId ? nextEx?.groupId !== ex?.groupId : (!COMBINED_SET.has(nextEx?.method) || nextEx?.method !== ex?.method));
 
             let restSec = parseInt(btn.dataset.rest) || 60;
             // Métodos combinados: descanso=0 se não é o último do grupo
