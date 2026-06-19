@@ -327,14 +327,14 @@ export const BUILT_IN_TEMPLATES = [
     name: 'Treino de Limiar (Tempo Run)',
     category: 'Cardio Endurance',
     goal: 'Performance',
-    description: 'Treino no limiar anaeróbico para aumentar a velocidade sustentável e resistência a fadiga.',
+    description: 'Treino no VT2/OBLA (85-92% FCmáx) para aumentar velocidade sustentável. Mínimo 20 min para adaptação do tamponamento de lactato.',
     daysPerWeek: 2,
     builtIn: true,
     periodizationTypes: ['threshold'],
     workouts: [
       { name: 'Tempo Run', exercises: [
         { name: 'Aquecimento (Cardio)', sets: 1, reps: '10 min', load: 'Z2', rest: '0', method: '' },
-        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '20 min', load: 'Z3', rest: '0', method: 'Limiar' },
+        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '20-40 min', load: 'Z4', rest: '0', method: 'Zona 4 (Z4) — Limiar' },
         { name: 'Desaquecimento (Cardio)', sets: 1, reps: '10 min', load: 'Z1', rest: '0', method: '' }
       ]}
     ]
