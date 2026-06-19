@@ -255,48 +255,46 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
 // Métodos que geram múltiplas sub-séries com reps/carga diferente por série
 export const METHOD_PROGRESSIONS = {
   'Pirâmide Crescente': {
-    desc: 'Carga aumenta a cada série, reps diminuem',
+    desc: 'DeLorme: carga sobe a cada série, reps caem. Aquecimento progressivo → pico de intensidade. 90-120s descanso.',
     series: [
-      { reps: '12-15', loadPct: 0.60, label: 'S1 — Leve' },
-      { reps: '10-12', loadPct: 0.70, label: 'S2 — Moderada' },
-      { reps: '8-10',  loadPct: 0.80, label: 'S3 — Pesada' },
-      { reps: '6-8',   loadPct: 0.90, label: 'S4 — Muito Pesada' },
+      { reps: '12-15', loadPct: 0.60, label: 'S1 — Leve',        rest: 90  },
+      { reps: '10-12', loadPct: 0.70, label: 'S2 — Moderada',    rest: 90  },
+      { reps: '8-10',  loadPct: 0.80, label: 'S3 — Pesada',      rest: 120 },
+      { reps: '6-8',   loadPct: 0.88, label: 'S4 — Muito Pesada',rest: 120 },
     ]
   },
   'Pirâmide Decrescente': {
-    desc: 'Inicia pesado e reduz carga a cada série',
+    desc: 'Oxford: inicia pesado sem pré-fadiga → carga cai, volume sobe. 120-180s descanso nos sets pesados.',
     series: [
-      { reps: '6-8',   loadPct: 0.90, label: 'S1 — Máximo' },
-      { reps: '8-10',  loadPct: 0.80, label: 'S2 — Pesada' },
-      { reps: '10-12', loadPct: 0.70, label: 'S3 — Moderada' },
-      { reps: '12-15', loadPct: 0.60, label: 'S4 — Leve' },
+      { reps: '4-6',   loadPct: 0.88, label: 'S1 — Máximo',   rest: 180 },
+      { reps: '6-8',   loadPct: 0.80, label: 'S2 — Pesada',   rest: 150 },
+      { reps: '8-10',  loadPct: 0.72, label: 'S3 — Moderada', rest: 120 },
+      { reps: 'AMRAP', loadPct: 0.63, label: 'S4 — Leve/Máx', rest: 90  },
     ]
   },
   'Pirâmide Dupla': {
-    desc: 'Crescente depois decrescente — máximo volume',
+    desc: 'Crescente até o pico, depois decrescente. Séries de descida em AMRAP para avançados. 90-120s descanso.',
     series: [
-      { reps: '15',    loadPct: 0.55, label: 'S1 — Base' },
-      { reps: '12',    loadPct: 0.65, label: 'S2 — Leve' },
-      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada' },
-      { reps: '8',     loadPct: 0.85, label: 'S4 — Pico ↑' },
-      { reps: '10',    loadPct: 0.75, label: 'S5 — Moderada' },
-      { reps: '12',    loadPct: 0.65, label: 'S6 — Leve' },
-      { reps: '15',    loadPct: 0.55, label: 'S7 — Base ↓' },
+      { reps: '15',    loadPct: 0.55, label: 'S1 — Base',     rest: 90  },
+      { reps: '12',    loadPct: 0.65, label: 'S2 — Leve',     rest: 90  },
+      { reps: '10',    loadPct: 0.73, label: 'S3 — Moderada', rest: 120 },
+      { reps: '6-8',   loadPct: 0.85, label: 'S4 — Pico ↑',  rest: 120 },
+      { reps: 'AMRAP', loadPct: 0.73, label: 'S5 — Moderada', rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.65, label: 'S6 — Leve',     rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.55, label: 'S7 — Base ↓',   rest: 0   },
     ]
   },
   'Pirâmide Completa': {
-    desc: 'Pirâmide dupla com pico duplo — volume e intensidade máximos',
+    desc: 'Pirâmide dupla com pico duplo. 8 séries. Descida em AMRAP. 90-150s descanso. Intermediários/Avançados.',
     series: [
-      { reps: '20',    loadPct: 0.50, label: 'S1 — Aquecimento' },
-      { reps: '15',    loadPct: 0.60, label: 'S2 — Base' },
-      { reps: '12',    loadPct: 0.68, label: 'S3 — Leve' },
-      { reps: '10',    loadPct: 0.75, label: 'S4 — Moderada' },
-      { reps: '8',     loadPct: 0.82, label: 'S5 — Pesada' },
-      { reps: '6',     loadPct: 0.88, label: 'S6 — Pico ↑' },
-      { reps: '8',     loadPct: 0.82, label: 'S7 — Pesada' },
-      { reps: '10',    loadPct: 0.75, label: 'S8 — Moderada' },
-      { reps: '12',    loadPct: 0.68, label: 'S9 — Leve' },
-      { reps: '15',    loadPct: 0.60, label: 'S10 — Base ↓' },
+      { reps: '15',    loadPct: 0.60, label: 'S1 — Base',      rest: 90  },
+      { reps: '12',    loadPct: 0.68, label: 'S2 — Leve',      rest: 90  },
+      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada',  rest: 120 },
+      { reps: '8',     loadPct: 0.82, label: 'S4 — Pesada',    rest: 120 },
+      { reps: '6',     loadPct: 0.88, label: 'S5 — Pico ↑',   rest: 150 },
+      { reps: '8',     loadPct: 0.82, label: 'S6 — Pesada',    rest: 120 },
+      { reps: 'AMRAP', loadPct: 0.75, label: 'S7 — Moderada',  rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.65, label: 'S8 — Base ↓',   rest: 0   },
     ]
   },
   'Drop-set': {
