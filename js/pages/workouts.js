@@ -260,7 +260,7 @@ export const METHOD_PROGRESSIONS = {
       { reps: '12-15', loadPct: 0.60, label: 'S1 — Leve',        rest: 90  },
       { reps: '10-12', loadPct: 0.70, label: 'S2 — Moderada',    rest: 90  },
       { reps: '8-10',  loadPct: 0.80, label: 'S3 — Pesada',      rest: 120 },
-      { reps: '6-8',   loadPct: 0.88, label: 'S4 — Muito Pesada',rest: 120 },
+      { reps: '6-8',   loadPct: 0.88, label: 'S4 — Muito Pesada',rest: 0   },
     ]
   },
   'Pirâmide Decrescente': {
@@ -269,19 +269,19 @@ export const METHOD_PROGRESSIONS = {
       { reps: '4-6',   loadPct: 0.88, label: 'S1 — Máximo',   rest: 180 },
       { reps: '6-8',   loadPct: 0.80, label: 'S2 — Pesada',   rest: 150 },
       { reps: '8-10',  loadPct: 0.72, label: 'S3 — Moderada', rest: 120 },
-      { reps: 'AMRAP', loadPct: 0.63, label: 'S4 — Leve/Máx', rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.67, label: 'S4 — Leve/Máx', rest: 0   },
     ]
   },
   'Pirâmide Dupla': {
     desc: 'Crescente até o pico, depois decrescente. Séries de descida em AMRAP para avançados. 90-120s descanso.',
     series: [
-      { reps: '15',    loadPct: 0.55, label: 'S1 — Base',     rest: 90  },
-      { reps: '12',    loadPct: 0.65, label: 'S2 — Leve',     rest: 90  },
-      { reps: '10',    loadPct: 0.73, label: 'S3 — Moderada', rest: 120 },
+      { reps: '15',    loadPct: 0.60, label: 'S1 — Base',     rest: 90  },
+      { reps: '12',    loadPct: 0.68, label: 'S2 — Leve',     rest: 90  },
+      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada', rest: 120 },
       { reps: '6-8',   loadPct: 0.85, label: 'S4 — Pico ↑',  rest: 120 },
-      { reps: 'AMRAP', loadPct: 0.73, label: 'S5 — Moderada', rest: 90  },
-      { reps: 'AMRAP', loadPct: 0.65, label: 'S6 — Leve',     rest: 90  },
-      { reps: 'AMRAP', loadPct: 0.55, label: 'S7 — Base ↓',   rest: 0   },
+      { reps: 'AMRAP', loadPct: 0.75, label: 'S5 — Moderada', rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.68, label: 'S6 — Leve',     rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.60, label: 'S7 — Base ↓',   rest: 0   },
     ]
   },
   'Pirâmide Completa': {
@@ -315,128 +315,151 @@ export const METHOD_PROGRESSIONS = {
     ]
   },
   'Stripping': {
-    desc: 'Drop-set com barra — remover anilhas sem parar. 4 reduções de -15 a -25% por série.',
+    desc: 'Drop-set com barra — remover anilhas sem parar. 3-4 strips de -20% por série. 3 séries com 120s descanso.',
     series: [
-      { reps: 'até falha', loadPct: 0.80, label: 'Carga máx.',     rest: 5  },
-      { reps: 'até falha', loadPct: 0.62, label: 'Strip 1 (-22%)', rest: 5  },
-      { reps: 'até falha', loadPct: 0.48, label: 'Strip 2 (-22%)', rest: 5  },
-      { reps: 'até falha', loadPct: 0.37, label: 'Strip 3 (-22%)', rest: 0  },
+      // Série 1
+      { reps: 'até falha', loadPct: 0.80, label: 'S1 — Carga máx.',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.62, label: 'S1 — Strip 1 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S1 — Strip 2 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.37, label: 'S1 — Strip 3 -22%', rest: 120 },
+      // Série 2
+      { reps: 'até falha', loadPct: 0.80, label: 'S2 — Carga máx.',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.62, label: 'S2 — Strip 1 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S2 — Strip 2 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.37, label: 'S2 — Strip 3 -22%', rest: 120 },
+      // Série 3
+      { reps: 'até falha', loadPct: 0.80, label: 'S3 — Carga máx.',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.62, label: 'S3 — Strip 1 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S3 — Strip 2 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.37, label: 'S3 — Strip 3 -22%', rest: 0   },
     ]
   },
   'Rest-Pause': {
     desc: '80-85% 1RM até a falha, pausa 20s intra-série, pausa 2-3min entre clusters. Repete 2-3 clusters.',
     series: [
-      // Cluster 1
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 1 — Série',   rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 1 — Pausa 20s', rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 1 — Pausa 20s', rest: 150 },
-      // Cluster 2
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 2 — Série',   rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 2 — Pausa 20s', rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 2 — Pausa 20s', rest: 150 },
-      // Cluster 3 (opcional — avançados)
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 3 — Série',   rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 3 — Pausa 20s', rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 3 — Pausa 20s', rest: 0   },
+      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Série',    rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Pausa 1',  rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Pausa 2',  rest: 150 },
+      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Série',    rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Pausa 1',  rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Pausa 2',  rest: 150 },
+      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Série',    rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Pausa 1',  rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Pausa 2',  rest: 0   },
     ]
   },
   'Cluster': {
-    desc: '2-3 reps, pausa 10-15s, repetir 5x. Força máxima com 85-95% 1RM.',
+    desc: '88% 1RM · 2-3 reps · pausa 30s intra-série · 5 mini-séries por set · 3-5 min entre sets. Força máxima.',
     series: [
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 1', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 2', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 3', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 4', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 5', rest: 12 },
+      // Set 1 — 5 clusters
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 1', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 2', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 3', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 4', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 5', rest: 210 },
+      // Set 2 — 5 clusters
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 1', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 2', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 3', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 4', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 5', rest: 210 },
+      // Set 3 — 5 clusters
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 1', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 2', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 3', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 4', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 5', rest: 0  },
     ]
   },
   'FST-7': {
-    desc: '7 séries do isolador com 30-45s descanso. Alta congestão.',
-    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))
+    desc: '7 séries do isolador · 65% 1RM · 30-45s descanso com ALONGAMENTO ATIVO do músculo-alvo entre as séries. Alta congestão.',
+    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`S${i+1} — alongar 30s`, rest: i===6 ? 0 : 40 }))
   },
 
   // ── MÉTODOS SEM VARIAÇÃO DE CARGA POR SÉRIE ───────────────────────────────
   // Usam carga constante — loadPct 1.0 em todas as séries
   'Unilateral': {
-    desc: 'Executa de um lado de cada vez. Mesmo 1RM para cada lado.',
+    desc: 'Usar 1RM UNILATERAL (10-20% maior que metade do bilateral). 30s entre lados, 90s entre séries completas.',
     series: [
-      { reps:'10-12', loadPct:0.70, label:'Lado D — S1', rest:60 },
-      { reps:'10-12', loadPct:0.70, label:'Lado E — S1', rest:60 },
-      { reps:'10-12', loadPct:0.70, label:'Lado D — S2', rest:60 },
-      { reps:'10-12', loadPct:0.70, label:'Lado E — S2', rest:60 },
+      { reps:'10-12', loadPct:0.72, label:'S1 — Lado D', rest:30  },
+      { reps:'10-12', loadPct:0.72, label:'S1 — Lado E', rest:90  },
+      { reps:'10-12', loadPct:0.72, label:'S2 — Lado D', rest:30  },
+      { reps:'10-12', loadPct:0.72, label:'S2 — Lado E', rest:90  },
+      { reps:'10-12', loadPct:0.72, label:'S3 — Lado D', rest:30  },
+      { reps:'10-12', loadPct:0.72, label:'S3 — Lado E', rest:0   },
     ]
   },
   'Excêntrico Acentuado': {
-    desc: '4-6s na descida. Carga 70-80% 1RM. Máximo dano muscular.',
+    desc: '4-6s na descida · 75% 1RM · alto TUT · maior DOMS. 150-180s descanso (recuperação muscular completa).',
     series: [
-      { reps:'6-8', loadPct:0.75, label:'S1 — 4s excêntrico', rest:120 },
-      { reps:'6-8', loadPct:0.75, label:'S2 — 4s excêntrico', rest:120 },
-      { reps:'6-8', loadPct:0.75, label:'S3 — 4s excêntrico', rest:120 },
-      { reps:'6-8', loadPct:0.75, label:'S4 — 4s excêntrico', rest:120 },
+      { reps:'6-8', loadPct:0.75, label:'S1 — 4s excêntrico', rest:150 },
+      { reps:'6-8', loadPct:0.75, label:'S2 — 4s excêntrico', rest:150 },
+      { reps:'6-8', loadPct:0.75, label:'S3 — 4s excêntrico', rest:150 },
+      { reps:'6-8', loadPct:0.75, label:'S4 — 4s excêntrico', rest:0   },
     ]
   },
   'Isometria': {
-    desc: 'Sustentação estática. Carga moderada. 30-60s por posição.',
+    desc: 'Definir ÂNGULO de execução (ganho específico ±15°). Hipertrofia: 65% × 6-10s. Força: 80% × 3-6s. 3 reps por posição.',
     series: [
-      { reps:'45s', loadPct:0.50, label:'S1 — 45s sustentação', rest:90 },
-      { reps:'45s', loadPct:0.50, label:'S2 — 45s sustentação', rest:90 },
-      { reps:'45s', loadPct:0.50, label:'S3 — 45s sustentação', rest:90 },
+      { reps:'6-10s × 3', loadPct:0.65, label:'S1 — Ângulo A (def. o°)', rest:90 },
+      { reps:'6-10s × 3', loadPct:0.65, label:'S2 — Ângulo A',           rest:90 },
+      { reps:'6-10s × 3', loadPct:0.65, label:'S3 — Ângulo A',           rest:0  },
     ]
   },
   '21s': {
-    desc: '7 parcial baixo + 7 parcial cima + 7 completas. Carga ~50-55% 1RM.',
+    desc: 'Ordem: 7 parcial inferior (0°-90°) → 7 parcial superior (90°-180°) → 7 completas. ~52% 1RM. 90-120s descanso.',
     series: [
-      { reps:'21 (7+7+7)', loadPct:0.52, label:'S1 — 21s', rest:90 },
-      { reps:'21 (7+7+7)', loadPct:0.52, label:'S2 — 21s', rest:90 },
-      { reps:'21 (7+7+7)', loadPct:0.52, label:'S3 — 21s', rest:90 },
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S1 — Inf→Sup→Completo', rest:100 },
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S2 — Inf→Sup→Completo', rest:100 },
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S3 — Inf→Sup→Completo', rest:0   },
     ]
   },
   'Pré-exaustão': {
-    desc: 'Isolamento (~65%) → composto (~75%) sem descanso. Fadiga o músculo-alvo primeiro.',
+    desc: 'Isolamento (~65%) → Composto (~62% real pós-fadiga). ATENÇÃO: evidência científica questionada (Gentil 2007). Use RPE 8 como guia.',
     series: [
-      { reps:'12', loadPct:0.65, label:'Isolamento',  rest:0   },
-      { reps:'8-10', loadPct:0.75, label:'Composto',  rest:120 },
-      { reps:'12', loadPct:0.65, label:'Isolamento',  rest:0   },
-      { reps:'8-10', loadPct:0.75, label:'Composto',  rest:120 },
-      { reps:'12', loadPct:0.65, label:'Isolamento',  rest:0   },
-      { reps:'8-10', loadPct:0.75, label:'Composto',  rest:120 },
+      { reps:'12-15', loadPct:0.65, label:'Isolamento S1',  rest:0   },
+      { reps:'6-8',   loadPct:0.62, label:'Composto S1',    rest:120 },
+      { reps:'12-15', loadPct:0.65, label:'Isolamento S2',  rest:0   },
+      { reps:'6-8',   loadPct:0.62, label:'Composto S2',    rest:120 },
+      { reps:'12-15', loadPct:0.65, label:'Isolamento S3',  rest:0   },
+      { reps:'6-8',   loadPct:0.62, label:'Composto S3',    rest:0   },
     ]
   },
   'Super-série Agonista': {
-    desc: '2 exercícios do mesmo grupo sem pausa. Informe a carga de cada exercício separadamente.',
+    desc: 'Mesmo grupo · sem pausa entre Ex A e Ex B · Ex B perde 10-25% de performance. 90-120s após o par.',
     series: [
-      { reps:'10-12', loadPct:0.70, label:'Ex A — S1', rest:0   },
-      { reps:'10-12', loadPct:0.68, label:'Ex B — S1', rest:90  },
-      { reps:'10-12', loadPct:0.70, label:'Ex A — S2', rest:0   },
-      { reps:'10-12', loadPct:0.68, label:'Ex B — S2', rest:90  },
-      { reps:'10-12', loadPct:0.70, label:'Ex A — S3', rest:0   },
-      { reps:'10-12', loadPct:0.68, label:'Ex B — S3', rest:90  },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S1', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S1', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S2', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S2', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S3', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S3', rest:0   },
     ]
   },
   'Super-série Antagonista': {
-    desc: 'Grupos opostos alternados sem pausa. Ex: Rosca + Tríceps.',
+    desc: 'Grupos opostos alternados sem pausa. Ex: Rosca + Tríceps. Facilitação recíproca permite manter 70% em ambos.',
     series: [
       { reps:'10-12', loadPct:0.70, label:'Agonista S1',   rest:0   },
       { reps:'10-12', loadPct:0.70, label:'Antagonista S1',rest:60  },
       { reps:'10-12', loadPct:0.70, label:'Agonista S2',   rest:0   },
       { reps:'10-12', loadPct:0.70, label:'Antagonista S2',rest:60  },
       { reps:'10-12', loadPct:0.70, label:'Agonista S3',   rest:0   },
-      { reps:'10-12', loadPct:0.70, label:'Antagonista S3',rest:60  },
+      { reps:'10-12', loadPct:0.70, label:'Antagonista S3',rest:0   },
     ]
   },
   'Bi-set': {
-    desc: 'Dois exercícios para o mesmo músculo sem pausa.',
+    desc: 'Mesmo músculo · Ex B com carga menor (fadiga acumulada) · 90-120s após o par. Similiar à super-série agonista.',
     series: [
-      { reps:'10', loadPct:0.72, label:'Ex A — S1', rest:0   },
-      { reps:'10', loadPct:0.68, label:'Ex B — S1', rest:90  },
-      { reps:'10', loadPct:0.72, label:'Ex A — S2', rest:0   },
-      { reps:'10', loadPct:0.68, label:'Ex B — S2', rest:90  },
-      { reps:'10', loadPct:0.72, label:'Ex A — S3', rest:0   },
-      { reps:'10', loadPct:0.68, label:'Ex B — S3', rest:90  },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S1', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S1', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S2', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S2', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S3', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S3', rest:0   },
     ]
   },
   'Tri-set': {
-    desc: '3 exercícios consecutivos sem descanso. Alto estímulo metabólico.',
+    desc: '3 exercícios consecutivos sem descanso. Alto estímulo metabólico. 120s após cada tri-set completo.',
     series: [
       { reps:'10-12', loadPct:0.68, label:'Ex 1 — S1', rest:0   },
       { reps:'10-12', loadPct:0.65, label:'Ex 2 — S1', rest:0   },
@@ -446,20 +469,24 @@ export const METHOD_PROGRESSIONS = {
       { reps:'10-12', loadPct:0.62, label:'Ex 3 — S2', rest:120 },
       { reps:'10-12', loadPct:0.68, label:'Ex 1 — S3', rest:0   },
       { reps:'10-12', loadPct:0.65, label:'Ex 2 — S3', rest:0   },
-      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S3', rest:120 },
+      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S3', rest:0   },
     ]
   },
   'Série Gigante': {
-    desc: '4 exercícios consecutivos. Reduzir cargas (~60-65% 1RM). Alto volume.',
+    desc: '4 exercícios seguidos sem pausa · 60-65% 1RM · 180s descanso após cada bloco completo · 3 blocos.',
     series: [
-      { reps:'10-15', loadPct:0.62, label:'Ex 1', rest:0   },
-      { reps:'10-15', loadPct:0.60, label:'Ex 2', rest:0   },
-      { reps:'10-15', loadPct:0.60, label:'Ex 3', rest:0   },
-      { reps:'10-15', loadPct:0.58, label:'Ex 4', rest:180 },
-      { reps:'10-15', loadPct:0.62, label:'Ex 1', rest:0   },
-      { reps:'10-15', loadPct:0.60, label:'Ex 2', rest:0   },
-      { reps:'10-15', loadPct:0.60, label:'Ex 3', rest:0   },
-      { reps:'10-15', loadPct:0.58, label:'Ex 4', rest:180 },
+      { reps:'10-15', loadPct:0.64, label:'Bloco 1 — Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.62, label:'Bloco 1 — Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.61, label:'Bloco 1 — Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Bloco 1 — Ex 4', rest:180 },
+      { reps:'10-15', loadPct:0.64, label:'Bloco 2 — Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.62, label:'Bloco 2 — Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.61, label:'Bloco 2 — Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Bloco 2 — Ex 4', rest:180 },
+      { reps:'10-15', loadPct:0.64, label:'Bloco 3 — Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.62, label:'Bloco 3 — Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.61, label:'Bloco 3 — Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Bloco 3 — Ex 4', rest:0   },
     ]
   },
 };
