@@ -300,20 +300,29 @@ export const METHOD_PROGRESSIONS = {
     ]
   },
   'Drop-set': {
-    desc: 'Executa até a falha, reduz carga ~20% e continua sem descanso',
+    desc: '75% 1RM até falha → -20% sem pausa → -20% sem pausa. 2-3min descanso após cada drop-set completo.',
     series: [
-      { reps: '8-10',  loadPct: 1.00, label: 'Set Principal', rest: 0 },
-      { reps: '8-10',  loadPct: 0.80, label: 'Drop 1 (-20%)', rest: 0 },
-      { reps: '8-10',  loadPct: 0.64, label: 'Drop 2 (-20%)', rest: 0 },
+      // Série 1
+      { reps: 'até falha', loadPct: 0.75, label: 'S1 — Principal',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.60, label: 'S1 — Drop 1 -20%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S1 — Drop 2 -20%', rest: 120 },
+      // Série 2
+      { reps: 'até falha', loadPct: 0.75, label: 'S2 — Principal',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.60, label: 'S2 — Drop 1 -20%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S2 — Drop 2 -20%', rest: 120 },
+      // Série 3
+      { reps: 'até falha', loadPct: 0.75, label: 'S3 — Principal',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.60, label: 'S3 — Drop 1 -20%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S3 — Drop 2 -20%', rest: 0   },
     ]
   },
   'Stripping': {
-    desc: 'Drop-set com barra — remover anilhas sem parar',
+    desc: 'Drop-set com barra — remover anilhas sem parar. 4 reduções de -15 a -25% por série.',
     series: [
-      { reps: 'até falha', loadPct: 1.00, label: 'Carga máxima',  rest: 0 },
-      { reps: 'até falha', loadPct: 0.75, label: '-25% carga',    rest: 0 },
-      { reps: 'até falha', loadPct: 0.55, label: '-25% carga',    rest: 0 },
-      { reps: 'até falha', loadPct: 0.40, label: '-25% carga',    rest: 0 },
+      { reps: 'até falha', loadPct: 0.80, label: 'Carga máx.',     rest: 5  },
+      { reps: 'até falha', loadPct: 0.62, label: 'Strip 1 (-22%)', rest: 5  },
+      { reps: 'até falha', loadPct: 0.48, label: 'Strip 2 (-22%)', rest: 5  },
+      { reps: 'até falha', loadPct: 0.37, label: 'Strip 3 (-22%)', rest: 0  },
     ]
   },
   'Rest-Pause': {
@@ -487,14 +496,30 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
     // Métodos NÃO combinados: mostrar painel de séries com % 1RM normalmente
     const baseLoad = parseFloat(ex.load) || 0;
     const restElVal = ex.rest || '60';
+    const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
 
     const seriesHTML = progression.series.map((s, si) => {
-      const savedSerie = ex.seriesProgression && ex.seriesProgression[si];
-      const loadVal = savedSerie ? savedSerie.load : (baseLoad > 0 && !isTime ? Math.round(baseLoad * s.loadPct * 2) / 2 : '');
-      const restVal = savedSerie ? savedSerie.rest : (s.rest != null ? s.rest : restElVal);
+      const savedSerie = ex.seriesProgression?.[si];
+      // Para linhas extras (clusters 2 e 3 sem save), propagar a carga da série 0
+      const baseLoadFallback = ex.seriesProgression?.[0]?.load || baseLoad;
+      const loadVal = savedSerie?.load != null
+        ? savedSerie.load
+        : (baseLoadFallback > 0 && !isTime ? Math.round(baseLoadFallback * s.loadPct * 2) / 2 : '');
+      const restVal = savedSerie?.rest != null ? savedSerie.rest : (s.rest != null ? s.rest : restElVal);
+
+      // Separador entre clusters
+      const prevLabel = si > 0 ? (progression.series[si-1].label || '') : '';
+      const curLabel  = s.label || '';
+      const isNewCluster = isClusterMethod && si > 0 && (() => {
+        const pm = prevLabel.match(/Cluster\s*(\d+)/i);
+        const cm = curLabel.match(/Cluster\s*(\d+)/i);
+        return pm && cm && pm[1] !== cm[1];
+      })();
+
       return `
-        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.1)" data-serie="${si}">
-          <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+        ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0"></div>` : ''}
+        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
+          <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
           <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
           <div>
             <input type="number" step="0.5" value="${loadVal}" placeholder="${isTime?'km/h':'kg'}"
@@ -507,7 +532,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           <div>
             <input type="number" value="${restVal}"
               class="form-input serie-rest" data-serie="${si}"
-              style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:var(--text-muted)"
+              style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
               placeholder="s" title="Descanso (s)"/>
           </div>
         </div>`;
@@ -527,8 +552,8 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
               style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
