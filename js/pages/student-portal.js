@@ -2400,19 +2400,31 @@ function renderBio(biofeedbacks, sid, tid) {
             ${renderInlineCardSelector('pain', DOR_OPTIONS, 1, 'window.onBioPainChange')}
           </div>
           <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
-            <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:150px;overflow-y:auto;padding:6px;background:rgba(255,255,255,0.02);border:1px solid var(--portal-border);border-radius:10px">
-              ${PAIN_REGIONS.map(r=>`
-                <label class="portal-pain-chip" style="
-                  display:flex;align-items:center;gap:4px;padding:4px 10px;
-                  border:1px solid var(--portal-border);border-radius:20px;
-                  cursor:pointer;font-size:0.78rem;transition:all 0.15s">
-                  <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
-                  ${r.label}
-                </label>`).join('')}
+            <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(toque para marcar/desmarcar)</span></label>
+            <div id="painRegionsGrid" style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid var(--portal-border);border-radius:12px">
+              ${(() => {
+                const groups = {};
+                PAIN_REGIONS.forEach(r => {
+                  if (!groups[r.group]) groups[r.group] = [];
+                  groups[r.group].push(r);
+                });
+                return Object.entries(groups).map(([grp, regions]) => `
+                  <div style="margin-bottom:10px">
+                    <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--portal-text-muted);margin-bottom:5px">${grp}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px">
+                      ${regions.map(r => `
+                        <button type="button" class="portal-pain-chip" data-region="${r.id}"
+                          style="display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--portal-border);background:transparent;color:var(--portal-text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
+                          <span>${r.icon || '📍'}</span>
+                          <span>${r.label}</span>
+                          <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
+                        </button>`).join('')}
+                    </div>
+                  </div>`).join('');
+              })()}
             </div>
             <div class="portal-bio-field" style="margin-top:10px">
-              <input class="portal-solo-input" name="painDescription" placeholder="Descrição da dor (opcional)..." style="text-align:left;padding:8px 12px;width:100%" />
+              <input class="portal-solo-input" name="painDescription" placeholder="Descreva a dor (opcional)..." style="text-align:left;padding:8px 12px;width:100%" />
             </div>
           </div>
           <div class="portal-bio-field">
@@ -2497,16 +2509,17 @@ function initBio() {
     const initialPain = parseInt(document.getElementById('portal_pain')?.value) || 1;
     window.onBioPainChange(initialPain);
 
-    document.querySelectorAll('.portal-pain-chip').forEach(tag => {
-      tag.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        const cb = tag.querySelector('input');
+    document.querySelectorAll('#painRegionsGrid .portal-pain-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cb = btn.querySelector('input[type="checkbox"]');
         if (!cb) return;
         cb.checked = !cb.checked;
-        cb.dispatchEvent(new Event('change', { bubbles: true }));
-        tag.style.borderColor = cb.checked ? 'var(--portal-primary)' : '';
-        tag.style.background  = cb.checked ? 'var(--portal-primary-glow)' : '';
-        tag.style.color       = cb.checked ? 'var(--portal-primary)' : '';
+        const selected = cb.checked;
+        // Visual toggle
+        btn.style.borderColor = selected ? '#ef4444' : 'var(--portal-border)';
+        btn.style.background  = selected ? 'rgba(239,68,68,0.12)' : 'transparent';
+        btn.style.color       = selected ? '#ef4444' : 'var(--portal-text-muted)';
+        btn.style.fontWeight  = selected ? '700' : '';
       });
     });
   }, 100);
