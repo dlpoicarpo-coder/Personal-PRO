@@ -494,18 +494,54 @@ export const METHOD_PROGRESSIONS = {
 // ── METADADOS DE CARDIO (FC Alvo, duração, zonas) ─────────────────────────────
 // Usado na seleção de carga da periodização para métodos de cardio
 export const METHOD_CARDIO_META = {
-  'Zona 1 (Z1)':            { fcPct:[50,65], durationMin:[20,60],  rpe:'2-3', note:'Recuperação ativa. Conversa fácil.' },
-  'Zona 2 (Z2)':            { fcPct:[65,75], durationMin:[30,90],  rpe:'3-4', note:'Base aeróbica. Frase completa possível.' },
-  'Zona 3 (Z3)':            { fcPct:[75,80], durationMin:[20,40],  rpe:'5-6', note:'Limiar aeróbico inferior. Difícil conversar.' },
-  'Zona 4 (Z4) — Limiar':   { fcPct:[80,90], durationMin:[10,20],  rpe:'7-8', note:'OBLA. Apenas palavras soltas.' },
-  'Zona 5 (Z5) — VO2max':   { fcPct:[90,100],durationMin:[3,8],    rpe:'9-10',note:'Máximo esforço. Intervalos curtos.' },
-  'Tabata':                  { fcPct:[85,100],durationMin:[4,12],   rpe:'9-10',note:'20s esforço / 10s repouso × 8 rounds.' },
-  'HIIT 1:2':                { fcPct:[85,95], durationMin:[12,20],  rpe:'8-9', note:'30s esforço / 60s recuperação. 8-12 rounds.' },
-  'HIIT 1:1':                { fcPct:[85,95], durationMin:[12,20],  rpe:'8-9', note:'30s esforço / 30s recuperação. Mais intenso.' },
-  'SIT (Sprint Interval Training)': { fcPct:[95,100],durationMin:[5,15], rpe:'10', note:'10-30s máximos. 2-4min recuperação.' },
-  'Série de Repetição (VO2max)': { fcPct:[90,100],durationMin:[12,30], rpe:'9-10',note:'3-5min a 95% VO2max. Igual ao esforço.' },
-  'Steady State':            { fcPct:[65,80], durationMin:[20,60],  rpe:'4-6', note:'Ritmo constante. Zona 2-3.' },
-  'Progressivo':             { fcPct:[60,90], durationMin:[20,60],  rpe:'3-8', note:'+0.5km/h a cada 5min. Cobre Z2→Z4.' },
+  'Zona 1 (Z1)': {
+    fcPct:[50,65], durationMin:[20,60], rpe:'1-3',
+    note:'Recuperação ativa. Abaixo do VT1. Lactato < 1.5 mmol/L. Conversa completamente fácil. FC% é estimativa — calibre com teste de campo.'
+  },
+  'Zona 2 (Z2)': {
+    fcPct:[65,75], durationMin:[30,90], rpe:'3-4',
+    note:'Base aeróbica. Entre Z1 e VT1. Lactato 1.5-2 mmol/L. Diálogo em frases completas. Atenção: FC% varia ±10-15 bpm entre indivíduos — use teste de campo para calibrar seu Z2 real.'
+  },
+  'Zona 3 (Z3) — Zona Cinzenta': {
+    fcPct:[75,87], durationMin:[20,40], rpe:'5-6',
+    note:'Zona cinzenta entre VT1 e VT2. Lactato 2-4 mmol/L. Difícil conversar. Evitar uso excessivo — acumula fadiga sem estímulo de VO2max. Preferir Z2 (base) ou Z4 (limiar).'
+  },
+  'Zona 4 (Z4) — Limiar': {
+    fcPct:[85,92], durationMin:[20,40], rpe:'7-8',
+    note:'Acima do VT2 / OBLA (lactato > 4 mmol/L). Palavras isoladas. Treino de Tempo Run: mínimo 20 min para adaptação do tamponamento de lactato. Atletas treinados têm VT2 deslocado para direita.'
+  },
+  'Zona 5 (Z5) — VO2max': {
+    fcPct:[90,100], durationMin:[3,8], rpe:'9-10',
+    note:'Acima do VT2. Intervalos 3-5 min a 95-100% VO2max (vVO2max). Protocolo Billat: esforço ÷ 2 de recuperação ativa.'
+  },
+  'Tabata': {
+    fcPct:[90,100], durationMin:[4,12], rpe:'9-10',
+    note:'20s all-out / 10s repouso × 8 rounds. Protocolo original: ergômetro de ciclismo a 170% VO2max (Tabata 1996). Em musculação o estímulo metabólico é menor. Máx 2-3×/semana.'
+  },
+  'HIIT 1:2': {
+    fcPct:[85,95], durationMin:[15,25], rpe:'8-9',
+    note:'30s esforço / 60s recuperação (passiva ou caminhada). 6-12 rounds. Razão 1:2 = maior recuperação entre tiros. Máx 2-3×/semana.'
+  },
+  'HIIT 1:1': {
+    fcPct:[85,95], durationMin:[10,18], rpe:'8-9',
+    note:'30s esforço / 30s recuperação. Mais desgastante que 1:2 — duração total menor (10-18 min). Máx 2×/semana. Risco de overreaching se usado frequentemente sem periodização.'
+  },
+  'SIT (Sprint Interval Training)': {
+    fcPct:[95,100], durationMin:[8,20], rpe:'10',
+    note:'Esforço ALL-OUT absoluto — não regulado por FC. Protocolo Wingate: 30s máximos no ergômetro × 4-6 sprints com 4 min recuperação passiva. Para corrida: 6-10s sprints com 2-3 min recuperação.'
+  },
+  'Série de Repetição (VO2max)': {
+    fcPct:[90,100], durationMin:[15,30], rpe:'9-10',
+    note:'Intervalos de 3-5 min a 95-100% VO2max com recuperação ativa igual ao esforço (razão 1:1 em tempo). Protocolo Billat. 4-6 repetições por sessão.'
+  },
+  'Steady State Z2': {
+    fcPct:[65,75], durationMin:[20,60], rpe:'3-4',
+    note:'Ritmo constante em Z2. Base aeróbica, oxidação de gordura, mitocôndrias. Mínimo 30 min para adaptação. Conversa em frases completas.'
+  },
+  'Progressivo': {
+    fcPct:[60,90], durationMin:[20,60], rpe:'3-8',
+    note:'+0.5 km/h a cada 5 min (corrida) ou +10-15W a cada 3 min (ciclismo). Cobre Z2 → Z4. Pode ser usado como teste de limiar (protocolo Conconi).'
+  },
 };
 
 function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
@@ -601,7 +637,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
     methodPanelHTML = `
       <div style="grid-column:1/-1;margin-top:4px;padding:8px 10px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:8px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-          <span style="font-size:0.72rem;font-weight:700;color:#f59e0b">🔗 ${ex.method}</span>
+          <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${ex.method}</span>
           <span style="font-size:0.65rem;color:var(--text-muted);background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:8px">Descanso pós-par: ${ex.rest || 90}s</span>
         </div>
         <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.4">${desc}</div>
@@ -1388,7 +1424,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
             <div>
-              <span style="font-size:0.72rem;font-weight:700;color:#f59e0b">🔗 ${methodName}</span>
+              <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${methodName}</span>
               <span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px">${COMBINED_DESC[methodName] || ''}</span>
             </div>
             <button type="button" class="btn-add-pair btn btn-ghost btn-sm" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);font-size:0.7rem;white-space:nowrap;flex-shrink:0">
