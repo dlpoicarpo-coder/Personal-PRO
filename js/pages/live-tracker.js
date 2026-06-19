@@ -348,6 +348,27 @@ function renderLiveView(students) {
                 const pseVal  = done ? done.pse  : (temp.pse  !== undefined ? temp.pse  : '');
                 const rirVal  = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
                 const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
+
+                // Badge inteligente: mini-série para métodos que usam clusters
+                const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+                let badgeTop, badgeBottom;
+                if (isClusterMethod && setLabel) {
+                  // Ex: "Cluster 1 — Série" → "C1" + "M1" / "Cluster 2 — Pausa 20s" → "C2" + "P"
+                  const clusterMatch = setLabel.match(/Cluster\s*(\d+)/i);
+                  const cNum = clusterMatch ? clusterMatch[1] : '';
+                  const isMini = setLabel.toLowerCase().includes('pausa');
+                  // Contar quantas mini-séries dentro deste cluster vieram antes
+                  const miniIdx = progression?.slice(0, i).filter(s => {
+                    const lbl = s.label || '';
+                    return lbl.match(new RegExp(`Cluster\\s*${cNum}`, 'i'));
+                  }).length + 1;
+                  badgeTop    = `C${cNum}`;
+                  badgeBottom = isMini ? `P${miniIdx}` : `M${miniIdx || 1}`;
+                } else {
+                  badgeTop    = `S${i + 1}`;
+                  badgeBottom = setLabel || '';
+                }
+
                 return `
                 <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
                   style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
@@ -356,8 +377,8 @@ function renderLiveView(students) {
                   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:36px;width:36px;height:36px;border-radius:8px;flex-shrink:0;
                     background:${done ? 'rgba(16,185,129,0.15)' : isActive ? 'rgba(16,185,129,0.12)' : 'var(--bg-card)'};
                     border:1px solid ${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--border-color)'}">
-                    <span style="font-size:0.65rem;font-weight:800;color:${setColor};line-height:1">S${i + 1}</span>
-                    ${setLabel ? `<span style="font-size:0.4rem;color:var(--text-muted);line-height:1;margin-top:1px;text-align:center;white-space:nowrap;overflow:hidden;max-width:34px">${setLabel}</span>` : ''}
+                    <span style="font-size:0.65rem;font-weight:800;color:${setColor};line-height:1">${badgeTop}</span>
+                    ${badgeBottom ? `<span style="font-size:0.4rem;color:var(--text-muted);line-height:1;margin-top:1px;text-align:center;white-space:nowrap;overflow:hidden;max-width:34px">${badgeBottom}</span>` : ''}
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
                     <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Reps</span>
