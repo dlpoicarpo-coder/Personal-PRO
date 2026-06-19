@@ -228,9 +228,16 @@ class Database {
         }
 
         // 2. Add remote items that don't exist locally
+        // Re-ler tombstones frescos do localStorage para capturar deleções que
+        // aconteceram durante este sync (evita re-importar itens recém-excluídos)
+        const freshTombstones = new Set(
+          this._getTombstones(trainerId)
+            .filter(t => t.storeName === storeName)
+            .map(t => t.id)
+        );
         for (const remoteItem of remote) {
           if (!remoteItem.id) continue;
-          if (currentStoreTombstones.has(remoteItem.id)) continue;
+          if (freshTombstones.has(remoteItem.id)) continue;
           if (!merged.has(remoteItem.id)) {
             merged.set(remoteItem.id, remoteItem);
           }
@@ -243,15 +250,16 @@ class Database {
         // 4. Perform upload if needed
         if (toUpload.length > 0) {
           console.log(`[Sync] Uploading ${toUpload.length} items to ${storeName}...`);
-          const tablesWithIsDefault = new Set(['exercises', 'methods']);
           const chunkSize = 50;
           for (let i = 0; i < toUpload.length; i += chunkSize) {
             const chunk = toUpload.slice(i, i + chunkSize);
             const payloads = chunk.map(item => {
               const { _synced, ...cleanItem } = item;
-              const base = { id: item.id, trainer_id: trainerId, data: cleanItem };
-              if (tablesWithIsDefault.has(storeName)) base.is_default = item.is_default || false;
-              return base;
+              return {
+                id: item.id,
+                trainer_id: trainerId,
+                data: cleanItem
+              };
             });
             const { error: upsertError } = await this.supabase
               .from(storeName)
@@ -440,12 +448,13 @@ class Database {
         // 4. Perform upload if needed
         if (toUpload.length > 0) {
           console.log(`[Student Sync] Uploading ${toUpload.length} items to ${storeName}...`);
-          const tablesWithIsDefault = new Set(['exercises', 'methods']);
           const payloads = toUpload.map(item => {
             const { _synced, ...cleanItem } = item;
-            const base = { id: item.id, trainer_id: trainerId || null, data: cleanItem };
-            if (tablesWithIsDefault.has(storeName)) base.is_default = item.is_default || false;
-            return base;
+            return {
+              id: item.id,
+              trainer_id: trainerId || null,
+              data: cleanItem
+            };
           });
           const { error: upsertError } = await this.supabase
             .from(storeName)
@@ -589,28 +598,7 @@ class Database {
 
   async getAll(storeName) {
     const trainerId = await this._getTrainerId();
-    let local       = this._getLocal(storeName, trainerId) || [];
-
-    if (storeName === 'exercises' || storeName === 'methods') {
-      const prefix = storeName === 'methods' ? 'met_' : 'ex_';
-      const sortedLocal = [...local].sort((a, b) => {
-        const aPrefix = a && a.id && a.id.startsWith(prefix);
-        const bPrefix = b && b.id && b.id.startsWith(prefix);
-        if (aPrefix && !bPrefix) return -1;
-        if (!aPrefix && bPrefix) return 1;
-        return 0;
-      });
-      const seenName = new Set();
-      local = sortedLocal.filter(item => {
-        if (!item) return false;
-        const name = item.name ? String(item.name).toLowerCase().trim() : '';
-        if (name) {
-          if (seenName.has(name)) return false;
-          seenName.add(name);
-        }
-        return true;
-      });
-    }
+    const local     = this._getLocal(storeName, trainerId) || [];
 
     if (!this.supabase || !this.SUPABASE_TABLES.has(storeName)) return fixObjectEncoding(local);
 
@@ -624,18 +612,11 @@ class Database {
           : this.supabase.from(storeName).select('*').eq('is_default', true);
         const q2 = this.supabase.from(storeName).select('*').eq('is_default', true);
         const [r1, r2] = await Promise.all([q1, q2]);
-        const prefix = storeName === 'methods' ? 'met_' : 'ex_';
-        const sortedAll = [...(r1.data||[]), ...(r2.data||[])].sort((a, b) => {
-          const aPrefix = a.id && a.id.startsWith(prefix);
-          const bPrefix = b.id && b.id.startsWith(prefix);
-          if (aPrefix && !bPrefix) return -1;
-          if (!aPrefix && bPrefix) return 1;
-          return 0;
-        });
+        const all = [...(r1.data||[]), ...(r2.data||[])];
         // Deduplicar por id e por nome (evita duplicatas de global vs personal)
         const seenId = new Set();
         const seenName = new Set();
-        data  = sortedAll.filter(r => { 
+        data  = all.filter(r => { 
           if (!r) return false;
           const rName = r.data && r.data.name ? String(r.data.name).toLowerCase().trim() : '';
           if (seenId.has(r.id) || (rName && seenName.has(rName))) return false; 
@@ -699,17 +680,9 @@ class Database {
 
       // Deduplicar por nome para exercises e methods
       if (storeName === 'exercises' || storeName === 'methods') {
-        const prefix = storeName === 'methods' ? 'met_' : 'ex_';
-        const sortedResult = [...result].sort((a, b) => {
-          const aPrefix = a.id && a.id.startsWith(prefix);
-          const bPrefix = b.id && b.id.startsWith(prefix);
-          if (aPrefix && !bPrefix) return -1;
-          if (!aPrefix && bPrefix) return 1;
-          return 0;
-        });
         const seenName = new Set();
         const deduped = [];
-        for (const item of sortedResult) {
+        for (const item of result) {
           const name = item.name ? String(item.name).toLowerCase().trim() : '';
           if (name) {
             if (seenName.has(name)) continue;
@@ -796,13 +769,7 @@ class Database {
     if (!this.supabase) return item;
 
     try {
-      // Apenas exercises e methods têm coluna is_default no schema do Supabase
-      // Incluir is_default em outras tabelas causa erro 400 (schema cache error)
-      const tablesWithIsDefault = new Set(['exercises', 'methods']);
-      const payload = tablesWithIsDefault.has(storeName)
-        ? { id: item.id, trainer_id: trainerId || null, is_default: item.is_default || false, data: item }
-        : { id: item.id, trainer_id: trainerId || null, data: item };
-
+      const payload = { id: item.id, trainer_id: trainerId || null, data: item };
       const { error } = await this.supabase.from(storeName).upsert(payload);
       if (error) {
         console.warn(`Supabase put error (${storeName}):`, error.message);
@@ -852,14 +819,17 @@ class Database {
       const { error } = await q;
       if (!error) {
         this._removeTombstone(storeName, id, trainerId);
+        console.log(`[Delete] Remote delete OK for ${storeName} ID ${id}`);
       } else {
         console.warn(`Supabase delete error (${storeName}):`, error.message);
+        // Tombstone permanece para retry no próximo syncBothWays
       }
-    } catch {}
-
-    if (trainerId) {
-      setTimeout(() => this.syncBothWays(trainerId).catch(() => {}), 500);
+    } catch (err) {
+      console.warn(`Supabase delete exception:`, err.message);
+      // Tombstone permanece para retry
     }
+    // NÃO disparar syncBothWays aqui — evita race condition onde o item
+    // recém-excluído ainda aparece no Supabase e é re-importado
   }
 
   // ── CLEAR ──
@@ -904,164 +874,151 @@ class Database {
       for (const ex of existing) {
         if (ex.name) {
           const nameLower = ex.name.trim().toLowerCase();
-          let imageUrl = null;
-          let videoUrl = null;
+          let imageUrl = ex.imageUrl || null;
+          let videoUrl = ex.videoUrl || null;
           
-          const slugKey = slugify(ex.name);
-          
-          const mediaMap = {
-            // Abdômen / Core
-            'abdominal_infra': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
-            'crunch_no_cabo': { imageUrl: 'assets/exercises/cable_crunch.png', videoUrl: 'https://www.youtube.com/shorts/HlX1oFEt2a4' },
-            'abdominal_no_cabo_rope_crunch': { imageUrl: 'assets/exercises/cable_crunch.png', videoUrl: 'https://www.youtube.com/shorts/HlX1oFEt2a4' },
-            'prancha_frontal': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'prancha_lateral': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/pWGhRO5grqs' },
-            'prancha_com_toque_no_ombro': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'russian_twist': { imageUrl: 'assets/exercises/russian_twist.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            'dead_bug': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            'bird_dog': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            'rollout_com_roda': { imageUrl: 'assets/exercises/ab_wheel_rollout.png', videoUrl: 'https://www.youtube.com/shorts/t2yXQq6sfhA' },
-            'abdominal_na_roda': { imageUrl: 'assets/exercises/ab_wheel_rollout.png', videoUrl: 'https://www.youtube.com/shorts/t2yXQq6sfhA' },
-            'rotacao_com_cabo': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            
-            // Bíceps
-            'rosca_21': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/Lz1gT6dI2Yw' },
-            'rosca_alternada_com_halteres': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
-            'rosca_alternada': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
-            'rosca_direta_no_cross': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
-            'rosca_no_cabo': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
-            'rosca_direta_com_barra': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
-            'rosca_direta': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
-            'rosca_martelo': { imageUrl: 'assets/exercises/dumbbell_hammer_curl.png', videoUrl: 'https://www.youtube.com/shorts/c2D17Ld2424' },
-            'rosca_scott': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
-            'rosca_concentrada': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
-            
-            // Costas
-            'barra_fixa_pull_up': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/3wz97y0-8fI' },
-            'barra_fixa': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/3wz97y0-8fI' },
-            'levantamento_terra_romeno': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/eYpGZkX7w2g' },
-            'pullover_com_halter': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/N2_yB9m15j4' },
-            'pullover': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/N2_yB9m15j4' },
-            'pullover_no_cabo': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/J1-yJ9bOqLo' },
-            'puxada_fechada': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
-            'puxada_frontal': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
-            'remada_baixa_sentado': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
-            'remada_baixa': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
-            'remada_cavalinho': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/2K3d2V1OqLc' },
-            'remada_curvada_com_barra': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
-            'remada_curvada': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
-            'remada_unilateral_com_halter': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
-            'remada_unilateral': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
-            'levantamento_terra': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
-            'terra': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
-            
-            // Glúteos
-            'elevacao_pelvica': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
-            'hip_thrust': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
-            'hip_thrust_com_halteres': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/F2_8L2J4C0c' },
-            'ponte_de_gluteos': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/G2_8L2J4C0c' },
-            'coice_no_cabo': { imageUrl: 'assets/exercises/glute_kickback.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
-            'extensao_de_quadril_no_cabo': { imageUrl: 'assets/exercises/glute_kickback.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
-            'abducao_na_maquina': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
-            'cadeira_abdutora': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
-            'cadeira_abdultora': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
-            'abertura_de_quadril_com_haltere': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
-            'abertura_de_quadril': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
-            'agachamento_sumo': { imageUrl: 'assets/exercises/sumo_squat.png', videoUrl: 'https://www.youtube.com/shorts/-4mbprALquk' },
-            'agachamento_sumo_com_halter': { imageUrl: 'assets/exercises/sumo_squat.png', videoUrl: 'https://www.youtube.com/shorts/-4mbprALquk' },
-            'pelvica_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
-            'hip_thrust_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
-            'elevacao_pelvica_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
-            
-            // Ombros
-            'arnold_press': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'crucifixo_invertido': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'desenvolvimento_com_barra': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'desenvolvimento_com_halteres': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'desenvolvimento': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'elevacao_frontal': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'elevacao_frontal_polia': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'encolhimento_de_ombros': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'encolhimento': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'elevacao_lateral': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            
-            // Panturrilha
-            'panturrilha_no_leg_press': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'panturrilha_sentado': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'panturrilha_em_pe': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'panturrilha_em_pe_na_maquina': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            
-            // Peito
-            'cross_over': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'crossover': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'cross_over_alto': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'cross_over_baixo': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'crucifixo_inclinado': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'crucifixo_reto': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'flexao_de_bracos': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'flexao_diamante': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'supino_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'supino_declinado_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
-            'supino_reto_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
-            'supino_reto': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
-            'supino_inclinado_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            
-            // Posterior / Quadríceps
-            'stiff_unilateral': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
-            'stiff_com_barra': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
-            'stiff': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
-            'agachamento_livre_com_barra': { imageUrl: 'assets/exercises/barbell_squat.png', videoUrl: 'https://www.youtube.com/shorts/Fpens-iRVmI' },
-            'agachamento_livre': { imageUrl: 'assets/exercises/barbell_squat.png', videoUrl: 'https://www.youtube.com/shorts/Fpens-iRVmI' },
-            'cadeira_extensora': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/PzIfB9MiiX8' },
-            'extensora': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/PzIfB9MiiX8' },
-            'leg_press_45': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'leg_press': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'agachamento_bulgaro': { imageUrl: 'assets/exercises/bulgarian_split_squat.png', videoUrl: 'https://www.youtube.com/shorts/blmW6LTufL4' },
-            'afundo_com_barra': { imageUrl: 'assets/exercises/barbell_lunge.png', videoUrl: 'https://www.youtube.com/shorts/rltJymhFtHg' },
-            'afundo': { imageUrl: 'assets/exercises/barbell_lunge.png', videoUrl: 'https://www.youtube.com/shorts/rltJymhFtHg' },
-            'passada_avanco': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'passada': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'agachamento_frontal': { imageUrl: 'assets/exercises/front_squat.png', videoUrl: 'https://www.youtube.com/shorts/wPwUGaHapkw' },
-            'hack_squat': { imageUrl: 'assets/exercises/hack_squat.png', videoUrl: 'https://www.youtube.com/shorts/USv0A4xLQKs' },
-            'goblet_squat': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'cadeira_flexora': { imageUrl: 'assets/exercises/seated_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'mesa_flexora': { imageUrl: 'assets/exercises/lying_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/IXg1PQ_5gmw' },
-            'good_morning': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'bom_dia': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            
-            // Tríceps
-            'extensao_de_triceps_no_cabo': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
-            'mergulho_nas_paralelas': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
-            'mergulho_nas_barras_paralelas': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
-            'triceps_coice': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_corda': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
-            'triceps_pulley': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
-            'triceps_testa': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_frances': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'mergulho': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
-            
-            // Mobilidade / Alongamento
-            'rotacao_toracica': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'alongamento_de_quadril': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'hip_90_90': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' }
-          };
-          
-          let matched = mediaMap[slugKey];
-          if (!matched) {
-            // Seletor de busca flexível por substring
-            const foundKey = Object.keys(mediaMap).find(key => 
-              slugKey.includes(key) || key.includes(slugKey)
-            );
-            if (foundKey) {
-              matched = mediaMap[foundKey];
-            }
+          // Limpar links anteriores que não sejam Shorts (forçando a atualização para os Shorts)
+          if (videoUrl && !videoUrl.includes('/shorts/')) {
+            videoUrl = null;
           }
           
-          if (matched) {
-            imageUrl = matched.imageUrl;
-            videoUrl = matched.videoUrl;
+          // Glúteos
+          if (nameLower === 'elevação pélvica' || nameLower === 'elevaçao pélvica' || nameLower === 'hip thrust') {
+            if (!imageUrl) imageUrl = 'assets/exercises/hip_thrust.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/AM8sOtlgKjo';
+          } else if (nameLower === 'coice no cabo') {
+            if (!imageUrl) imageUrl = 'assets/exercises/glute_kickback.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/bJ8KLIqvlfw';
+          } else if (nameLower === 'agachamento sumô' || nameLower === 'agachamento sumô com halter' || nameLower === 'agachamento sumô' || nameLower === 'agachamento sumô com halter') {
+            if (!imageUrl) imageUrl = 'assets/exercises/sumo_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/-4mbprALquk';
+          } else if (nameLower.includes('cadeira abdutora') || nameLower.includes('cadeira abdultora')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/hip_abductor.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/nabhYLtz8Gg';
+          } else if (nameLower.includes('pélvica na máquina') || nameLower.includes('pélvica na maquina') || nameLower === 'hip thrust na máquina' || nameLower === 'elevação pélvica na máquina') {
+            if (!imageUrl) imageUrl = 'assets/exercises/hip_thrust_machine.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/DzGn0Igti5g';
           }
-
+          
+          // Quadríceps
+          else if (nameLower === 'agachamento livre com barra' || nameLower === 'agachamento livre') {
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/Fpens-iRVmI';
+          } else if (nameLower.includes('cadeira extensora') || nameLower === 'extensora') {
+            if (!imageUrl) imageUrl = 'assets/exercises/leg_extension.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/PzIfB9MiiX8';
+          } else if (nameLower.includes('leg press')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/leg_press_45.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/yuIdTWl3oJ8';
+          } else if (nameLower.includes('agachamento búlgaro') || nameLower.includes('bulgaro')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/bulgarian_split_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/blmW6LTufL4';
+          } else if (nameLower.includes('afundo')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_lunge.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/rltJymhFtHg';
+          } else if (nameLower.includes('passada') || nameLower.includes('avanço') || nameLower.includes('avanço')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/walking_lunge.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/nFWardGq1Uo';
+          } else if (nameLower.includes('agachamento frontal')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/front_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/wPwUGaHapkw';
+          } else if (nameLower.includes('hack squat')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/hack_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/USv0A4xLQKs';
+          } else if (nameLower.includes('goblet squat')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/goblet_squat.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/XBsOmtbLlYQ';
+          }
+          
+          // Posterior
+          else if (nameLower.includes('cadeira flexora')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/seated_leg_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/T46yKiz8laY';
+          } else if (nameLower.includes('mesa flexora')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/lying_leg_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/IXg1PQ_5gmw';
+          } else if (nameLower.includes('stiff')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/stiff_deadlift.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/KtP2EMfyiuw';
+          } else if (nameLower.includes('good morning') || nameLower.includes('bom dia')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/good_morning.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/4YMQB-STHkg';
+          }
+          
+          // Peito
+          else if (nameLower === 'supino reto com barra' || nameLower === 'supino reto') {
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_bench_press.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/YiP-Zhk5YMk';
+          } else if (nameLower === 'supino inclinado com halteres' || nameLower === 'supino inclinado') {
+            if (!imageUrl) imageUrl = 'assets/exercises/incline_dumbbell_press.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/wkUemXl4vFI';
+          } else if (nameLower.includes('peck deck') || nameLower.includes('voador')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/peck_deck.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/MENdoLpyj7c';
+          } else if (nameLower.includes('cross over') || nameLower.includes('crossover')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/cable_crossover.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/YyFaD_mt8kQ';
+          }
+          
+          // Costas
+          else if (nameLower.includes('puxada frontal') || nameLower.includes('puxada fechada')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/lat_pulldown.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/_2MfZAj98tk';
+          } else if (nameLower.includes('remada curvada')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_row.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/e53vSzibkO0';
+          } else if (nameLower === 'levantamento terra' || nameLower === 'terra') {
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_deadlift.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/DjsLHZ4jxTU';
+          } else if (nameLower.includes('remada unilateral')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/dumbbell_row.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/OhQTM6Mkq-E';
+          }
+          
+          // Core
+          else if (nameLower === 'prancha frontal' || nameLower === 'prancha') {
+            if (!imageUrl) imageUrl = 'assets/exercises/plank.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/H9cXPIL8nds';
+          } else if (nameLower.includes('russian twist')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/russian_twist.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/qzoJJuL-3-c';
+          } else if (nameLower.includes('roda') || nameLower.includes('rollout')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/ab_wheel_rollout.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/t2yXQq6sfhA';
+          } else if (nameLower.includes('prancha lateral')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/side_plank.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/pWGhRO5grqs';
+          }
+          
+          // Ombros
+          else if (nameLower.includes('desenvolvimento') || nameLower.includes('arnold press')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/dumbbell_shoulder_press.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/5I7ogOjvdnc';
+          } else if (nameLower.includes('elevação lateral') || nameLower.includes('elevaçao lateral')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/lateral_raise.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/Cwcs5h5Sgh0';
+          }
+          
+          // Braços (Pre-configuração)
+          else if (nameLower.includes('rosca direta') || nameLower === 'rosca 21') {
+            if (!imageUrl) imageUrl = 'assets/exercises/barbell_bicep_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/x6JCKfdzPJE';
+          } else if (nameLower.includes('rosca martelo')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/dumbbell_hammer_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/0rRpv6o140o';
+          } else if (nameLower.includes('rosca scott') || nameLower.includes('rosca concentrada')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/preacher_bicep_curl.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/90_d-DsrOkE';
+          } else if (nameLower.includes('tríceps corda') || nameLower.includes('triceps corda') || nameLower.includes('tríceps pulley') || nameLower.includes('triceps pulley') || nameLower.includes('extensão de tríceps') || nameLower.includes('extensao de triceps')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/tricep_pushdown.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/_dXIovzZ5sk';
+          } else if (nameLower.includes('tríceps testa') || nameLower.includes('triceps testa') || nameLower.includes('tríceps francês') || nameLower.includes('triceps frances')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/tricep_overhead.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/Cd0-tP9utgM';
+          } else if (nameLower.includes('mergulho')) {
+            if (!imageUrl) imageUrl = 'assets/exercises/tricep_dips.png';
+            if (!videoUrl) videoUrl = 'https://www.youtube.com/shorts/p_DeBmkbCUc';
+          }
 
           if (imageUrl !== ex.imageUrl || videoUrl !== ex.videoUrl) {
             if (imageUrl) ex.imageUrl = imageUrl;
@@ -1079,7 +1036,9 @@ class Database {
       console.warn('Erro na migração de imagens de exercícios:', err);
     }
 
-    const exercises = [
+    const exercisesCount = await this.count('exercises');
+    if (exercisesCount < 80) {
+      const exercises = [
         // PEITO
         { name: 'Supino Reto com Barra',         muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício base para desenvolvimento do peitoral maior.' },
         { name: 'Supino Inclinado com Halteres',  muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Foco na porção clavicular do peitoral.' },
@@ -1092,9 +1051,6 @@ class Database {
         { name: 'Flexão de Braços',               muscleGroup: 'Peito',        category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Exercício funcional básico para peitoral.' },
         { name: 'Flexão Diamante',                muscleGroup: 'Peito',        category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Variação com ênfase no tríceps.' },
         { name: 'Supino com Halteres',            muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Maior amplitude de movimento que a barra.' },
-        { name: 'Crucifixo Máquina',               muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Crucifixo isolado na máquina (Peck Deck).' },
-        { name: 'Supino Reto com Halteres',         muscleGroup: 'Peito',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Supino reto usando halteres.' },
-        
         // COSTAS
         { name: 'Puxada Frontal',                 muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Desenvolvimento dos dorsais.' },
         { name: 'Puxada Fechada',                 muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Ênfase na espessura das costas.' },
@@ -1106,9 +1062,6 @@ class Database {
         { name: 'Levantamento Terra',             muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício composto para toda a cadeia posterior.' },
         { name: 'Levantamento Terra Romeno',      muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Ênfase nos isquiotibiais e glúteos.' },
         { name: 'Pullover com Halter',            muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Trabalha serrátil e dorsal.' },
-        { name: 'Barra Fixa',                      muscleGroup: 'Costas',       category: 'Calistenia', equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Barra fixa tradicional de calistenia.' },
-        { name: 'Remada Baixa',                    muscleGroup: 'Costas',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Remada baixa com puxador na polia.' },
-        
         // OMBROS
         { name: 'Desenvolvimento com Halteres',   muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Exercício base para deltoides.' },
         { name: 'Desenvolvimento com Barra',      muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Maior sobrecarga no desenvolvimento.' },
@@ -1118,7 +1071,6 @@ class Database {
         { name: 'Face Pull',                      muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Saúde do ombro e deltoide posterior.' },
         { name: 'Arnold Press',                   muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Variação do desenvolvimento com rotação.' },
         { name: 'Encolhimento de Ombros',         muscleGroup: 'Ombros',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento do trapézio.' },
-        
         // BÍCEPS
         { name: 'Rosca Direta com Barra',         muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Exercício base para bíceps.' },
         { name: 'Rosca Alternada com Halteres',   muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Permite foco unilateral e maior amplitude.' },
@@ -1127,7 +1079,6 @@ class Database {
         { name: 'Rosca Concentrada',              muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Máximo isolamento do bíceps.' },
         { name: 'Rosca no Cabo',                  muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Tensão constante no bíceps.' },
         { name: 'Rosca 21',                       muscleGroup: 'Bíceps',       category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Técnica avançada: 7 parciais baixo + 7 alto + 7 completas.' },
-        
         // TRÍCEPS
         { name: 'Tríceps Pulley',                 muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Exercício padrão para tríceps.' },
         { name: 'Tríceps Testa',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Foco na cabeça longa do tríceps.' },
@@ -1136,8 +1087,6 @@ class Database {
         { name: 'Mergulho (Dip)',                 muscleGroup: 'Tríceps',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Exercício composto para tríceps e peito inferior.' },
         { name: 'Extensão de Tríceps no Cabo',    muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Extensão unilateral no cabo.' },
         { name: 'Tríceps Coice',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Isolamento da cabeça lateral do tríceps.' },
-        { name: 'Supino Fechado',                  muscleGroup: 'Tríceps',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Supino com pegada fechada para foco no tríceps.' },
-        
         // QUADRÍCEPS
         { name: 'Agachamento Livre com Barra',    muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Rei dos exercícios de perna.' },
         { name: 'Agachamento Frontal',            muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Maior ativação do quadríceps.' },
@@ -1148,15 +1097,12 @@ class Database {
         { name: 'Afundo com Barra',               muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Variação do afundo com maior carga.' },
         { name: 'Hack Squat',                     muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Agachamento guiado com ênfase no quadríceps.' },
         { name: 'Agachamento Sumô',               muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Enfatiza glúteos e adutores.' },
-        { name: 'Passada/Avanço com Halteres',      muscleGroup: 'Quadríceps',   category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Passada dinâmica caminhando com halteres.' },
-        
         // POSTERIOR
         { name: 'Mesa Flexora',                   muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento dos isquiotibiais deitado.' },
         { name: 'Cadeira Flexora',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Isolamento dos isquiotibiais sentado.' },
-        { name: 'Stiff com Barra',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Alongamento active dos isquiotibiais.' },
+        { name: 'Stiff com Barra',                muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Alongamento ativo dos isquiotibiais.' },
         { name: 'Stiff Unilateral',               muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Versão unilateral para equilíbrio.' },
         { name: 'Good Morning',                   muscleGroup: 'Posterior',    category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Fortalece eretores e isquiotibiais.' },
-        
         // GLÚTEOS
         { name: 'Hip Thrust',                     muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Barra',         loadType: 'weight',     description: 'Melhor exercício para glúteos.' },
         { name: 'Hip Thrust com Halteres',        muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Versão com halteres para variação.' },
@@ -1164,14 +1110,10 @@ class Database {
         { name: 'Coice no Cabo',                  muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Isolamento do glúteo máximo.' },
         { name: 'Ponte de Glúteos',               muscleGroup: 'Glúteos',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Versão sem carga do hip thrust.' },
         { name: 'Agachamento Sumô com Halter',    muscleGroup: 'Glúteos',      category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Enfatiza glúteos e adutores.' },
-        { name: 'Elevação de Pelve',                muscleGroup: 'Glúteos',      category: 'Calistenia', equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Elevação pélvica básica sem carga para calistenia.' },
-        
         // PANTURRILHA
         { name: 'Panturrilha em Pé',              muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Foco no gastrocnêmio.' },
         { name: 'Panturrilha Sentado',            muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Foco no sóleo.' },
         { name: 'Panturrilha no Leg Press',       muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Variação com maior amplitude.' },
-        { name: 'Panturrilha em Pé na Máquina',     muscleGroup: 'Panturrilha',  category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Exercício para panturrilhas na máquina em pé.' },
-        
         // CORE / ABDÔMEN
         { name: 'Abdominal Crunch',               muscleGroup: 'Abdômen',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Flexão do tronco para reto abdominal.' },
         { name: 'Abdominal Infra',                muscleGroup: 'Abdômen',      category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Elevação de pernas para abdômen inferior.' },
@@ -1184,9 +1126,7 @@ class Database {
         { name: 'Bird Dog',                       muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Coordenação e estabilidade lombo-pélvica.' },
         { name: 'Rollout com Roda',               muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Roda abdominal',loadType: 'bodyweight', description: 'Anti-extensão avançada para core.' },
         { name: 'Rotação com Cabo',               muscleGroup: 'Core',         category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Rotação de tronco com resistência.' },
-        { name: 'Prancha',                         muscleGroup: 'Core',         category: 'Funcional',  equipment: 'Peso corporal', loadType: 'bodyweight', description: 'Prancha frontal estática para estabilização do core.' },
-        
-        // CARDIO / ENDURANCE
+        // CARDIO / ENDURANCE — expandido
         { name: 'Esteira - Corrida',               muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '20min', intensityField: 'speed_kmh',  description: 'Corrida aeróbica. Registre velocidade (km/h).' },
         { name: 'Esteira - Caminhada',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '30min', intensityField: 'speed_kmh',  description: 'Caminhada aeróbica de baixa intensidade.' },
         { name: 'Esteira - Intervalado (HIIT)',    muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '30s',   intensityField: 'speed_kmh',  description: 'Sprint + recuperação. Ex: 30s rápido / 90s lento.' },
@@ -1221,50 +1161,24 @@ class Database {
         { name: 'Assault Bike',                    muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Assault Bike',   loadType: 'time',       defaultReps: '20s',   intensityField: 'calories',   description: 'Bicicleta com braços. Exige todo o corpo. Alta intensidade.' },
         { name: 'Ski Erg',                         muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Ski Erg',        loadType: 'time',       defaultReps: '500m',  intensityField: 'pace_500m',  description: 'Simulador de esqui nórdico. Core + cardio.' },
         { name: 'Air Runner',                      muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Air Runner',     loadType: 'time',       defaultReps: '200m',  intensityField: 'pace_min_km',description: 'Esteira não motorizada. Mais demanda do que a convencional.' },
-        { name: 'Aquecimento (Cardio)',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '5 min', intensityField: 'level', description: 'Aquecimento cardiovascular geral.' },
-        { name: 'Treino Contínuo (Cardio)',         muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '30 min', intensityField: 'level', description: 'Treino cardiovascular contínuo.' },
-        { name: 'Desaquecimento (Cardio)',          muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '5 min', intensityField: 'level', description: 'Desaquecimento cardiovascular geral (cool down).' },
-        { name: 'Tiro/Sprint (Cardio)',             muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '30 seg', intensityField: 'level', description: 'Tiro de corrida/esforço de alta intensidade.' },
-        { name: 'Recuperação Ativa (Cardio)',       muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Nenhum',         loadType: 'time',       defaultReps: '60 seg', intensityField: 'level', description: 'Recuperação ativa em intensidade baixa.' },
-        
-        // POTÊNCIA
-        { name: 'Salto na Caixa (Box Jump)',        muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Caixote',        loadType: 'bodyweight', defaultReps: '5', intensityField: 'height_cm', description: 'Salto explosivo na caixa para potência.' },
-        { name: 'Arremesso de Medicine Ball',       muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Medicine Ball',  loadType: 'weight',     defaultReps: '5', description: 'Arremesso explosivo de bola medicinal.' },
-        { name: 'Flexão de Braço com Salto',        muscleGroup: 'Peito',        category: 'Potência',   equipment: 'Peso corporal', loadType: 'bodyweight', defaultReps: '5', description: 'Flexão pliométrica com empurrão explosivo.' },
-        { name: 'Arranco (Snatch)',                 muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Barra',         loadType: 'weight',     defaultReps: '3', description: 'Levantamento olímpico completo em um único movimento.' },
-        { name: 'Arremesso (Clean & Jerk)',         muscleGroup: 'Corpo Inteiro', category: 'Potência',   equipment: 'Barra',         loadType: 'weight',     defaultReps: '3', description: 'Levantamento olímpico em dois tempos.' },
-        
-        // FUNCIONAIS
+        // FUNCIONAIS já existentes mantidos abaixo
         { name: 'Kettlebell Goblet Squat',         muscleGroup: 'Quadríceps',    category: 'Funcional',  equipment: 'Kettlebell',     loadType: 'weight',     description: 'Agachamento com kettlebell.' },
         { name: 'Turkish Get-Up',                  muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Kettlebell',     loadType: 'weight',     description: 'Movimento complexo para estabilidade total.' },
         { name: 'Farmer Walk',                     muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Halteres',       loadType: 'weight',     description: 'Caminhada com carga para força funcional.' },
         { name: 'Slam Ball',                       muscleGroup: 'Corpo Inteiro', category: 'Funcional',  equipment: 'Medicine Ball',  loadType: 'weight',     description: 'Potência e força explosiva.' },
-        
         // MOBILIDADE
         { name: 'Alongamento de Quadril',          muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Flexibilidade do flexor do quadril.' },
         { name: 'Rotação Torácica',                muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Mobilidade da coluna torácica.' },
         { name: 'Hip 90/90',                       muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '45s', description: 'Mobilidade de quadril em rotação interna/externa.' },
         { name: 'Abertura de Quadril com Haltere', muscleGroup: 'Glúteos',       category: 'Mobilidade', equipment: 'Halteres',       loadType: 'weight',     description: 'Fortalecimento e mobilidade do glúteo médio.' },
-    ];
+      ];
 
-    const existing = await this.getAll('exercises');
-    const newExerciseIds = new Set(exercises.map(ex => 'ex_' + slugify(ex.name) + '_' + trainerId));
-    const hasAllDefault = [...newExerciseIds].every(id => existing.some(e => e.id === id));
-
-    if (!hasAllDefault) {
-      console.log('[Seed] Seeding missing default exercises...');
-      // Clean up legacy/removed default templates for this trainer
-      const defaultToClean = existing.filter(e => 
-        e.is_default && 
-        (!e.id.startsWith('ex_') || !e.id.endsWith('_' + trainerId) || !newExerciseIds.has(e.id))
-      );
+      const existing = await this.getAll('exercises');
+      
+      // Clean up legacy non-deterministic default templates for this trainer
+      const defaultToClean = existing.filter(e => e.is_default && (!e.id.startsWith('ex_') || !e.id.endsWith('_' + trainerId)));
       for (const ex of defaultToClean) {
         await this.delete('exercises', ex.id);
-      }
-
-      // Clear any accidental tombstones for the seeded exercises to prevent sync from deleting them
-      for (const id of newExerciseIds) {
-        this._removeTombstone('exercises', id, trainerId);
       }
 
       // Seed exercises deterministically
@@ -1280,104 +1194,46 @@ class Database {
     const trainerId = await this._getTrainerId();
     if (!trainerId) return;
     const methods = [
-      // Geral
+      // Força / Hipertrofia
       { name: 'Unilateral',     category: 'Geral',        description: 'Executar o exercício de um lado de cada vez para correção de assimetrias e equilíbrio muscular.', sets: '3-4', repsHint: '10-12', restHint: '60s' },
-      
-      // Hipertrofia
       { name: 'Drop-set',       category: 'Hipertrofia', description: 'Executar até a falha, reduzir carga ~20% e continuar sem descanso. Repetir 2-3x.', sets: '3+drops', repsHint: '8-12 + drops', restHint: '120-180s entre drop-sets completos' },
+      { name: 'Pirâmide Crescente',  category: 'Força',        description: 'Aumentar carga a cada série, reduzir reps: 15→12→10→8. Boa para progressão de força.', sets: '4', repsHint: '15→12→10→8', restHint: '90-120s' },
+      { name: 'Pirâmide Decrescente',category: 'Força',        description: 'Inicia pesado e reduz carga: 8→10→12→15. Trabalha força e resistência na mesma sessão.', sets: '4', repsHint: '8→10→12→15', restHint: '90-120s' },
       { name: 'Pirâmide Dupla',      category: 'Hipertrofia',  description: 'Crescente depois decrescente: 15→12→10→8→10→12→15. Máximo volume. Mais desgastante.', sets: '7', repsHint: '15→12→10→8→10→12→15', restHint: '90s' },
       { name: 'Pirâmide Completa',   category: 'Hipertrofia',  description: 'Versão estendida com 10 séries: 20→15→12→10→8→6→8→10→12→15. Volume e intensidade máximos. Para avançados.', sets: '10', repsHint: '20→15→12→10→8→6→8→10→12→15', restHint: '90-120s' },
+      { name: 'Rest-Pause',      category: 'Força',       description: 'Executar até a falha, descanso de 15-20s, continuar até nova falha. 2-3 mini-séries.', sets: '1-3', repsHint: 'Até a falha + pausa', restHint: '15-20s entre mini-séries' },
       { name: 'Super-série Agonista', category: 'Hipertrofia', description: 'Dois exercícios do mesmo grupo muscular sem descanso. Ex: Supino + Crucifixo.', sets: '3', repsHint: '10-12 cada', restHint: '90s após o par' },
       { name: 'Super-série Antagonista', category: 'Hipertrofia', description: 'Dois exercícios de grupos opostos sem descanso. Ex: Rosca + Tríceps.', sets: '3', repsHint: '10-12 cada', restHint: '60s após o par' },
       { name: 'Tri-set',         category: 'Hipertrofia', description: 'Três exercícios consecutivos sem descanso. Alto estímulo metabólico.', sets: '3', repsHint: '8-12 cada', restHint: '120s após o tri' },
       { name: 'Série Gigante',   category: 'Hipertrofia', description: '4+ exercícios consecutivos. Máximo estímulo. Reduzir cargas.', sets: '3', repsHint: '10-15 cada', restHint: '180s após o set' },
+      { name: 'Cluster',         category: 'Força',       description: 'Carga 85-95% 1RM. Execução: 2-3 reps, pausa 10-15s, repetir até 5 cluster. Força máxima.', sets: '5', repsHint: '2-3 por cluster', restHint: '10-15s entre clusters; 3-5min entre sets' },
       { name: 'Excêntrico Acentuado', category: 'Hipertrofia', description: 'Fase excêntrica 4-6 segundos. Provoca mais dano muscular e hipertrofia.', sets: '3-4', repsHint: '6-8', restHint: '120s' },
+      { name: 'Isometria',       category: 'Força',       description: 'Sustentação em posição de tensão por 30-60s. Boa para estabilização.', sets: '3', repsHint: '30-60s', restHint: '90s' },
       { name: 'Pré-exaustão',    category: 'Hipertrofia', description: 'Isolamento antes do composto. Ex: Crucifixo → Supino. Fatiga o músculo-alvo primeiro.', sets: '3', repsHint: '12 iso + 8-10 composto', restHint: '0s entre, 120s entre séries' },
       { name: 'Bi-set',          category: 'Hipertrofia', description: 'Dois exercícios para o mesmo músculo, sem pausa.', sets: '3-4', repsHint: '10 cada', restHint: '90s após o par' },
       { name: '21s',             category: 'Hipertrofia', description: '7 reps parciais (0-90°) + 7 reps parciais (90-180°) + 7 reps completas = 21.', sets: '3', repsHint: '21 (7+7+7)', restHint: '90-120s' },
       { name: 'Stripping',       category: 'Hipertrofia', description: 'Similar ao drop-set com barra: remover anilhas sem parar.', sets: '1 longa', repsHint: 'Até a falha com cada carga', restHint: '120-180s' },
       { name: 'FST-7',           category: 'Hipertrofia', description: '7 séries do exercício isolador com 30-45s descanso. Alta congestão.', sets: '7', repsHint: '12-15', restHint: '30-45s' },
-
-      // Força / Potência
-      { name: 'Pirâmide Crescente',  category: 'Força / Potência',        description: 'Aumentar carga a cada série, reduzir reps: 15→12→10→8. Boa para progressão de força.', sets: '4', repsHint: '15→12→10→8', restHint: '90-120s' },
-      { name: 'Pirâmide Decrescente',category: 'Força / Potência',        description: 'Inicia pesado e reduz carga: 8→10→12→15. Trabalha força e resistência na mesma sessão.', sets: '4', repsHint: '8→10→12→15', restHint: '90-120s' },
-      { name: 'Rest-Pause',      category: 'Força / Potência',       description: 'Executar até a falha, descanso de 15-20s, continuar até nova falha. 2-3 mini-séries.', sets: '1-3', repsHint: 'Até a falha + pausa', restHint: '15-20s entre mini-séries' },
-      { name: 'Cluster',         category: 'Força / Potência',       description: 'Carga 85-95% 1RM. Execução: 2-3 reps, pausa 10-15s, repetir até 5 cluster. Força máxima.', sets: '5', repsHint: '2-3 por cluster', restHint: '10-15s entre clusters; 3-5min entre sets' },
-      { name: 'Isometria',       category: 'Força / Potência',       description: 'Sustentação em posição de tensão por 30-60s. Boa para estabilização.', sets: '3', repsHint: '30-60s', restHint: '90s' },
-
-      // Resistência / RML
-      { name: 'Série de Exaustão', category: 'Resistência / RML', description: 'Série executada até a falha muscular concêntrica para desenvolvimento de endurance muscular.', sets: '2-3', repsHint: '15-25+', restHint: '45-60s' },
-      { name: 'Circuito',         category: 'Resistência / RML', description: 'Transição imediata entre múltiplos exercícios para aumentar gasto calórico e condicionamento.', sets: '3-4 voltas', repsHint: '15-20', restHint: '2-3min após circuito' },
-
       // Cardio / Endurance
-      { name: 'Zona 1 (Z1)',     category: 'Cardio / Endurance',      description: '<65% FC Máx. Recuperação ativa, base aeróbica.', sets: '1', repsHint: '20-60min contínuo', restHint: 'Sem descanso' },
-      { name: 'Zona 2 (Z2)',     category: 'Cardio / Endurance',      description: '65-75% FC Máx. Base aeróbica. Longo e lento.', sets: '1', repsHint: '30-90min contínuo', restHint: 'Sem descanso' },
-      { name: 'Zona 3 (Z3)',     category: 'Cardio / Endurance',      description: '75-80% FC Máx. Limiar aeróbico inferior.', sets: '1', repsHint: '20-40min', restHint: 'Sem descanso' },
-      { name: 'Zona 4 (Z4) — Limiar', category: 'Cardio / Endurance', description: '80-90% FC Máx. Limiar anaeróbio.', sets: '1-3', repsHint: '10-20min', restHint: '5min recuperação ativa entre blocos' },
-      { name: 'Zona 5 (Z5) — VO2max', category: 'Cardio / Endurance', description: '90-100% FC Máx. Intervalos curtos. Melhora VO2max.', sets: '4-8', repsHint: '3-5min esforço', restHint: '3-5min recuperação' },
-      { name: 'Tabata',          category: 'Cardio / Endurance',      description: '20s máximo / 10s repouso × 8 rounds = 4min.', sets: '1-3 blocos', repsHint: '20s esforço / 10s repouso', restHint: '60-90s entre blocos' },
-      { name: 'HIIT 1:2',        category: 'Cardio / Endurance',      description: 'Ratio 1:2 trabalho:descanso. 30s esforço / 60s recuperação. 8-12 rounds.', sets: '8-12', repsHint: '30s esforço', restHint: '60s recuperação ativa' },
-      { name: 'HIIT 1:1',        category: 'Cardio / Endurance',      description: 'Ratio 1:1. 30s esforço / 30s recuperação. Mais intenso.', sets: '8-12', repsHint: '30s esforço', restHint: '30s recuperação ativa' },
-      { name: 'SIT (Sprint Interval Training)', category: 'Cardio / Endurance', description: 'Sprints de 10-30s máximos. Melhora potência anaeróbica.', sets: '4-6', repsHint: '10-30s sprint', restHint: '2-4min recuperação completa' },
-      { name: 'Série de Repetição (VO2max)', category: 'Cardio / Endurance', description: 'Intervalos de 3-5min a 95-100% VO2max.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforço' },
-      { name: 'Steady State',    category: 'Cardio / Endurance',      description: 'Ritmo constante e moderado. Zona 2-3. Base aeróbica.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
-      { name: 'Progressivo',     category: 'Cardio / Endurance',      description: 'Aumentar velocidade/intensidade a cada bloco. Ex: +0.5km/h a cada 5min.', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
-      { name: 'Polarizado (80/20)', category: 'Cardio / Endurance',      description: 'Distribuição científica: 80% do volume em baixa intensidade (Z1/Z2) e 20% em alta intensidade (Z5+), evitando zona moderada.', sets: '1', repsHint: '80% Z2 / 20% Z5', restHint: 'Nenhum' },
-      { name: 'Gibala 10x60s (HIIT)', category: 'Cardio / Endurance',   description: 'Protocolo de Gibala: 10 tiros de 60s a ~90% FC Máx com 60s de recuperação ativa. Excelente para eficiência de tempo.', sets: '10 rounds', repsHint: '60s esforço', restHint: '60s rec. ativa' },
-      { name: 'Gibala 3x20s (Sprint)', category: 'Cardio / Endurance',   description: 'The One-Minute Workout (Gibala): 3 tiros máximos (all-out) de 20s, com 2min de recuperação leve entre eles.', sets: '3 rounds', repsHint: '20s sprint', restHint: '2min rec. leve' },
-
-      // Mobilidade / Flexibilidade
-      { name: 'Alongamento Ativo', category: 'Mobilidade / Flexibilidade', description: 'Sustentação ativa de posições articulares no limite da amplitude de movimento.', sets: '2-3', repsHint: '30-45s', restHint: '15s' },
-      { name: 'Mobilidade Articular', category: 'Mobilidade / Flexibilidade', description: 'Exercícios dinâmicos visando aumentar a lubrificação sinovial e amplitude.', sets: '3', repsHint: '10-15 reps lentas', restHint: '0s' },
-
-      // Core / Estabilização
-      { name: 'Estabilização Core', category: 'Core / Estabilização', description: 'Manutenção de posturas isométricas que recrutam eretores da espinha, transverso abdominal e oblíquos.', sets: '3-4', repsHint: '30-60s', restHint: '45s' },
-      { name: 'Anti-Rotacional', category: 'Core / Estabilização', description: 'Exercícios com resistência que desafiam o core a impedir o movimento rotacional.', sets: '3', repsHint: '10-12', restHint: '60s' },
-
-      // Regenerativo / Recovery
-      { name: 'Recuperação Ativa', category: 'Regenerativo / Recovery', description: 'Esforço de baixíssima intensidade pós-treino ou em dia regenerativo para remover lactato.', sets: '1', repsHint: '10-20min', restHint: 'Nenhum' },
-      { name: 'Liberação Miofascial', category: 'Regenerativo / Recovery', description: 'Automassagem com rolo de espuma (foam roller) ou bola para soltar fáscias musculares.', sets: '1', repsHint: '1-2min por grupo', restHint: '0s' },
-
-      // Aquecimento / Preparação
-      { name: 'RAMP (Ativação)', category: 'Aquecimento / Preparação', description: 'Ativação progressiva (Raise, Activate, Mobilize, Potentiate) para preparar o sistema nervoso e articular.', sets: '1', repsHint: '5-10min', restHint: '0s' },
-      { name: 'Facilitação Neuromuscular', category: 'Aquecimento / Preparação', description: 'FNP (Facilitação Neuromuscular Proprioceptiva) - contrair-relaxar para ganho rápido de amplitude articular.', sets: '2-3', repsHint: '15-20s', restHint: '15s' },
-      { name: 'Ativação Muscular', category: 'Aquecimento / Preparação', description: 'Estímulo direcionado de baixa intensidade para ativação de músculos alvo.', sets: '2', repsHint: '15-20', restHint: '30s' },
-
-      // Calistenia / Ginástica
-      { name: 'Progressão Calistênica', category: 'Calistenia / Ginástica', description: 'Trabalho focado em progressões de força relativa e peso corporal (ex: Tuck Planche, Front Lever).', sets: '4-5', repsHint: 'Submáxima', restHint: '120-180s' },
-      { name: 'Isometria Avançada', category: 'Calistenia / Ginástica', description: 'Manutenção de posturas calistênicas estáticas sob máxima contração voluntária (ex: L-sit, Handstand).', sets: '3-4', repsHint: '10-20s', restHint: '90s' },
-      { name: 'Treino de Skills', category: 'Calistenia / Ginástica', description: 'Desenvolvimento de habilidades ginásticas e controle motor antes da fadiga muscular.', sets: '3-5', repsHint: 'Trabalho de técnica', restHint: '120s' },
-
-      // LPO / Levantamento Olímpico
-      { name: 'Complex Olímpico', category: 'LPO / Levantamento Olímpico', description: 'Sequência ininterrupta de variações de LPO (ex: Clean + Front Squat + Jerk) para potência e coordenação.', sets: '3-5', repsHint: '1-3 complexes', restHint: '120-180s' },
-      { name: 'Cluster LPO', category: 'LPO / Levantamento Olímpico', description: 'Séries compostas por repetições únicas (singles) com pausa curta de 10-15s para foco na técnica.', sets: '4-6', repsHint: '3-5 singles', restHint: '180s' },
-      { name: 'Potência / Velocidade', category: 'LPO / Levantamento Olímpico', description: 'Trabalho dinâmico com 60-80% 1RM focado na velocidade de execução concêntrica.', sets: '4-6', repsHint: '2-3', restHint: '120s' },
-
-      // Coordenação / Agilidade
-      { name: 'Escada de Agilidade', category: 'Coordenação / Agilidade', description: 'Padrões rápidos de passos na escada de agilidade para coordenação neuromuscular e velocidade de pés.', sets: '4-6 voltas', repsHint: 'Trabalho rápido', restHint: '45-60s' },
-      { name: 'Treino de Reação', category: 'Coordenação / Agilidade', description: 'Deslocamento multidirecional responsivo a comandos visuais ou auditivos do treinador.', sets: '4-6', repsHint: '15-30s esforço', restHint: '60s' },
-      { name: 'Drill Técnico', category: 'Coordenação / Agilidade', description: 'Exercícios repetitivos específicos para refino de gestos esportivos e controle de movimento.', sets: '3-4', repsHint: '10-15', restHint: '60s' },
-
-      // Reabilitação / Preventivo
-      { name: 'Isolamento Corretivo', category: 'Reabilitação / Preventivo', description: 'Recrutamento seletivo de estabilizadores profundos para prevenção de lesões e reabilitação pós-lesão.', sets: '3', repsHint: '12-15 lentas', restHint: '45s' },
-      { name: 'Controle Motor', category: 'Reabilitação / Preventivo', description: 'Exercícios de baixa sobrecarga focados na qualidade biomecânica e recrutamento muscular consciente.', sets: '3', repsHint: '10-15', restHint: '30-45s' },
-      { name: 'Excêntrico Lento (Rehab)', category: 'Reabilitação / Preventivo', description: 'Foco exclusivo na fase de estiramento controlado (4-6 segundos) para tratamento de tendinopatias.', sets: '3-4', repsHint: '8-10', restHint: '60s' }
+      { name: 'Zona 1 (Z1)',     category: 'Cardio', description: '< 65% FCmáx. Recuperação ativa. Abaixo do VT1. Lactato < 1.5 mmol/L. Conversa completamente fácil.', sets: '1', repsHint: '20-60min contínuo', restHint: 'Sem descanso' },
+      { name: 'Zona 2 (Z2)',     category: 'Cardio', description: '65-75% FCmáx. Base aeróbica. Entre Z1 e VT1. Lactato 1.5-2 mmol/L. Diálogo em frases completas. FC% é estimativa — calibre com teste de campo.', sets: '1', repsHint: '30-90min contínuo', restHint: 'Sem descanso' },
+      { name: 'Zona 3 (Z3) — Zona Cinzenta', category: 'Cardio', description: '75-87% FCmáx. Zona cinzenta entre VT1 e VT2. Lactato 2-4 mmol/L. Difícil conversar. Evitar uso excessivo — preferir Z2 ou Z4.', sets: '1', repsHint: '20-40min', restHint: 'Sem descanso' },
+      { name: 'Zona 4 (Z4) — Limiar', category: 'Cardio', description: '85-92% FCmáx. Acima do VT2/OBLA. Lactato > 4 mmol/L. Apenas palavras isoladas. Tempo Run: mínimo 20 min para adaptação do tamponamento.', sets: '1-3', repsHint: '20-40min', restHint: '5min recuperação ativa entre blocos' },
+      { name: 'Zona 5 (Z5) — VO2max', category: 'Cardio', description: '90-100% FCmáx. Acima do VT2. Intervalos 3-5 min a 95-100% VO2max. Recuperação ativa igual ao esforço (1:1 em tempo).', sets: '4-6', repsHint: '3-5min esforço', restHint: '3-5min recuperação ativa' },
+      { name: 'Tabata',          category: 'Cardio', description: '20s all-out / 10s repouso × 8 rounds = 4 min. Protocolo original: cicloergômetro a 170% VO2max (Tabata 1996). Em musculação o estímulo metabólico é menor. Máx 2-3×/semana.', sets: '1-3 blocos', repsHint: '20s esforço / 10s repouso', restHint: '60-90s entre blocos' },
+      { name: 'HIIT 1:2',        category: 'Cardio', description: '30s esforço / 60s recuperação. 6-12 rounds. Razão 1:2 = maior recuperação entre tiros. Recuperação passiva ou caminhada. Máx 2-3×/semana.', sets: '6-12', repsHint: '30s esforço', restHint: '60s recuperação' },
+      { name: 'HIIT 1:1',        category: 'Cardio', description: '30s esforço / 30s recuperação. Mais desgastante que 1:2 — duração total menor (10-18 min). Máx 2×/semana. Risco de overreaching se frequente sem periodização.', sets: '6-10', repsHint: '30s esforço', restHint: '30s recuperação' },
+      { name: 'SIT (Sprint Interval Training)', category: 'Cardio', description: 'Esforço ALL-OUT absoluto — não regulado por FC. Wingate: 30s máximos no ergômetro × 4-6 sprints com 4 min recuperação passiva. Corrida: 6-10s sprints com 2-3 min recuperação.', sets: '4-6', repsHint: '30s (Wingate) ou 6-10s (corrida)', restHint: '2-4min recuperação passiva' },
+      { name: 'Série de Repetição (VO2max)', category: 'Cardio', description: 'Intervalos de 3-5 min a 95-100% VO2max (vVO2max). Recuperação ativa 1:1 em tempo. 4-6 repetições. Protocolo Billat 2001.', sets: '4-6', repsHint: '3-5min', restHint: 'Igual ao esforço (ativa)' },
+      { name: 'Steady State Z2', category: 'Cardio', description: 'Ritmo constante em Z2 (65-75% FCmáx). Base aeróbica, oxidação de gordura, mitocôndrias. Mínimo 30 min. Conversa em frases completas.', sets: '1', repsHint: '20-60min', restHint: 'Sem descanso' },
+      { name: 'Progressivo',     category: 'Cardio', description: '+0.5 km/h a cada 5 min (corrida) ou +10-15W a cada 3 min (ciclismo). Cobre Z2 a Z4. Pode ser usado como teste de limiar (protocolo Conconi).', sets: '1', repsHint: 'Progressivo', restHint: 'Sem descanso' },
     ];
     const existing = await this.getAll('methods');
-    const newMethodIds = new Set(methods.map(m => 'met_' + slugify(m.name) + '_' + trainerId));
     
-    // Clean up legacy/removed default methods for this trainer
-    const defaultToClean = existing.filter(m => 
-      m.is_default && 
-      (!m.id.startsWith('met_') || !m.id.endsWith('_' + trainerId) || !newMethodIds.has(m.id))
-    );
+    // Clean up legacy non-deterministic default methods for this trainer
+    const defaultToClean = existing.filter(m => m.is_default && !m.id.startsWith('met_'));
     for (const m of defaultToClean) {
       await this.delete('methods', m.id);
-    }
-
-    // Clear any accidental tombstones for the seeded methods to prevent sync from deleting them
-    for (const id of newMethodIds) {
-      this._removeTombstone('methods', id, trainerId);
     }
 
     // Seed methods deterministically
