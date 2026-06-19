@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
-import { METHOD_PROGRESSIONS, METHOD_CARDIO_META } from './workouts.js';
+import { METHOD_PROGRESSIONS, METHOD_CARDIO_META, COMBINED_METHODS } from './workouts.js';
 
 const isNumeric = (val) => {
   if (val === undefined || val === null || val === '') return true;
@@ -270,19 +270,35 @@ function renderLiveView(students) {
           </div>
 
           <div style="margin-bottom:12px">
-            <div style="font-size:1.15rem;font-weight:700;color:var(--primary);margin-bottom:4px">${ex.name || '—'}</div>
+            <!-- Nome + badge combinado -->
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+              <div style="font-size:1.15rem;font-weight:700;color:var(--primary)">${ex.name || '—'}</div>
+              ${COMBINED_METHODS?.has(ex.method) ? `
+                <span style="font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">
+                  🔗 ${ex.method} · descanso pós-par
+                </span>` : ''}
+            </div>
             <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
               ${ex.load ? `<span style="color:var(--accent);font-weight:600">${(isNumeric(ex.load) && ex.loadType !== 'time') ? ex.load + 'kg' : ex.load}</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
-              <span>${ex.rest || 60}s desc.</span>
-              ${ex.method ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
+              ${COMBINED_METHODS?.has(ex.method)
+                ? `<span style="color:var(--warning);font-weight:600">⏩ 0s → próx. ex.</span>`
+                : `<span>${ex.rest || 60}s desc.</span>`}
+              ${ex.method && !COMBINED_METHODS?.has(ex.method) ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
               ${(() => {
                 const cm = METHOD_CARDIO_META?.[ex.method];
                 if (!cm) return '';
                 return `<span style="font-size:0.68rem;color:var(--accent);font-weight:600">🫀 ${cm.fcPct[0]}-${cm.fcPct[1]}% FCmáx · RPE ${cm.rpe}</span>`;
               })()}
+            </div>
+            <!-- Observações do treinador -->
+            ${ex.trainerNotes ? `
+              <div style="margin-top:7px;padding:7px 10px;background:rgba(16,185,129,0.07);border-left:3px solid var(--success);border-radius:0 6px 6px 0">
+                <div style="font-size:0.6rem;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">📋 Orientações do Professor</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5">${ex.trainerNotes}</div>
+              </div>` : ''}
             </div>
             ${(() => {
               const wk = s.weekPlan;
@@ -895,8 +911,17 @@ export function initTracker(navigateFn) {
 
   // Rest timer — só cria se não existir ainda
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
-  
-  let restDur = parseInt(curEx.rest) || 60;
+  const exs_all = state.session.exercises || [];
+
+  // ── Lógica de descanso para métodos combinados ──────────────────────────
+  // Bi-set/Tri-set/Super-série: descanso=0 no exercício atual (vai pro próximo imediatamente)
+  // O descanso real dispara apenas no ÚLTIMO exercício do grupo
+  const isCombinedEx   = COMBINED_METHODS?.has(curEx.method);
+  const nextEx         = exs_all[state.exIdx + 1];
+  const isLastOfGroup  = !nextEx || !COMBINED_METHODS?.has(nextEx.method) || nextEx.method !== curEx.method;
+  // restDur efetivo: 0 se combinado e não é o último, senão usa o rest configurado
+  let restDur = isCombinedEx && !isLastOfGroup ? 0 : (parseInt(curEx.rest) || 60);
+
   let progression = curEx.seriesProgression;
   if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
     const progDef = METHOD_PROGRESSIONS[curEx.method];
@@ -905,7 +930,7 @@ export function initTracker(navigateFn) {
       set: si + 1,
       reps: s.reps,
       load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-      rest: s.rest != null ? s.rest : parseInt(curEx.rest || 60),
+      rest: (isCombinedEx && s.rest === 0) ? 0 : (s.rest != null ? s.rest : parseInt(curEx.rest || 60)),
       label: s.label || `Série ${si + 1}`
     }));
   }
@@ -913,6 +938,8 @@ export function initTracker(navigateFn) {
   if (progression && progression[state.setIdx]) {
     const sRest = progression[state.setIdx].rest;
     if (sRest != null) restDur = parseInt(sRest);
+    // Override: se combinado e não-último, forçar 0
+    if (isCombinedEx && !isLastOfGroup) restDur = 0;
   }
 
   if (!state.restTimer) {
