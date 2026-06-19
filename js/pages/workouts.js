@@ -317,11 +317,20 @@ export const METHOD_PROGRESSIONS = {
     ]
   },
   'Rest-Pause': {
-    desc: 'Falha com 80-85% 1RM, pausa 20s, nova falha. Repete 2x. Máximo recrutamento de UM.',
+    desc: '80-85% 1RM até a falha, pausa 20s intra-série, pausa 2-3min entre clusters. Repete 2-3 clusters.',
     series: [
-      { reps: 'até falha', loadPct: 0.82, label: 'Série principal', rest: 20 },
-      { reps: 'até falha', loadPct: 0.82, label: 'Pausa 20s →',     rest: 20 },
-      { reps: 'até falha', loadPct: 0.82, label: 'Pausa 20s →',     rest: 20 },
+      // Cluster 1
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 1 — Série',   rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 1 — Pausa 20s', rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 1 — Pausa 20s', rest: 150 },
+      // Cluster 2
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 2 — Série',   rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 2 — Pausa 20s', rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 2 — Pausa 20s', rest: 150 },
+      // Cluster 3 (opcional — avançados)
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 3 — Série',   rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 3 — Pausa 20s', rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'Cluster 3 — Pausa 20s', rest: 0   },
     ]
   },
   'Cluster': {
@@ -1405,14 +1414,28 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
           </div>
         </div>`;
 
+      const isClusterMethod = methodName === 'Rest-Pause' || methodName === 'Cluster';
+
       const seriesHTML = progression.series.map((s, si) => {
         const calcLoad = baseLoad > 0 && !isTime
           ? Math.round(baseLoad * s.loadPct * 2) / 2
           : '';
         const restVal  = s.rest != null ? s.rest : (restEl?.value || '60');
+        const restDisplay = restVal == 0 ? '—' : restVal >= 60 ? `${Math.round(restVal/60)}min${restVal%60?restVal%60+'s':''}` : `${restVal}s`;
+
+        // Separador visual entre clusters
+        const prevLabel = si > 0 ? (progression.series[si-1].label || '') : '';
+        const curLabel  = s.label || '';
+        const isNewCluster = isClusterMethod && si > 0 && (() => {
+          const pm = prevLabel.match(/Cluster\s*(\d+)/i);
+          const cm = curLabel.match(/Cluster\s*(\d+)/i);
+          return pm && cm && pm[1] !== cm[1];
+        })();
+
         return `
-          <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.1)" data-serie="${si}">
-            <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+          ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0" title="Próximo cluster — 2-3min descanso"></div>` : ''}
+          <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
+            <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
             <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
             <div>
               <input type="number" step="0.5" value="${calcLoad}" placeholder="${isTime?'km/h':'kg'}"
@@ -1422,18 +1445,18 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
             <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
               ${isTime ? s.reps : `${s.reps} reps`}
             </div>
-            <div>
+            <div title="${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'Pausa intra-série (20s). Entre clusters: 2-3min.' : ''}">
               <input type="number" value="${restVal}"
                 class="form-input serie-rest" data-serie="${si}"
-                style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:var(--text-muted)"
+                style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
                 placeholder="s" title="Descanso (s)"/>
             </div>
           </div>`;
       }).join('');
 
       const seriesLegend = `
-        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
