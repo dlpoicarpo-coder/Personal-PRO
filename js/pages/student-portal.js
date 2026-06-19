@@ -1466,7 +1466,6 @@ function initTreinar(workouts, schedules, student) {
               <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
               ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
               ${(() => {
-                // Lazy import approach — cardio meta embedded inline for portal
                 const CARDIO = {
                   'Zona 1 (Z1)':{fc:'50-65'},  'Zona 2 (Z2)':{fc:'65-75'},
                   'Zona 3 (Z3)':{fc:'75-80'},  'Zona 4 (Z4) — Limiar':{fc:'80-90'},
@@ -1476,10 +1475,21 @@ function initTreinar(workouts, schedules, student) {
                   'Série de Repetição (VO2max)':{fc:'90-100'},
                   'Steady State':{fc:'65-80'}, 'Progressivo':{fc:'60-90'},
                 };
+                const COMBINED = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
                 const cm = CARDIO[ex.method];
-                if (!cm) return '';
-                return `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600">🫀 ${cm.fc}% FC Máx</div>`;
+                const isCombo = COMBINED.has(ex.method);
+                const nextEx2 = w.exercises[ei + 1];
+                const isLastOfGroup = !nextEx2 || !COMBINED.has(nextEx2.method) || nextEx2.method !== ex.method;
+                return [
+                  cm ? `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600">🫀 ${cm.fc}% FC Máx</div>` : '',
+                  isCombo ? `<div style="font-size:0.62rem;font-weight:700;color:#f59e0b;margin-top:3px;padding:2px 6px;background:rgba(245,158,11,0.12);border-radius:6px;display:inline-block">🔗 ${ex.method} · ${isLastOfGroup ? `${ex.rest||90}s descanso pós-par` : '→ próximo exercício'}</div>` : '',
+                ].join('');
               })()}
+              ${(ex.trainerNotes || ex.notes) ? `
+                <div style="margin-top:6px;padding:7px 10px;background:rgba(16,185,129,0.08);border-left:3px solid #10b981;border-radius:0 8px 8px 0">
+                  <div style="font-size:0.58rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">📋 Orientações</div>
+                  <div style="font-size:0.78rem;color:var(--portal-text-secondary,#cbd5e1);line-height:1.5">${ex.trainerNotes || ex.notes}</div>
+                </div>` : ''}
             </div>
             <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1615,6 +1625,8 @@ function initTreinar(workouts, schedules, student) {
     }
 
     // Bind done buttons
+    const COMBINED_SET = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+
     exLogEl.querySelectorAll('.portal-solo-done-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const isDone = btn.classList.toggle('done');
@@ -1622,19 +1634,35 @@ function initTreinar(workouts, schedules, student) {
         if (row) {
           row.classList.toggle('set-done', isDone);
           if (isDone) {
-            workSeconds += 30; // estimate 30s work per set
-            const restSec = parseInt(btn.dataset.rest) || 60;
+            workSeconds += 30;
+            const ei = parseInt(btn.dataset.ei);
+            const ex = w?.exercises?.[ei];
+            const isCombined = COMBINED_SET.has(ex?.method);
+            const nextEx = w?.exercises?.[ei + 1];
+            const isLastOfGroup = !nextEx || !COMBINED_SET.has(nextEx?.method) || nextEx?.method !== ex?.method;
+
+            let restSec = parseInt(btn.dataset.rest) || 60;
+            // Métodos combinados: descanso=0 se não é o último do grupo
+            if (isCombined && !isLastOfGroup) restSec = 0;
+
             const overlay = document.getElementById('restTimerOverlay');
-            if (overlay) {
-              row.after(overlay);
-            }
+            if (overlay) row.after(overlay);
             activeRestingRowId = row.id;
-            startRestTimer(restSec);
+
+            if (restSec === 0) {
+              // Avança visualmente para o próximo exercício sem descanso
+              const nextCard = document.getElementById(`excard_${ei + 1}`);
+              if (nextCard) {
+                nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                nextCard.style.boxShadow = '0 0 0 2px #f59e0b';
+                setTimeout(() => { nextCard.style.boxShadow = ''; }, 1200);
+              }
+            } else {
+              startRestTimer(restSec);
+            }
             playBeep(440, 0.1, 1);
           } else {
-            if (activeRestingRowId === row.id) {
-              stopRestTimer();
-            }
+            if (activeRestingRowId === row.id) stopRestTimer();
           }
         }
       });
