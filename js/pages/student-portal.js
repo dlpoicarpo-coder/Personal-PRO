@@ -1872,7 +1872,11 @@ function initTreinar(workouts, schedules, student) {
     stopRestTimer();
     const durationMin = Math.round((new Date() - soloStartTime) / 60000);
     const wid = selInput?.value || '';
-    const w = workouts.find(w => w.id === wid);
+    let w = workouts.find(wk => wk.id === wid);
+    // Fallback: buscar direto do DB se não encontrou no array local (ex: sync lag)
+    if (!w && wid) {
+      try { w = await db.get('workouts', wid); } catch(_) {}
+    }
     const pse = parseInt(document.getElementById('soloPse')?.value) || 5;
     const notes = document.getElementById('soloNotes')?.value || '';
 
@@ -2000,27 +2004,59 @@ function initTreinar(workouts, schedules, student) {
     };
 
     try {
-      await db.add('sessions', sessionData);
-    } catch(e) { console.error(e); }
+      // Tenta salvar — com retry em caso de falha transitória
+      let saved = false;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await db.add('sessions', sessionData);
+          saved = true;
+          break;
+        } catch (err) {
+          console.error(`Tentativa ${attempt} falhou:`, err);
+          if (attempt < 3) await new Promise(r => setTimeout(r, 600 * attempt));
+        }
+      }
 
-    document.getElementById('soloActiveSession').innerHTML = `
-      <div class="portal-success">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <div>Treino salvo! Duração: ${durationMin} min</div>
-      </div>`;
+      if (!saved) {
+        // Salvar backup no localStorage para não perder dados
+        const backupKey = `pp_session_backup_${sid}_${Date.now()}`;
+        try { localStorage.setItem(backupKey, JSON.stringify(sessionData)); } catch(_) {}
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.style.pointerEvents = '';
+        btn.innerHTML = '⚠️ Erro ao salvar — Tentar novamente';
+        btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+        if (typeof showToast === 'function') {
+          showToast('Erro ao salvar treino. Seus dados foram preservados. Tente novamente.', 'error', 8000);
+        }
+        return;
+      }
 
-    setTimeout(async () => {
-      document.getElementById('soloActiveSession').style.display = 'none';
-      document.getElementById('soloActiveSession').innerHTML = '';
-      document.getElementById('soloStartBtn').style.display = 'block';
-      document.getElementById('soloWorkoutPicker').style.display = 'block';
-      
-      document.querySelectorAll('.portal-nav-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.section === 'home');
-      });
-      await loadSection('home');
-    }, 1500);
-  });
+      document.getElementById('soloActiveSession').innerHTML = `
+        <div class="portal-success">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <div>Treino salvo! Duração: ${durationMin} min · ${totalSets} séries</div>
+        </div>`;
+
+      setTimeout(async () => {
+        document.getElementById('soloActiveSession').style.display = 'none';
+        document.getElementById('soloActiveSession').innerHTML = '';
+        document.getElementById('soloStartBtn').style.display = 'block';
+        document.getElementById('soloWorkoutPicker').style.display = 'block';
+        document.querySelectorAll('.portal-nav-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.section === 'home');
+        });
+        await loadSection('home');
+      }, 1500);
+
+    } catch(e) {
+      console.error('Erro inesperado ao finalizar treino:', e);
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.pointerEvents = '';
+      btn.innerHTML = '⚠️ Erro — Tentar novamente';
+      btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+    }
 }
 
 // ── SESSÕES ────────────────────────────────────────────────────
@@ -4142,15 +4178,42 @@ function showPortalCheckoutModal(session) {
       submittedByStudent: true
     };
 
+    const submitBtn = document.getElementById('chkModalSubmitBtn');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...'; }
+
+    let saved = false;
     try {
       session.postBiofeedback = postBiofeedback;
-      await db.put('sessions', session);
+
+      // Retry up to 3 times
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await db.put('sessions', session);
+          saved = true;
+          break;
+        } catch (err) {
+          console.error(`Checkout tentativa ${attempt}:`, err);
+          if (attempt < 3) await new Promise(r => setTimeout(r, 600 * attempt));
+        }
+      }
+
+      if (!saved) {
+        // Backup no localStorage
+        try { localStorage.setItem(`pp_checkout_backup_${session.id}`, JSON.stringify({ session, postBiofeedback })); } catch(_) {}
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '⚠️ Erro — Tentar novamente';
+          submitBtn.style.background = '#ef4444';
+        }
+        return;
+      }
 
       // Sincronizar com tabela biofeedback
       try {
         const sessDateStr = (session.date || Calc.nowISO()).slice(0, 10);
         const bfId = `bf_${session.studentId}_${sessDateStr}`;
-        const preBf = await db.get('biofeedback', bfId) || {};
+        let preBf = {};
+        try { preBf = await db.get('biofeedback', bfId) || {}; } catch(_) {}
         
         const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
         const trainingLoad = Calc.cargaTreino ? Calc.cargaTreino(pse, durMin) : (pse * durMin);
@@ -4172,24 +4235,21 @@ function showPortalCheckoutModal(session) {
           pain: preBf.pain || session.preBiofeedback?.pain || 1,
           painRegions: preBf.painRegions || session.preBiofeedback?.painRegions || [],
           painDescription: preBf.painDescription || session.preBiofeedback?.painDescription || '',
-          pse,
-          feeling: selectedFeeling,
-          satisfaction: selectedFeeling * 2,
-          duration: durMin,
-          trainingLoad,
+          pse, feeling: selectedFeeling, satisfaction: selectedFeeling * 2,
+          duration: durMin, trainingLoad,
           notes: notes || preBf.notes || '',
-          sessionId: session.id,
-          formType: 'complete',
-          submittedAt: Calc.nowISO(),
-          submittedByStudent: true
+          sessionId: session.id, formType: 'complete',
+          submittedAt: Calc.nowISO(), submittedByStudent: true
         };
-        
         await db.put('biofeedback', newBfData);
       } catch (bfErr) {
         console.error('Erro ao sincronizar biofeedback:', bfErr);
+        // Não bloquear o fluxo — o checkout da sessão já foi salvo
       }
     } catch (e) {
-      console.error('Erro ao atualizar sessão:', e);
+      console.error('Erro inesperado no checkout:', e);
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '⚠️ Erro — Tentar novamente'; submitBtn.style.background = '#ef4444'; }
+      return;
     }
 
     // Show success screen in the sheet
