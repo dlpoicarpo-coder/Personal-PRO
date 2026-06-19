@@ -317,11 +317,11 @@ export const METHOD_PROGRESSIONS = {
     ]
   },
   'Rest-Pause': {
-    desc: 'Até a falha, pausa 15-20s, continua até nova falha',
+    desc: 'Falha com 80-85% 1RM, pausa 20s, nova falha. Repete 2x. Máximo recrutamento de UM.',
     series: [
-      { reps: 'até falha', loadPct: 1.00, label: 'Série principal', rest: 0  },
-      { reps: 'até falha', loadPct: 1.00, label: 'Pausa 15-20s →', rest: 15 },
-      { reps: 'até falha', loadPct: 1.00, label: 'Pausa 15-20s →', rest: 15 },
+      { reps: 'até falha', loadPct: 0.82, label: 'Série principal', rest: 20 },
+      { reps: 'até falha', loadPct: 0.82, label: 'Pausa 20s →',     rest: 20 },
+      { reps: 'até falha', loadPct: 0.82, label: 'Pausa 20s →',     rest: 20 },
     ]
   },
   'Cluster': {
