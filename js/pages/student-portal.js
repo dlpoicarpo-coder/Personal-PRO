@@ -718,7 +718,7 @@ function checkSessionReminders(schedules, sessions) {
   });
   if (needsCheckout.length > 0) {
     setTimeout(() => {
-      showToast(`⚡ Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
+      showToast(` Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
     }, 2000);
   }
 }
@@ -1093,7 +1093,7 @@ function renderTreinar(workouts, schedules) {
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveWork" style="color:#10b981">00:00</div>
-            <div class="portal-live-lbl">💪 Trabalho</div>
+            <div class="portal-live-lbl"> Trabalho</div>
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveRest" style="color:#06b6d4">00:00</div>
@@ -1110,7 +1110,7 @@ function renderTreinar(workouts, schedules) {
           <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
             <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar ⏸</button>
-            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho 💪</button>
+            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho </button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
         </div>
@@ -1120,7 +1120,7 @@ function renderTreinar(workouts, schedules) {
 
         <!-- Session notes -->
         <div class="glass-card" style="margin-top:12px">
-          <div class="portal-card-label">📝 Anotações da Sessão</div>
+          <div class="portal-card-label"> Anotações da Sessão</div>
           <textarea id="soloNotes" class="portal-textarea" rows="3" placeholder="Observações gerais do treino..."></textarea>
         </div>
 
@@ -1480,13 +1480,18 @@ function initTreinar(workouts, schedules, student) {
               ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
               ${(() => {
                 const CARDIO = {
-                  'Zona 1 (Z1)':{fc:'50-65'},  'Zona 2 (Z2)':{fc:'65-75'},
-                  'Zona 3 (Z3)':{fc:'75-80'},  'Zona 4 (Z4) — Limiar':{fc:'80-90'},
-                  'Zona 5 (Z5) — VO2max':{fc:'90-100'}, 'Tabata':{fc:'85-100'},
-                  'HIIT 1:2':{fc:'85-95'}, 'HIIT 1:1':{fc:'85-95'},
-                  'SIT (Sprint Interval Training)':{fc:'95-100'},
+                  'Zona 1 (Z1)':{fc:'50-65'},
+                  'Zona 2 (Z2)':{fc:'65-75'},
+                  'Zona 3 (Z3) — Zona Cinzenta':{fc:'75-87'},
+                  'Zona 4 (Z4) — Limiar':{fc:'85-92'},
+                  'Zona 5 (Z5) — VO2max':{fc:'90-100'},
+                  'Tabata':{fc:'90-100'},
+                  'HIIT 1:2':{fc:'85-95'},
+                  'HIIT 1:1':{fc:'85-95'},
+                  'SIT (Sprint Interval Training)':{fc:'ALL-OUT'},
                   'Série de Repetição (VO2max)':{fc:'90-100'},
-                  'Steady State':{fc:'65-80'}, 'Progressivo':{fc:'60-90'},
+                  'Steady State Z2':{fc:'65-75'},
+                  'Progressivo':{fc:'60-90'},
                 };
                 const COMBINED = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
                 const cm = CARDIO[ex.method];
@@ -1496,13 +1501,13 @@ function initTreinar(workouts, schedules, student) {
                 const isLastOfGroup = !nextEx2
                   || (ex.groupId ? nextEx2.groupId !== ex.groupId : (!COMBINED.has(nextEx2.method) || nextEx2.method !== ex.method));
                 return [
-                  cm ? `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600">🫀 ${cm.fc}% FC Máx</div>` : '',
-                  isCombo ? `<div style="font-size:0.62rem;font-weight:700;color:#f59e0b;margin-top:3px;padding:2px 6px;background:rgba(245,158,11,0.12);border-radius:6px;display:inline-block">🔗 ${ex.method} · ${isLastOfGroup ? `${ex.rest||90}s descanso pós-par` : '→ próximo exercício'}</div>` : '',
+                  cm ? `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600"> ${cm.fc}% FC Máx</div>` : '',
+                  isCombo ? `<div style="font-size:0.62rem;font-weight:700;color:#f59e0b;margin-top:3px;padding:2px 6px;background:rgba(245,158,11,0.12);border-radius:6px;display:inline-block"> ${ex.method} · ${isLastOfGroup ? `${ex.rest||90}s descanso pós-par` : '→ próximo exercício'}</div>` : '',
                 ].join('');
               })()}
               ${(ex.trainerNotes || ex.notes) ? `
                 <div style="margin-top:6px;padding:7px 10px;background:rgba(16,185,129,0.08);border-left:3px solid #10b981;border-radius:0 8px 8px 0">
-                  <div style="font-size:0.58rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">📋 Orientações</div>
+                  <div style="font-size:0.58rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px"> Orientações</div>
                   <div style="font-size:0.78rem;color:var(--portal-text-secondary,#cbd5e1);line-height:1.5">${ex.trainerNotes || ex.notes}</div>
                 </div>` : ''}
             </div>
@@ -1584,7 +1589,7 @@ function initTreinar(workouts, schedules, student) {
 
           <!-- Observações do exercício -->
           <div style="margin-top:8px">
-            <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">📝 Observações</div>
+            <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
             <textarea class="portal-textarea" id="exnotes_${ei}" rows="2"
               placeholder="Sensação na série, ajuste de técnica, dor, carga ideal..."
               style="font-size:0.8rem;resize:none;background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:var(--portal-text)"></textarea>
@@ -1825,7 +1830,7 @@ function initTreinar(workouts, schedules, student) {
           + Série
         </button>
         <div style="margin-top:8px">
-          <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">📝 Observações</div>
+          <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
           <textarea class="portal-textarea" id="extraex_${xei}_notes" rows="2"
             placeholder="Sensação, carga ideal, observações técnicas..."
             style="font-size:0.8rem;resize:none"></textarea>
@@ -2060,7 +2065,7 @@ function initTreinar(workouts, schedules, student) {
         btn.disabled = false;
         btn.style.opacity = '';
         btn.style.pointerEvents = '';
-        btn.innerHTML = '⚠️ Erro ao salvar — Tentar novamente';
+        btn.innerHTML = '! Erro ao salvar — Tentar novamente';
         btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
         if (typeof showToast === 'function') {
           showToast('Erro ao salvar treino. Seus dados foram preservados. Tente novamente.', 'error', 8000);
@@ -2090,7 +2095,7 @@ function initTreinar(workouts, schedules, student) {
       btn.disabled = false;
       btn.style.opacity = '';
       btn.style.pointerEvents = '';
-      btn.innerHTML = '⚠️ Erro — Tentar novamente';
+      btn.innerHTML = '! Erro — Tentar novamente';
       btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
     }
   });
@@ -2343,7 +2348,7 @@ function renderSessoes(sessions, schedules) {
 
       <!-- CHECKOUT PENDENTE -->
       ${needsCheckout.length ? `
-        <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)">⚡ Checkout pendente</div>
+        <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)"> Checkout pendente</div>
         ${needsCheckout.map(s => `
           <div class="glass-card portal-checkout-card" id="checkout_${s.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
             <div>
@@ -2457,7 +2462,7 @@ function renderBio(biofeedbacks, sid, tid) {
             ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">⚡ Recuperação (TQR)</label>
+            <label class="portal-bio-label"> Recuperação (TQR)</label>
             ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
@@ -2734,7 +2739,7 @@ function renderAvaliacoes(assessments) {
       <!-- FORÇA E 1RM -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          💪 Força (Carga Máxima Estimada - 1RM)
+           Força (Carga Máxima Estimada - 1RM)
         </div>
         ${forcaAss.length === 0 ? `
           <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhum teste de força (1RM) registrado.</p>
@@ -2767,7 +2772,7 @@ function renderAvaliacoes(assessments) {
       <!-- CONCONI E CARDIO -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          🏃 Capacidade Aeróbia (Conconi / Cardio)
+           Capacidade Aeróbia (Conconi / Cardio)
         </div>
         ${conconiAss.length === 0 ? `
           <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliação cardiorrespiratória registrada.</p>
@@ -2897,7 +2902,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   // Exercise progression — full table card
   const exHtml = topEx.length>0 ? `<div class="glass-card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <div class="portal-card-label" style="margin:0">📈 Progressão de Carga</div>
+      <div class="portal-card-label" style="margin:0"> Progressão de Carga</div>
       <span style="font-size:0.68rem;color:var(--portal-text-muted)">${topEx.length} exercícios</span>
     </div>
     <p style="font-size:0.68rem;color:var(--portal-text-muted);margin:4px 0 10px">Verde = progresso · Vermelho = regressão</p>
@@ -2969,7 +2974,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (comparableBases.length > 0) {
     compareSessionsHtml = `
       <div class="glass-card" style="margin-bottom:12px">
-        <div class="portal-card-label">📈 Comparativo de Sessões Idênticas</div>
+        <div class="portal-card-label"> Comparativo de Sessões Idênticas</div>
         <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
         <select id="portalCompareWorkoutSel" class="portal-textarea" style="margin-bottom:12px;padding:8px">
           ${comparableBases.map((base, idx) => `<option value="${base}" ${idx===0?'selected':''}>${base}</option>`).join('')}
@@ -4160,14 +4165,14 @@ function showPortalCheckoutModal(session) {
               <span>😁</span><span class="portal-feeling-emoji-lbl">Bem</span>
             </button>
             <button class="portal-feeling-emoji-btn ${currentFeeling===5?'active':''}" data-val="5">
-              <span>🔥</span><span class="portal-feeling-emoji-lbl">Excelente</span>
+              <span></span><span class="portal-feeling-emoji-lbl">Excelente</span>
             </button>
           </div>
         </div>
 
         <!-- 3. NOTES -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label">📝 Observações do Treino</label>
+          <label class="portal-checkout-label"> Observações do Treino</label>
           <textarea id="chkModalNotes" class="portal-textarea" rows="2" placeholder="Ex: RIR em agachamento foi menor, me senti muito forte hoje...">${currentNotes}</textarea>
         </div>
 
@@ -4239,7 +4244,7 @@ function showPortalCheckoutModal(session) {
         try { localStorage.setItem(`pp_checkout_backup_${session.id}`, JSON.stringify({ session, postBiofeedback })); } catch(_) {}
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = '⚠️ Erro — Tentar novamente';
+          submitBtn.textContent = '! Erro — Tentar novamente';
           submitBtn.style.background = '#ef4444';
         }
         return;
@@ -4285,7 +4290,7 @@ function showPortalCheckoutModal(session) {
       }
     } catch (e) {
       console.error('Erro inesperado no checkout:', e);
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '⚠️ Erro — Tentar novamente'; submitBtn.style.background = '#ef4444'; }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '! Erro — Tentar novamente'; submitBtn.style.background = '#ef4444'; }
       return;
     }
 
