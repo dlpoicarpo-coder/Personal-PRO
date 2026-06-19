@@ -2057,6 +2057,7 @@ function initTreinar(workouts, schedules, student) {
       btn.innerHTML = '⚠️ Erro — Tentar novamente';
       btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
     }
+  });
 }
 
 // ── SESSÕES ────────────────────────────────────────────────────
