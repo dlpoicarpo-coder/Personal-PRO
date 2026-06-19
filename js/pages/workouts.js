@@ -567,11 +567,12 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Desc.(s)</label>
         <select class="form-select" name="ex_rest_${index}" style="font-size:0.78rem;padding:4px 6px">
-          <option value="15" ${ex.rest=='15'?'selected':''}>15</option>
-          <option value="30" ${ex.rest=='30'?'selected':''}>30</option>
-          <option value="45" ${ex.rest=='45'?'selected':''}>45</option>
-          <option value="60" ${(!ex.rest || ex.rest=='60')?'selected':''}>60</option>
-          <option value="90" ${ex.rest=='90'?'selected':''}>90</option>
+          <option value="0"   ${ex.rest=='0'?'selected':''}>0 (par)</option>
+          <option value="15"  ${ex.rest=='15'?'selected':''}>15</option>
+          <option value="30"  ${ex.rest=='30'?'selected':''}>30</option>
+          <option value="45"  ${ex.rest=='45'?'selected':''}>45</option>
+          <option value="60"  ${(!ex.rest || ex.rest=='60')?'selected':''}>60</option>
+          <option value="90"  ${ex.rest=='90'?'selected':''}>90</option>
           <option value="120" ${ex.rest=='120'?'selected':''}>120</option>
           <option value="150" ${ex.rest=='150'?'selected':''}>150</option>
           <option value="180" ${ex.rest=='180'?'selected':''}>180</option>
@@ -601,8 +602,21 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
       </button>
       ${methodPanelHTML}
+      <!-- Observações do personal para este exercício -->
+      <div style="grid-column:1/-1;margin-top:4px">
+        <input class="form-input ex-notes-input" name="ex_notes_${index}"
+          value="${ex.trainerNotes || ex.notes || ''}"
+          placeholder="📝 Orientações técnicas para o aluno (ex: manter core ativado, cotovelo para dentro...)"
+          style="font-size:0.75rem;color:var(--text-muted);background:rgba(16,185,129,0.03);border-color:rgba(16,185,129,0.15)" />
+      </div>
     </div>`;
 }
+
+// Métodos combinados — descanso é compartilhado pós-último exercício do par
+export const COMBINED_METHODS = new Set([
+  'Bi-set','Super-série Agonista','Super-série Antagonista',
+  'Tri-set','Série Gigante','Pré-exaustão'
+]);
 
 function collectExercises() {
   const rows = document.querySelectorAll('.exercise-row');
@@ -612,11 +626,12 @@ function collectExercises() {
     const name = document.querySelector(`[name="ex_name_${i}"]`)?.value;
     if (!name) return;
 
-    const method   = document.querySelector(`[name="ex_method_${i}"]`)?.value || '';
-    const loadType = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+    const method      = document.querySelector(`[name="ex_method_${i}"]`)?.value || '';
+    const loadType    = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+    const trainerNotes = document.querySelector(`[name="ex_notes_${i}"]`)?.value?.trim() || '';
+    const isCombined  = COMBINED_METHODS.has(method);
     const seriesPanel = row.querySelector('.method-series-panel');
 
-    // Se tem painel de sub-séries progressivas, salvar cada série individualmente
     if (seriesPanel && METHOD_PROGRESSIONS[method]) {
       const serieRows  = seriesPanel.querySelectorAll('div[data-serie]');
       const progression = METHOD_PROGRESSIONS[method];
@@ -634,7 +649,8 @@ function collectExercises() {
         });
       });
       exercises.push({
-        name, method, loadType,
+        name, method, loadType, trainerNotes,
+        isCombined,
         sets:              serieLogs.length,
         reps:              serieLogs.map(s=>s.reps).join('→'),
         load:              serieLogs[0]?.load || '',
@@ -643,7 +659,8 @@ function collectExercises() {
       });
     } else {
       exercises.push({
-        name, method, loadType,
+        name, method, loadType, trainerNotes,
+        isCombined,
         sets:     parseInt(document.querySelector(`[name="ex_sets_${i}"]`)?.value) || 3,
         reps:     document.querySelector(`[name="ex_reps_${i}"]`)?.value || '12',
         load:     document.querySelector(`[name="ex_load_${i}"]`)?.value || '',
