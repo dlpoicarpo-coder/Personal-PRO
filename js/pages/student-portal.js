@@ -2414,8 +2414,7 @@ function renderBio(biofeedbacks, sid, tid) {
                     <div style="display:flex;flex-wrap:wrap;gap:5px">
                       ${regions.map(r => `
                         <button type="button" class="portal-pain-chip" data-region="${r.id}"
-                          style="display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--portal-border);background:transparent;color:var(--portal-text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
-                          <span>${r.icon || '📍'}</span>
+                          style="display:flex;align-items:center;padding:5px 12px;border-radius:20px;border:1.5px solid var(--portal-border);background:transparent;color:var(--portal-text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
                           <span>${r.label}</span>
                           <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
                         </button>`).join('')}
