@@ -239,16 +239,7 @@ function renderLiveView(students) {
         </div>
         <div class="flex items-center gap-md">
           <div class="live-indicator"><span class="live-dot-anim"></span> AO VIVO</div>
-          <button class="btn btn-danger btn-sm" id="endBtn">Finalizar</button>
         </div>
-      </div>
-
-      <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
-        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DURAÇÃO</div><div class="stat-value text-gradient" id="liveTotal" style="font-size:1.3rem">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">TRABALHO</div><div class="stat-value" id="liveWork" style="font-size:1.3rem;color:var(--success)">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DESCANSO</div><div class="stat-value" id="liveRest" style="font-size:1.3rem;color:var(--warning)">00:00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">DENSIDADE</div><div class="stat-value" id="liveDens" style="font-size:1.3rem;color:var(--accent)">0.00</div></div>
-        <div class="stat-card" style="text-align:center;padding:12px"><div class="stat-label">VOLUME</div><div class="stat-value" id="liveVol" style="font-size:1.3rem;color:var(--primary)">${totalVolume()} kg</div></div>
       </div>
 
       <div class="progress-bar mb-xs" style="height:6px;border-radius:3px">
@@ -256,240 +247,243 @@ function renderLiveView(students) {
       </div>
       <div class="text-center text-xs text-muted mb-md">${doneSets}/${totalSets} séries · ${pct}% concluído</div>
 
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Exercício ${state.exIdx + 1} / ${exs.length}</span>
-            <div class="flex gap-xs">
-              <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar Exercício" style="display:flex;align-items:center;justify-content:center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              </button>
-              <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''}>←</button>
-              <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''}>→</button>
-            </div>
-          </div>
+      <!-- NOVO LAYOUT: 2 colunas -->
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:12px;align-items:start">
 
-          <div style="margin-bottom:12px">
-            <!-- Nome + badge combinado -->
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-              <div style="font-size:1.15rem;font-weight:700;color:var(--primary)">${ex.name || '—'}</div>
-              ${COMBINED_METHODS?.has(ex.method) ? `
-                <span style="font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">
-                  🔗 ${ex.method} · descanso pós-par
-                </span>` : ''}
+        <!-- ── COLUNA ESQUERDA: Exercício atual + Séries + Próximos ── -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+
+          <!-- Card do exercício atual -->
+          <div class="card" style="padding:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);background:var(--bg-page);padding:2px 8px;border-radius:6px;text-transform:uppercase">
+                  Ex ${state.exIdx + 1}/${exs.length}
+                </span>
+                ${COMBINED_METHODS?.has(ex.method) ? (() => {
+                  const grpExs = exs_all.filter(e => e.groupId && e.groupId === ex.groupId);
+                  const pos    = grpExs.findIndex(e => e === ex);
+                  const total  = grpExs.length;
+                  const label  = total > 1 ? `${ex.method} (${pos + 1}/${total})` : ex.method;
+                  return `<span style="font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">🔗 ${label}</span>`;
+                })() : ex.method ? `<span class="badge badge-info" style="font-size:0.65rem">${ex.method}</span>` : ''}
+              </div>
+              <div class="flex gap-xs">
+                <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar" style="padding:3px 6px">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''} style="padding:3px 8px">←</button>
+                <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''} style="padding:3px 8px">→</button>
+              </div>
             </div>
-            <div class="flex gap-md text-sm text-muted" style="flex-wrap:wrap">
+
+            <!-- Nome + info -->
+            <div style="font-size:1.2rem;font-weight:700;color:var(--primary);margin-bottom:4px">${ex.name || '—'}</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
               ${ex.load ? `<span style="color:var(--accent);font-weight:600">${(isNumeric(ex.load) && ex.loadType !== 'time') ? ex.load + 'kg' : ex.load}</span>` : ''}
-              ${ex.oneRM ? `<span style="color:var(--text-muted);font-size:0.75rem">1RM: ${ex.oneRM}kg</span>` : ''}
+              ${ex.oneRM ? `<span style="color:var(--text-muted)">1RM: ${ex.oneRM}kg</span>` : ''}
               ${COMBINED_METHODS?.has(ex.method)
-                ? `<span style="color:var(--warning);font-weight:600">⏩ 0s → próx. ex.</span>`
-                : `<span>${ex.rest || 60}s desc.</span>`}
-              ${ex.method && !COMBINED_METHODS?.has(ex.method) ? `<span class="badge badge-info" style="font-size:0.7rem">${ex.method}</span>` : ''}
+                ? `<span style="color:var(--warning);font-weight:600">⏩ sem descanso → próx.</span>`
+                : `<span>${ex.rest || 60}s descanso</span>`}
               ${(() => {
                 const cm = METHOD_CARDIO_META?.[ex.method];
-                if (!cm) return '';
-                return `<span style="font-size:0.68rem;color:var(--accent);font-weight:600">🫀 ${cm.fcPct[0]}-${cm.fcPct[1]}% FCmáx · RPE ${cm.rpe}</span>`;
+                return cm ? `<span style="color:var(--accent);font-weight:600">🫀 ${cm.fcPct[0]}-${cm.fcPct[1]}% FCmáx · RPE ${cm.rpe}</span>` : '';
               })()}
             </div>
-            <!-- Observações do treinador -->
+
+            <!-- Orientações do professor -->
             ${ex.trainerNotes ? `
-              <div style="margin-top:7px;padding:7px 10px;background:rgba(16,185,129,0.07);border-left:3px solid var(--success);border-radius:0 6px 6px 0">
-                <div style="font-size:0.6rem;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">📋 Orientações do Professor</div>
+              <div style="padding:7px 10px;background:rgba(16,185,129,0.07);border-left:3px solid var(--success);border-radius:0 6px 6px 0;margin-bottom:10px">
+                <div style="font-size:0.58rem;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Orientações</div>
                 <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5">${ex.trainerNotes}</div>
               </div>` : ''}
-            </div>
+
+            <!-- Fase de periodização -->
             ${(() => {
               const wk = s.weekPlan;
               if (!wk) return '';
-              const isDeload = wk.phase === 'Deload' || wk.phase?.includes('Deload');
-              // Para modelos com sub-sessões (DUP, Conjugada, Concorrente)
+              const isDeload = wk.phase?.includes('Deload') || wk.phase?.includes('Recuper');
               const dupSess = wk.dupSessions;
               if (dupSess?.length) {
-                return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${dupSess.map(ds => {
-                  const c = ds.type === 'ME' || ds.intensityPct >= 85 ? '#ef4444'
-                    : ds.type === 'DE' || ds.type === 'Z5' ? '#3b82f6'
-                    : ds.type === 'C' || ds.type === 'M' || ds.type === 'Cardio' ? '#10b981'
-                    : '#f59e0b';
-                  return `<span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:8px;background:${c}20;color:${c};border:1px solid ${c}40">${ds.label} · ${ds.intensityPct}% · RPE ${ds.rpe}</span>`;
+                return `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${dupSess.map(ds => {
+                  const c = ds.intensityPct >= 85 ? '#ef4444' : ds.type === 'DE' || ds.type === 'Z5' ? '#3b82f6' : '#f59e0b';
+                  return `<span style="font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:8px;background:${c}20;color:${c};border:1px solid ${c}40">${ds.label} · ${ds.intensityPct}% · RPE ${ds.rpe}</span>`;
                 }).join('')}</div>`;
               }
               if (!wk.phase || wk.phase === 'DUP') return '';
-              const phaseColor = isDeload ? '#3b82f6'
-                : (wk.intensityPct >= 85) ? '#ef4444'
-                : (wk.intensityPct >= 75) ? '#f97316'
-                : (wk.intensityPct >= 65) ? '#eab308' : '#22c55e';
-              const rpeDisplay = wk.rpe ? ` · RPE ${wk.rpe}` : '';
-              const noteDisplay = wk.note ? `<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;font-style:italic">${wk.note}</div>` : '';
-              return `<div style="margin-top:6px">
-                <span style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:8px;background:${phaseColor}20;color:${phaseColor};border:1px solid ${phaseColor}40">
-                  ${wk.phase} · ${wk.intensityPct}%${rpeDisplay}
-                </span>${noteDisplay}
-              </div>`;
+              const pc = isDeload ? '#3b82f6' : wk.intensityPct >= 85 ? '#ef4444' : wk.intensityPct >= 75 ? '#f97316' : wk.intensityPct >= 65 ? '#eab308' : '#22c55e';
+              return `<div style="margin-bottom:8px"><span style="font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:8px;background:${pc}20;color:${pc};border:1px solid ${pc}40">${wk.phase} · ${wk.intensityPct}% · RPE ${wk.rpe || '—'}</span></div>`;
             })()}
+
+            <!-- Séries -->
+            <div id="setArea" style="display:flex;flex-direction:column;gap:5px">
+              ${Array.from({ length: exSets }, (_, i) => {
+                const done     = state.setLog.find(l => l.exIdx === state.exIdx && l.setIdx === i);
+                const isActive = !done && i === state.setIdx;
+                const temp     = state.tempSets[state.exIdx]?.[i] || {};
+                let defaultReps = (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
+                let defaultLoad = ex.load || '';
+                let setLabel = '';
+                let progression = ex.seriesProgression;
+                if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
+                  const progDef = METHOD_PROGRESSIONS[ex.method];
+                  const baseLoad = parseFloat(ex.load) || 0;
+                  progression = progDef.series.map((s, si) => ({
+                    set: si + 1, reps: s.reps,
+                    load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
+                    rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
+                    label: s.label || `Série ${si + 1}`
+                  }));
+                }
+                if (progression && progression[i]) {
+                  const sp = progression[i];
+                  if (sp.reps) { const m = String(sp.reps).match(/(\d+)/); defaultReps = m ? parseInt(m[1]) : 10; }
+                  if (sp.load !== undefined) defaultLoad = sp.load;
+                  if (sp.label) setLabel = sp.label;
+                }
+                const repsVal = done ? done.reps : (temp.reps !== undefined ? temp.reps : defaultReps);
+                const loadVal = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
+                const pseVal  = done ? done.pse  : (temp.pse  !== undefined ? temp.pse  : '');
+                const rirVal  = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
+                const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
+                return `
+                <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
+                  style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
+                  border:1px solid ${isActive ? 'rgba(16,185,129,0.35)' : done ? 'rgba(16,185,129,0.15)' : 'var(--border-color)'};
+                  background:${isActive ? 'rgba(16,185,129,0.08)' : done ? 'rgba(16,185,129,0.04)' : 'var(--bg-page)'}">
+                  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:36px;width:36px;height:36px;border-radius:8px;flex-shrink:0;
+                    background:${done ? 'rgba(16,185,129,0.15)' : isActive ? 'rgba(16,185,129,0.12)' : 'var(--bg-card)'};
+                    border:1px solid ${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--border-color)'}">
+                    <span style="font-size:0.65rem;font-weight:800;color:${setColor};line-height:1">S${i + 1}</span>
+                    ${setLabel ? `<span style="font-size:0.4rem;color:var(--text-muted);line-height:1;margin-top:1px;text-align:center;white-space:nowrap;overflow:hidden;max-width:34px">${setLabel}</span>` : ''}
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
+                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Reps</span>
+                    <input class="form-input set-reps" style="width:100%;min-width:44px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1.2">
+                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
+                    <input class="form-input set-load" style="width:100%;min-width:50px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.85" title="PSE — Percepção Subjetiva de Esforço">
+                    <span style="font-size:0.48rem;color:var(--warning);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">PSE</span>
+                    <input class="form-input set-pse" style="width:100%;min-width:36px;text-align:center;padding:5px 3px;font-size:0.9rem;border-color:rgba(245,158,11,0.35);border-radius:7px" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.85" title="RIR — Reps sobrando">
+                    <span style="font-size:0.48rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">RIR</span>
+                    <input class="form-input set-rir" style="width:100%;min-width:34px;text-align:center;padding:5px 3px;font-size:0.9rem;border-color:rgba(6,182,212,0.4);border-radius:7px" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
+                  </div>
+                  ${done
+                    ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:30px;flex-shrink:0">
+                        ${done.pse ? `<span style="font-size:0.5rem;color:var(--warning);font-weight:600">P${done.pse}</span>` : ''}
+                        <span style="background:var(--success);color:#fff;border-radius:6px;font-size:0.7rem;font-weight:700;width:28px;height:28px;display:flex;align-items:center;justify-content:center">✓</span>
+                        ${done.rir != null ? `<span style="font-size:0.5rem;color:var(--accent);font-weight:600">R${done.rir}</span>` : ''}
+                      </div>`
+                    : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:34px;width:34px;height:34px;padding:0;border-radius:8px;font-size:1rem;align-self:flex-end;flex-shrink:0">✓</button>`}
+                </div>`;
+              }).join('')}
+            </div>
           </div>
 
-          <div id="setArea" style="display:flex;flex-direction:column;gap:6px">
-            ${Array.from({ length: exSets }, (_, i) => {
-              const done     = state.setLog.find(l => l.exIdx === state.exIdx && l.setIdx === i);
-              const isActive = !done && i === state.setIdx;
-              const temp     = state.tempSets[state.exIdx]?.[i] || {};
-
-              let defaultReps = (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
-              let defaultLoad = ex.load || '';
-              let setLabel = '';
-
-              let progression = ex.seriesProgression;
-              if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
-                const progDef = METHOD_PROGRESSIONS[ex.method];
-                const baseLoad = parseFloat(ex.load) || 0;
-                progression = progDef.series.map((s, si) => ({
-                  set: si + 1,
-                  reps: s.reps,
-                  load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-                  rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
-                  label: s.label || `Série ${si + 1}`
-                }));
-              }
-
-              if (progression && progression[i]) {
-                const sp = progression[i];
-                if (sp.reps) {
-                  const match = String(sp.reps).match(/(\d+)/);
-                  defaultReps = match ? parseInt(match[1]) : 10;
-                }
-                if (sp.load !== undefined) {
-                  defaultLoad = sp.load;
-                }
-                if (sp.label) {
-                  setLabel = sp.label;
-                }
-              }
-
-              const repsVal  = done ? done.reps : (temp.reps !== undefined ? temp.reps : defaultReps);
-              const loadVal  = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
-              const pseVal   = done ? done.pse  : (temp.pse !== undefined ? temp.pse : '');
-              const rirVal   = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
-              const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
-              return `
-              <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
-                style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;
-                border:1px solid ${isActive ? 'rgba(16,185,129,0.35)' : done ? 'rgba(16,185,129,0.15)' : 'var(--border-color)'};
-                background:${isActive ? 'rgba(16,185,129,0.08)' : done ? 'rgba(16,185,129,0.04)' : 'var(--bg-page)'}">
-
-                <!-- Número da Série: S1, S2, S3... -->
-                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                  min-width:36px;width:36px;height:36px;border-radius:8px;flex-shrink:0;
-                  background:${done ? 'rgba(16,185,129,0.15)' : isActive ? 'rgba(16,185,129,0.12)' : 'var(--bg-card)'};
-                  border:1px solid ${done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--border-color)'}">
-                  <span style="font-size:0.65rem;font-weight:800;color:${setColor};letter-spacing:-0.02em;line-height:1">S${i + 1}</span>
-                  ${setLabel ? `<span style="font-size:0.42rem;color:var(--text-muted);white-space:nowrap;line-height:1;margin-top:1px;text-align:center">${setLabel}</span>` : ''}
-                </div>
-
-                <!-- Reps -->
-                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
-                  <span style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Reps</span>
-                  <input class="form-input set-reps" style="width:100%;min-width:48px;text-align:center;padding:5px 4px;font-size:0.92rem;font-weight:700;border-radius:7px" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
-                </div>
-
-                <!-- Carga -->
-                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1.2">
-                  <span style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
-                  <input class="form-input set-load" style="width:100%;min-width:54px;text-align:center;padding:5px 4px;font-size:0.92rem;font-weight:700;border-radius:7px" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
-                </div>
-
-                <!-- PSE -->
-                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.9" title="PSE — Percepção Subjetiva de Esforço (1=muito leve, 10=máximo)">
-                  <span style="font-size:0.5rem;color:var(--warning);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">PSE</span>
-                  <input class="form-input set-pse" style="width:100%;min-width:40px;text-align:center;padding:5px 4px;font-size:0.92rem;border-color:rgba(245,158,11,0.35);border-radius:7px" type="number" min="1" max="10" placeholder="—" value="${pseVal}" ${done ? 'disabled' : ''} />
-                </div>
-
-                <!-- RIR -->
-                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.9" title="RIR — Reps sobrando no tanque (0=falha, 5+=fácil)">
-                  <span style="font-size:0.5rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">RIR</span>
-                  <input class="form-input set-rir" style="width:100%;min-width:38px;text-align:center;padding:5px 4px;font-size:0.92rem;border-color:rgba(6,182,212,0.4);border-radius:7px" type="number" min="0" max="10" placeholder="—" value="${rirVal}" ${done ? 'disabled' : ''} />
-                </div>
-
-                <!-- Botão ✓ ou Badge feito -->
-                ${done
-                  ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;min-width:32px;flex-shrink:0">
-                      ${done.pse ? `<span style="font-size:0.52rem;color:var(--warning);font-weight:600">P${done.pse}</span>` : ''}
-                      <span style="background:var(--success);color:#fff;border-radius:6px;font-size:0.7rem;font-weight:700;width:28px;height:28px;display:flex;align-items:center;justify-content:center">✓</span>
-                      ${done.rir != null ? `<span style="font-size:0.52rem;color:var(--accent);font-weight:600">R${done.rir}</span>` : ''}
-                    </div>`
-                  : `<button class="btn btn-primary btn-sm do-set" data-i="${i}" style="min-width:34px;width:34px;height:34px;padding:0;border-radius:8px;font-size:1rem;align-self:flex-end;flex-shrink:0">✓</button>`}
-              </div>`;
-            }).join('')}
-          </div>
-
-          <div style="border-top:1px solid var(--border-color);margin-top:12px;padding-top:10px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;letter-spacing:0.06em;text-transform:uppercase">Todos os exercícios</div>
+          <!-- Próximos exercícios -->
+          <div class="card" style="padding:10px 14px">
+            <div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Todos os exercícios</div>
             ${exs.map((e, i) => {
-              const done = state.setLog.filter(l => l.exIdx === i).length >= (parseInt(e.sets) || 3);
-              const isCur = i === state.exIdx;
+              const done   = state.setLog.filter(l => l.exIdx === i).length >= (parseInt(e.sets) || 3);
+              const isCur  = i === state.exIdx;
+              const isCombo = COMBINED_METHODS?.has(e.method);
               return `<div class="go-ex" data-g="${i}" style="
-                display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;
+                display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;margin-bottom:2px;
                 background:${isCur ? 'rgba(16,185,129,0.08)' : 'transparent'};
                 color:${done ? 'var(--success)' : isCur ? 'var(--primary)' : 'var(--text-secondary)'}">
-                <span style="font-size:0.7rem;min-width:12px">${done ? '✓' : isCur ? '●' : '○'}</span>
-                <span style="font-size:0.82rem;font-weight:${isCur ? 600 : 400}">${e.name}</span>
-                ${e.load ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:auto">${isNumeric(e.load) ? e.load + 'kg' : e.load}</span>` : ''}
+                <span style="font-size:0.7rem;min-width:14px">${done ? '✓' : isCur ? '●' : '○'}</span>
+                <span style="font-size:0.8rem;font-weight:${isCur ? 600 : 400};flex:1">${e.name}</span>
+                ${isCombo ? `<span style="font-size:0.58rem;color:#f59e0b;background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:4px">🔗${e.method.replace('Super-série ','SS ').replace('Série Gigante','GS')}</span>` : ''}
+                ${e.load ? `<span style="font-size:0.68rem;color:var(--text-muted)">${isNumeric(e.load) ? e.load + 'kg' : e.load}</span>` : ''}
               </div>`;
             }).join('')}
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Descanso</span>
-            <div class="flex items-center gap-sm">
-              <span id="restStateTag" style="font-size:0.72rem;font-weight:700;color:var(--success)">▶ TRABALHANDO</span>
-              <label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;cursor:pointer">
-                <input type="checkbox" id="sndToggle" ${s.soundEnabled !== false ? 'checked' : ''} /> Som
-              </label>
+        <!-- ── COLUNA DIREITA: Cronômetro + Descanso + Anotações ── -->
+        <div style="display:flex;flex-direction:column;gap:10px;position:sticky;top:80px">
+
+          <!-- Cronômetro geral -->
+          <div class="card" style="padding:12px;text-align:center">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <span style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Sessão</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="restStateTag" style="font-size:0.65rem;font-weight:700;color:var(--success)">▶ TRABALHANDO</span>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;cursor:pointer;color:var(--text-muted)">
+                  <input type="checkbox" id="sndToggle" ${s.soundEnabled !== false ? 'checked' : ''} /> Som
+                </label>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
+                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Total</div>
+                <div id="liveTotal" style="font-size:1.3rem;font-weight:800;font-family:monospace;color:var(--primary)">00:00</div>
+              </div>
+              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
+                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Trabalho</div>
+                <div id="liveWork" style="font-size:1.3rem;font-weight:800;font-family:monospace;color:var(--success)">00:00</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
+                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Descanso</div>
+                <div id="liveRest" style="font-size:1.1rem;font-weight:800;font-family:monospace;color:var(--warning)">00:00</div>
+              </div>
+              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
+                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Dens.</div>
+                <div id="liveDens" style="font-size:1.1rem;font-weight:800;font-family:monospace;color:var(--accent)">0.00</div>
+              </div>
             </div>
           </div>
 
-          <div style="text-align:center;padding:20px 0">
-            <div id="restCount" style="font-size:3.5rem;font-weight:800;font-family:monospace;color:var(--accent);transition:color 0.3s">
-              ${formatTime(parseInt(ex.rest) || 60)}
+          <!-- Timer de descanso -->
+          <div class="card" style="padding:12px">
+            <div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Descanso</div>
+            <div style="text-align:center;padding:12px 0 8px">
+              <div id="restCount" style="font-size:3.2rem;font-weight:800;font-family:monospace;color:var(--accent);transition:color 0.3s;line-height:1">
+                ${formatTime(parseInt(ex.rest) || 60)}
+              </div>
+              <div id="restLbl" style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">Pronto para descansar</div>
             </div>
-            <div id="restLbl" style="font-size:0.85rem;color:var(--text-muted);margin-top:4px">Pronto para descansar</div>
-          </div>
-
-          <div class="flex gap-sm" style="justify-content:center;margin-bottom:12px">
-            <button class="btn btn-primary" id="goRest" style="min-width:140px">▶ Iniciar Descanso</button>
-            <button class="btn btn-secondary btn-sm" id="rstRest">↺ Reset</button>
-          </div>
-
-          <div class="flex gap-xs" style="justify-content:center;flex-wrap:wrap;margin-bottom:16px">
-            ${[15, 30, 45, 60, 90, 120, 180].map(t => `
-              <button class="btn btn-ghost btn-sm rp" data-t="${t}" style="font-size:0.75rem;padding:4px 8px">
-                ${t >= 60 ? (t/60) + 'min' : t + 's'}
-              </button>`).join('')}
-          </div>
-
-          <div style="border-top:1px solid var(--border-color);padding-top:12px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Anotações</div>
-            <textarea id="setNotes" class="form-textarea" rows="2" placeholder="Observações técnicas..." style="font-size:0.82rem"></textarea>
-          </div>
-
-          ${s.preBiofeedback ? `
-          <div style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:10px">
-            <div class="text-xs text-muted mb-xs" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Pré-treino do aluno</div>
-            <div class="flex gap-md text-xs" style="flex-wrap:wrap">
+            <div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px">
+              <button class="btn btn-primary" id="goRest" style="flex:1;font-size:0.82rem">▶ Iniciar Descanso</button>
+              <button class="btn btn-secondary btn-sm" id="rstRest" style="padding:6px 10px">↺</button>
+            </div>
+            <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
+              ${[15, 30, 45, 60, 90, 120, 180].map(t => `
+                <button class="btn btn-ghost btn-sm rp" data-t="${t}" style="font-size:0.7rem;padding:3px 6px">
+                  ${t >= 60 ? (t/60) + 'min' : t + 's'}
+                </button>`).join('')}
+            </div>
+            ${s.preBiofeedback ? `
+            <div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:0.72rem">
               <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep ? `${Math.round(s.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
               <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
               <span>Estresse <strong style="color:${(s.preBiofeedback.stress||0)>=7?'var(--warning)':'inherit'}">${s.preBiofeedback.stress||'-'}</strong></span>
-              ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 8 ? 5 : s.preBiofeedback.pain > 6 ? 4 : s.preBiofeedback.pain > 4 ? 3 : s.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
-            </div>
-          </div>` : ''}
+              ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 6 ? '🔴' : '🟡'}</strong></span>`:''}
+            </div>` : ''}
+          </div>
+
+          <!-- Anotações -->
+          <div class="card" style="padding:12px">
+            <div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Anotações</div>
+            <textarea id="setNotes" class="form-textarea" rows="3" placeholder="Observações técnicas..." style="font-size:0.8rem;resize:none"></textarea>
+          </div>
+
+          <!-- Botão finalizar -->
+          <button class="btn btn-danger" id="endBtn" style="width:100%">Finalizar Sessão</button>
         </div>
+
       </div>
     </div>
   `;
-}
 
 // ── INIT ─────────────────────────────────────────────────────
 export function initTracker(navigateFn) {
@@ -916,9 +910,11 @@ export function initTracker(navigateFn) {
   // ── Lógica de descanso para métodos combinados ──────────────────────────
   // Bi-set/Tri-set/Super-série: descanso=0 no exercício atual (vai pro próximo imediatamente)
   // O descanso real dispara apenas no ÚLTIMO exercício do grupo
-  const isCombinedEx   = COMBINED_METHODS?.has(curEx.method);
-  const nextEx         = exs_all[state.exIdx + 1];
-  const isLastOfGroup  = !nextEx || !COMBINED_METHODS?.has(nextEx.method) || nextEx.method !== curEx.method;
+  const isCombinedEx  = COMBINED_METHODS?.has(curEx.method);
+  const nextEx        = exs_all[state.exIdx + 1];
+  // Usar groupId se disponível, fallback para método consecutivo
+  const isLastOfGroup = !nextEx
+    || (curEx.groupId ? nextEx.groupId !== curEx.groupId : (nextEx.method !== curEx.method || !COMBINED_METHODS?.has(nextEx.method)));
   // restDur efetivo: 0 se combinado e não é o último, senão usa o rest configurado
   let restDur = isCombinedEx && !isLastOfGroup ? 0 : (parseInt(curEx.rest) || 60);
 
