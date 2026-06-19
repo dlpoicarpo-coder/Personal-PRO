@@ -325,8 +325,6 @@ export function initFinancial(navigateFn) {
     navigateFn('/financeiro');
   });
   document.getElementById('finNextMonth')?.addEventListener('click', () => {
-    const now = new Date();
-    if (finState.month === now.getMonth() && finState.year === now.getFullYear()) return;
     finState.month++;
     if (finState.month > 11) { finState.month = 0; finState.year++; }
     navigateFn('/financeiro');
