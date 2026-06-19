@@ -217,14 +217,31 @@ export async function renderTracker() {
 
 // ── RENDER LIVE VIEW ─────────────────────────────────────────
 function renderLiveView(students) {
-  const s   = state.session;
-  const st  = students.find(x => x.id === s.studentId);
-  const exs = s.exercises || [];
-  const ex  = exs[state.exIdx] || {};
+  const s      = state.session;
+  const st     = students.find(x => x.id === s.studentId);
+  const exs    = s.exercises || [];
+  const exs_all = exs; // alias para uso nos combined-method badges
+  const ex     = exs[state.exIdx] || {};
   const totalSets = exs.reduce((sum, e) => sum + (parseInt(e.sets) || 3), 0);
   const doneSets  = state.setLog.length;
   const pct       = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
   const exSets    = parseInt(ex.sets) || 3;
+
+  // Garantir groupId para métodos combinados que foram salvos antes dessa feature
+  // Atribuir dinamicamente se não existir
+  (() => {
+    let grpCounter = 0;
+    for (let i = 0; i < exs.length; i++) {
+      if (!COMBINED_METHODS?.has(exs[i].method)) continue;
+      if (exs[i].groupId) continue;
+      const gid = `grp_${++grpCounter}`;
+      exs[i].groupId = gid;
+      for (let j = i + 1; j < exs.length; j++) {
+        if (exs[j].method === exs[i].method) exs[j].groupId = gid;
+        else break;
+      }
+    }
+  })();
 
   return `
     <div class="tracker-live">
