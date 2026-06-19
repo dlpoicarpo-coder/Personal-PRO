@@ -195,23 +195,23 @@ export const PERIODIZATION_MODELS = {
   // Ref: Seiler & Tønnessen (2009) — Int J Sports Physiol Perform
   polarized: {
     id: 'polarized', label: 'Polarizado',
-    color: '#06b6d4', icon: '◎',
-    desc: '80% do volume em Z1/Z2 e 20% em Z4/Z5. Evita a "zona cinzenta" (Z3). Modelo de atletas de elite.',
+    color: '#06b6d4',
+    desc: '80% do volume em Z1/Z2 (< VT1) e 20% em Z4/Z5 (> VT2). Evita Z3 (zona cinzenta). Modelo de atletas de elite.',
     isCardio: true,
     sessions: [
-      { type: 'Z2', label: 'Longa Z2 (×4)', sets: 1, repsMin: 60, repsMax: 90, intensityPct: 70, restSeconds: 0, rpe: '4-5', icon: '🟢', note: '≤75% FCmáx. Conversa possível. 4 sessões por semana.' },
-      { type: 'Z5', label: 'Intensa Z4/Z5 (×1)', sets: 5, repsMin: 4, repsMax: 5, intensityPct: 90, restSeconds: 180, rpe: '8-9', icon: '🔴', note: '≥87% FCmáx. 5 tiros de 4 min. 1 sessão por semana.' },
+      { type: 'Z2', label: 'Longa Z2 (×4)', sets: 1, repsMin: 60, repsMax: 90, intensityPct: 70, restSeconds: 0, rpe: '3-4', note: '65-75% FCmáx. Lactato < 2 mmol/L. Diálogo em frases completas. 4 sessões por semana.' },
+      { type: 'Z5', label: 'Intensa Z4/Z5 (×1)', sets: 5, repsMin: 4, repsMax: 5, intensityPct: 90, restSeconds: 180, rpe: '8-9', note: '85-92% FCmáx (Z4) ou 90-100% (Z5). 5 tiros de 4 min. 1 sessão por semana.' },
     ],
     buildWeek: (week, totalWeeks, deloadEvery) => {
       if (deloadEvery > 0 && week % deloadEvery === 0) {
         return { phase: 'Deload Aeróbico', sets: 1, repsMin: 30, repsMax: 45, intensityPct: 60, restSeconds: 0, rpe: '3-4', volDelta: -40, isCardio: true };
       }
       const progress = (week - 1) / (totalWeeks - 1);
-      const duration = Math.round(60 + progress * 30); // 60 → 90 min nas sessões Z2
+      const duration = Math.round(60 + progress * 30);
       return { phase: 'Polarizado 80/20', sets: 1, repsMin: duration, repsMax: duration, intensityPct: 72, restSeconds: 0, rpe: '4-9', volDelta: +3, isCardio: true,
         dupSessions: [
-          { type: 'Z2', label: `Z2 Longa (${duration} min)`, sets: 1, repsMin: duration, repsMax: duration, intensityPct: 68, restSeconds: 0, rpe: '4-5', note: '80% do volume semanal. ≤75% FCmáx.' },
-          { type: 'Z5', label: 'Intervalado Z4/Z5', sets: 5, repsMin: 4, repsMax: 5, intensityPct: 90, restSeconds: 180, rpe: '8-9', note: '20% do volume. ≥87% FCmáx.' },
+          { type: 'Z2', label: `Z2 Longa (${duration} min)`, sets: 1, repsMin: duration, repsMax: duration, intensityPct: 68, restSeconds: 0, rpe: '3-4', note: '80% do volume semanal. 65-75% FCmáx. Lactato < 2 mmol/L.' },
+          { type: 'Z5', label: 'Intervalado Z4/Z5', sets: 5, repsMin: 4, repsMax: 5, intensityPct: 90, restSeconds: 180, rpe: '8-9', note: '20% do volume. 85-100% FCmáx. Evitar Z3.' },
         ]
       };
     }
@@ -221,72 +221,72 @@ export const PERIODIZATION_MODELS = {
   // Ref: Gibala et al. (2012) — J Physiol
   hiit: {
     id: 'hiit', label: 'HIIT',
-    color: '#f97316', icon: '🔥',
-    desc: 'Tiros em Z4-Z5 (85-95% FCmáx), 20-60s, recuperação 1:2. Máx 2-3×/semana.',
+    color: '#f97316',
+    desc: 'Tiros em Z4-Z5 (85-95% FCmáx), 30s esforço / 60s recuperação (1:2). 6-12 rounds. Máx 2-3×/semana.',
     isCardio: true,
     buildWeek: (week, totalWeeks, deloadEvery) => {
       if (deloadEvery > 0 && week % deloadEvery === 0) {
-        return { phase: 'Deload HIIT', sets: 1, repsMin: 20, repsMax: 30, intensityPct: 65, restSeconds: 0, rpe: '4-5', volDelta: -40, isCardio: true };
+        return { phase: 'Deload HIIT', sets: 1, repsMin: 20, repsMax: 30, intensityPct: 65, restSeconds: 0, rpe: '3-4', volDelta: -40, isCardio: true };
       }
       const progress = (week - 1) / (totalWeeks - 1);
-      const tiros = Math.round(6 + progress * 4); // 6 → 10 tiros
-      return { phase: 'HIIT', sets: tiros, repsMin: 30, repsMax: 60, intensityPct: 90, restSeconds: 90, rpe: '8-9', volDelta: +1, isCardio: true };
+      const tiros = Math.round(6 + progress * 4);
+      return { phase: 'HIIT 1:2', sets: tiros, repsMin: 30, repsMax: 60, intensityPct: 90, restSeconds: 90, rpe: '8-9', volDelta: +1, isCardio: true };
     }
   },
 
   // 10. LSD — Longa Duração e Baixa Intensidade
-  // Ref: Maffetone (1980s), Zona 2 training
+  // Ref: Maffetone (1980s), Z2 training (Seiler)
   lsd: {
     id: 'lsd', label: 'LSD',
-    color: '#22c55e', icon: '🏃',
-    desc: 'Treino contínuo em Z1/Z2 (65-75% FCmáx), 45-90 min. Desenvolve base aeróbica e oxidação de gordura.',
+    color: '#22c55e',
+    desc: 'Treino contínuo em Z2 (65-75% FCmáx), 45-90 min. Desenvolve base aeróbica, mitocôndrias e oxidação de gordura. Lactato < 2 mmol/L.',
     isCardio: true,
     buildWeek: (week, totalWeeks, deloadEvery) => {
       if (deloadEvery > 0 && week % deloadEvery === 0) {
         return { phase: 'Recuperação Ativa', sets: 1, repsMin: 30, repsMax: 40, intensityPct: 55, restSeconds: 0, rpe: '3', volDelta: -30, isCardio: true };
       }
       const progress = (week - 1) / (totalWeeks - 1);
-      const duration = Math.round(45 + progress * 45); // 45 → 90 min
-      return { phase: 'LSD Z2', sets: 1, repsMin: duration, repsMax: duration, intensityPct: 68, restSeconds: 0, rpe: '4-5', volDelta: +3, isCardio: true };
+      const duration = Math.round(45 + progress * 45);
+      return { phase: 'LSD Z2', sets: 1, repsMin: duration, repsMax: duration, intensityPct: 68, restSeconds: 0, rpe: '3-4', volDelta: +3, isCardio: true };
     }
   },
 
   // 11. LIMIAR ANAERÓBIO — Threshold / Tempo Run
-  // Ref: Billat (2001) — Sports Med
+  // Ref: Billat (2001) — Sports Med. VT2 / OBLA.
   threshold: {
     id: 'threshold', label: 'Limiar Anaeróbio',
-    color: '#a855f7', icon: '⏱',
-    desc: 'Treino no OBLA (~Z3, 78-87% FCmáx). Aumenta velocidade sustentável e resistência à fadiga.',
+    color: '#a855f7',
+    desc: 'Treino no VT2/OBLA (85-92% FCmáx, lactato ~ 4 mmol/L). Aumenta velocidade sustentável. Mínimo 20 min para adaptação do tamponamento de lactato.',
     isCardio: true,
     buildWeek: (week, totalWeeks, deloadEvery) => {
       if (deloadEvery > 0 && week % deloadEvery === 0) {
-        return { phase: 'Deload Limiar', sets: 1, repsMin: 20, repsMax: 30, intensityPct: 65, restSeconds: 0, rpe: '4-5', volDelta: -35, isCardio: true };
+        return { phase: 'Deload Limiar', sets: 1, repsMin: 20, repsMax: 30, intensityPct: 65, restSeconds: 0, rpe: '3-4', volDelta: -35, isCardio: true };
       }
       const progress = (week - 1) / (totalWeeks - 1);
-      const duration = Math.round(20 + progress * 20); // 20 → 40 min no limiar
-      return { phase: 'Tempo Run Z3', sets: 1, repsMin: duration, repsMax: duration, intensityPct: 82, restSeconds: 0, rpe: '7-8', volDelta: +2, isCardio: true };
+      const duration = Math.round(20 + progress * 20);
+      return { phase: 'Tempo Run VT2', sets: 1, repsMin: duration, repsMax: duration, intensityPct: 87, restSeconds: 0, rpe: '7-8', volDelta: +2, isCardio: true };
     }
   },
 
   // 12. FARTLEK — Variações de ritmo livres
-  // Ref: Gosta Holmér (1937) — sem protocolo fixo
+  // Ref: Gosta Holmér (1937)
   fartlek: {
     id: 'fartlek', label: 'Fartlek',
-    color: '#ec4899', icon: '🎲',
-    desc: 'Variação livre de ritmo durante treino contínuo. Sem protocolo fixo — o atleta acelera conforme sensação.',
+    color: '#ec4899',
+    desc: 'Variação livre de ritmo durante treino contínuo. Sem protocolo fixo — acelera e desacelera conforme sensação, terreno ou marcadores visuais.',
     isCardio: true,
     buildWeek: (week, totalWeeks, deloadEvery) => {
       if (deloadEvery > 0 && week % deloadEvery === 0) {
         return { phase: 'Recuperação Fartlek', sets: 1, repsMin: 25, repsMax: 35, intensityPct: 60, restSeconds: 0, rpe: '3-4', volDelta: -30, isCardio: true };
       }
       const progress = (week - 1) / (totalWeeks - 1);
-      const duration = Math.round(30 + progress * 20); // 30 → 50 min
+      const duration = Math.round(30 + progress * 20);
       return {
         phase: 'Fartlek Livre',
         sets: 1, repsMin: duration, repsMax: duration,
-        intensityPct: 75, // média estimada entre Z1 e Z4
+        intensityPct: 75,
         restSeconds: 0, rpe: '4-8',
-        note: 'Sem série/descanso definido. Accelerar e desacelerar conforme sensação, terreno ou referências visuais.',
+        note: 'Sem série/descanso definido. Variar ritmo livremente conforme sensação — não regulado por FC.',
         volDelta: +2, isCardio: true
       };
     }
