@@ -24,10 +24,15 @@ function parseLocalDate(dateStr) {
 }
 
 // ── Estado do filtro de data (módulo) ──────────────────────────
+// Persistir estado do mês selecionado entre navegações
+const _savedFin = (() => { try { return JSON.parse(sessionStorage.getItem('pp_finState') || '{}'); } catch { return {}; } })();
 const finState = {
-  month: new Date().getMonth(),
-  year:  new Date().getFullYear(),
+  month: _savedFin.month ?? new Date().getMonth(),
+  year:  _savedFin.year  ?? new Date().getFullYear(),
 };
+function saveFinState() {
+  try { sessionStorage.setItem('pp_finState', JSON.stringify(finState)); } catch {}
+}
 
 export async function renderFinancial() {
   const students = await db.getAll('students');
@@ -322,11 +327,13 @@ export function initFinancial(navigateFn) {
   document.getElementById('finPrevMonth')?.addEventListener('click', () => {
     finState.month--;
     if (finState.month < 0) { finState.month = 11; finState.year--; }
+    saveFinState();
     navigateFn('/financeiro');
   });
   document.getElementById('finNextMonth')?.addEventListener('click', () => {
     finState.month++;
     if (finState.month > 11) { finState.month = 0; finState.year++; }
+    saveFinState();
     navigateFn('/financeiro');
   });
 
