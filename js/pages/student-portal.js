@@ -1551,6 +1551,20 @@ function initTreinar(workouts, schedules, student) {
                 loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
                 restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
               } else {
+                // Tentar construir progressão a partir do método (treinos salvos sem seriesProgression)
+                if (ex.method) {
+                  const SIMPLE_LABELS = {
+                    'Unilateral': (i) => i%2===0 ? `S${Math.floor(i/2)+1} — Lado D` : `S${Math.floor(i/2)+1} — Lado E`,
+                    'Bi-set': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
+                    'Super-série Agonista': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
+                    'Super-série Antagonista': (i) => i%2===0 ? `Agonista S${Math.floor(i/2)+1}` : `Antagonista S${Math.floor(i/2)+1}`,
+                  };
+                  if (SIMPLE_LABELS[ex.method]) {
+                    // Usar label gerado dinamicamente
+                    if (!ex._dynLabels) ex._dynLabels = {};
+                    ex._dynLabels[si] = SIMPLE_LABELS[ex.method](si);
+                  }
+                }
                 if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
                   const parts = ex.reps.split('→');
                   repsVal = parseInt(parts[si] || ex.reps) || '';
@@ -1560,27 +1574,72 @@ function initTreinar(workouts, schedules, student) {
                 loadVal = ex.load || '';
               }
 
-              // Badge inteligente para métodos com clusters (Rest-Pause, Cluster)
+              // Override hasProgLabel com dynLabels se disponível
+              const dynLabel = ex._dynLabels?.[si];
+
+              // Badge inteligente para TODOS os métodos com progressão de séries
               const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+              const hasProgLabel = ex.seriesProgression?.[si]?.label || dynLabel;
               let setNumLabel = `S${si+1}`;
               let setSubLabel = '';
-              if (isClusterMethod && ex.seriesProgression?.[si]?.label) {
-                const lbl = ex.seriesProgression[si].label;
-                const cMatch = lbl.match(/Cluster\s*(\d+)/i);
-                if (cMatch) {
-                  const cNum = cMatch[1];
-                  const isPausa = lbl.toLowerCase().includes('pausa');
-                  const miniIdx = ex.seriesProgression.slice(0, si).filter(s => s.label?.match(new RegExp(`Cluster\\s*${cNum}`, 'i'))).length + 1;
-                  setNumLabel = `C${cNum}`;
-                  setSubLabel = isPausa ? `P${miniIdx}` : `M1`;
+
+              if (hasProgLabel) {
+                const lbl = ex.seriesProgression?.[si]?.label || dynLabel || '';
+                if (isClusterMethod) {
+                  // Rest-Pause: suporta "C1 — Série", "C1 — Pausa 1", "Cluster 1 — Série" etc
+                  const cMatch = lbl.match(/(?:Cluster\s*|C)(\d+)\s*[—\-]\s*(.+)/i);
+                  if (cMatch) {
+                    setNumLabel = `C${cMatch[1]}`;
+                    const part = cMatch[2].toLowerCase();
+                    setSubLabel = part.includes('pausa') || part.startsWith('p') ? 'Pausa' : 'Série';
+                  } else {
+                    // fallback: detectar número do cluster no label
+                    const numMatch = lbl.match(/\d+/);
+                    setNumLabel = numMatch ? `C${numMatch[0]}` : `S${si+1}`;
+                    setSubLabel = lbl.toLowerCase().includes('pausa') ? 'Pausa' : 'Série';
+                  }
+                } else if (ex.method === 'Unilateral') {
+                  // Unilateral: mostrar lado
+                  const ladoD = lbl.toLowerCase().includes('lado d') || lbl.toLowerCase().includes('direito');
+                  const ladoE = lbl.toLowerCase().includes('lado e') || lbl.toLowerCase().includes('esquerdo');
+                  const sMatch = lbl.match(/S(\d+)/i);
+                  setNumLabel = sMatch ? `S${sMatch[1]}` : `S${si+1}`;
+                  setSubLabel = ladoD ? 'Dir.' : ladoE ? 'Esq.' : '';
+                } else {
+                  // Outros métodos: mostrar label curta
+                  // Ex: "S1 — Leve" → badge "S1" + sub "Leve"
+                  // Ex: "Ex A — S1" → badge "A" + sub lbl parcial
+                  const sMatch = lbl.match(/^S(\d+)/i);
+                  const exMatch = lbl.match(/^Ex\s*([A-Z])/i);
+                  const blocoMatch = lbl.match(/^Bloco\s*(\d+)/i);
+                  if (sMatch) {
+                    setNumLabel = `S${sMatch[1]}`;
+                    const after = lbl.replace(/^S\d+\s*[—-]\s*/i,'').trim();
+                    setSubLabel = after.length > 0 && after.length <= 8 ? after : after.split(' ')[0];
+                  } else if (exMatch) {
+                    setNumLabel = `Ex${exMatch[1]}`;
+                    const sNum = lbl.match(/S(\d+)/i);
+                    setSubLabel = sNum ? `S${sNum[1]}` : '';
+                  } else if (blocoMatch) {
+                    setNumLabel = `B${blocoMatch[1]}`;
+                    const exNum = lbl.match(/Ex\s*(\d+)/i);
+                    setSubLabel = exNum ? `E${exNum[1]}` : '';
+                  }
                 }
               }
 
+              // Cor do badge por tipo
+              const isDeloadRow = ex.seriesProgression?.[si]?.rest === 0 && setSubLabel.includes('P');
+              const badgeColor = isDeloadRow ? '#f59e0b'
+                : ex.method === 'Unilateral' && setSubLabel === 'Dir.' ? '#818cf8'
+                : ex.method === 'Unilateral' && setSubLabel === 'Esq.' ? '#06b6d4'
+                : 'var(--portal-primary, #6366f1)';
+
               return `
                 <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-                  <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1">
-                    <span>${setNumLabel}</span>
-                    ${setSubLabel ? `<span style="font-size:0.55em;opacity:0.7">${setSubLabel}</span>` : ''}
+                  <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:36px;color:${badgeColor}">
+                    <span style="font-size:0.72rem;font-weight:800">${setNumLabel}</span>
+                    ${setSubLabel ? `<span style="font-size:0.52rem;opacity:0.8;white-space:nowrap">${setSubLabel}</span>` : ''}
                   </span>
                   <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
                   <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
@@ -1602,8 +1661,7 @@ function initTreinar(workouts, schedules, student) {
           <!-- + Série -->
           <button type="button" class="portal-add-set-btn" id="addset_${ei}" data-ei="${ei}" data-rest="${ex.rest||60}"
             style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            + Série extra
+            Adicionar série
           </button>
 
           <!-- Observações do exercício -->
@@ -1620,8 +1678,7 @@ function initTreinar(workouts, schedules, student) {
       exLogEl.insertAdjacentHTML('beforeend', `
         <button id="addExtraExBtn" type="button"
           style="width:100%;padding:10px;background:rgba(16,185,129,0.08);border:1px dashed rgba(16,185,129,0.3);border-radius:10px;color:#10b981;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          + Exercício extra
+          Adicionar exercício
         </button>
         <div id="extraExercisesBlock"></div>
       `);
@@ -1845,8 +1902,7 @@ function initTreinar(workouts, schedules, student) {
         <div id="extrasets_${xei}" style="display:flex;flex-direction:column;gap:5px"></div>
         <button type="button" class="extra-addset-btn" data-xei="${xei}" data-rest="60"
           style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          + Série
+          Adicionar série
         </button>
         <div style="margin-top:8px">
           <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
