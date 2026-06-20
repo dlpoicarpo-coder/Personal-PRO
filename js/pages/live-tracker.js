@@ -78,19 +78,51 @@ export async function renderTracker() {
   if (!state.session) {
     const running = sessions.find(s => s.status === 'running');
     if (running) {
-      state.session = running;
-      state.setLog  = running.setLog || [];
-      state.exIdx   = running.currentExIdx || 0;
-      state.workSec = running.workSec || 0;
+      state.session  = running;
+      state.setLog   = running.setLog || [];
+      state.exIdx    = running.currentExIdx || 0;
+      state.workSec  = running.workSec || 0;
+      state.tempSets = running.tempSets || {};
+      if (running.lastAutoSave) {
+        console.log(`[Sessão recuperada] Último autosave: ${running.lastAutoSave}`);
+      }
     }
   }
 
   if (state.session) return renderLiveView(students);
 
-  const completed = sessions
+  const allSessions = sessions
     .filter(s => s.status === 'completed')
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 10);
+
+  // Enriquecer sessões com biofeedback do DB (preenche PSE/carga quando aluno preencheu o form depois)
+  const allBiofeedback = await db.getAll('biofeedback');
+  const completed = allSessions.map(s => {
+    const dateStr = (s.date || '').substring(0, 10);
+    const bfId = `bf_${s.studentId}_${dateStr}`;
+    const bf = allBiofeedback.find(b => b.id === bfId || (b.studentId === s.studentId && (b.date || '').startsWith(dateStr)));
+    if (!bf) return s;
+    // Merge: biofeedback tem prioridade sobre session para campos pós-treino
+    return {
+      ...s,
+      preBiofeedback: s.preBiofeedback || {
+        sleep: bf.sleep, tqr: bf.tqr || bf.energy, stress: bf.stress,
+        pain: bf.pain, painRegions: bf.painRegions, food: bf.food, motivation: bf.motivation,
+      },
+      postBiofeedback: {
+        ...(s.postBiofeedback || {}),
+        pse: bf.pse || s.postBiofeedback?.pse,
+        trainingLoad: bf.trainingLoad || s.postBiofeedback?.trainingLoad,
+        tqrPost: bf.tqrPost || s.postBiofeedback?.tqrPost,
+        feeling: bf.feeling || s.postBiofeedback?.feeling,
+        notes: bf.postNotes || bf.notes || s.postBiofeedback?.notes,
+        submittedByStudent: bf.submittedByStudent || s.postBiofeedback?.submittedByStudent,
+        pendingStudentForm: !bf.pse, // só pendente se não tem PSE
+      },
+      trainingLoad: bf.trainingLoad || s.trainingLoad,
+    };
+  });
 
   return `
     <div class="page-header">
@@ -186,8 +218,10 @@ export async function renderTracker() {
               <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
               <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
               <td style="text-align:center">${s.totalSets || '-'}</td>
-              <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':'var(--success)'}">
-                <strong>${pse||'-'}</strong>
+              <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':pse?'var(--success)':'var(--text-muted)'}">
+                ${pse
+                  ? `<strong>${pse}</strong>`
+                  : `<span style="font-size:0.65rem;color:var(--text-muted);padding:2px 5px;background:var(--bg-page);border-radius:4px;border:1px solid var(--border-color)" title="Aguardando preenchimento do aluno">aguard.</span>`}
               </td>
               <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
               <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
@@ -282,7 +316,7 @@ function renderLiveView(students) {
                   const pos    = grpExs.findIndex(e => e === ex);
                   const total  = grpExs.length;
                   const label  = total > 1 ? `${ex.method} (${pos + 1}/${total})` : ex.method;
-                  return `<span style="font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">🔗 ${label}</span>`;
+                  return `<span style="font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);display:inline-flex;align-items:center;gap:3px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> ${label}</span>`;
                 })() : ex.method ? `<span class="badge badge-info" style="font-size:0.65rem">${ex.method}</span>` : ''}
               </div>
               <div class="flex gap-xs">
@@ -302,11 +336,11 @@ function renderLiveView(students) {
               ${ex.load ? `<span style="color:var(--accent);font-weight:600">${(isNumeric(ex.load) && ex.loadType !== 'time') ? ex.load + 'kg' : ex.load}</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted)">1RM: ${ex.oneRM}kg</span>` : ''}
               ${COMBINED_METHODS?.has(ex.method)
-                ? `<span style="color:var(--warning);font-weight:600">⏩ sem descanso → próx.</span>`
+                ? `<span style="color:var(--warning);font-weight:600;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg> sem descanso</span>`
                 : `<span>${ex.rest || 60}s descanso</span>`}
               ${(() => {
                 const cm = METHOD_CARDIO_META?.[ex.method];
-                return cm ? `<span style="color:var(--accent);font-weight:600">🫀 ${cm.fcPct[0]}-${cm.fcPct[1]}% FCmáx · RPE ${cm.rpe}</span>` : '';
+                return cm ? `<span style="color:var(--accent);font-weight:600">${cm.fcPct[0]}-${cm.fcPct[1]}% FCmáx · RPE ${cm.rpe}</span>` : '';
               })()}
             </div>
 
@@ -438,7 +472,7 @@ function renderLiveView(students) {
                 color:${done ? 'var(--success)' : isCur ? 'var(--primary)' : 'var(--text-secondary)'}">
                 <span style="font-size:0.7rem;min-width:14px">${done ? '✓' : isCur ? '●' : '○'}</span>
                 <span style="font-size:0.8rem;font-weight:${isCur ? 600 : 400};flex:1">${e.name}</span>
-                ${isCombo ? `<span style="font-size:0.58rem;color:#f59e0b;background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:4px">🔗${e.method.replace('Super-série ','SS ').replace('Série Gigante','GS')}</span>` : ''}
+                ${isCombo ? `<span style="font-size:0.58rem;color:#f59e0b;background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:4px">${e.method.replace('Super-série ','SS ').replace('Série Gigante','GS')}</span>` : ''}
                 ${e.load ? `<span style="font-size:0.68rem;color:var(--text-muted)">${isNumeric(e.load) ? e.load + 'kg' : e.load}</span>` : ''}
               </div>`;
             }).join('')}
@@ -505,7 +539,7 @@ function renderLiveView(students) {
               <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep ? `${Math.round(s.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
               <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
               <span>Estresse <strong style="color:${(s.preBiofeedback.stress||0)>=7?'var(--warning)':'inherit'}">${s.preBiofeedback.stress||'-'}</strong></span>
-              ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 6 ? '🔴' : '🟡'}</strong></span>`:''}
+              ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 6 ? '●' : '●'}</strong></span>`:''}
             </div>` : ''}
           </div>
 
@@ -808,7 +842,7 @@ export function initTracker(navigateFn) {
             ['Mental',      todayPre.stress,                  true],
             ['Dor',         todayPre.pain,                    true],
             ['Motivação',   todayPre.motivation,             false],
-            todayPre.menstrualCycle ? ['Ciclo', '🔴', false] : null,
+            todayPre.menstrualCycle ? ['Ciclo', '●', false] : null,
           ];
           valuesEl.innerHTML = vals.filter(Boolean).map(([l,v,inv])=>{
             let displayVal = v;
@@ -942,7 +976,58 @@ export function initTracker(navigateFn) {
   state._uiInterval = setInterval(updateUI, 500);
   updateUI();
 
-  // Rest timer — só cria se não existir ainda
+  // ── AUTOSAVE: persiste estado da sessão a cada 30s e ao minimizar ──
+  async function autoSaveSession() {
+    if (!state.session?.id) return;
+    try {
+      // Coletar tempSets atual dos inputs visíveis
+      const currentTempSets = { ...state.tempSets };
+      document.querySelectorAll('.set-row').forEach(row => {
+        const si = parseInt(row.dataset.si);
+        const ei = state.exIdx;
+        const reps = row.querySelector('.set-reps')?.value;
+        const load = row.querySelector('.set-load')?.value;
+        const pse  = row.querySelector('.set-pse')?.value;
+        const rir  = row.querySelector('.set-rir')?.value;
+        if (!currentTempSets[ei]) currentTempSets[ei] = {};
+        if (reps !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], reps: parseInt(reps)||0 };
+        if (load !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], load: parseFloat(load)||0 };
+        if (pse  !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], pse:  parseInt(pse)||null };
+        if (rir  !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], rir:  parseInt(rir) };
+      });
+
+      await db.put('sessions', {
+        ...state.session,
+        setLog:        state.setLog,
+        currentExIdx:  state.exIdx,
+        workSec:       state.workSec,
+        tempSets:      currentTempSets,
+        lastAutoSave:  new Date().toISOString(),
+        status: 'running',
+      });
+    } catch(e) {
+      console.warn('[autosave] falhou:', e?.message);
+    }
+  }
+
+  const autoSaveInterval = setInterval(autoSaveSession, 30000);
+
+  // Salvar ao minimizar / trocar de aba
+  const onVisibilityChange = () => {
+    if (document.hidden) autoSaveSession();
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  // Salvar ao fechar a aba (beforeunload)
+  const onBeforeUnload = () => autoSaveSession();
+  window.addEventListener('beforeunload', onBeforeUnload);
+
+  // Limpar listeners ao finalizar
+  function cleanupAutoSave() {
+    clearInterval(autoSaveInterval);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('beforeunload', onBeforeUnload);
+  }
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
   const exs_all = state.session.exercises || [];
 
@@ -1366,6 +1451,7 @@ export function initTracker(navigateFn) {
   document.getElementById('editExLiveBtn')?.addEventListener('click', () => {
     const curEx = state.session.exercises[state.exIdx];
     if (!curEx) return;
+
     openModal({
       title: 'Editar Exercício', size: 'md',
       content: `
@@ -1376,38 +1462,49 @@ export function initTracker(navigateFn) {
         <div class="grid-2">
           <div class="form-group">
             <label class="form-label">Séries</label>
-            <input class="form-input" type="number" id="editExLiveSets" value="${curEx.sets||3}" />
+            <input class="form-input" type="number" id="editExLiveSets" value="${curEx.sets||3}" min="1" />
           </div>
           <div class="form-group">
             <label class="form-label">Reps</label>
             <input class="form-input" id="editExLiveReps" value="${curEx.reps||'12'}" />
           </div>
           <div class="form-group">
-            <label class="form-label">Carga/Zona</label>
+            <label class="form-label">Carga / Zona</label>
             <input class="form-input" id="editExLiveLoad" value="${curEx.load||''}" />
           </div>
           <div class="form-group">
             <label class="form-label">Descanso (s)</label>
-            <input class="form-input" type="number" id="editExLiveRest" value="${curEx.rest||60}" />
+            <input class="form-input" type="number" id="editExLiveRest" value="${curEx.rest||60}" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">1RM (kg)</label>
+            <input class="form-input" type="number" id="editExLiveOneRM" value="${curEx.oneRM||''}" step="0.5" placeholder="opcional" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Orientações para o aluno</label>
+            <input class="form-input" id="editExLiveNotes" value="${curEx.trainerNotes||''}" placeholder="Ex: manter core ativado..." />
           </div>
         </div>
         <button id="delExLiveBtn" class="btn btn-danger btn-sm" style="margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-          Excluir Exercício
-        </button>
-      `,
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          Excluir Exercício da Sessão
+        </button>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-        { label: 'Salvar', class: 'btn-primary', onClick: async () => {
-            curEx.name = document.getElementById('editExLiveName').value;
-            curEx.sets = parseInt(document.getElementById('editExLiveSets').value) || 3;
-            curEx.reps = document.getElementById('editExLiveReps').value;
-            curEx.load = document.getElementById('editExLiveLoad').value;
-            curEx.rest = parseInt(document.getElementById('editExLiveRest').value) || 60;
-            
+        { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
+            curEx.name        = document.getElementById('editExLiveName')?.value || curEx.name;
+            curEx.sets        = parseInt(document.getElementById('editExLiveSets')?.value) || 3;
+            curEx.reps        = document.getElementById('editExLiveReps')?.value || curEx.reps;
+            curEx.load        = document.getElementById('editExLiveLoad')?.value ?? curEx.load;
+            curEx.rest        = parseInt(document.getElementById('editExLiveRest')?.value) || 60;
+            curEx.trainerNotes = document.getElementById('editExLiveNotes')?.value || '';
+            const oneRM = parseFloat(document.getElementById('editExLiveOneRM')?.value);
+            if (!isNaN(oneRM) && oneRM > 0) curEx.oneRM = oneRM;
+
+            // Remover séries além do novo número
             state.setLog = state.setLog.filter(s => !(s.exIdx === state.exIdx && s.setIdx >= curEx.sets));
             state.session.setLog = state.setLog;
-            
+
             await db.put('sessions', state.session);
             closeModal();
             refreshLive();
@@ -1416,21 +1513,23 @@ export function initTracker(navigateFn) {
       ]
     });
 
+    // delExLiveBtn existe no DOM imediatamente (openModal é síncrono)
     document.getElementById('delExLiveBtn')?.addEventListener('click', async () => {
-      if (confirm('Tem certeza que deseja excluir este exercício da sessão atual?')) {
-        state.session.exercises.splice(state.exIdx, 1);
-        
-        state.setLog = state.setLog.filter(s => s.exIdx !== state.exIdx);
-        state.setLog.forEach(s => { if (s.exIdx > state.exIdx) s.exIdx-- });
-        state.session.setLog = state.setLog;
-        
-        if (state.exIdx >= state.session.exercises.length) state.exIdx = Math.max(0, state.session.exercises.length - 1);
-        state.setIdx = 0;
-        
-        await db.put('sessions', state.session);
-        closeModal();
-        refreshLive();
+      if (!confirm(`Excluir "${curEx.name}" da sessão atual?`)) return;
+
+      state.session.exercises.splice(state.exIdx, 1);
+      state.setLog = state.setLog.filter(s => s.exIdx !== state.exIdx);
+      state.setLog.forEach(s => { if (s.exIdx > state.exIdx) s.exIdx--; });
+      state.session.setLog = state.setLog;
+
+      if (state.exIdx >= state.session.exercises.length) {
+        state.exIdx = Math.max(0, state.session.exercises.length - 1);
       }
+      state.setIdx = 0;
+
+      await db.put('sessions', state.session);
+      closeModal();
+      refreshLive();
     });
   });
 
@@ -1508,6 +1607,8 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   };
 
   await db.put('sessions', sessionData);
+  // Limpar autosave após finalizar
+  if (typeof cleanupAutoSave === 'function') try { cleanupAutoSave(); } catch(_) {}
   const bfId = 'bf_' + s.studentId + '_' + s.date.substring(0, 10);
   const existingBf = await db.get('biofeedback', bfId) || {};
   // Usar db.put (upsert) em vez de db.add para evitar falha silenciosa
@@ -1535,11 +1636,11 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
       const nome      = student.name.split(' ')[0];
       const trainerName = settings?.trainerName || '';
       const msg = [
-        `🏋️ *Personal PRO*`,``,
+        ` *Personal PRO*`,``,
         `Parabéns pelo treino, ${nome}! 🎉`,``,
         `📊 *Avalie como foi a sessão* (leva ~30 segundos):`,
         postLink,``,
-        `Seu feedback ajuda a ajustar o próximo treino. 💪`,``,
+        `Seu feedback ajuda a ajustar o próximo treino. `,``,
         trainerName ? `_Personal: ${trainerName}_` : `_Personal PRO_`,
       ].join('\n');
       const num = student.phone.replace(/\D/g,'');
