@@ -15,36 +15,55 @@ let pwaPopupShown = false;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  // Show popup with a slight delay after portal loads
   setTimeout(() => showPwaPopup(), 3000);
 });
 
-function showPwaPopup() {
-  if (pwaPopupShown || !deferredPrompt) return;
+// Detectar iOS — Safari não dispara beforeinstallprompt
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+if (isIOS && !isInStandaloneMode) {
+  setTimeout(() => showPwaPopup(true), 3000);
+}
+
+function showPwaPopup(isIOSMode = false) {
+  if (pwaPopupShown) return;
+  if (!isIOSMode && !deferredPrompt) return;
   pwaPopupShown = true;
   const popup = document.getElementById('pwaInstallPopup');
   if (popup) { popup.classList.add('visible'); return; }
-  // If portal already rendered, inject
   const root = document.querySelector('.portal-root');
   if (!root) return;
   const el = document.createElement('div');
   el.id = 'pwaInstallPopup';
   el.className = 'portal-pwa-popup visible';
+
+  const iosInstructions = `
+    <div style="font-size:0.75rem;color:var(--portal-text-muted);line-height:1.6;margin-top:6px;text-align:left">
+      No Safari: toque em
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      Compartilhar → <strong>"Adicionar à Tela de Início"</strong>
+    </div>`;
+
   el.innerHTML = `
     <div class="portal-pwa-popup-inner">
-      <div class="portal-pwa-icon">📲</div>
       <div class="portal-pwa-text">
         <div class="portal-pwa-title">Instalar Personal PRO</div>
-        <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
+        <div class="portal-pwa-sub">Acesse seus treinos sem abrir o navegador!</div>
+        ${isIOSMode ? iosInstructions : ''}
       </div>
       <div class="portal-pwa-actions">
-        <button id="pwaInstallYes" class="portal-pwa-btn-yes">Instalar</button>
+        ${isIOSMode
+          ? `<button id="pwaInstallYes" class="portal-pwa-btn-yes">Entendi</button>`
+          : `<button id="pwaInstallYes" class="portal-pwa-btn-yes">Instalar</button>`}
         <button id="pwaInstallNo" class="portal-pwa-btn-no">Agora não</button>
       </div>
     </div>`;
   root.appendChild(el);
   document.getElementById('pwaInstallYes')?.addEventListener('click', () => {
-    deferredPrompt.prompt();
+    if (!isIOSMode && deferredPrompt) {
+      deferredPrompt.prompt();
+    }
     el.classList.remove('visible');
   });
   document.getElementById('pwaInstallNo')?.addEventListener('click', () => {
