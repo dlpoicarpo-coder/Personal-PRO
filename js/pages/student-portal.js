@@ -718,7 +718,7 @@ function checkSessionReminders(schedules, sessions) {
   });
   if (needsCheckout.length > 0) {
     setTimeout(() => {
-      showToast(`⚡ Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
+      showToast(` Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
     }, 2000);
   }
 }
@@ -911,18 +911,30 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
           weekTimelineHtml = `
             <div class="week-timeline" style="margin: 14px 0 8px; display: flex; gap: 4px; align-items: flex-end; min-height: 60px;">
               ${currentMacro.weeks.map((w, i) => {
-                const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
-                return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; min-width:20px; border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label} — Vol: ${w.volumePct}% | Int: ${w.intensityPct}%">
+                const isDeload = w.phase === 'Deload' || w.phase?.includes('Deload') || w.phase?.includes('Recuper');
+                const intColor = isDeload ? '#3b82f6'
+                  : w.intensityPct >= 88 ? '#ef4444'
+                  : w.intensityPct >= 78 ? '#f97316'
+                  : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
+                // Tooltip com info de sub-sessões (DUP, Conjugada, Concorrente)
+                const dupInfo = w.dupSessions?.length
+                  ? w.dupSessions.map(ds => `${ds.label}: ${ds.intensityPct}% · RPE ${ds.rpe}`).join(' | ')
+                  : null;
+                const tooltipText = dupInfo
+                  ? `Sem ${w.week}: ${w.label||w.phase} — ${dupInfo}`
+                  : `Sem ${w.week}: ${w.label||w.phase} — ${w.intensityPct}% Int · ${w.volumePct||'—'}% Vol`;
+                const barHeight = Math.max(4, Math.round((w.intensityPct || 60) * 0.28));
+                return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; min-width:20px; border-bottom:3px solid ${intColor}" title="${tooltipText}">
                   <div class="week-num" style="font-size:0.6rem; font-weight:600; color:${intColor}">S${w.week}</div>
-                  <div class="week-bar-int" style="height:${w.intensityPct * 0.3}px; background:${intColor}; width:100%; max-width:16px; border-radius:2px; min-height:2px;"></div>
+                  <div style="height:${barHeight}px; background:${intColor}; width:100%; max-width:16px; border-radius:2px; min-height:2px;"></div>
                 </div>`;
               }).join('')}
             </div>
             <div class="flex gap-md mt-xs text-xs text-muted" style="flex-wrap:wrap; display:flex; gap:8px; margin-bottom:12px;">
               <span style="color:#22c55e; font-size:0.65rem;">● Leve</span>
-              <span style="color:#eab308; font-size:0.65rem;">● Mod</span>
+              <span style="color:#eab308; font-size:0.65rem;">● Moderada</span>
               <span style="color:#f97316; font-size:0.65rem;">● Alta</span>
-              <span style="color:#ef4444; font-size:0.65rem;">● M.Alta</span>
+              <span style="color:#ef4444; font-size:0.65rem;">● Máxima</span>
               <span style="color:#3b82f6; font-size:0.65rem;">● Deload</span>
             </div>
           `;
@@ -1081,7 +1093,7 @@ function renderTreinar(workouts, schedules) {
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveWork" style="color:#10b981">00:00</div>
-            <div class="portal-live-lbl">💪 Trabalho</div>
+            <div class="portal-live-lbl"> Trabalho</div>
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveRest" style="color:#06b6d4">00:00</div>
@@ -1098,7 +1110,7 @@ function renderTreinar(workouts, schedules) {
           <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
             <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar ⏸</button>
-            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho 💪</button>
+            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho </button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
         </div>
@@ -1108,7 +1120,7 @@ function renderTreinar(workouts, schedules) {
 
         <!-- Session notes -->
         <div class="glass-card" style="margin-top:12px">
-          <div class="portal-card-label">📝 Anotações da Sessão</div>
+          <div class="portal-card-label"> Anotações da Sessão</div>
           <textarea id="soloNotes" class="portal-textarea" rows="3" placeholder="Observações gerais do treino..."></textarea>
         </div>
 
@@ -1407,6 +1419,19 @@ function initTreinar(workouts, schedules, student) {
       if (selInput) selInput.value = wid;
       const w = workouts.find(w => w.id === wid);
     if (w && w.exercises?.length) {
+        // Garantir groupId para métodos combinados (treinos salvos antes dessa feature)
+        const COMBO = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+        let gc = 0;
+        for (let i = 0; i < w.exercises.length; i++) {
+          if (!COMBO.has(w.exercises[i].method)) continue;
+          if (w.exercises[i].groupId) continue;
+          const gid = `grp_${++gc}`;
+          w.exercises[i].groupId = gid;
+          for (let j = i + 1; j < w.exercises.length; j++) {
+            if (w.exercises[j].method === w.exercises[i].method) w.exercises[j].groupId = gid;
+            else break;
+          }
+        }
         exBlock.innerHTML = `
           <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do Treino</div>
           ${w.exercises.map((ex,i) => `
@@ -1446,86 +1471,141 @@ function initTreinar(workouts, schedules, student) {
     const exLogEl = document.getElementById('soloExerciseLog');
     if (w && w.exercises?.length) {
       exLogEl.innerHTML = w.exercises.map((ex, ei) => `
-        <div class="glass-card portal-live-ex-card">
+        <div class="glass-card portal-live-ex-card" id="excard_${ei}">
           <div class="portal-live-ex-header">
             <div class="portal-ex-num">${ei+1}</div>
             <div style="flex:1;min-width:0">
               <div class="portal-ex-name">${ex.name}</div>
               <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
               ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
+              ${(() => {
+                const CARDIO = {
+                  'Zona 1 (Z1)':{fc:'50-65'},
+                  'Zona 2 (Z2)':{fc:'65-75'},
+                  'Zona 3 (Z3) — Zona Cinzenta':{fc:'75-87'},
+                  'Zona 4 (Z4) — Limiar':{fc:'85-92'},
+                  'Zona 5 (Z5) — VO2max':{fc:'90-100'},
+                  'Tabata':{fc:'90-100'},
+                  'HIIT 1:2':{fc:'85-95'},
+                  'HIIT 1:1':{fc:'85-95'},
+                  'SIT (Sprint Interval Training)':{fc:'ALL-OUT'},
+                  'Série de Repetição (VO2max)':{fc:'90-100'},
+                  'Steady State Z2':{fc:'65-75'},
+                  'Progressivo':{fc:'60-90'},
+                };
+                const COMBINED = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+                const cm = CARDIO[ex.method];
+                const isCombo = COMBINED.has(ex.method);
+                const nextEx2 = w.exercises[ei + 1];
+                // Usar groupId se disponível, fallback para método consecutivo
+                const isLastOfGroup = !nextEx2
+                  || (ex.groupId ? nextEx2.groupId !== ex.groupId : (!COMBINED.has(nextEx2.method) || nextEx2.method !== ex.method));
+                return [
+                  cm ? `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600"> ${cm.fc}% FC Máx</div>` : '',
+                  isCombo ? `<div style="font-size:0.62rem;font-weight:700;color:#f59e0b;margin-top:3px;padding:2px 6px;background:rgba(245,158,11,0.12);border-radius:6px;display:inline-block"> ${ex.method} · ${isLastOfGroup ? `${ex.rest||90}s descanso pós-par` : '→ próximo exercício'}</div>` : '',
+                ].join('');
+              })()}
+              ${(ex.trainerNotes || ex.notes) ? `
+                <div style="margin-top:6px;padding:7px 10px;background:rgba(16,185,129,0.08);border-left:3px solid #10b981;border-radius:0 8px 8px 0">
+                  <div style="font-size:0.58rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px"> Orientações</div>
+                  <div style="font-size:0.78rem;color:var(--portal-text-secondary,#cbd5e1);line-height:1.5">${ex.trainerNotes || ex.notes}</div>
+                </div>` : ''}
             </div>
             <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </button>
             ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
           </div>
+
           ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
-          ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
-            let repsVal = '';
-            let loadVal = '';
-            let restVal = ex.rest || 60;
-            
-            if (ex.seriesProgression && ex.seriesProgression[si]) {
-              const sp = ex.seriesProgression[si];
-              repsVal = parseInt(sp.reps) || '';
-              loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
-              restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
-            } else {
-              if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
-                const parts = ex.reps.split('→');
-                if (parts[si]) {
-                  repsVal = parseInt(parts[si]) || '';
+
+          <!-- Sets container (suporta séries extras adicionadas dinamicamente) -->
+          <div id="sets_container_${ei}">
+            ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
+              let repsVal = '';
+              let loadVal = '';
+              let restVal = ex.rest || 60;
+
+              if (ex.seriesProgression && ex.seriesProgression[si]) {
+                const sp = ex.seriesProgression[si];
+                repsVal = parseInt(sp.reps) || '';
+                loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
+                restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
+              } else {
+                if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+                  const parts = ex.reps.split('→');
+                  repsVal = parseInt(parts[si] || ex.reps) || '';
                 } else {
                   repsVal = parseInt(ex.reps) || '';
                 }
-              } else {
-                repsVal = parseInt(ex.reps) || '';
+                loadVal = ex.load || '';
               }
-              loadVal = ex.load || '';
-            }
 
-            return `
-              <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-                <span class="portal-set-num">S${si+1}</span>
-                <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
-                <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
-                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display: none;">
-                  <option value="" disabled selected>PSE</option>
-                  <option value="1">1 - M. Leve</option>
-                  <option value="2">2 - Leve</option>
-                  <option value="3">3 - Moderado</option>
-                  <option value="4">4 - A. Pesado</option>
-                  <option value="5">5 - Forte</option>
-                  <option value="6">6 - Forte+</option>
-                  <option value="7">7 - M. Forte</option>
-                  <option value="8">8 - M. Forte+</option>
-                  <option value="9">9 - Extr. Forte</option>
-                  <option value="10">10 - Máximo</option>
-                </select>
-                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
-                <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display: none;">
-                  <option value="" disabled selected>RIR</option>
-                  <option value="0">0 RIR (Falha)</option>
-                  <option value="1">1 RIR</option>
-                  <option value="2">2 RIR</option>
-                  <option value="3">3 RIR</option>
-                  <option value="4">4 RIR</option>
-                  <option value="5">5 RIR</option>
-                  <option value="6">6 RIR</option>
-                  <option value="7">7 RIR</option>
-                  <option value="8">8 RIR</option>
-                  <option value="9">9 RIR</option>
-                  <option value="10">10+ RIR</option>
-                </select>
-                <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
-                <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
-              </div>`;
-          }).join('')}
-          <div class="portal-live-ex-notes-wrap">
-            <textarea class="portal-textarea" id="exnotes_${ei}" rows="1" placeholder="Anotações deste exercício..."></textarea>
+              // Badge inteligente para métodos com clusters (Rest-Pause, Cluster)
+              const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+              let setNumLabel = `S${si+1}`;
+              let setSubLabel = '';
+              if (isClusterMethod && ex.seriesProgression?.[si]?.label) {
+                const lbl = ex.seriesProgression[si].label;
+                const cMatch = lbl.match(/Cluster\s*(\d+)/i);
+                if (cMatch) {
+                  const cNum = cMatch[1];
+                  const isPausa = lbl.toLowerCase().includes('pausa');
+                  const miniIdx = ex.seriesProgression.slice(0, si).filter(s => s.label?.match(new RegExp(`Cluster\\s*${cNum}`, 'i'))).length + 1;
+                  setNumLabel = `C${cNum}`;
+                  setSubLabel = isPausa ? `P${miniIdx}` : `M1`;
+                }
+              }
+
+              return `
+                <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
+                  <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1">
+                    <span>${setNumLabel}</span>
+                    ${setSubLabel ? `<span style="font-size:0.55em;opacity:0.7">${setSubLabel}</span>` : ''}
+                  </span>
+                  <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
+                  <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
+                  <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
+                    <option value="" disabled selected>PSE</option>
+                    ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+                  </select>
+                  <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+                  <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display:none;">
+                    <option value="" disabled selected>RIR</option>
+                    ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}
+                  </select>
+                  <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+                  <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
+                </div>`;
+            }).join('')}
+          </div>
+
+          <!-- + Série -->
+          <button type="button" class="portal-add-set-btn" id="addset_${ei}" data-ei="${ei}" data-rest="${ex.rest||60}"
+            style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + Série extra
+          </button>
+
+          <!-- Observações do exercício -->
+          <div style="margin-top:8px">
+            <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
+            <textarea class="portal-textarea" id="exnotes_${ei}" rows="2"
+              placeholder="Sensação na série, ajuste de técnica, dor, carga ideal..."
+              style="font-size:0.8rem;resize:none;background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:var(--portal-text)"></textarea>
           </div>
         </div>
       `).join('');
+
+      // Botão flutuante "+ Exercício extra" ao fim da lista
+      exLogEl.insertAdjacentHTML('beforeend', `
+        <button id="addExtraExBtn" type="button"
+          style="width:100%;padding:10px;background:rgba(16,185,129,0.08);border:1px dashed rgba(16,185,129,0.3);border-radius:10px;color:#10b981;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + Exercício extra
+        </button>
+        <div id="extraExercisesBlock"></div>
+      `);
     } else {
       // Free log
       exLogEl.innerHTML = `
@@ -1584,6 +1664,8 @@ function initTreinar(workouts, schedules, student) {
     }
 
     // Bind done buttons
+    const COMBINED_SET = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+
     exLogEl.querySelectorAll('.portal-solo-done-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const isDone = btn.classList.toggle('done');
@@ -1591,19 +1673,37 @@ function initTreinar(workouts, schedules, student) {
         if (row) {
           row.classList.toggle('set-done', isDone);
           if (isDone) {
-            workSeconds += 30; // estimate 30s work per set
-            const restSec = parseInt(btn.dataset.rest) || 60;
+            workSeconds += 30;
+            const ei = parseInt(btn.dataset.ei);
+            const ex = w?.exercises?.[ei];
+            const isCombined = COMBINED_SET.has(ex?.method);
+            const nextEx = w?.exercises?.[ei + 1];
+            // Usar groupId se disponível
+            const isLastOfGroup = !nextEx
+              || (ex?.groupId ? nextEx?.groupId !== ex?.groupId : (!COMBINED_SET.has(nextEx?.method) || nextEx?.method !== ex?.method));
+
+            let restSec = parseInt(btn.dataset.rest) || 60;
+            // Métodos combinados: descanso=0 se não é o último do grupo
+            if (isCombined && !isLastOfGroup) restSec = 0;
+
             const overlay = document.getElementById('restTimerOverlay');
-            if (overlay) {
-              row.after(overlay);
-            }
+            if (overlay) row.after(overlay);
             activeRestingRowId = row.id;
-            startRestTimer(restSec);
+
+            if (restSec === 0) {
+              // Avança visualmente para o próximo exercício sem descanso
+              const nextCard = document.getElementById(`excard_${ei + 1}`);
+              if (nextCard) {
+                nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                nextCard.style.boxShadow = '0 0 0 2px #f59e0b';
+                setTimeout(() => { nextCard.style.boxShadow = ''; }, 1200);
+              }
+            } else {
+              startRestTimer(restSec);
+            }
             playBeep(440, 0.1, 1);
           } else {
-            if (activeRestingRowId === row.id) {
-              stopRestTimer();
-            }
+            if (activeRestingRowId === row.id) stopRestTimer();
           }
         }
       });
@@ -1655,10 +1755,122 @@ function initTreinar(workouts, schedules, student) {
         });
       });
     });
+    // ── + SÉRIE EXTRA por exercício ──
+    exLogEl.querySelectorAll('.portal-add-set-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ei = parseInt(btn.dataset.ei);
+        const restSec = btn.dataset.rest || 60;
+        const container = document.getElementById(`sets_container_${ei}`);
+        if (!container) return;
+        const existing = container.querySelectorAll('.portal-solo-set-row').length;
+        const si = existing; // próximo índice
+        const row = document.createElement('div');
+        row.className = 'portal-solo-set-row';
+        row.id = `setrow_${ei}_${si}`;
+        row.style.cssText = 'border-left:2px solid rgba(99,102,241,0.4);padding-left:4px';
+        row.innerHTML = `
+          <span class="portal-set-num" style="color:#818cf8">S${si+1}</span>
+          <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0">
+          <input type="number" placeholder="kg"   class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5">
+          <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+          </select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+          <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display:none;">
+            ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}
+          </select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+          <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restSec}">&#10003;</button>
+        `;
+        container.appendChild(row);
+        // Bind done button
+        row.querySelector(`#sdb_${ei}_${si}`)?.addEventListener('click', (e) => {
+          const doneBtn = e.currentTarget;
+          const isDone = doneBtn.classList.toggle('done');
+          if (isDone) { workSeconds += 30; startRestTimer(parseInt(restSec)||60); }
+          else if (activeRestingRowId === row.id) stopRestTimer();
+        });
+        // Bind PSE/RIR
+        const pseBtn = row.querySelector(`#psebtn_${ei}_${si}`);
+        const pseSelect = row.querySelector(`#sr_${ei}_${si}_pse`);
+        if (pseBtn && pseSelect) {
+          updatePseButton(pseBtn, '');
+          pseBtn.addEventListener('click', () => openCustomSelector('PSE', PSE_OPTIONS, pseSelect.value, val => { pseSelect.value = val; updatePseButton(pseBtn, val); }));
+        }
+        const rirBtn = row.querySelector(`#rirbtn_${ei}_${si}`);
+        const rirSelect = row.querySelector(`#sr_${ei}_${si}_rir`);
+        if (rirBtn && rirSelect) {
+          updateRirButton(rirBtn, '');
+          rirBtn.addEventListener('click', () => openCustomSelector('RIR', RIR_OPTIONS, rirSelect.value, val => { rirSelect.value = val; updateRirButton(rirBtn, val); }));
+        }
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+
+    // ── + EXERCÍCIO EXTRA durante sessão ──
+    let extraExCount = 0;
+    document.getElementById('addExtraExBtn')?.addEventListener('click', () => {
+      const block = document.getElementById('extraExercisesBlock');
+      if (!block) return;
+      const xei = `x${extraExCount++}`;
+      const card = document.createElement('div');
+      card.className = 'glass-card portal-live-ex-card';
+      card.style.borderLeft = '2px solid rgba(16,185,129,0.4)';
+      card.id = `extracard_${xei}`;
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input type="text" placeholder="Nome do exercício" class="portal-textarea" id="extraex_${xei}_name"
+            style="margin-bottom:0;flex:1;font-weight:600;font-size:0.88rem;padding:8px 10px">
+          <button type="button" style="background:rgba(239,68,68,0.12);border:none;border-radius:50%;width:26px;height:26px;color:#ef4444;cursor:pointer;font-size:0.9rem;flex-shrink:0" onclick="this.closest('.portal-live-ex-card').remove()">×</button>
+        </div>
+        <div id="extrasets_${xei}" style="display:flex;flex-direction:column;gap:5px"></div>
+        <button type="button" class="extra-addset-btn" data-xei="${xei}" data-rest="60"
+          style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + Série
+        </button>
+        <div style="margin-top:8px">
+          <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
+          <textarea class="portal-textarea" id="extraex_${xei}_notes" rows="2"
+            placeholder="Sensação, carga ideal, observações técnicas..."
+            style="font-size:0.8rem;resize:none"></textarea>
+        </div>
+      `;
+      block.appendChild(card);
+      // Add first set automatically
+      card.querySelector('.extra-addset-btn').click();
+      // Bind future + Série buttons
+      card.querySelector('.extra-addset-btn').addEventListener('click', () => {
+        const setsBlock = document.getElementById(`extrasets_${xei}`);
+        const si = setsBlock.querySelectorAll('.portal-solo-set-row').length;
+        const row = document.createElement('div');
+        row.className = 'portal-solo-set-row';
+        row.id = `extrarow_${xei}_${si}`;
+        row.innerHTML = `
+          <span class="portal-set-num">S${si+1}</span>
+          <input type="number" placeholder="Reps" class="portal-solo-input" id="extra_${xei}_${si}_reps" min="0">
+          <input type="number" placeholder="kg"   class="portal-solo-input" id="extra_${xei}_${si}_load" min="0" step="0.5">
+          <select class="portal-solo-input portal-solo-pse" id="extra_${xei}_${si}_pse" style="display:none;">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="extra_psebtn_${xei}_${si}">PSE</button>
+          <select class="portal-solo-input portal-solo-pse" id="extra_${xei}_${si}_rir" style="display:none;">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}</select>
+          <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="extra_rirbtn_${xei}_${si}">RIR</button>
+          <button class="portal-solo-done-btn" data-ei="${xei}" data-si="${si}" data-rest="60">&#10003;</button>
+        `;
+        setsBlock.appendChild(row);
+        const pb = row.querySelector(`.portal-solo-pse-btn`);
+        const ps = row.querySelector(`#extra_${xei}_${si}_pse`);
+        if (pb && ps) { updatePseButton(pb,''); pb.addEventListener('click', ()=>openCustomSelector('PSE',PSE_OPTIONS,ps.value,v=>{ps.value=v;updatePseButton(pb,v);})); }
+        const rb = row.querySelector(`.portal-solo-rir-btn`);
+        const rs = row.querySelector(`#extra_${xei}_${si}_rir`);
+        if (rb && rs) { updateRirButton(rb,''); rb.addEventListener('click', ()=>openCustomSelector('RIR',RIR_OPTIONS,rs.value,v=>{rs.value=v;updateRirButton(rb,v);})); }
+        row.querySelector('.portal-solo-done-btn')?.addEventListener('click', e => {
+          const isDone = e.currentTarget.classList.toggle('done');
+          if (isDone) { workSeconds += 30; startRestTimer(60); }
+        });
+      });
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
-
-
-  // Main timer
   function startMainTimer() {
     soloStartTime = new Date();
     soloTimerInterval = setInterval(() => {
@@ -1701,7 +1913,11 @@ function initTreinar(workouts, schedules, student) {
     stopRestTimer();
     const durationMin = Math.round((new Date() - soloStartTime) / 60000);
     const wid = selInput?.value || '';
-    const w = workouts.find(w => w.id === wid);
+    let w = workouts.find(wk => wk.id === wid);
+    // Fallback: buscar direto do DB se não encontrou no array local (ex: sync lag)
+    if (!w && wid) {
+      try { w = await db.get('workouts', wid); } catch(_) {}
+    }
     const pse = parseInt(document.getElementById('soloPse')?.value) || 5;
     const notes = document.getElementById('soloNotes')?.value || '';
 
@@ -1718,27 +1934,50 @@ function initTreinar(workouts, schedules, student) {
           load: parseFloat(ex.load) || 0,
           method: ex.method || ''
         });
-        const sets = parseInt(ex.sets) || 3;
-        for (let si = 0; si < sets; si++) {
-          const reps = document.getElementById(`sr_${ei}_${si}_reps`)?.value;
-          const load = document.getElementById(`sr_${ei}_${si}_load`)?.value;
-          const psei = document.getElementById(`sr_${ei}_${si}_pse`)?.value;
-          const rir = document.getElementById(`sr_${ei}_${si}_rir`)?.value;
-          const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
-          
+        const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
+        // Collect all set rows (including extra sets added with + Série)
+        const container = document.getElementById(`sets_container_${ei}`);
+        const rows = container ? container.querySelectorAll('.portal-solo-set-row') : [];
+        rows.forEach((row, si) => {
+          const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value || document.getElementById(`sr_${ei}_${si}_reps`)?.value;
+          const load = row.querySelector(`[id$="_${si}_load"]`)?.value || document.getElementById(`sr_${ei}_${si}_load`)?.value;
+          const psei = row.querySelector(`[id$="_${si}_pse"]`)?.value || document.getElementById(`sr_${ei}_${si}_pse`)?.value;
+          const rir  = row.querySelector(`[id$="_${si}_rir"]`)?.value  || document.getElementById(`sr_${ei}_${si}_rir`)?.value;
           setLog.push({
-            exIdx: ei,
-            exerciseIdx: ei,
-            exerciseName: ex.name,
-            setIdx: si,
-            reps: parseInt(reps)||0,
-            load: parseFloat(load)||0,
+            exIdx: ei, exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
+            reps: parseInt(reps)||0, load: parseFloat(load)||0,
             pse: psei ? parseInt(psei) : null,
             rir: rir !== '' && rir != null ? parseInt(rir) : null,
-            notes: exNotes
+            notes: exNotes, isExtra: si >= (parseInt(ex.sets)||3)
           });
-        }
+        });
       });
+
+      // Collect extra exercises added during session
+      const extraBlock = document.getElementById('extraExercisesBlock');
+      if (extraBlock) {
+        extraBlock.querySelectorAll('.portal-live-ex-card').forEach((card, xIdx) => {
+          const xei = card.id.replace('extracard_', '');
+          const nameEl = card.querySelector(`#extraex_${xei}_name`);
+          const name = nameEl?.value || `Exercício Extra ${xIdx+1}`;
+          const exNotes = card.querySelector(`#extraex_${xei}_notes`)?.value || '';
+          const rows = card.querySelectorAll('.portal-solo-set-row');
+          const baseExIdx = (w.exercises?.length || 0) + xIdx;
+          exercisesList.push({ name, sets: String(rows.length), reps: '10', load: 0, method: '', isExtra: true });
+          rows.forEach((row, si) => {
+            const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value;
+            const load = row.querySelector(`[id$="_${si}_load"]`)?.value;
+            const psei = row.querySelector(`[id*="_pse"]`)?.value;
+            const rir  = row.querySelector(`[id*="_rir"]`)?.value;
+            setLog.push({
+              exIdx: baseExIdx, exerciseName: name, setIdx: si,
+              reps: parseInt(reps)||0, load: parseFloat(load)||0,
+              pse: psei ? parseInt(psei) : null, rir: rir ? parseInt(rir) : null,
+              notes: exNotes, isExtra: true
+            });
+          });
+        });
+      }
     } else {
       // Collect from free exercises
       const freeCards = document.getElementById('soloFreeExercises')?.children || [];
@@ -1806,26 +2045,59 @@ function initTreinar(workouts, schedules, student) {
     };
 
     try {
-      await db.add('sessions', sessionData);
-    } catch(e) { console.error(e); }
+      // Tenta salvar — com retry em caso de falha transitória
+      let saved = false;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await db.add('sessions', sessionData);
+          saved = true;
+          break;
+        } catch (err) {
+          console.error(`Tentativa ${attempt} falhou:`, err);
+          if (attempt < 3) await new Promise(r => setTimeout(r, 600 * attempt));
+        }
+      }
 
-    document.getElementById('soloActiveSession').innerHTML = `
-      <div class="portal-success">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <div>Treino salvo! Duração: ${durationMin} min</div>
-      </div>`;
+      if (!saved) {
+        // Salvar backup no localStorage para não perder dados
+        const backupKey = `pp_session_backup_${sid}_${Date.now()}`;
+        try { localStorage.setItem(backupKey, JSON.stringify(sessionData)); } catch(_) {}
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.style.pointerEvents = '';
+        btn.innerHTML = '! Erro ao salvar — Tentar novamente';
+        btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+        if (typeof showToast === 'function') {
+          showToast('Erro ao salvar treino. Seus dados foram preservados. Tente novamente.', 'error', 8000);
+        }
+        return;
+      }
 
-    setTimeout(async () => {
-      document.getElementById('soloActiveSession').style.display = 'none';
-      document.getElementById('soloActiveSession').innerHTML = '';
-      document.getElementById('soloStartBtn').style.display = 'block';
-      document.getElementById('soloWorkoutPicker').style.display = 'block';
-      
-      document.querySelectorAll('.portal-nav-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.section === 'home');
-      });
-      await loadSection('home');
-    }, 1500);
+      document.getElementById('soloActiveSession').innerHTML = `
+        <div class="portal-success">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <div>Treino salvo! Duração: ${durationMin} min · ${totalSets} séries</div>
+        </div>`;
+
+      setTimeout(async () => {
+        document.getElementById('soloActiveSession').style.display = 'none';
+        document.getElementById('soloActiveSession').innerHTML = '';
+        document.getElementById('soloStartBtn').style.display = 'block';
+        document.getElementById('soloWorkoutPicker').style.display = 'block';
+        document.querySelectorAll('.portal-nav-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.section === 'home');
+        });
+        await loadSection('home');
+      }, 1500);
+
+    } catch(e) {
+      console.error('Erro inesperado ao finalizar treino:', e);
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.pointerEvents = '';
+      btn.innerHTML = '! Erro — Tentar novamente';
+      btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+    }
   });
 }
 
@@ -2076,7 +2348,7 @@ function renderSessoes(sessions, schedules) {
 
       <!-- CHECKOUT PENDENTE -->
       ${needsCheckout.length ? `
-        <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)">⚡ Checkout pendente</div>
+        <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)"> Checkout pendente</div>
         ${needsCheckout.map(s => `
           <div class="glass-card portal-checkout-card" id="checkout_${s.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
             <div>
@@ -2190,7 +2462,7 @@ function renderBio(biofeedbacks, sid, tid) {
             ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">⚡ Recuperação (TQR)</label>
+            <label class="portal-bio-label"> Recuperação (TQR)</label>
             ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
@@ -2206,19 +2478,30 @@ function renderBio(biofeedbacks, sid, tid) {
             ${renderInlineCardSelector('pain', DOR_OPTIONS, 1, 'window.onBioPainChange')}
           </div>
           <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
-            <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(pode marcar mais de um)</span></label>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:150px;overflow-y:auto;padding:6px;background:rgba(255,255,255,0.02);border:1px solid var(--portal-border);border-radius:10px">
-              ${PAIN_REGIONS.map(r=>`
-                <label class="portal-pain-chip" style="
-                  display:flex;align-items:center;gap:4px;padding:4px 10px;
-                  border:1px solid var(--portal-border);border-radius:20px;
-                  cursor:pointer;font-size:0.78rem;transition:all 0.15s">
-                  <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
-                  ${r.label}
-                </label>`).join('')}
+            <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(toque para marcar/desmarcar)</span></label>
+            <div id="painRegionsGrid" style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid var(--portal-border);border-radius:12px">
+              ${(() => {
+                const groups = {};
+                PAIN_REGIONS.forEach(r => {
+                  if (!groups[r.group]) groups[r.group] = [];
+                  groups[r.group].push(r);
+                });
+                return Object.entries(groups).map(([grp, regions]) => `
+                  <div style="margin-bottom:10px">
+                    <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--portal-text-muted);margin-bottom:5px">${grp}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px">
+                      ${regions.map(r => `
+                        <button type="button" class="portal-pain-chip" data-region="${r.id}"
+                          style="display:flex;align-items:center;padding:5px 12px;border-radius:20px;border:1.5px solid var(--portal-border);background:transparent;color:var(--portal-text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
+                          <span>${r.label}</span>
+                          <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
+                        </button>`).join('')}
+                    </div>
+                  </div>`).join('');
+              })()}
             </div>
             <div class="portal-bio-field" style="margin-top:10px">
-              <input class="portal-solo-input" name="painDescription" placeholder="Descrição da dor (opcional)..." style="text-align:left;padding:8px 12px;width:100%" />
+              <input class="portal-solo-input" name="painDescription" placeholder="Descreva a dor (opcional)..." style="text-align:left;padding:8px 12px;width:100%" />
             </div>
           </div>
           <div class="portal-bio-field">
@@ -2303,16 +2586,17 @@ function initBio() {
     const initialPain = parseInt(document.getElementById('portal_pain')?.value) || 1;
     window.onBioPainChange(initialPain);
 
-    document.querySelectorAll('.portal-pain-chip').forEach(tag => {
-      tag.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        const cb = tag.querySelector('input');
+    document.querySelectorAll('#painRegionsGrid .portal-pain-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cb = btn.querySelector('input[type="checkbox"]');
         if (!cb) return;
         cb.checked = !cb.checked;
-        cb.dispatchEvent(new Event('change', { bubbles: true }));
-        tag.style.borderColor = cb.checked ? 'var(--portal-primary)' : '';
-        tag.style.background  = cb.checked ? 'var(--portal-primary-glow)' : '';
-        tag.style.color       = cb.checked ? 'var(--portal-primary)' : '';
+        const selected = cb.checked;
+        // Visual toggle
+        btn.style.borderColor = selected ? '#10b981' : 'var(--portal-border)';
+        btn.style.background  = selected ? 'rgba(16,185,129,0.12)' : 'transparent';
+        btn.style.color       = selected ? '#10b981' : 'var(--portal-text-muted)';
+        btn.style.fontWeight  = selected ? '700' : '';
       });
     });
   }, 100);
@@ -2455,7 +2739,7 @@ function renderAvaliacoes(assessments) {
       <!-- FORÇA E 1RM -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          💪 Força (Carga Máxima Estimada - 1RM)
+           Força (Carga Máxima Estimada - 1RM)
         </div>
         ${forcaAss.length === 0 ? `
           <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhum teste de força (1RM) registrado.</p>
@@ -2488,7 +2772,7 @@ function renderAvaliacoes(assessments) {
       <!-- CONCONI E CARDIO -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          🏃 Capacidade Aeróbia (Conconi / Cardio)
+           Capacidade Aeróbia (Conconi / Cardio)
         </div>
         ${conconiAss.length === 0 ? `
           <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliação cardiorrespiratória registrada.</p>
@@ -2618,7 +2902,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   // Exercise progression — full table card
   const exHtml = topEx.length>0 ? `<div class="glass-card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <div class="portal-card-label" style="margin:0">📈 Progressão de Carga</div>
+      <div class="portal-card-label" style="margin:0"> Progressão de Carga</div>
       <span style="font-size:0.68rem;color:var(--portal-text-muted)">${topEx.length} exercícios</span>
     </div>
     <p style="font-size:0.68rem;color:var(--portal-text-muted);margin:4px 0 10px">Verde = progresso · Vermelho = regressão</p>
@@ -2690,7 +2974,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (comparableBases.length > 0) {
     compareSessionsHtml = `
       <div class="glass-card" style="margin-bottom:12px">
-        <div class="portal-card-label">📈 Comparativo de Sessões Idênticas</div>
+        <div class="portal-card-label"> Comparativo de Sessões Idênticas</div>
         <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
         <select id="portalCompareWorkoutSel" class="portal-textarea" style="margin-bottom:12px;padding:8px">
           ${comparableBases.map((base, idx) => `<option value="${base}" ${idx===0?'selected':''}>${base}</option>`).join('')}
@@ -3881,14 +4165,14 @@ function showPortalCheckoutModal(session) {
               <span>😁</span><span class="portal-feeling-emoji-lbl">Bem</span>
             </button>
             <button class="portal-feeling-emoji-btn ${currentFeeling===5?'active':''}" data-val="5">
-              <span>🔥</span><span class="portal-feeling-emoji-lbl">Excelente</span>
+              <span></span><span class="portal-feeling-emoji-lbl">Excelente</span>
             </button>
           </div>
         </div>
 
         <!-- 3. NOTES -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label">📝 Observações do Treino</label>
+          <label class="portal-checkout-label"> Observações do Treino</label>
           <textarea id="chkModalNotes" class="portal-textarea" rows="2" placeholder="Ex: RIR em agachamento foi menor, me senti muito forte hoje...">${currentNotes}</textarea>
         </div>
 
@@ -3936,15 +4220,42 @@ function showPortalCheckoutModal(session) {
       submittedByStudent: true
     };
 
+    const submitBtn = document.getElementById('chkModalSubmitBtn');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...'; }
+
+    let saved = false;
     try {
       session.postBiofeedback = postBiofeedback;
-      await db.put('sessions', session);
+
+      // Retry up to 3 times
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await db.put('sessions', session);
+          saved = true;
+          break;
+        } catch (err) {
+          console.error(`Checkout tentativa ${attempt}:`, err);
+          if (attempt < 3) await new Promise(r => setTimeout(r, 600 * attempt));
+        }
+      }
+
+      if (!saved) {
+        // Backup no localStorage
+        try { localStorage.setItem(`pp_checkout_backup_${session.id}`, JSON.stringify({ session, postBiofeedback })); } catch(_) {}
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '! Erro — Tentar novamente';
+          submitBtn.style.background = '#ef4444';
+        }
+        return;
+      }
 
       // Sincronizar com tabela biofeedback
       try {
         const sessDateStr = (session.date || Calc.nowISO()).slice(0, 10);
         const bfId = `bf_${session.studentId}_${sessDateStr}`;
-        const preBf = await db.get('biofeedback', bfId) || {};
+        let preBf = {};
+        try { preBf = await db.get('biofeedback', bfId) || {}; } catch(_) {}
         
         const durMin = Math.round((session.totalDuration || 0) / 60) || 45;
         const trainingLoad = Calc.cargaTreino ? Calc.cargaTreino(pse, durMin) : (pse * durMin);
@@ -3966,24 +4277,21 @@ function showPortalCheckoutModal(session) {
           pain: preBf.pain || session.preBiofeedback?.pain || 1,
           painRegions: preBf.painRegions || session.preBiofeedback?.painRegions || [],
           painDescription: preBf.painDescription || session.preBiofeedback?.painDescription || '',
-          pse,
-          feeling: selectedFeeling,
-          satisfaction: selectedFeeling * 2,
-          duration: durMin,
-          trainingLoad,
+          pse, feeling: selectedFeeling, satisfaction: selectedFeeling * 2,
+          duration: durMin, trainingLoad,
           notes: notes || preBf.notes || '',
-          sessionId: session.id,
-          formType: 'complete',
-          submittedAt: Calc.nowISO(),
-          submittedByStudent: true
+          sessionId: session.id, formType: 'complete',
+          submittedAt: Calc.nowISO(), submittedByStudent: true
         };
-        
         await db.put('biofeedback', newBfData);
       } catch (bfErr) {
         console.error('Erro ao sincronizar biofeedback:', bfErr);
+        // Não bloquear o fluxo — o checkout da sessão já foi salvo
       }
     } catch (e) {
-      console.error('Erro ao atualizar sessão:', e);
+      console.error('Erro inesperado no checkout:', e);
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '! Erro — Tentar novamente'; submitBtn.style.background = '#ef4444'; }
+      return;
     }
 
     // Show success screen in the sheet
