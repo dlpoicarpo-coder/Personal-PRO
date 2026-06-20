@@ -28,8 +28,8 @@ export async function renderReports() {
           Enviar
         </button>
         <select class="form-select form-select-sm" id="pdfFormatSel" style="display:none; min-width:140px; border-color:var(--primary); color:var(--primary); font-weight:600">
-          <option value="mobile">Celular (Vertical)</option>
-          <option value="a4">A4 (Horizontal)</option>
+          <option value="mobile">📱 Celular (Vertical)</option>
+          <option value="a4">📄 A4 (Horizontal)</option>
         </select>
         <button class="btn btn-primary btn-sm" id="exportPdfBtn" style="display:none">Gerar PDF</button>
       </div>
@@ -184,7 +184,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     compareSessionsHtml = `
     <div class="card mb-lg">
       <div class="card-header">
-        <span class="card-title">Comparativo de Sessões Idênticas</span>
+        <span class="card-title">📈 Comparativo de Sessões Idênticas</span>
       </div>
       <p class="text-xs text-muted mb-md">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
       <div class="form-group" style="max-width:300px">
@@ -240,7 +240,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
 
     <!-- Motor de Insights -->
     <div class="card mb-lg" style="border:1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); position: relative; overflow: hidden;">
-      <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.04; user-select: none; color: var(--accent);">&#x2726;</div>
+      <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.05; user-select: none;">✨</div>
       <div class="card-header"><span class="card-title" style="color:var(--accent); display:flex; align-items:center; gap:8px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
         Resumo da Evolução (Últimas 4 semanas)
@@ -255,7 +255,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
 
       <button id="btnGenerateAI" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border:none; display:flex; align-items:center; gap:8px">
-        <span>Analisar Gráficos com IA</span>
+        <span>Analisar Gráficos com IA ✨</span>
       </button>
     </div>
 
@@ -1077,13 +1077,104 @@ async function initReportCharts(studentId, cycleFilter = '') {
     new Chart(fCtx, { type: 'bar', data: { labels: wKeys.map(k => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })), datasets: [{ label: 'Sessões', data: wKeys.map(k => wc[k]), backgroundColor: 'rgba(6,182,212,0.5)', borderColor: '#06b6d4', borderWidth: 1, borderRadius: 4 }] }, options: { ...co, plugins: { legend: { display: false } }, scales: { ...co.scales, y: { ...co.scales.y, beginAtZero: true, ticks: { ...co.scales.y.ticks, stepSize: 1 } } } } });
   }
 
-  const mCtx = document.getElementById('measuresChart');
+    const mCtx = document.getElementById('measuresChart');
   if (mCtx && assessments.length > 1) {
     const sorted = [...assessments].sort((a, b) => new Date(a.date) - new Date(b.date));
     const ds = [];
-    if (sorted.some(a => a.peso)) ds.push({ label: 'Peso (kg)', data: sorted.map(a => a.peso || null), borderColor: '#10b981', tension: 0.3, yAxisID: 'y' });
-    if (sorted.some(a => a.percentualGordura)) ds.push({ label: 'BF %', data: sorted.map(a => a.percentualGordura || null), borderColor: '#f59e0b', tension: 0.3, yAxisID: 'y1' });
-    if (ds.length) new Chart(mCtx, { type: 'line', data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y1: { position: 'right', ticks: { color: '#f59e0b' }, grid: { display: false } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } } });
+
+    if (sorted.some(a => a.peso))
+      ds.push({
+        label: 'Peso (kg)',
+        data: sorted.map(a => a.peso || null),
+        borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)',
+        fill: false, tension: 0.3, yAxisID: 'y', pointRadius: 5, borderWidth: 2
+      });
+
+    if (sorted.some(a => a.percentualGordura)) {
+      // Calcular faixa real para Y1 (zoom nos dados reais)
+      const gordVals  = sorted.map(a => a.percentualGordura).filter(Boolean);
+      const magraVals = sorted.map(a => a.percentualGordura ? 100 - a.percentualGordura : null).filter(Boolean);
+      const allPct    = [...gordVals, ...magraVals];
+      const pctMin    = Math.floor(Math.min(...allPct) - 2);
+      const pctMax    = Math.ceil(Math.max(...allPct) + 2);
+
+      ds.push({
+        label: '% Gordura',
+        data: sorted.map(a => a.percentualGordura || null),
+        borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)',
+        fill: false, tension: 0.3, yAxisID: 'y1',
+        borderDash: [5, 3], pointRadius: 5, borderWidth: 2
+      });
+      ds.push({
+        label: '% Massa Magra',
+        data: sorted.map(a => a.percentualGordura ? parseFloat((100 - a.percentualGordura).toFixed(1)) : null),
+        borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)',
+        fill: false, tension: 0.3, yAxisID: 'y1',
+        borderDash: [2, 2], pointRadius: 5, borderWidth: 2
+      });
+
+      if (ds.length) {
+        const existingChart = chartsInstance?.['measuresChart'];
+        if (existingChart) { existingChart.destroy(); }
+        chartsInstance = chartsInstance || {};
+        chartsInstance['measuresChart'] = new Chart(mCtx, {
+          type: 'line',
+          data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#94a3b8', font: { size: 11 },
+                  usePointStyle: true, pointStyle: 'circle',
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: ctx => {
+                    const v = ctx.parsed.y;
+                    if (v == null) return '';
+                    if (ctx.dataset.yAxisID === 'y1') return `${ctx.dataset.label}: ${v.toFixed(1)}%`;
+                    return `${ctx.dataset.label}: ${v.toFixed(1)} kg`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                position: 'left',
+                title: { display: true, text: 'Peso (kg)', color: '#10b981', font: { size: 10 } },
+                ticks: { color: '#10b981' },
+                grid: { color: 'rgba(255,255,255,0.05)' }
+              },
+              y1: {
+                position: 'right',
+                title: { display: true, text: '%', color: '#94a3b8', font: { size: 10 } },
+                ticks: { color: '#94a3b8', callback: v => v + '%' },
+                grid: { display: false },
+                min: pctMin, max: pctMax  // zoom na faixa real dos dados
+              },
+              x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+            }
+          }
+        });
+        return; // evitar new Chart duplicado abaixo
+      }
+    }
+
+    // Fallback — só peso, sem % gordura
+    if (ds.length) new Chart(mCtx, {
+      type: 'line',
+      data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+        scales: {
+          y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+        }
+      }
+    });
   }
 
   const kcCtx = document.getElementById('kcalChart');
