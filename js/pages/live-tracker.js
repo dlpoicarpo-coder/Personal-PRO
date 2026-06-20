@@ -78,10 +78,14 @@ export async function renderTracker() {
   if (!state.session) {
     const running = sessions.find(s => s.status === 'running');
     if (running) {
-      state.session = running;
-      state.setLog  = running.setLog || [];
-      state.exIdx   = running.currentExIdx || 0;
-      state.workSec = running.workSec || 0;
+      state.session  = running;
+      state.setLog   = running.setLog || [];
+      state.exIdx    = running.currentExIdx || 0;
+      state.workSec  = running.workSec || 0;
+      state.tempSets = running.tempSets || {};
+      if (running.lastAutoSave) {
+        console.log(`[Sessão recuperada] Último autosave: ${running.lastAutoSave}`);
+      }
     }
   }
 
@@ -972,7 +976,58 @@ export function initTracker(navigateFn) {
   state._uiInterval = setInterval(updateUI, 500);
   updateUI();
 
-  // Rest timer — só cria se não existir ainda
+  // ── AUTOSAVE: persiste estado da sessão a cada 30s e ao minimizar ──
+  async function autoSaveSession() {
+    if (!state.session?.id) return;
+    try {
+      // Coletar tempSets atual dos inputs visíveis
+      const currentTempSets = { ...state.tempSets };
+      document.querySelectorAll('.set-row').forEach(row => {
+        const si = parseInt(row.dataset.si);
+        const ei = state.exIdx;
+        const reps = row.querySelector('.set-reps')?.value;
+        const load = row.querySelector('.set-load')?.value;
+        const pse  = row.querySelector('.set-pse')?.value;
+        const rir  = row.querySelector('.set-rir')?.value;
+        if (!currentTempSets[ei]) currentTempSets[ei] = {};
+        if (reps !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], reps: parseInt(reps)||0 };
+        if (load !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], load: parseFloat(load)||0 };
+        if (pse  !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], pse:  parseInt(pse)||null };
+        if (rir  !== '') currentTempSets[ei][si] = { ...currentTempSets[ei][si], rir:  parseInt(rir) };
+      });
+
+      await db.put('sessions', {
+        ...state.session,
+        setLog:        state.setLog,
+        currentExIdx:  state.exIdx,
+        workSec:       state.workSec,
+        tempSets:      currentTempSets,
+        lastAutoSave:  new Date().toISOString(),
+        status: 'running',
+      });
+    } catch(e) {
+      console.warn('[autosave] falhou:', e?.message);
+    }
+  }
+
+  const autoSaveInterval = setInterval(autoSaveSession, 30000);
+
+  // Salvar ao minimizar / trocar de aba
+  const onVisibilityChange = () => {
+    if (document.hidden) autoSaveSession();
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  // Salvar ao fechar a aba (beforeunload)
+  const onBeforeUnload = () => autoSaveSession();
+  window.addEventListener('beforeunload', onBeforeUnload);
+
+  // Limpar listeners ao finalizar
+  function cleanupAutoSave() {
+    clearInterval(autoSaveInterval);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('beforeunload', onBeforeUnload);
+  }
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
   const exs_all = state.session.exercises || [];
 
@@ -1538,6 +1593,8 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   };
 
   await db.put('sessions', sessionData);
+  // Limpar autosave após finalizar
+  if (typeof cleanupAutoSave === 'function') try { cleanupAutoSave(); } catch(_) {}
   const bfId = 'bf_' + s.studentId + '_' + s.date.substring(0, 10);
   const existingBf = await db.get('biofeedback', bfId) || {};
   // Usar db.put (upsert) em vez de db.add para evitar falha silenciosa
