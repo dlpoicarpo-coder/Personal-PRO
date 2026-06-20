@@ -255,88 +255,292 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
 // Métodos que geram múltiplas sub-séries com reps/carga diferente por série
 export const METHOD_PROGRESSIONS = {
   'Pirâmide Crescente': {
-    desc: 'Carga aumenta a cada série, reps diminuem',
+    desc: 'DeLorme: carga sobe a cada série, reps caem. Aquecimento progressivo → pico de intensidade. 90-120s descanso.',
     series: [
-      { reps: '12-15', loadPct: 0.60, label: 'S1 — Leve' },
-      { reps: '10-12', loadPct: 0.70, label: 'S2 — Moderada' },
-      { reps: '8-10',  loadPct: 0.80, label: 'S3 — Pesada' },
-      { reps: '6-8',   loadPct: 0.90, label: 'S4 — Muito Pesada' },
+      { reps: '12-15', loadPct: 0.60, label: 'S1 — Leve',        rest: 90  },
+      { reps: '10-12', loadPct: 0.70, label: 'S2 — Moderada',    rest: 90  },
+      { reps: '8-10',  loadPct: 0.80, label: 'S3 — Pesada',      rest: 120 },
+      { reps: '6-8',   loadPct: 0.88, label: 'S4 — Muito Pesada',rest: 0   },
     ]
   },
   'Pirâmide Decrescente': {
-    desc: 'Inicia pesado e reduz carga a cada série',
+    desc: 'Oxford: inicia pesado sem pré-fadiga → carga cai, volume sobe. 120-180s descanso nos sets pesados.',
     series: [
-      { reps: '6-8',   loadPct: 0.90, label: 'S1 — Máximo' },
-      { reps: '8-10',  loadPct: 0.80, label: 'S2 — Pesada' },
-      { reps: '10-12', loadPct: 0.70, label: 'S3 — Moderada' },
-      { reps: '12-15', loadPct: 0.60, label: 'S4 — Leve' },
+      { reps: '4-6',   loadPct: 0.88, label: 'S1 — Máximo',   rest: 180 },
+      { reps: '6-8',   loadPct: 0.80, label: 'S2 — Pesada',   rest: 150 },
+      { reps: '8-10',  loadPct: 0.72, label: 'S3 — Moderada', rest: 120 },
+      { reps: 'AMRAP', loadPct: 0.67, label: 'S4 — Leve/Máx', rest: 0   },
     ]
   },
   'Pirâmide Dupla': {
-    desc: 'Crescente depois decrescente — máximo volume',
+    desc: 'Crescente até o pico, depois decrescente. Séries de descida em AMRAP para avançados. 90-120s descanso.',
     series: [
-      { reps: '15',    loadPct: 0.55, label: 'S1 — Base' },
-      { reps: '12',    loadPct: 0.65, label: 'S2 — Leve' },
-      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada' },
-      { reps: '8',     loadPct: 0.85, label: 'S4 — Pico ↑' },
-      { reps: '10',    loadPct: 0.75, label: 'S5 — Moderada' },
-      { reps: '12',    loadPct: 0.65, label: 'S6 — Leve' },
-      { reps: '15',    loadPct: 0.55, label: 'S7 — Base ↓' },
+      { reps: '15',    loadPct: 0.60, label: 'S1 — Base',     rest: 90  },
+      { reps: '12',    loadPct: 0.68, label: 'S2 — Leve',     rest: 90  },
+      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada', rest: 120 },
+      { reps: '6-8',   loadPct: 0.85, label: 'S4 — Pico ↑',  rest: 120 },
+      { reps: 'AMRAP', loadPct: 0.75, label: 'S5 — Moderada', rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.68, label: 'S6 — Leve',     rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.60, label: 'S7 — Base ↓',   rest: 0   },
     ]
   },
   'Pirâmide Completa': {
-    desc: 'Pirâmide dupla com pico duplo — volume e intensidade máximos',
+    desc: 'Pirâmide dupla com pico duplo. 8 séries. Descida em AMRAP. 90-150s descanso. Intermediários/Avançados.',
     series: [
-      { reps: '20',    loadPct: 0.50, label: 'S1 — Aquecimento' },
-      { reps: '15',    loadPct: 0.60, label: 'S2 — Base' },
-      { reps: '12',    loadPct: 0.68, label: 'S3 — Leve' },
-      { reps: '10',    loadPct: 0.75, label: 'S4 — Moderada' },
-      { reps: '8',     loadPct: 0.82, label: 'S5 — Pesada' },
-      { reps: '6',     loadPct: 0.88, label: 'S6 — Pico ↑' },
-      { reps: '8',     loadPct: 0.82, label: 'S7 — Pesada' },
-      { reps: '10',    loadPct: 0.75, label: 'S8 — Moderada' },
-      { reps: '12',    loadPct: 0.68, label: 'S9 — Leve' },
-      { reps: '15',    loadPct: 0.60, label: 'S10 — Base ↓' },
+      { reps: '15',    loadPct: 0.60, label: 'S1 — Base',      rest: 90  },
+      { reps: '12',    loadPct: 0.68, label: 'S2 — Leve',      rest: 90  },
+      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada',  rest: 120 },
+      { reps: '8',     loadPct: 0.82, label: 'S4 — Pesada',    rest: 120 },
+      { reps: '6',     loadPct: 0.88, label: 'S5 — Pico ↑',   rest: 150 },
+      { reps: '8',     loadPct: 0.82, label: 'S6 — Pesada',    rest: 120 },
+      { reps: 'AMRAP', loadPct: 0.75, label: 'S7 — Moderada',  rest: 90  },
+      { reps: 'AMRAP', loadPct: 0.65, label: 'S8 — Base ↓',   rest: 0   },
     ]
   },
   'Drop-set': {
-    desc: 'Executa até a falha, reduz carga ~20% e continua sem descanso',
+    desc: '75% 1RM até falha → -20% sem pausa → -20% sem pausa. 2-3min descanso após cada drop-set completo.',
     series: [
-      { reps: '8-10',  loadPct: 1.00, label: 'Set Principal', rest: 0 },
-      { reps: '8-10',  loadPct: 0.80, label: 'Drop 1 (-20%)', rest: 0 },
-      { reps: '8-10',  loadPct: 0.64, label: 'Drop 2 (-20%)', rest: 0 },
+      // Série 1
+      { reps: 'até falha', loadPct: 0.75, label: 'S1 — Principal',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.60, label: 'S1 — Drop 1 -20%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S1 — Drop 2 -20%', rest: 120 },
+      // Série 2
+      { reps: 'até falha', loadPct: 0.75, label: 'S2 — Principal',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.60, label: 'S2 — Drop 1 -20%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S2 — Drop 2 -20%', rest: 120 },
+      // Série 3
+      { reps: 'até falha', loadPct: 0.75, label: 'S3 — Principal',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.60, label: 'S3 — Drop 1 -20%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S3 — Drop 2 -20%', rest: 0   },
     ]
   },
   'Stripping': {
-    desc: 'Drop-set com barra — remover anilhas sem parar',
+    desc: 'Drop-set com barra — remover anilhas sem parar. 3-4 strips de -20% por série. 3 séries com 120s descanso.',
     series: [
-      { reps: 'até falha', loadPct: 1.00, label: 'Carga máxima',  rest: 0 },
-      { reps: 'até falha', loadPct: 0.75, label: '-25% carga',    rest: 0 },
-      { reps: 'até falha', loadPct: 0.55, label: '-25% carga',    rest: 0 },
-      { reps: 'até falha', loadPct: 0.40, label: '-25% carga',    rest: 0 },
+      // Série 1
+      { reps: 'até falha', loadPct: 0.80, label: 'S1 — Carga máx.',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.62, label: 'S1 — Strip 1 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S1 — Strip 2 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.37, label: 'S1 — Strip 3 -22%', rest: 120 },
+      // Série 2
+      { reps: 'até falha', loadPct: 0.80, label: 'S2 — Carga máx.',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.62, label: 'S2 — Strip 1 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S2 — Strip 2 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.37, label: 'S2 — Strip 3 -22%', rest: 120 },
+      // Série 3
+      { reps: 'até falha', loadPct: 0.80, label: 'S3 — Carga máx.',   rest: 5   },
+      { reps: 'até falha', loadPct: 0.62, label: 'S3 — Strip 1 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.48, label: 'S3 — Strip 2 -22%', rest: 5   },
+      { reps: 'até falha', loadPct: 0.37, label: 'S3 — Strip 3 -22%', rest: 0   },
     ]
   },
   'Rest-Pause': {
-    desc: 'Até a falha, pausa 15-20s, continua até nova falha',
+    desc: '80-85% 1RM até a falha, pausa 20s intra-série, pausa 2-3min entre clusters. Repete 2-3 clusters.',
     series: [
-      { reps: 'até falha', loadPct: 1.00, label: 'Série principal', rest: 0  },
-      { reps: 'até falha', loadPct: 1.00, label: 'Pausa 15-20s →', rest: 15 },
-      { reps: 'até falha', loadPct: 1.00, label: 'Pausa 15-20s →', rest: 15 },
+      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Série',    rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Pausa 1',  rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Pausa 2',  rest: 150 },
+      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Série',    rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Pausa 1',  rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Pausa 2',  rest: 150 },
+      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Série',    rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Pausa 1',  rest: 20  },
+      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Pausa 2',  rest: 0   },
     ]
   },
   'Cluster': {
-    desc: '2-3 reps, pausa 10-15s, repetir 5x. Força máxima com 85-95% 1RM.',
+    desc: '88% 1RM · 2-3 reps · pausa 30s intra-série · 5 mini-séries por set · 3-5 min entre sets. Força máxima.',
     series: [
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 1', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 2', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 3', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 4', rest: 12 },
-      { reps: '2-3', loadPct: 0.88, label: 'Cluster 5', rest: 12 },
+      // Set 1 — 5 clusters
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 1', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 2', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 3', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 4', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 5', rest: 210 },
+      // Set 2 — 5 clusters
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 1', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 2', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 3', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 4', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 5', rest: 210 },
+      // Set 3 — 5 clusters
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 1', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 2', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 3', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 4', rest: 30 },
+      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 5', rest: 0  },
     ]
   },
   'FST-7': {
-    desc: '7 séries do isolador com 30-45s descanso. Alta congestão.',
-    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`Série ${i+1}`, rest:40 }))
+    desc: '7 séries do isolador · 65% 1RM · 30-45s descanso com ALONGAMENTO ATIVO do músculo-alvo entre as séries. Alta congestão.',
+    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`S${i+1} — alongar 30s`, rest: i===6 ? 0 : 40 }))
+  },
+
+  // ── MÉTODOS SEM VARIAÇÃO DE CARGA POR SÉRIE ───────────────────────────────
+  // Usam carga constante — loadPct 1.0 em todas as séries
+  'Unilateral': {
+    desc: 'Usar 1RM UNILATERAL (10-20% maior que metade do bilateral). 30s entre lados, 90s entre séries completas.',
+    series: [
+      { reps:'10-12', loadPct:0.72, label:'S1 — Lado D', rest:30  },
+      { reps:'10-12', loadPct:0.72, label:'S1 — Lado E', rest:90  },
+      { reps:'10-12', loadPct:0.72, label:'S2 — Lado D', rest:30  },
+      { reps:'10-12', loadPct:0.72, label:'S2 — Lado E', rest:90  },
+      { reps:'10-12', loadPct:0.72, label:'S3 — Lado D', rest:30  },
+      { reps:'10-12', loadPct:0.72, label:'S3 — Lado E', rest:0   },
+    ]
+  },
+  'Excêntrico Acentuado': {
+    desc: '4-6s na descida · 75% 1RM · alto TUT · maior DOMS. 150-180s descanso (recuperação muscular completa).',
+    series: [
+      { reps:'6-8', loadPct:0.75, label:'S1 — 4s excêntrico', rest:150 },
+      { reps:'6-8', loadPct:0.75, label:'S2 — 4s excêntrico', rest:150 },
+      { reps:'6-8', loadPct:0.75, label:'S3 — 4s excêntrico', rest:150 },
+      { reps:'6-8', loadPct:0.75, label:'S4 — 4s excêntrico', rest:0   },
+    ]
+  },
+  'Isometria': {
+    desc: 'Definir ÂNGULO de execução (ganho específico ±15°). Hipertrofia: 65% × 6-10s. Força: 80% × 3-6s. 3 reps por posição.',
+    series: [
+      { reps:'6-10s × 3', loadPct:0.65, label:'S1 — Ângulo A (def. o°)', rest:90 },
+      { reps:'6-10s × 3', loadPct:0.65, label:'S2 — Ângulo A',           rest:90 },
+      { reps:'6-10s × 3', loadPct:0.65, label:'S3 — Ângulo A',           rest:0  },
+    ]
+  },
+  '21s': {
+    desc: 'Ordem: 7 parcial inferior (0°-90°) → 7 parcial superior (90°-180°) → 7 completas. ~52% 1RM. 90-120s descanso.',
+    series: [
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S1 — Inf→Sup→Completo', rest:100 },
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S2 — Inf→Sup→Completo', rest:100 },
+      { reps:'21 (7+7+7)', loadPct:0.52, label:'S3 — Inf→Sup→Completo', rest:0   },
+    ]
+  },
+  'Pré-exaustão': {
+    desc: 'Isolamento (~65%) → Composto (~62% real pós-fadiga). ATENÇÃO: evidência científica questionada (Gentil 2007). Use RPE 8 como guia.',
+    series: [
+      { reps:'12-15', loadPct:0.65, label:'Isolamento S1',  rest:0   },
+      { reps:'6-8',   loadPct:0.62, label:'Composto S1',    rest:120 },
+      { reps:'12-15', loadPct:0.65, label:'Isolamento S2',  rest:0   },
+      { reps:'6-8',   loadPct:0.62, label:'Composto S2',    rest:120 },
+      { reps:'12-15', loadPct:0.65, label:'Isolamento S3',  rest:0   },
+      { reps:'6-8',   loadPct:0.62, label:'Composto S3',    rest:0   },
+    ]
+  },
+  'Super-série Agonista': {
+    desc: 'Mesmo grupo · sem pausa entre Ex A e Ex B · Ex B perde 10-25% de performance. 90-120s após o par.',
+    series: [
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S1', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S1', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S2', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S2', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S3', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S3', rest:0   },
+    ]
+  },
+  'Super-série Antagonista': {
+    desc: 'Grupos opostos alternados sem pausa. Ex: Rosca + Tríceps. Facilitação recíproca permite manter 70% em ambos.',
+    series: [
+      { reps:'10-12', loadPct:0.70, label:'Agonista S1',   rest:0   },
+      { reps:'10-12', loadPct:0.70, label:'Antagonista S1',rest:60  },
+      { reps:'10-12', loadPct:0.70, label:'Agonista S2',   rest:0   },
+      { reps:'10-12', loadPct:0.70, label:'Antagonista S2',rest:60  },
+      { reps:'10-12', loadPct:0.70, label:'Agonista S3',   rest:0   },
+      { reps:'10-12', loadPct:0.70, label:'Antagonista S3',rest:0   },
+    ]
+  },
+  'Bi-set': {
+    desc: 'Mesmo músculo · Ex B com carga menor (fadiga acumulada) · 90-120s após o par. Similiar à super-série agonista.',
+    series: [
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S1', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S1', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S2', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S2', rest:100 },
+      { reps:'10-12', loadPct:0.68, label:'Ex A — S3', rest:0   },
+      { reps:'8-10',  loadPct:0.62, label:'Ex B — S3', rest:0   },
+    ]
+  },
+  'Tri-set': {
+    desc: '3 exercícios consecutivos sem descanso. Alto estímulo metabólico. 120s após cada tri-set completo.',
+    series: [
+      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S1', rest:0   },
+      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S1', rest:0   },
+      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S1', rest:120 },
+      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S2', rest:0   },
+      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S2', rest:0   },
+      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S2', rest:120 },
+      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S3', rest:0   },
+      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S3', rest:0   },
+      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S3', rest:0   },
+    ]
+  },
+  'Série Gigante': {
+    desc: '4 exercícios seguidos sem pausa · 60-65% 1RM · 180s descanso após cada bloco completo · 3 blocos.',
+    series: [
+      { reps:'10-15', loadPct:0.64, label:'Bloco 1 — Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.62, label:'Bloco 1 — Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.61, label:'Bloco 1 — Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Bloco 1 — Ex 4', rest:180 },
+      { reps:'10-15', loadPct:0.64, label:'Bloco 2 — Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.62, label:'Bloco 2 — Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.61, label:'Bloco 2 — Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Bloco 2 — Ex 4', rest:180 },
+      { reps:'10-15', loadPct:0.64, label:'Bloco 3 — Ex 1', rest:0   },
+      { reps:'10-15', loadPct:0.62, label:'Bloco 3 — Ex 2', rest:0   },
+      { reps:'10-15', loadPct:0.61, label:'Bloco 3 — Ex 3', rest:0   },
+      { reps:'10-15', loadPct:0.60, label:'Bloco 3 — Ex 4', rest:0   },
+    ]
+  },
+};
+
+// ── METADADOS DE CARDIO (FC Alvo, duração, zonas) ─────────────────────────────
+// Usado na seleção de carga da periodização para métodos de cardio
+export const METHOD_CARDIO_META = {
+  'Zona 1 (Z1)': {
+    fcPct:[50,65], durationMin:[20,60], rpe:'1-3',
+    note:'Recuperação ativa. Abaixo do VT1. Lactato < 1.5 mmol/L. Conversa completamente fácil. FC% é estimativa — calibre com teste de campo.'
+  },
+  'Zona 2 (Z2)': {
+    fcPct:[65,75], durationMin:[30,90], rpe:'3-4',
+    note:'Base aeróbica. Entre Z1 e VT1. Lactato 1.5-2 mmol/L. Diálogo em frases completas. Atenção: FC% varia ±10-15 bpm entre indivíduos — use teste de campo para calibrar seu Z2 real.'
+  },
+  'Zona 3 (Z3) — Zona Cinzenta': {
+    fcPct:[75,87], durationMin:[20,40], rpe:'5-6',
+    note:'Zona cinzenta entre VT1 e VT2. Lactato 2-4 mmol/L. Difícil conversar. Evitar uso excessivo — acumula fadiga sem estímulo de VO2max. Preferir Z2 (base) ou Z4 (limiar).'
+  },
+  'Zona 4 (Z4) — Limiar': {
+    fcPct:[85,92], durationMin:[20,40], rpe:'7-8',
+    note:'Acima do VT2 / OBLA (lactato > 4 mmol/L). Palavras isoladas. Treino de Tempo Run: mínimo 20 min para adaptação do tamponamento de lactato. Atletas treinados têm VT2 deslocado para direita.'
+  },
+  'Zona 5 (Z5) — VO2max': {
+    fcPct:[90,100], durationMin:[3,8], rpe:'9-10',
+    note:'Acima do VT2. Intervalos 3-5 min a 95-100% VO2max (vVO2max). Protocolo Billat: esforço ÷ 2 de recuperação ativa.'
+  },
+  'Tabata': {
+    fcPct:[90,100], durationMin:[4,12], rpe:'9-10',
+    note:'20s all-out / 10s repouso × 8 rounds. Protocolo original: ergômetro de ciclismo a 170% VO2max (Tabata 1996). Em musculação o estímulo metabólico é menor. Máx 2-3×/semana.'
+  },
+  'HIIT 1:2': {
+    fcPct:[85,95], durationMin:[15,25], rpe:'8-9',
+    note:'30s esforço / 60s recuperação (passiva ou caminhada). 6-12 rounds. Razão 1:2 = maior recuperação entre tiros. Máx 2-3×/semana.'
+  },
+  'HIIT 1:1': {
+    fcPct:[85,95], durationMin:[10,18], rpe:'8-9',
+    note:'30s esforço / 30s recuperação. Mais desgastante que 1:2 — duração total menor (10-18 min). Máx 2×/semana. Risco de overreaching se usado frequentemente sem periodização.'
+  },
+  'SIT (Sprint Interval Training)': {
+    fcPct:[95,100], durationMin:[8,20], rpe:'10',
+    note:'Esforço ALL-OUT absoluto — não regulado por FC. Protocolo Wingate: 30s máximos no ergômetro × 4-6 sprints com 4 min recuperação passiva. Para corrida: 6-10s sprints com 2-3 min recuperação.'
+  },
+  'Série de Repetição (VO2max)': {
+    fcPct:[90,100], durationMin:[15,30], rpe:'9-10',
+    note:'Intervalos de 3-5 min a 95-100% VO2max com recuperação ativa igual ao esforço (razão 1:1 em tempo). Protocolo Billat. 4-6 repetições por sessão.'
+  },
+  'Steady State Z2': {
+    fcPct:[65,75], durationMin:[20,60], rpe:'3-4',
+    note:'Ritmo constante em Z2. Base aeróbica, oxidação de gordura, mitocôndrias. Mínimo 30 min para adaptação. Conversa em frases completas.'
+  },
+  'Progressivo': {
+    fcPct:[60,90], durationMin:[20,60], rpe:'3-8',
+    note:'+0.5 km/h a cada 5 min (corrida) ou +10-15W a cada 3 min (ciclismo). Cobre Z2 → Z4. Pode ser usado como teste de limiar (protocolo Conconi).'
   },
 };
 
@@ -346,18 +550,37 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const isBW     = loadType === 'bodyweight';
 
   const progression = ex.method ? METHOD_PROGRESSIONS[ex.method] : null;
+  const isCombined  = COMBINED_METHODS.has(ex.method || '');
   let methodPanelHTML = '';
-  if (progression) {
+
+  if (progression && !isCombined) {
+    // Métodos NÃO combinados: mostrar painel de séries com % 1RM normalmente
     const baseLoad = parseFloat(ex.load) || 0;
     const restElVal = ex.rest || '60';
+    const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
 
     const seriesHTML = progression.series.map((s, si) => {
-      const savedSerie = ex.seriesProgression && ex.seriesProgression[si];
-      const loadVal = savedSerie ? savedSerie.load : (baseLoad > 0 && !isTime ? Math.round(baseLoad * s.loadPct * 2) / 2 : '');
-      const restVal = savedSerie ? savedSerie.rest : (s.rest != null ? s.rest : restElVal);
+      const savedSerie = ex.seriesProgression?.[si];
+      // Para linhas extras (clusters 2 e 3 sem save), propagar a carga da série 0
+      const baseLoadFallback = ex.seriesProgression?.[0]?.load || baseLoad;
+      const loadVal = savedSerie?.load != null
+        ? savedSerie.load
+        : (baseLoadFallback > 0 && !isTime ? Math.round(baseLoadFallback * s.loadPct * 2) / 2 : '');
+      const restVal = savedSerie?.rest != null ? savedSerie.rest : (s.rest != null ? s.rest : restElVal);
+
+      // Separador entre clusters
+      const prevLabel = si > 0 ? (progression.series[si-1].label || '') : '';
+      const curLabel  = s.label || '';
+      const isNewCluster = isClusterMethod && si > 0 && (() => {
+        const pm = prevLabel.match(/Cluster\s*(\d+)/i);
+        const cm = curLabel.match(/Cluster\s*(\d+)/i);
+        return pm && cm && pm[1] !== cm[1];
+      })();
+
       return `
-        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.1)" data-serie="${si}">
-          <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+        ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0"></div>` : ''}
+        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
+          <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
           <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
           <div>
             <input type="number" step="0.5" value="${loadVal}" placeholder="${isTime?'km/h':'kg'}"
@@ -370,7 +593,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           <div>
             <input type="number" value="${restVal}"
               class="form-input serie-rest" data-serie="${si}"
-              style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:var(--text-muted)"
+              style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
               placeholder="s" title="Descanso (s)"/>
           </div>
         </div>`;
@@ -390,8 +613,8 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
               style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
@@ -400,6 +623,28 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         ${seriesHTML}
       </div>
     `;
+  } else if (isCombined) {
+    // Métodos combinados: banner de pareamento — sem painel de séries individual
+    const COMBINED_LABELS = {
+      'Bi-set':                  'Execute este exercício imediatamente em sequência com o próximo da lista. Descanse apenas após completar o par.',
+      'Super-série Agonista':    'Mesmo grupo muscular, sem pausa entre os dois. Descanse após o segundo exercício do par.',
+      'Super-série Antagonista': 'Grupos opostos (ex: Bíceps → Tríceps) sem pausa. Descanse após o segundo.',
+      'Tri-set':                 '3 exercícios consecutivos sem pausa. Descanse apenas após o terceiro.',
+      'Série Gigante':           '4+ exercícios sem pausa, cargas reduzidas (~60%). Descanse após o último do grupo.',
+      'Pré-exaustão':            'Isolamento executado antes do composto, sem pausa. O isolamento fatiga o músculo-alvo primeiro.',
+    };
+    const desc = COMBINED_LABELS[ex.method] || `Execute em sequência com o exercício adjacente. Descanse apenas após o grupo completo.`;
+    methodPanelHTML = `
+      <div style="grid-column:1/-1;margin-top:4px;padding:8px 10px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${ex.method}</span>
+          <span style="font-size:0.65rem;color:var(--text-muted);background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:8px">Descanso pós-par: ${ex.rest || 90}s</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.4">${desc}</div>
+        <div style="font-size:0.65rem;color:var(--accent);margin-top:4px">
+          Certifique-se de que o exercício parceiro também está marcado com o mesmo método e logo abaixo na lista.
+        </div>
+      </div>`;
   } else if (ex.method) {
     const methodOpt = allMethods.find(m => m.name === ex.method);
     const desc = methodOpt?.description;
@@ -442,11 +687,12 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Desc.(s)</label>
         <select class="form-select" name="ex_rest_${index}" style="font-size:0.78rem;padding:4px 6px">
-          <option value="15" ${ex.rest=='15'?'selected':''}>15</option>
-          <option value="30" ${ex.rest=='30'?'selected':''}>30</option>
-          <option value="45" ${ex.rest=='45'?'selected':''}>45</option>
-          <option value="60" ${(!ex.rest || ex.rest=='60')?'selected':''}>60</option>
-          <option value="90" ${ex.rest=='90'?'selected':''}>90</option>
+          <option value="0"   ${ex.rest=='0'?'selected':''}>0 (par)</option>
+          <option value="15"  ${ex.rest=='15'?'selected':''}>15</option>
+          <option value="30"  ${ex.rest=='30'?'selected':''}>30</option>
+          <option value="45"  ${ex.rest=='45'?'selected':''}>45</option>
+          <option value="60"  ${(!ex.rest || ex.rest=='60')?'selected':''}>60</option>
+          <option value="90"  ${ex.rest=='90'?'selected':''}>90</option>
           <option value="120" ${ex.rest=='120'?'selected':''}>120</option>
           <option value="150" ${ex.rest=='150'?'selected':''}>150</option>
           <option value="180" ${ex.rest=='180'?'selected':''}>180</option>
@@ -466,9 +712,22 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         <select class="form-select ex-method" name="ex_method_${index}" data-index="${index}"
           style="font-size:0.78rem;padding:4px 6px">
           <option value="">— Nenhum —</option>
-          ${allMethods.map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
-            data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
-            data-desc="${m.description||''}">${m.name}</option>`).join('')}
+          ${(() => {
+            const groups = {};
+            allMethods.forEach(m => {
+              const cat = m.category || 'Geral';
+              if (!groups[cat]) groups[cat] = [];
+              groups[cat].push(m);
+            });
+            const ORDER = ['Hipertrofia','Força','Geral','Cardio','Resistência','Potência'];
+            const sorted = [...ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !ORDER.includes(c))];
+            return sorted.map(cat => `
+              <optgroup label="${cat}">
+                ${groups[cat].map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
+                  data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
+                  data-desc="${m.description||''}">${m.name}</option>`).join('')}
+              </optgroup>`).join('');
+          })()}
         </select>
       </div>
       <button type="button" class="btn btn-ghost btn-icon remove-exercise" data-index="${index}"
@@ -476,8 +735,21 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
       </button>
       ${methodPanelHTML}
+      <!-- Observações do personal para este exercício -->
+      <div style="grid-column:1/-1;margin-top:4px">
+        <input class="form-input ex-notes-input" name="ex_notes_${index}"
+          value="${ex.trainerNotes || ex.notes || ''}"
+          placeholder="📝 Orientações técnicas para o aluno (ex: manter core ativado, cotovelo para dentro...)"
+          style="font-size:0.75rem;color:var(--text-muted);background:rgba(16,185,129,0.03);border-color:rgba(16,185,129,0.15)" />
+      </div>
     </div>`;
 }
+
+// Métodos combinados — descanso é compartilhado pós-último exercício do par
+export const COMBINED_METHODS = new Set([
+  'Bi-set','Super-série Agonista','Super-série Antagonista',
+  'Tri-set','Série Gigante','Pré-exaustão'
+]);
 
 function collectExercises() {
   const rows = document.querySelectorAll('.exercise-row');
@@ -487,11 +759,12 @@ function collectExercises() {
     const name = document.querySelector(`[name="ex_name_${i}"]`)?.value;
     if (!name) return;
 
-    const method   = document.querySelector(`[name="ex_method_${i}"]`)?.value || '';
-    const loadType = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+    const method      = document.querySelector(`[name="ex_method_${i}"]`)?.value || '';
+    const loadType    = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+    const trainerNotes = document.querySelector(`[name="ex_notes_${i}"]`)?.value?.trim() || '';
+    const isCombined  = COMBINED_METHODS.has(method);
     const seriesPanel = row.querySelector('.method-series-panel');
 
-    // Se tem painel de sub-séries progressivas, salvar cada série individualmente
     if (seriesPanel && METHOD_PROGRESSIONS[method]) {
       const serieRows  = seriesPanel.querySelectorAll('div[data-serie]');
       const progression = METHOD_PROGRESSIONS[method];
@@ -509,7 +782,8 @@ function collectExercises() {
         });
       });
       exercises.push({
-        name, method, loadType,
+        name, method, loadType, trainerNotes,
+        isCombined,
         sets:              serieLogs.length,
         reps:              serieLogs.map(s=>s.reps).join('→'),
         load:              serieLogs[0]?.load || '',
@@ -518,7 +792,8 @@ function collectExercises() {
       });
     } else {
       exercises.push({
-        name, method, loadType,
+        name, method, loadType, trainerNotes,
+        isCombined,
         sets:     parseInt(document.querySelector(`[name="ex_sets_${i}"]`)?.value) || 3,
         reps:     document.querySelector(`[name="ex_reps_${i}"]`)?.value || '12',
         load:     document.querySelector(`[name="ex_load_${i}"]`)?.value || '',
@@ -526,6 +801,24 @@ function collectExercises() {
       });
     }
   });
+  // Atribuir groupId compartilhado para exercícios consecutivos com mesmo método combinado
+  let groupCounter = 0;
+  for (let i = 0; i < exercises.length; i++) {
+    const ex = exercises[i];
+    if (!COMBINED_METHODS.has(ex.method || '')) continue;
+    if (ex.groupId) continue; // já atribuído
+    // Agrupar todos os consecutivos com mesmo método
+    const groupId = `grp_${++groupCounter}`;
+    ex.groupId = groupId;
+    for (let j = i + 1; j < exercises.length; j++) {
+      if (exercises[j].method === ex.method) {
+        exercises[j].groupId = groupId;
+      } else {
+        break; // para na primeira quebra de sequência
+      }
+    }
+  }
+
   return exercises;
 }
 
@@ -757,66 +1050,108 @@ export function initWorkouts(navigateFn) {
 
           ${doneSessions.length ? `
             <div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:16px">
-              <h4 class="mb-sm" style="color:var(--success)">📊 Evolução & Histórico de Realizações</h4>
-              <p class="text-xs text-muted mb-md">Comparações entre o treino prescrito (teórico) e o executado pelo aluno.</p>
-              <div style="display:flex;flex-direction:column;gap:12px">
+              <h4 class="mb-sm" style="color:var(--success)">📊 Histórico de Realizações</h4>
+              <div style="display:flex;flex-direction:column;gap:14px">
                 ${doneSessions.map((se, si) => {
                   const setLog = se.setLog || [];
                   const sessionWorkout = allWorkouts.find(xw => xw.id === se.workoutId);
                   const displaySessionName = sessionWorkout ? sessionWorkout.name : se.workoutName || w.name;
-                  return `
-                    <div style="background:var(--bg-page);border:1px solid var(--border-color);border-radius:8px;padding:12px">
-                      <div class="flex justify-between items-center mb-xs" style="flex-wrap:wrap;gap:6px">
-                        <div>
-                          <span class="badge badge-success" style="font-size:0.7rem;text-transform:none">Realizado</span>
-                          <strong style="font-size:0.8rem;margin-left:6px">${displaySessionName}</strong>
-                        </div>
-                        <span style="font-size:0.78rem;color:var(--text-muted)">${Calc.formatDate(se.date || se.createdAt)} · Volume Total: <strong style="color:var(--primary)">${se.totalVolume || 0}kg</strong></span>
-                      </div>
-                      ${se.postBiofeedback?.pse ? `
-                        <div class="text-xs text-muted mb-sm" style="background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:4px">
-                          Esforço (PSE): <strong style="color:var(--warning)">${se.postBiofeedback.pse}/10</strong> · 
-                          Recuperação (TQR): <strong>${se.postBiofeedback.tqrPost || '-'}</strong> · 
-                          Duração: <strong>${se.totalDuration ? Math.round(se.totalDuration/60) : '-'} min</strong>
-                        </div>` : ''}
-                      
-                      <!-- Tabela de comparação -->
-                      <div class="table-container">
-                        <table class="data-table" style="font-size:0.75rem;width:100%">
-                          <thead><tr><th>Exercício</th><th>Séries Prescritas</th><th>Realizadas</th><th>Carga Prescrita</th><th>Carga Média Real</th></tr></thead>
-                          <tbody>
-                            ${(w.exercises||[]).map(ex => {
-                              // Tentar dar match nas séries feitas para este exercício
-                              const exSets = setLog.filter(s => s.exName === ex.name || (w.exercises[s.exIdx] && w.exercises[s.exIdx].name === ex.name));
-                              const realSets = exSets.length;
-                              const avgRealLoad = realSets ? Math.round(exSets.reduce((sum, s) => sum + (s.load || 0), 0) / realSets * 10) / 10 : '-';
-                              
-                              const setsDetailsHTML = realSets ? `
-                                <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
-                                  ${exSets.map((s, idx) => `
-                                    <span style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:4px;padding:2px 5px;white-space:nowrap">
-                                      <strong>S${s.setIdx != null ? s.setIdx + 1 : idx + 1}:</strong> ${s.reps || 0} reps × ${s.load || 0}kg ${ex.rest ? ` <span style="color:var(--text-muted);font-size:0.62rem">(${ex.rest}s)</span>` : ''}
-                                    </span>
-                                  `).join('')}
-                                </div>
-                              ` : '';
+                  const durMin = se.totalDuration ? Math.round(se.totalDuration / 60) : null;
+                  const density = (se.totalVolume && durMin) ? Math.round(se.totalVolume / durMin) : null;
+                  const pse = se.postBiofeedback?.pse;
+                  const postNotes = se.postBiofeedback?.notes || se.trainerNotes || '';
 
-                              return `<tr>
-                                <td>
-                                  <strong>${ex.name}</strong>
-                                  ${setsDetailsHTML}
-                                </td>
-                                <td>${ex.sets}</td>
-                                <td style="font-weight:700;color:${realSets >= ex.sets ? 'var(--success)' : 'var(--text-muted)'}">${realSets || '0'}</td>
-                                <td>${ex.load ? ex.load + 'kg' : '-'}</td>
-                                <td style="color:var(--primary);font-weight:700">${avgRealLoad ? avgRealLoad + 'kg' : '-'}</td>
-                              </tr>`;
-                            }).join('')}
-                          </tbody>
-                        </table>
+                  return `
+                  <div style="background:var(--bg-page);border:1px solid var(--border-color);border-radius:10px;overflow:hidden">
+
+                    <!-- Header da sessão -->
+                    <div style="padding:10px 14px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="badge badge-success" style="font-size:0.65rem">Realizado</span>
+                        <strong style="font-size:0.82rem">${displaySessionName}</strong>
                       </div>
+                      <span style="font-size:0.75rem;color:var(--text-muted)">${Calc.formatDate(se.date || se.createdAt)} · Volume: <strong style="color:var(--primary)">${se.totalVolume || 0}kg</strong></span>
                     </div>
-                  `;
+
+                    <!-- Check-in Pós -->
+                    ${(pse || density || postNotes) ? `
+                    <div style="padding:8px 14px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border-color);display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+                      <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Check-in Pós</span>
+                      ${pse ? `<span style="font-size:0.8rem">PSE <strong style="color:var(--warning)">${pse}/10</strong></span>` : ''}
+                      ${density ? `<span style="font-size:0.8rem">Densid. <strong style="color:var(--accent)">${density} kg/m</strong></span>` : ''}
+                      ${durMin ? `<span style="font-size:0.8rem">Dur. <strong>${durMin} min</strong></span>` : ''}
+                      ${postNotes ? `<span style="font-size:0.75rem;color:var(--text-muted);font-style:italic;flex-basis:100%">"${postNotes}"</span>` : ''}
+                    </div>` : ''}
+
+                    <!-- Tabela de exercícios -->
+                    <div style="padding:10px 14px">
+                      <!-- Legenda -->
+                      <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+                        <span style="font-size:0.62rem;color:var(--warning)">■ PSE — esforço percebido</span>
+                        <span style="font-size:0.62rem;color:var(--accent)">■ RIR — reps no tanque</span>
+                        <span style="font-size:0.62rem;color:var(--text-muted)">■ 1RM — estimativa Epley</span>
+                      </div>
+
+                      <table style="width:100%;border-collapse:collapse;font-size:0.75rem">
+                        <thead>
+                          <tr style="border-bottom:1px solid var(--border-color);color:var(--text-muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em">
+                            <th style="padding:5px 6px;text-align:left;font-weight:600">Exercício</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Séries</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Reps</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Carga Máx</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600">Volume</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--warning)">PSE</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--accent)">RIR</th>
+                            <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--text-muted)">1RM</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${(w.exercises||[]).map(ex => {
+                            const exSets = setLog.filter(s => s.exName === ex.name || (w.exercises[s.exIdx]?.name === ex.name));
+                            const realSets = exSets.length;
+                            const maxLoad = realSets ? Math.max(...exSets.map(s => s.load || 0)) : null;
+                            const totalVol = realSets ? exSets.reduce((sum, s) => sum + ((s.load || 0) * (s.reps || 0)), 0) : 0;
+                            const totalReps = realSets ? exSets.reduce((sum, s) => sum + (s.reps || 0), 0) : 0;
+                            const avgPse = realSets ? (exSets.reduce((sum, s) => sum + (s.pse || 0), 0) / exSets.filter(s => s.pse).length || 0) : 0;
+                            const avgRir = realSets ? (exSets.reduce((sum, s) => sum + (s.rir ?? 0), 0) / exSets.filter(s => s.rir != null).length || 0) : 0;
+                            // 1RM Epley: w × (1 + reps/30) — usar série com maior carga
+                            const bestSet = exSets.reduce((best, s) => (!best || (s.load||0) > (best.load||0)) ? s : best, null);
+                            const oneRM = (bestSet && bestSet.load > 0 && bestSet.reps > 0) ? Math.round(bestSet.load * (1 + bestSet.reps / 30)) : null;
+
+                            const methodLabel = ex.method ? `<div style="font-size:0.62rem;color:var(--primary);margin-top:1px">${ex.method}</div>` : '';
+                            const setsExpanded = realSets ? `
+                              <div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">
+                                ${exSets.map((s, idx) => {
+                                  const pseColor = !s.pse ? 'var(--text-muted)' : s.pse >= 8 ? 'var(--danger)' : s.pse >= 6 ? 'var(--warning)' : 'var(--success)';
+                                  const rirColor = s.rir == null ? 'var(--text-muted)' : s.rir <= 1 ? 'var(--danger)' : s.rir <= 3 ? 'var(--warning)' : 'var(--success)';
+                                  return `<span style="font-size:0.67rem;color:var(--text-muted)">
+                                    · <strong style="color:var(--text-primary)">S${s.setIdx != null ? s.setIdx + 1 : idx + 1}:</strong>
+                                    <strong>${s.reps || 0}×${s.load || 0}kg</strong>
+                                    ${s.pse ? `<span style="color:${pseColor};font-weight:600"> PSE ${s.pse}</span>` : ''}
+                                    ${s.rir != null ? `<span style="color:${rirColor};font-weight:600"> RIR ${s.rir}</span>` : ''}
+                                  </span>`;
+                                }).join('')}
+                              </div>` : '';
+
+                            return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                              <td style="padding:7px 6px;vertical-align:top">
+                                <strong style="font-size:0.78rem">${ex.name}</strong>
+                                ${methodLabel}
+                                ${setsExpanded}
+                              </td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top">${realSets || '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top">${totalReps || '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;font-weight:700;color:var(--primary)">${maxLoad ? maxLoad + 'kg' : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--success);font-weight:600">${totalVol ? totalVol + 'kg' : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--warning);font-weight:700">${avgPse ? avgPse.toFixed(1) : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--accent);font-weight:700">${(avgRir || avgRir === 0) && exSets.some(s => s.rir != null) ? avgRir.toFixed(1) : '—'}</td>
+                              <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--text-muted);font-weight:600">${oneRM ? oneRM + 'kg' : '—'}</td>
+                            </tr>`;
+                          }).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>`;
                 }).join('')}
               </div>
             </div>` : `<div style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px"><p class="text-xs text-muted">Nenhuma sessão executada deste treino ainda. Inicie o Treino ao Vivo para registrar as cargas reais praticadas.</p></div>`}
@@ -1008,12 +1343,21 @@ export function initWorkouts(navigateFn) {
 
 function bindRemoveExercise() {
   document.querySelectorAll('.remove-exercise').forEach(btn => {
-    btn.onclick = () => btn.closest('.exercise-row')?.remove();
+    btn.onclick = () => {
+      const row = btn.closest('.exercise-row');
+      // Remover também o conector logo após a linha
+      const next = row?.nextElementSibling;
+      if (next?.classList.contains('combined-connector')) next.remove();
+      row?.remove();
+      refreshCombinedVisuals();
+    };
   });
 }
 
 function bindExerciseRowHandlers(allExercises, allMethods) {
   bindRemoveExercise();
+  // Atualizar visual de combinados ao carregar
+  refreshCombinedVisuals();
 
   // ── Auto-preenchimento ao selecionar MÉTODO ─────────────────
   document.querySelectorAll('.ex-method').forEach(sel => {
@@ -1054,7 +1398,70 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       }
 
       // ── Verificar se o método tem progressão definida ────────
-      const progression = METHOD_PROGRESSIONS[methodName];
+      const isCombinedMethod = COMBINED_METHODS.has(methodName);
+      const progression = !isCombinedMethod ? METHOD_PROGRESSIONS[methodName] : null;
+
+      // ── MÉTODO COMBINADO: banner + auto-adicionar exercício par ──
+      if (isCombinedMethod) {
+        // Remover qualquer painel antigo
+        row?.querySelectorAll('.method-series-panel,.method-tip,.combined-banner').forEach(p => p.remove());
+
+        // Forçar descanso = 0 neste exercício
+        if (restEl) restEl.value = '0';
+
+        // Banner visual
+        const COMBINED_DESC = {
+          'Bi-set': 'Execute com o próximo exercício sem descanso. Descanse apenas após completar o par.',
+          'Super-série Agonista': 'Mesmo grupo muscular em sequência sem pausa. Descanse após o par.',
+          'Super-série Antagonista': 'Grupos opostos (ex: Bíceps → Tríceps) sem pausa. Descanse após o par.',
+          'Tri-set': '3 exercícios consecutivos sem pausa. Descanse após o terceiro.',
+          'Série Gigante': '4+ exercícios consecutivos sem pausa. Cargas reduzidas ~60%. Descanse após o último.',
+          'Pré-exaustão': 'Isolamento → Composto sem pausa. Fatiga o músculo-alvo primeiro.',
+        };
+        const banner = document.createElement('div');
+        banner.className = 'combined-banner';
+        banner.style.cssText = 'grid-column:1/-1;margin-top:4px;padding:8px 12px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:8px';
+        banner.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div>
+              <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${methodName}</span>
+              <span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px">${COMBINED_DESC[methodName] || ''}</span>
+            </div>
+            <button type="button" class="btn-add-pair btn btn-ghost btn-sm" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);font-size:0.7rem;white-space:nowrap;flex-shrink:0">
+              + Adicionar par
+            </button>
+          </div>`;
+        row?.appendChild(banner);
+
+        // Ao clicar "+ Adicionar par" — inserir novo exercício com mesmo método logo abaixo
+        banner.querySelector('.btn-add-pair')?.addEventListener('click', () => {
+          const container = document.getElementById('exerciseRows');
+          if (!container) return;
+
+          // Determinar quantas linhas de par já existem abaixo com o mesmo método
+          const rows = Array.from(container.querySelectorAll('.exercise-row'));
+          const curIdx = rows.indexOf(row);
+
+          // Novo índice
+          const exIndex = rows.length;
+          const newHTML = exerciseRowHTML(exIndex, { method: methodName, rest: '0' }, allExercises, allMethods);
+
+          // Inserir após o último exercício do mesmo grupo consecutivo
+          let insertAfter = row;
+          for (let j = curIdx + 1; j < rows.length; j++) {
+            const m = rows[j].querySelector('.ex-method')?.value;
+            if (m === methodName) insertAfter = rows[j];
+            else break;
+          }
+          insertAfter.insertAdjacentHTML('afterend', newHTML);
+          bindExerciseRowHandlers(allExercises, allMethods);
+          refreshCombinedVisuals();
+        });
+
+        refreshCombinedVisuals();
+        return;
+      }
+
       if (!progression) {
         // Método simples — apenas dica de descrição
         const desc = opt?.dataset.desc;
@@ -1067,8 +1474,6 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
         }
         return;
       }
-
-      // ── MÉTODO COM PROGRESSÃO — gerar painel de sub-séries ───
       const baseLoad = parseFloat(document.querySelector(`[name="ex_load_${i}"]`)?.value) || 0;
       const loadType = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
       const isTime   = loadType === 'time';
@@ -1095,14 +1500,28 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
           </div>
         </div>`;
 
+      const isClusterMethod = methodName === 'Rest-Pause' || methodName === 'Cluster';
+
       const seriesHTML = progression.series.map((s, si) => {
         const calcLoad = baseLoad > 0 && !isTime
           ? Math.round(baseLoad * s.loadPct * 2) / 2
           : '';
         const restVal  = s.rest != null ? s.rest : (restEl?.value || '60');
+        const restDisplay = restVal == 0 ? '—' : restVal >= 60 ? `${Math.round(restVal/60)}min${restVal%60?restVal%60+'s':''}` : `${restVal}s`;
+
+        // Separador visual entre clusters
+        const prevLabel = si > 0 ? (progression.series[si-1].label || '') : '';
+        const curLabel  = s.label || '';
+        const isNewCluster = isClusterMethod && si > 0 && (() => {
+          const pm = prevLabel.match(/Cluster\s*(\d+)/i);
+          const cm = curLabel.match(/Cluster\s*(\d+)/i);
+          return pm && cm && pm[1] !== cm[1];
+        })();
+
         return `
-          <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.1)" data-serie="${si}">
-            <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
+          ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0" title="Próximo cluster — 2-3min descanso"></div>` : ''}
+          <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
+            <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
             <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
             <div>
               <input type="number" step="0.5" value="${calcLoad}" placeholder="${isTime?'km/h':'kg'}"
@@ -1112,18 +1531,18 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
             <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
               ${isTime ? s.reps : `${s.reps} reps`}
             </div>
-            <div>
+            <div title="${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'Pausa intra-série (20s). Entre clusters: 2-3min.' : ''}">
               <input type="number" value="${restVal}"
                 class="form-input serie-rest" data-serie="${si}"
-                style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:var(--text-muted)"
+                style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
                 placeholder="s" title="Descanso (s)"/>
             </div>
           </div>`;
       }).join('');
 
       const seriesLegend = `
-        <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
           <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
@@ -1233,6 +1652,58 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
           }
         });
       });
+    }
+  });
+}
+
+// ── Atualizar visual de pares combinados na lista de exercícios ──
+function refreshCombinedVisuals() {
+  const container = document.getElementById('exerciseRows');
+  if (!container) return;
+
+  // Remover conectores antigos
+  container.querySelectorAll('.combined-connector').forEach(el => el.remove());
+
+  const rows = Array.from(container.querySelectorAll('.exercise-row'));
+
+  rows.forEach((row, idx) => {
+    const method = row.querySelector('.ex-method')?.value;
+    if (!COMBINED_METHODS.has(method)) {
+      row.style.borderLeft = '';
+      row.style.background = '';
+      row.style.marginBottom = '';
+      return;
+    }
+
+    const prevMethod = rows[idx - 1]?.querySelector('.ex-method')?.value;
+    const nextMethod = rows[idx + 1]?.querySelector('.ex-method')?.value;
+    const isLast = nextMethod !== method;
+
+    // Borda laranja esquerda em todo o grupo
+    row.style.borderLeft = '3px solid rgba(245,158,11,0.55)';
+    row.style.background = 'rgba(245,158,11,0.025)';
+    row.style.marginBottom = isLast ? '10px' : '0';
+    row.style.borderRadius = prevMethod !== method
+      ? '8px 8px 0 0' : isLast ? '0 0 8px 8px' : '0';
+
+    // Conector "→ sem descanso" entre exercícios do grupo
+    if (!isLast) {
+      const connector = document.createElement('div');
+      connector.className = 'combined-connector';
+      connector.style.cssText = [
+        'display:flex', 'align-items:center', 'gap:6px',
+        'padding:3px 14px',
+        'background:rgba(245,158,11,0.08)',
+        'border-left:3px solid rgba(245,158,11,0.55)',
+        'font-size:0.68rem', 'font-weight:700', 'color:#f59e0b',
+        'margin:0', 'line-height:1.8'
+      ].join(';');
+      connector.innerHTML = `
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="3">
+          <polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>
+        </svg>
+        sem descanso → continuar`;
+      row.insertAdjacentElement('afterend', connector);
     }
   });
 }
