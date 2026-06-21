@@ -615,7 +615,7 @@ export function initExercisesLibrary(navigateFn) {
               notify.error('Já existe outro exercício com este nome nesta biblioteca.');
               return;
             }
-            await db.put('exercises', { ...ex, ...d });
+            await db.put('exercises', { ...ex, ...d, media_customized: true });
             notify.success('Atualizado!'); closeModal(); navigateFn('/exercicios');
           }}
         ]
