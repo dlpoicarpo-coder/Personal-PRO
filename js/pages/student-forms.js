@@ -9,6 +9,22 @@ import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { notify } from '../components/toast.js';
 
+const ICON_MOON   = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+const ICON_ZAP    = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
+const ICON_BRAIN  = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2zM14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"/></svg>`;
+const ICON_PAIN   = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+const ICON_FIRE   = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>`;
+const ICON_FOOD   = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><path d="M12 22c4.97 0 9-3.03 9-9 0-3.83-2.62-5.7-5.5-5.7-1.84 0-2.88.94-3.5 1.7-.62-.76-1.66-1.7-3.5-1.7C6.12 7.3 3.5 9.17 3.5 13c0 5.97 4.03 9 9 9Z"/><path d="M12 7V3a1 1 0 0 1 1-1h2"/></svg>`;
+const ICON_DROP   = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>`;
+
+const ICON_SMILE = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>`;
+const ICON_FEELING_1 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16a4 4 0 0 0-8 0"/><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M9.5 9a1.5 1.5 0 0 1 1-1"/><path d="M14.5 9a1.5 1.5 0 0 0-1-1"/></svg>`;
+const ICON_FEELING_2 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16a4 4 0 0 0-8 0"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+const ICON_FEELING_3 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+const ICON_FEELING_4 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+const ICON_FEELING_5 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14a4 4 0 0 0 8 0Z"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+
+
 // ── Supabase direto (sem auth) ─────────────────────────────
 // Usa a chave pública (anon) + policies abertas para leitura por ID
 const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
@@ -649,17 +665,17 @@ export async function renderPreForm(studentId) {
             <input type="hidden" name="studentId" value="${cleanId}" />
             <input type="hidden" name="trainerId" value="${urlTrainerId||student.trainer_id||student.trainerId||''}" />
 
-            ${scalePickerHTML('sleep', SONO_SCALE, 8, '😴 Qualidade do Sono 🌙', 'Selecione o descritor que melhor representa sua última noite de sono.')}
+            ${scalePickerHTML('sleep', SONO_SCALE, 8, `${ICON_MOON} Qualidade do Sono`, 'Selecione o descritor que melhor representa sua última noite de sono.')}
 
-            ${scalePickerHTML('food', ALIMENTACAO_SCALE, 4, '🍎 Alimentação nas últimas 24h', 'Como foi sua ingestão de alimentos e hidratação nas últimas 24h?')}
+            ${scalePickerHTML('food', ALIMENTACAO_SCALE, 4, `${ICON_FOOD} Alimentação nas últimas 24h`, 'Como foi sua ingestão de alimentos e hidratação nas últimas 24h?')}
 
-            ${scalePickerHTML('motivation', MOTIVACAO_SCALE, 7, '🔥 Motivação para o Treino', 'Como está sua disposição e motivação para o treino de hoje?')}
+            ${scalePickerHTML('motivation', MOTIVACAO_SCALE, 7, `${ICON_FIRE} Motivação para o Treino`, 'Como está sua disposição e motivação para o treino de hoje?')}
 
-            ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, '🧠 Nível de Estresse Mental', 'Como está sua mente e seu nível de estresse hoje?')}
+            ${scalePickerHTML('stress', ESTRESSE_SCALE, 3, `${ICON_BRAIN} Nível de Estresse Mental`, 'Como está sua mente e seu nível de estresse hoje?')}
 
-            ${scalePickerHTML('tqr', TQR_SCALE, 7, '⚡ Nível de Recuperação (TQR)', 'Escala de Estado de Recuperação (Kenttä & Hassmén, 1998). Selecione seu estado de recuperação atual.')}
+            ${scalePickerHTML('tqr', TQR_SCALE, 7, `${ICON_ZAP} Nível de Recuperação (TQR)`, 'Escala de Estado de Recuperação (Kenttä & Hassmén, 1998). Selecione seu estado de recuperação atual.')}
 
-            ${scalePickerHTML('pain', DOR_SCALE, 1, '🤕 Nível de Dor Articular/Muscular', 'Você está sentindo alguma dor atípica (não a dor muscular do treino anterior)?')}
+            ${scalePickerHTML('pain', DOR_SCALE, 1, `${ICON_PAIN} Nível de Dor Articular/Muscular`, 'Você está sentindo alguma dor atípica (não a dor muscular do treino anterior)?')}
             <div id="painGroup" style="display:none;margin-bottom:22px">
               <div class="q-label" style="margin-bottom:10px">Selecione a região</div>
               <div class="pain-tags" id="pre_pain_regions_wrap">
@@ -851,28 +867,28 @@ export async function renderPostForm(sessionId) {
 
             <!-- 1. PSE com descritores completos -->
             ${scalePickerHTML('pse', PSE_SCALE, 5,
-              'Qual a intensidade do seu treino de hoje? ⚡',
+              `${ICON_ZAP} Qual a intensidade do seu treino de hoje?`,
               'PSE — Percepção Subjetiva de Esforço (Borg CR10, adaptada por Foster 1996). Selecione o descritor que melhor representa como foi o treino.'
             )}
 
             <!-- 2. Feeling / Humores pós-treino (emoji buttons) -->
             <div class="q">
-              <div class="q-label">😊 Sensação pós-treino (Recuperação/Humor)</div>
+              <div class="q-label">${ICON_SMILE} Sensação pós-treino (Recuperação/Humor)</div>
               <div class="portal-feeling-row">
                 <button type="button" class="portal-feeling-emoji-btn" data-val="1">
-                  <span>😩</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
+                  <span>${ICON_FEELING_1}</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn" data-val="2">
-                  <span>🥱</span><span class="portal-feeling-emoji-lbl">Cansado</span>
+                  <span>${ICON_FEELING_2}</span><span class="portal-feeling-emoji-lbl">Cansado</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn active" data-val="3">
-                  <span>🙂</span><span class="portal-feeling-emoji-lbl">Ok</span>
+                  <span>${ICON_FEELING_3}</span><span class="portal-feeling-emoji-lbl">Ok</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn" data-val="4">
-                  <span>😁</span><span class="portal-feeling-emoji-lbl">Bem</span>
+                  <span>${ICON_FEELING_4}</span><span class="portal-feeling-emoji-lbl">Bem</span>
                 </button>
                 <button type="button" class="portal-feeling-emoji-btn" data-val="5">
-                  <span>🔥</span><span class="portal-feeling-emoji-lbl">Excelente</span>
+                  <span>${ICON_FEELING_5}</span><span class="portal-feeling-emoji-lbl">Excelente</span>
                 </button>
               </div>
               <input type="hidden" name="feeling" id="hidden_feeling" value="3" />

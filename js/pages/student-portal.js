@@ -9,6 +9,22 @@ import { Calc } from '../utils/calculations.js';
 import { PAIN_REGIONS } from '../utils/alerts.js';
 import { generateAlgorithmicInsight, generateAIInsight } from '../insights.js';
 
+const ICON_MOON   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+const ICON_ZAP    = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
+const ICON_BRAIN  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2zM14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"/></svg>`;
+const ICON_PAIN   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+const ICON_FIRE   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>`;
+const ICON_DROP   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>`;
+const ICON_FOOD   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M12 22c4.97 0 9-3.03 9-9 0-3.83-2.62-5.7-5.5-5.7-1.84 0-2.88.94-3.5 1.7-.62-.76-1.66-1.7-3.5-1.7C6.12 7.3 3.5 9.17 3.5 13c0 5.97 4.03 9 9 9Z"/><path d="M12 7V3a1 1 0 0 1 1-1h2"/></svg>`;
+
+const ICON_SMILE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>`;
+const ICON_FEELING_1 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16a4 4 0 0 0-8 0"/><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M9.5 9a1.5 1.5 0 0 1 1-1"/><path d="M14.5 9a1.5 1.5 0 0 0-1-1"/></svg>`;
+const ICON_FEELING_2 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16a4 4 0 0 0-8 0"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+const ICON_FEELING_3 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+const ICON_FEELING_4 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+const ICON_FEELING_5 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14a4 4 0 0 0 8 0Z"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
+
+
 // ── PWA Install prompt ─────────────────────────────────────────
 let deferredPrompt = null;
 let pwaPopupShown = false;
@@ -1584,7 +1600,7 @@ function initTreinar(workouts, schedules, student) {
           <button type="button" class="portal-add-set-btn" id="addset_${ei}" data-ei="${ei}" data-rest="${ex.rest||60}"
             style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            + Série extra
+            Adicionar série
           </button>
 
           <!-- Observações do exercício -->
@@ -1602,7 +1618,7 @@ function initTreinar(workouts, schedules, student) {
         <button id="addExtraExBtn" type="button"
           style="width:100%;padding:10px;background:rgba(16,185,129,0.08);border:1px dashed rgba(16,185,129,0.3);border-radius:10px;color:#10b981;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          + Exercício extra
+          Adicionar exercício
         </button>
         <div id="extraExercisesBlock"></div>
       `);
@@ -1827,7 +1843,7 @@ function initTreinar(workouts, schedules, student) {
         <button type="button" class="extra-addset-btn" data-xei="${xei}" data-rest="60"
           style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          + Série
+          Adicionar série
         </button>
         <div style="margin-top:8px">
           <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
@@ -2458,23 +2474,23 @@ function renderBio(biofeedbacks, sid, tid) {
         <div class="portal-card-label">Biofeedback Pré-treino</div>
         <form id="portalBioForm">
           <div class="portal-bio-field">
-            <label class="portal-bio-label">😴 Qualidade do Sono</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_MOON} Qualidade do Sono</label>
             ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label"> Recuperação (TQR)</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Recuperação (TQR)</label>
             ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">🍎 Alimentação nas últimas 24h</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FOOD} Alimentação nas últimas 24h</label>
             ${renderInlineCardSelector('food', ALIMENTACAO_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">🤯 Estresse</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_BRAIN} Estresse</label>
             ${renderInlineCardSelector('stress', ESTRESSE_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">🩹 Dor ou Desconforto Articular</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_PAIN} Dor ou Desconforto Articular</label>
             ${renderInlineCardSelector('pain', DOR_OPTIONS, 1, 'window.onBioPainChange')}
           </div>
           <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
@@ -2505,13 +2521,13 @@ function renderBio(biofeedbacks, sid, tid) {
             </div>
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label">🎯 Motivação para Treinar</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FIRE} Motivação para Treinar</label>
             ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 8)}
           </div>
           
           ${isWomanUnder40 ? `
           <div class="portal-bio-field">
-            <label class="portal-bio-label">Ciclo Menstrual (Se aplicável)</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual (Se aplicável)</label>
             <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
               <option value="" selected>Não se aplica / Prefiro não informar</option>
               <option value="Menstruacao">Menstruação</option>
@@ -2648,7 +2664,7 @@ function initBio() {
 
     e.target.innerHTML = `<div class="portal-success">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <div>Check-in enviado! ✅</div>
+      <div>Check-in enviado!</div>
     </div>`;
   });
 }
@@ -3107,8 +3123,8 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
 
     ${exerciseProgressionChartHtml}
 
-    ${compAss.length>=2?`<div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Evolucao da Composicao Corporal</div>
+    ${compAss.length>=1?`<div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label">Evolução da Composição Corporal</div>
       <div style="height:200px;position:relative"><canvas id="portalMeasuresChart"></canvas></div>
     </div>`:''}
 
@@ -3597,14 +3613,27 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
 
     // Body composition
     const measCtx = document.getElementById('portalMeasuresChart');
-    if (measCtx && compAss.length >= 2) {
+    if (measCtx && compAss.length >= 1) {
       const ds = [];
+      let pctMin = 0;
+      let pctMax = 100;
+
       if (compAss.some(a => a.peso))
         ds.push({ label: 'Peso (kg)', data: compAss.map(a => a.peso || null), borderColor: '#10b981', fill: false, tension: 0.3, yAxisID: 'y', pointRadius: 3 });
+      
       if (compAss.some(a => a.percentualGordura)) {
+        const gordVals  = compAss.map(a => a.percentualGordura).filter(Boolean);
+        const magraVals = compAss.map(a => a.percentualGordura ? 100 - a.percentualGordura : null).filter(Boolean);
+        const allPct    = [...gordVals, ...magraVals];
+        if (allPct.length > 0) {
+          pctMin    = Math.floor(Math.min(...allPct) - 2);
+          pctMax    = Math.ceil(Math.max(...allPct) + 2);
+        }
+
         ds.push({ label: '% Gordura', data: compAss.map(a => a.percentualGordura || null), borderColor: '#f59e0b', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [5,3], pointRadius: 3 });
         ds.push({ label: '% Massa Magra', data: compAss.map(a => a.percentualGordura ? parseFloat((100 - a.percentualGordura).toFixed(1)) : null), borderColor: '#06b6d4', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [2,2], pointRadius: 3 });
       }
+      
       if (ds.length) createPortalChart('portalMeasuresChart', measCtx, {
         type: 'line',
         data: { labels: compAss.map(a => fmtDate(a.date)), datasets: ds },
@@ -3613,7 +3642,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
           plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } },
           scales: {
             y:  { position: 'left',  title: { display: true, text: 'kg', color: '#10b981', font: { size: 9 } }, ticks: { color: '#10b981', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
-            y1: { position: 'right', title: { display: true, text: '%', color: '#94a3b8', font: { size: 9 } }, ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + '%' }, grid: { display: false }, min: 0, max: 100 },
+            y1: { position: 'right', title: { display: true, text: '%', color: '#94a3b8', font: { size: 9 } }, ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + '%' }, grid: { display: false }, min: pctMin, max: pctMax },
             x:  { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -4144,39 +4173,39 @@ function showPortalCheckoutModal(session) {
       <div style="overflow-y: auto; flex: 1; padding-right: 4px;" id="portalCheckoutForm">
         <!-- 1. PSE INLINE CARDS -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label">🥵 Intensidade do Esforço Percebido (PSE)</label>
+          <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Intensidade do Esforço Percebido (PSE)</label>
           ${renderInlineCardSelector('pse', PSE_OPTIONS, currentPse)}
         </div>
 
         <!-- 2. FEELING/SATISFACTION -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label">😊 Sensação pós-treino (Recuperação/Humor)</label>
+          <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_SMILE} Sensação pós-treino (Recuperação/Humor)</label>
           <div class="portal-feeling-row">
             <button class="portal-feeling-emoji-btn ${currentFeeling===1?'active':''}" data-val="1">
-              <span>😩</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
+              <span>${ICON_FEELING_1}</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
             </button>
             <button class="portal-feeling-emoji-btn ${currentFeeling===2?'active':''}" data-val="2">
-              <span>🥱</span><span class="portal-feeling-emoji-lbl">Cansado</span>
+              <span>${ICON_FEELING_2}</span><span class="portal-feeling-emoji-lbl">Cansado</span>
             </button>
             <button class="portal-feeling-emoji-btn ${currentFeeling===3?'active':''}" data-val="3">
-              <span>🙂</span><span class="portal-feeling-emoji-lbl">Ok</span>
+              <span>${ICON_FEELING_3}</span><span class="portal-feeling-emoji-lbl">Ok</span>
             </button>
             <button class="portal-feeling-emoji-btn ${currentFeeling===4?'active':''}" data-val="4">
-              <span>😁</span><span class="portal-feeling-emoji-lbl">Bem</span>
+              <span>${ICON_FEELING_4}</span><span class="portal-feeling-emoji-lbl">Bem</span>
             </button>
             <button class="portal-feeling-emoji-btn ${currentFeeling===5?'active':''}" data-val="5">
-              <span></span><span class="portal-feeling-emoji-lbl">Excelente</span>
+              <span>${ICON_FEELING_5}</span><span class="portal-feeling-emoji-lbl">Excelente</span>
             </button>
           </div>
         </div>
 
         <!-- 3. NOTES -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label"> Observações do Treino</label>
+          <label class="portal-checkout-label">Observações do Treino</label>
           <textarea id="chkModalNotes" class="portal-textarea" rows="2" placeholder="Ex: RIR em agachamento foi menor, me senti muito forte hoje...">${currentNotes}</textarea>
         </div>
 
-        <button id="chkModalSubmitBtn" class="portal-checkout-submit">Salvar Checkout ✅</button>
+        <button id="chkModalSubmitBtn" class="portal-checkout-submit">Salvar Checkout</button>
       </div>
     </div>
   `;

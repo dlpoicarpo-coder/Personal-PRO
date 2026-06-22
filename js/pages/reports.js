@@ -425,7 +425,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <div style="height:280px;position:relative"><canvas id="cycleDiffChart"></canvas></div>
     </div>
 
-    ${assessments.length ? `
+    ${assessments.filter(a => a.type === 'composicao').length ? `
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Evolução de Medidas Corporais</span></div>
       <p class="text-xs text-muted mb-sm">Acompanhamento de peso corporal e percentual de gordura ao longo das avaliações. A tendência é mais importante que valores isolados.</p>
@@ -1081,9 +1081,10 @@ async function initReportCharts(studentId, cycleFilter = '') {
     new Chart(fCtx, { type: 'bar', data: { labels: wKeys.map(k => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })), datasets: [{ label: 'Sessões', data: wKeys.map(k => wc[k]), backgroundColor: 'rgba(6,182,212,0.5)', borderColor: '#06b6d4', borderWidth: 1, borderRadius: 4 }] }, options: { ...co, plugins: { legend: { display: false } }, scales: { ...co.scales, y: { ...co.scales.y, beginAtZero: true, ticks: { ...co.scales.y.ticks, stepSize: 1 } } } } });
   }
 
-    const mCtx = document.getElementById('measuresChart');
-  if (mCtx && assessments.length > 1) {
-    const sorted = [...assessments].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const mCtx = document.getElementById('measuresChart');
+  const compAssessments = assessments.filter(a => a.type === 'composicao');
+  if (mCtx && compAssessments.length >= 1) {
+    const sorted = [...compAssessments].sort((a, b) => new Date(a.date) - new Date(b.date));
     const ds = [];
 
     if (sorted.some(a => a.peso))
@@ -1094,13 +1095,17 @@ async function initReportCharts(studentId, cycleFilter = '') {
         fill: false, tension: 0.3, yAxisID: 'y', pointRadius: 5, borderWidth: 2
       });
 
+    let pctMin = 0;
+    let pctMax = 100;
     if (sorted.some(a => a.percentualGordura)) {
       // Calcular faixa real para Y1 (zoom nos dados reais)
       const gordVals  = sorted.map(a => a.percentualGordura).filter(Boolean);
       const magraVals = sorted.map(a => a.percentualGordura ? 100 - a.percentualGordura : null).filter(Boolean);
       const allPct    = [...gordVals, ...magraVals];
-      const pctMin    = Math.floor(Math.min(...allPct) - 2);
-      const pctMax    = Math.ceil(Math.max(...allPct) + 2);
+      if (allPct.length > 0) {
+        pctMin    = Math.floor(Math.min(...allPct) - 2);
+        pctMax    = Math.ceil(Math.max(...allPct) + 2);
+      }
 
       ds.push({
         label: '% Gordura',
@@ -1116,69 +1121,54 @@ async function initReportCharts(studentId, cycleFilter = '') {
         fill: false, tension: 0.3, yAxisID: 'y1',
         borderDash: [2, 2], pointRadius: 5, borderWidth: 2
       });
-
-      if (ds.length) {
-        const existingChart = chartsInstance?.['measuresChart'];
-        if (existingChart) { existingChart.destroy(); }
-        chartsInstance = chartsInstance || {};
-        chartsInstance['measuresChart'] = new Chart(mCtx, {
-          type: 'line',
-          data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                labels: {
-                  color: '#94a3b8', font: { size: 11 },
-                  usePointStyle: true, pointStyle: 'circle',
-                }
-              },
-              tooltip: {
-                callbacks: {
-                  label: ctx => {
-                    const v = ctx.parsed.y;
-                    if (v == null) return '';
-                    if (ctx.dataset.yAxisID === 'y1') return `${ctx.dataset.label}: ${v.toFixed(1)}%`;
-                    return `${ctx.dataset.label}: ${v.toFixed(1)} kg`;
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                position: 'left',
-                title: { display: true, text: 'Peso (kg)', color: '#10b981', font: { size: 10 } },
-                ticks: { color: '#10b981' },
-                grid: { color: 'rgba(255,255,255,0.05)' }
-              },
-              y1: {
-                position: 'right',
-                title: { display: true, text: '%', color: '#94a3b8', font: { size: 10 } },
-                ticks: { color: '#94a3b8', callback: v => v + '%' },
-                grid: { display: false },
-                min: pctMin, max: pctMax  // zoom na faixa real dos dados
-              },
-              x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-            }
-          }
-        });
-        return; // evitar new Chart duplicado abaixo
-      }
     }
 
-    // Fallback — só peso, sem % gordura
-    if (ds.length) new Chart(mCtx, {
-      type: 'line',
-      data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
-        scales: {
-          y: { position: 'left', ticks: { color: '#10b981' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+    if (ds.length) {
+      const existingChart = chartsInstance?.['measuresChart'];
+      if (existingChart) { existingChart.destroy(); }
+      chartsInstance = chartsInstance || {};
+      chartsInstance['measuresChart'] = new Chart(mCtx, {
+        type: 'line',
+        data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: '#94a3b8', font: { size: 11 },
+                usePointStyle: true, pointStyle: 'circle',
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const v = ctx.parsed.y;
+                  if (v == null) return '';
+                  if (ctx.dataset.yAxisID === 'y1') return `${ctx.dataset.label}: ${v.toFixed(1)}%`;
+                  return `${ctx.dataset.label}: ${v.toFixed(1)} kg`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              position: 'left',
+              title: { display: true, text: 'Peso (kg)', color: '#10b981', font: { size: 10 } },
+              ticks: { color: '#10b981' },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: '%', color: '#94a3b8', font: { size: 10 } },
+              ticks: { color: '#94a3b8', callback: v => v + '%' },
+              grid: { display: false },
+              min: pctMin, max: pctMax
+            },
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   const kcCtx = document.getElementById('kcalChart');
