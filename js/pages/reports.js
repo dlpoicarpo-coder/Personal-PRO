@@ -342,11 +342,11 @@ async function renderStudentReport(studentId, cycleFilter = '') {
             <th>Exercício</th>
             <th style="text-align:center">1ª Carga</th>
             <th style="text-align:center">Última Carga</th>
-            <th style="text-align:center">Máximo</th>
+            <th style="text-align:center" class="hide-mobile">Máximo</th>
             <th style="text-align:center">Δ Carga</th>
             <th style="text-align:center">Evolução</th>
-            <th style="text-align:center">Vol. Total</th>
-            <th style="text-align:center">Séries</th>
+            <th style="text-align:center" class="hide-mobile">Vol. Total</th>
+            <th style="text-align:center" class="hide-mobile">Séries</th>
           </tr></thead>
           <tbody>
             ${progressionItems.map(p => {
@@ -357,7 +357,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
                 <td><strong style="font-size:0.85rem">${p.name}</strong></td>
                 <td style="text-align:center;color:var(--text-muted)">${p.first.load}kg</td>
                 <td style="text-align:center;font-weight:600">${p.last.load}kg</td>
-                <td style="text-align:center;color:var(--warning);font-weight:600">${p.maxLoad}kg</td>
+                <td style="text-align:center;color:var(--warning);font-weight:600" class="hide-mobile">${p.maxLoad}kg</td>
                 <td style="text-align:center;color:${deltaColor};font-weight:700">
                   ${p.delta > 0 ? '+' : ''}${p.delta}kg
                 </td>
@@ -369,8 +369,8 @@ async function renderStudentReport(studentId, cycleFilter = '') {
                     <span style="color:${deltaColor};font-weight:700;font-size:0.8rem">${arrow} ${Math.abs(p.pct)}%</span>
                   </div>
                 </td>
-                <td style="text-align:center;font-size:0.82rem">${(p.totalVol/1000).toFixed(1)}t</td>
-                <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${p.sessions}</td>
+                <td style="text-align:center;font-size:0.82rem" class="hide-mobile">${(p.totalVol/1000).toFixed(1)}t</td>
+                <td style="text-align:center;color:var(--text-muted);font-size:0.82rem" class="hide-mobile">${p.sessions}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -746,7 +746,7 @@ export async function initReports(navigateFn) {
     const pdfTableTh = isDark ? '#1f2937' : '#e5e7eb';
     
     const pageConfig = format === 'mobile' 
-      ? '@page { size: 420px 850px; margin: 0; } body { width: 420px; padding: 24px 20px; } .stats { grid-template-columns: repeat(3, 1fr); gap: 6px; } .charts-grid { grid-template-columns: 1fr; }'
+      ? '@page { size: 420px 850px; margin: 0; } body { width: 420px; padding: 24px 20px; } .stats { grid-template-columns: repeat(3, 1fr); gap: 6px; } .charts-grid { grid-template-columns: 1fr; } .hide-mobile { display: none !important; }'
       : '@page { size: A4 portrait; margin: 0; } body { max-width: 800px; padding: 40px; } .stats { grid-template-columns: repeat(6, 1fr); gap: 10px; } .charts-grid { grid-template-columns: 1fr 1fr; }';
 
       const customAnnotations = document.getElementById('pdfAnnotations')?.value || '';
@@ -860,72 +860,76 @@ export async function initReports(navigateFn) {
       ${sessions.length ? `
       <h2>Sessões Realizadas</h2>
       <p class="section-desc">${sessions.length} sessão(ões) · Volume total: ${totalVol.toLocaleString('pt-BR')} kg · Média/sessão: ${sessions.length ? Math.round(totalVol / sessions.length).toLocaleString('pt-BR') : 0} kg · Duração média: ${avgDuration}min</p>
-      <table>
-        <thead><tr>
-          <th>Data</th><th>Treino</th><th>Dur.</th><th>Volume</th><th>Séries</th>
-          <th>PSE</th><th>TQR pós</th><th>RIR méd.</th><th>Kcal est.</th><th>Densidade</th>
-        </tr></thead>
-        <tbody>
-          ${sessions.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,20).map(se=>{
-            const durMin  = se.totalDuration ? Math.round(se.totalDuration/60) : 0;
-            const vol     = se.totalVolume ? Math.round(se.totalVolume) : 0;
-            const pse     = se.postBiofeedback?.pse || '-';
-            const tqrPost = se.postBiofeedback?.tqrPost || '-';
-            // RIR médio das séries
-            const setLog  = se.setLog || [];
-            const rirSets = setLog.filter(s => s.rir != null);
-            const avgRir  = rirSets.length ? Math.round(rirSets.reduce((t,s)=>t+(s.rir||0),0)/rirSets.length*10)/10 : '-';
-            // Calorias estimadas (MET musculação × peso)
-            const peso    = se.studentWeight || (se.preBiofeedback?.peso) || null;
-            const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : '-';
-            // Densidade de treino (volume / minutos)
-            const dens    = vol && durMin ? Math.round(vol / durMin) : '-';
-            const pseColor = typeof pse==='number' ? (pse>=9?'#ef4444':pse>=7?'#f59e0b':'#10b981') : '#888';
-            
-            const exSummary = [];
-            (se.exercises || []).forEach((ex, idx) => {
-              const setsForEx = setLog.filter(s => s.exIdx === idx);
-              if (setsForEx.length) {
-                const maxLoad = Math.max(...setsForEx.map(s => s.load || 0));
-                exSummary.push(`${ex.name} (${setsForEx.length}x máx ${maxLoad}kg)`);
-              }
-            });
-            const summaryStr = exSummary.join(' • ');
+      <div style="overflow-x: auto; width: 100%;">
+        <table style="min-width: ${format === 'mobile' ? 'auto' : '650px'}; table-layout: auto;">
+          <thead><tr>
+            <th>Data</th><th>Treino</th><th>Dur.</th><th>Volume</th><th class="hide-mobile">Séries</th>
+            <th>PSE</th><th class="hide-mobile">TQR pós</th><th class="hide-mobile">RIR méd.</th><th class="hide-mobile">Kcal est.</th><th class="hide-mobile">Densidade</th>
+          </tr></thead>
+          <tbody>
+            ${sessions.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,20).map(se=>{
+              const durMin  = se.totalDuration ? Math.round(se.totalDuration/60) : 0;
+              const vol     = se.totalVolume ? Math.round(se.totalVolume) : 0;
+              const pse     = se.postBiofeedback?.pse || '-';
+              const tqrPost = se.postBiofeedback?.tqrPost || '-';
+              // RIR médio das séries
+              const setLog  = se.setLog || [];
+              const rirSets = setLog.filter(s => s.rir != null);
+              const avgRir  = rirSets.length ? Math.round(rirSets.reduce((t,s)=>t+(s.rir||0),0)/rirSets.length*10)/10 : '-';
+              // Calorias estimadas (MET musculação × peso)
+              const peso    = se.studentWeight || (se.preBiofeedback?.peso) || null;
+              const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : '-';
+              // Densidade de treino (volume / minutos)
+              const dens    = vol && durMin ? Math.round(vol / durMin) : '-';
+              const pseColor = typeof pse==='number' ? (pse>=9?'#ef4444':pse>=7?'#f59e0b':'#10b981') : '#888';
+              
+              const exSummary = [];
+              (se.exercises || []).forEach((ex, idx) => {
+                const setsForEx = setLog.filter(s => s.exIdx === idx);
+                if (setsForEx.length) {
+                  const maxLoad = Math.max(...setsForEx.map(s => s.load || 0));
+                  exSummary.push(`${ex.name} (${setsForEx.length}x máx ${maxLoad}kg)`);
+                }
+              });
+              const summaryStr = exSummary.join(' • ');
 
-            return `<tr>
-              <td>${(se.date.includes('T') ? new Date(se.date) : new Date(se.date + 'T12:00')).toLocaleDateString('pt-BR')}</td>
-              <td><strong>${se.workoutName||'-'}</strong></td>
-              <td>${durMin?durMin+'min':'-'}</td>
-              <td>${vol?vol+' kg':'-'}</td>
-              <td>${se.totalSets||'-'}</td>
-              <td style="color:${pseColor};font-weight:600">${pse}</td>
-              <td>${tqrPost}/10</td>
-              <td>${avgRir}</td>
-              <td>${kcalEst!=='-'?kcalEst+'kcal':'-'}</td>
-              <td style="font-size:10px;color:#888">${dens!=='-'?dens+' kg/min':'-'}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>` : ''}
+              return `<tr>
+                <td>${(se.date.includes('T') ? new Date(se.date) : new Date(se.date + 'T12:00')).toLocaleDateString('pt-BR')}</td>
+                <td><strong>${se.workoutName||'-'}</strong></td>
+                <td>${durMin?durMin+'min':'-'}</td>
+                <td>${vol?vol+' kg':'-'}</td>
+                <td class="hide-mobile">${se.totalSets||'-'}</td>
+                <td style="color:${pseColor};font-weight:600">${pse}</td>
+                <td class="hide-mobile">${tqrPost}/10</td>
+                <td class="hide-mobile">${avgRir}</td>
+                <td class="hide-mobile">${kcalEst!=='-'?kcalEst+'kcal':'-'}</td>
+                <td class="hide-mobile" style="font-size:10px;color:#888">${dens!=='-'?dens+' kg/min':'-'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
 
       ${progressionItems.length ? `
       <h2>Progressão de Carga por Exercício</h2>
       <p class="section-desc">Evolução da carga registrada ao longo das sessões. A sobrecarga progressiva é o principal motor do ganho de força e hipertrofia.</p>
-      <table>
-        <thead><tr><th>Exercício</th><th>1ª Carga</th><th>Última Carga</th><th>Máximo</th><th>Δ Carga</th><th>Evolução</th><th>Vol. Total</th></tr></thead>
-        <tbody>
-          ${progressionItems.map(p=>`
-            <tr>
-              <td><strong>${p.name}</strong></td>
-              <td style="color:#888">${p.first.load}kg</td>
-              <td style="font-weight:700">${p.last.load}kg</td>
-              <td style="color:#f59e0b;font-weight:600">${p.maxLoad}kg</td>
-              <td style="color:${p.delta>=0?'#10b981':'#ef4444'};font-weight:700">${p.delta>0?'+':''}${p.delta}kg</td>
-              <td style="color:${p.delta>=0?'#10b981':'#ef4444'};font-weight:700">${p.delta>0?'↑':'↓'} ${Math.abs(p.pct)}%</td>
-              <td style="color:#666">${(p.totalVol/1000).toFixed(1)}t</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>` : ''}
+      <div style="overflow-x: auto; width: 100%;">
+        <table style="min-width: ${format === 'mobile' ? 'auto' : '600px'}; table-layout: auto;">
+          <thead><tr><th>Exercício</th><th>1ª Carga</th><th>Última Carga</th><th class="hide-mobile">Máximo</th><th>Δ Carga</th><th>Evolução</th><th class="hide-mobile">Vol. Total</th></tr></thead>
+          <tbody>
+            ${progressionItems.map(p=>`
+              <tr>
+                <td><strong>${p.name}</strong></td>
+                <td style="color:#888">${p.first.load}kg</td>
+                <td style="font-weight:700">${p.last.load}kg</td>
+                <td class="hide-mobile" style="color:#f59e0b;font-weight:600">${p.maxLoad}kg</td>
+                <td style="color:${p.delta>=0?'#10b981':'#ef4444'};font-weight:700">${p.delta>0?'+':''}${p.delta}kg</td>
+                <td style="color:${p.delta>=0?'#10b981':'#ef4444'};font-weight:700">${p.delta>0?'↑':'↓'} ${Math.abs(p.pct)}%</td>
+                <td class="hide-mobile" style="color:#666">${(p.totalVol/1000).toFixed(1)}t</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
 
       ${chartsHTML ? `
       <h2>Gráficos de Evolução</h2>
