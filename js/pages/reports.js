@@ -1086,7 +1086,6 @@ async function initReportCharts(studentId, cycleFilter = '') {
   if (mCtx && compAssessments.length >= 1) {
     const sorted = [...compAssessments].sort((a, b) => new Date(a.date) - new Date(b.date));
     const ds = [];
-
     if (sorted.some(a => a.peso))
       ds.push({
         label: 'Peso (kg)',

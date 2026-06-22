@@ -1225,15 +1225,32 @@ export function initPeriodization(navigateFn) {
             card.style.opacity = tpl ? '0.45' : '1'; // custom cycles sempre visíveis
           }
         });
-        // Auto-selecionar o template padrão (primeiro compatible) se nenhum estiver selecionado
+        
+        // Auto-selecionar template padrão conforme método de periodização se nenhum estiver selecionado
         if (!selectedTemplate) {
-          const firstCompatible = document.querySelector(`.periodo-tpl-card[style*="opacity: 1"]`) ||
-            document.querySelector(`.periodo-tpl-card[data-tpl-id]:not([data-tpl-id="custom_builder"])`);
-          // Encontrar pelo BUILT_IN_TEMPLATES
-          const defaultTpl = BUILT_IN_TEMPLATES.find(t => t.periodizationTypes?.[0] === method);
-          if (defaultTpl) {
-            const card = document.querySelector(`.periodo-tpl-card[data-tpl-id="${defaultTpl.id}"]`);
+          const DEFAULT_TEMPLATES_BY_METHOD = {
+            'linear':          'hipertrofia_feminino_inter',
+            'reverse_linear':  'funcional_iniciante',
+            'undulating':      'hipertrofia_avancado',
+            'block':           'forca_maxima_uni',
+            'conjugate':       'forca_maxima_uni',
+            'concurrent':      'hipertrofia_avancado',
+            'polarized':       'cardio_polarizado',
+            'hiit':            'cardio_hiit',
+            'lsd':             'cardio_lsd',
+            'threshold':       'cardio_limiar',
+            'fartlek':         'cardio_fartlek',
+          };
+          const defaultTplId = DEFAULT_TEMPLATES_BY_METHOD[method];
+          if (defaultTplId) {
+            const card = document.querySelector(`.periodo-tpl-card[data-tpl-id="${defaultTplId}"]`);
             if (card) card.click();
+          } else {
+            const defaultTpl = BUILT_IN_TEMPLATES.find(t => t.periodizationTypes?.[0] === method);
+            if (defaultTpl) {
+              const card = document.querySelector(`.periodo-tpl-card[data-tpl-id="${defaultTpl.id}"]`);
+              if (card) card.click();
+            }
           }
         }
       });

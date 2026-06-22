@@ -31,36 +31,55 @@ let pwaPopupShown = false;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  // Show popup with a slight delay after portal loads
   setTimeout(() => showPwaPopup(), 3000);
 });
 
-function showPwaPopup() {
-  if (pwaPopupShown || !deferredPrompt) return;
+// Detectar iOS — Safari não dispara beforeinstallprompt
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+if (isIOS && !isInStandaloneMode) {
+  setTimeout(() => showPwaPopup(true), 3000);
+}
+
+function showPwaPopup(isIOSMode = false) {
+  if (pwaPopupShown) return;
+  if (!isIOSMode && !deferredPrompt) return;
   pwaPopupShown = true;
   const popup = document.getElementById('pwaInstallPopup');
   if (popup) { popup.classList.add('visible'); return; }
-  // If portal already rendered, inject
   const root = document.querySelector('.portal-root');
   if (!root) return;
   const el = document.createElement('div');
   el.id = 'pwaInstallPopup';
   el.className = 'portal-pwa-popup visible';
+
+  const iosInstructions = `
+    <div style="font-size:0.75rem;color:var(--portal-text-muted);line-height:1.6;margin-top:6px;text-align:left">
+      No Safari: toque em
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      Compartilhar → <strong>"Adicionar à Tela de Início"</strong>
+    </div>`;
+
   el.innerHTML = `
     <div class="portal-pwa-popup-inner">
-      <div class="portal-pwa-icon">📲</div>
       <div class="portal-pwa-text">
         <div class="portal-pwa-title">Instalar Personal PRO</div>
-        <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
+        <div class="portal-pwa-sub">Acesse seus treinos sem abrir o navegador!</div>
+        ${isIOSMode ? iosInstructions : ''}
       </div>
       <div class="portal-pwa-actions">
-        <button id="pwaInstallYes" class="portal-pwa-btn-yes">Instalar</button>
+        ${isIOSMode
+          ? `<button id="pwaInstallYes" class="portal-pwa-btn-yes">Entendi</button>`
+          : `<button id="pwaInstallYes" class="portal-pwa-btn-yes">Instalar</button>`}
         <button id="pwaInstallNo" class="portal-pwa-btn-no">Agora não</button>
       </div>
     </div>`;
   root.appendChild(el);
   document.getElementById('pwaInstallYes')?.addEventListener('click', () => {
-    deferredPrompt.prompt();
+    if (!isIOSMode && deferredPrompt) {
+      deferredPrompt.prompt();
+    }
     el.classList.remove('visible');
   });
   document.getElementById('pwaInstallNo')?.addEventListener('click', () => {
@@ -1548,6 +1567,20 @@ function initTreinar(workouts, schedules, student) {
                 loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
                 restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
               } else {
+                // Tentar construir progressão a partir do método (treinos salvos sem seriesProgression)
+                if (ex.method) {
+                  const SIMPLE_LABELS = {
+                    'Unilateral': (i) => i%2===0 ? `S${Math.floor(i/2)+1} — Lado D` : `S${Math.floor(i/2)+1} — Lado E`,
+                    'Bi-set': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
+                    'Super-série Agonista': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
+                    'Super-série Antagonista': (i) => i%2===0 ? `Agonista S${Math.floor(i/2)+1}` : `Antagonista S${Math.floor(i/2)+1}`,
+                  };
+                  if (SIMPLE_LABELS[ex.method]) {
+                    // Usar label gerado dinamicamente
+                    if (!ex._dynLabels) ex._dynLabels = {};
+                    ex._dynLabels[si] = SIMPLE_LABELS[ex.method](si);
+                  }
+                }
                 if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
                   const parts = ex.reps.split('→');
                   repsVal = parseInt(parts[si] || ex.reps) || '';
@@ -1557,27 +1590,72 @@ function initTreinar(workouts, schedules, student) {
                 loadVal = ex.load || '';
               }
 
-              // Badge inteligente para métodos com clusters (Rest-Pause, Cluster)
+              // Override hasProgLabel com dynLabels se disponível
+              const dynLabel = ex._dynLabels?.[si];
+
+              // Badge inteligente para TODOS os métodos com progressão de séries
               const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+              const hasProgLabel = ex.seriesProgression?.[si]?.label || dynLabel;
               let setNumLabel = `S${si+1}`;
               let setSubLabel = '';
-              if (isClusterMethod && ex.seriesProgression?.[si]?.label) {
-                const lbl = ex.seriesProgression[si].label;
-                const cMatch = lbl.match(/Cluster\s*(\d+)/i);
-                if (cMatch) {
-                  const cNum = cMatch[1];
-                  const isPausa = lbl.toLowerCase().includes('pausa');
-                  const miniIdx = ex.seriesProgression.slice(0, si).filter(s => s.label?.match(new RegExp(`Cluster\\s*${cNum}`, 'i'))).length + 1;
-                  setNumLabel = `C${cNum}`;
-                  setSubLabel = isPausa ? `P${miniIdx}` : `M1`;
+
+              if (hasProgLabel) {
+                const lbl = ex.seriesProgression?.[si]?.label || dynLabel || '';
+                if (isClusterMethod) {
+                  // Rest-Pause: suporta "C1 — Série", "C1 — Pausa 1", "Cluster 1 — Série" etc
+                  const cMatch = lbl.match(/(?:Cluster\s*|C)(\d+)\s*[—\-]\s*(.+)/i);
+                  if (cMatch) {
+                    setNumLabel = `C${cMatch[1]}`;
+                    const part = cMatch[2].toLowerCase();
+                    setSubLabel = part.includes('pausa') || part.startsWith('p') ? 'Pausa' : 'Série';
+                  } else {
+                    // fallback: detectar número do cluster no label
+                    const numMatch = lbl.match(/\d+/);
+                    setNumLabel = numMatch ? `C${numMatch[0]}` : `S${si+1}`;
+                    setSubLabel = lbl.toLowerCase().includes('pausa') ? 'Pausa' : 'Série';
+                  }
+                } else if (ex.method === 'Unilateral') {
+                  // Unilateral: mostrar lado
+                  const ladoD = lbl.toLowerCase().includes('lado d') || lbl.toLowerCase().includes('direito');
+                  const ladoE = lbl.toLowerCase().includes('lado e') || lbl.toLowerCase().includes('esquerdo');
+                  const sMatch = lbl.match(/S(\d+)/i);
+                  setNumLabel = sMatch ? `S${sMatch[1]}` : `S${si+1}`;
+                  setSubLabel = ladoD ? 'Dir.' : ladoE ? 'Esq.' : '';
+                } else {
+                  // Outros métodos: mostrar label curta
+                  // Ex: "S1 — Leve" → badge "S1" + sub "Leve"
+                  // Ex: "Ex A — S1" → badge "A" + sub lbl parcial
+                  const sMatch = lbl.match(/^S(\d+)/i);
+                  const exMatch = lbl.match(/^Ex\s*([A-Z])/i);
+                  const blocoMatch = lbl.match(/^Bloco\s*(\d+)/i);
+                  if (sMatch) {
+                    setNumLabel = `S${sMatch[1]}`;
+                    const after = lbl.replace(/^S\d+\s*[—-]\s*/i,'').trim();
+                    setSubLabel = after.length > 0 && after.length <= 8 ? after : after.split(' ')[0];
+                  } else if (exMatch) {
+                    setNumLabel = `Ex${exMatch[1]}`;
+                    const sNum = lbl.match(/S(\d+)/i);
+                    setSubLabel = sNum ? `S${sNum[1]}` : '';
+                  } else if (blocoMatch) {
+                    setNumLabel = `B${blocoMatch[1]}`;
+                    const exNum = lbl.match(/Ex\s*(\d+)/i);
+                    setSubLabel = exNum ? `E${exNum[1]}` : '';
+                  }
                 }
               }
 
+              // Cor do badge por tipo
+              const isDeloadRow = ex.seriesProgression?.[si]?.rest === 0 && setSubLabel.includes('P');
+              const badgeColor = isDeloadRow ? '#f59e0b'
+                : ex.method === 'Unilateral' && setSubLabel === 'Dir.' ? '#818cf8'
+                : ex.method === 'Unilateral' && setSubLabel === 'Esq.' ? '#06b6d4'
+                : 'var(--portal-primary, #6366f1)';
+
               return `
                 <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-                  <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1">
-                    <span>${setNumLabel}</span>
-                    ${setSubLabel ? `<span style="font-size:0.55em;opacity:0.7">${setSubLabel}</span>` : ''}
+                  <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:36px;color:${badgeColor}">
+                    <span style="font-size:0.72rem;font-weight:800">${setNumLabel}</span>
+                    ${setSubLabel ? `<span style="font-size:0.52rem;opacity:0.8;white-space:nowrap">${setSubLabel}</span>` : ''}
                   </span>
                   <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
                   <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
@@ -3633,7 +3711,6 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         ds.push({ label: '% Gordura', data: compAss.map(a => a.percentualGordura || null), borderColor: '#f59e0b', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [5,3], pointRadius: 3 });
         ds.push({ label: '% Massa Magra', data: compAss.map(a => a.percentualGordura ? parseFloat((100 - a.percentualGordura).toFixed(1)) : null), borderColor: '#06b6d4', fill: false, tension: 0.3, yAxisID: 'y1', borderDash: [2,2], pointRadius: 3 });
       }
-      
       if (ds.length) createPortalChart('portalMeasuresChart', measCtx, {
         type: 'line',
         data: { labels: compAss.map(a => fmtDate(a.date)), datasets: ds },

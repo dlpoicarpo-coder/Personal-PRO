@@ -774,7 +774,40 @@ export function initPreForm() {
       // ID determinístico para permitir mesclagem de check-ins do mesmo dia
       data.id = 'bf_' + data.studentId + '_' + data.date.substring(0, 10);
 
+      // 1. Salvar no biofeedback
       await publicAdd('biofeedback', data);
+
+      // 2. Atualizar session.preBiofeedback se houver sessão do mesmo dia
+      //    Isso garante que o live tracker veja os dados imediatamente
+      try {
+        const todayStr = data.date.substring(0, 10);
+        // Buscar sessões recentes do aluno para encontrar a do dia
+        const sessionsRes = await fetch(
+          `/api/supabase?table=sessions&studentId=${encodeURIComponent(data.studentId)}&date=${encodeURIComponent(todayStr)}`
+        );
+        if (sessionsRes.ok) {
+          const sessions = await sessionsRes.json();
+          const todaySession = (Array.isArray(sessions) ? sessions : sessions?.data || [])
+            .find(s => s.date?.startsWith(todayStr) && s.status !== 'completed');
+          if (todaySession) {
+            const preBfPayload = {
+              ...todaySession,
+              preBiofeedback: {
+                sleep: data.sleep, tqr: data.tqr, energy: data.tqr,
+                stress: data.stress, pain: data.pain, painRegions: data.painRegions || [],
+                food: data.food, motivation: data.motivation,
+                menstrual: data.menstrual, mood: data.mood,
+                submittedByStudent: true, submittedAt: data.submittedAt,
+              }
+            };
+            await publicPut('sessions', preBfPayload);
+          }
+        }
+      } catch(sessionErr) {
+        console.warn('[pre-form] Não foi possível atualizar session.preBiofeedback:', sessionErr?.message);
+        // Não bloquear — o biofeedback já foi salvo
+      }
+
       e.target.classList.add('hidden');
       document.getElementById('preSuccess')?.classList.remove('hidden');
     } catch(err) {
@@ -947,50 +980,68 @@ export function initPostForm() {
       if (!session) throw new Error('Sessão não encontrada. O link pode ter expirado.');
       {
         const dur = session.totalDuration ? Math.round(session.totalDuration/60) : 60;
-        const pse = parseInt(data.pse) || 7;
-        const tqrPost = 7; // TQR pós removido do formulário — usar neutro
-        const feeling = parseInt(data.feeling) || 3;
-        const satisfaction = feeling * 2; // Map 1-5 to 2-10
+        const pse         = parseInt(data.pse) || 7;
+        const tqrPost     = parseInt(data.tqrPost) || parseInt(data.tqr_post) || 7;
+        const feeling     = parseInt(data.feeling) || 3;
+        const satisfaction = feeling * 2;
+        const trainingLoad = Math.round(pse * dur);
 
+        // 1. Atualizar session.postBiofeedback (sem pendingStudentForm)
         session.postBiofeedback = {
-          pse,
-          tqrPost,
-          feeling,
-          satisfaction,
-          notes: data.notes||'',
+          pse, tqrPost, feeling, satisfaction, trainingLoad,
+          notes: data.notes || '',
           submittedByStudent: true,
           submittedAt: Calc.nowISO(),
+          pendingStudentForm: false,
         };
         await publicPut('sessions', session);
 
-        // Atualizar ou criar registro biofeedback
+        // 2. Merge com biofeedback do mesmo dia
+        const dateStr = (session.date || Calc.nowISO()).substring(0, 10);
         const studentId = session.studentId || session.student_id || '';
-        const trainerId = data.trainerId || session.trainerId || session.trainer_id || '';
-        const bfId = 'bf_' + studentId + '_' + (session.date||Calc.nowISO()).substring(0, 10);
+        const trainerId = session.trainerId || data.trainerId || session.trainer_id || '';
+        const bfId = 'bf_' + studentId + '_' + dateStr;
         let existingBf = null;
         try { existingBf = await publicGetWithRetry('biofeedback', bfId); } catch(e) {}
 
+        const preBf = session.preBiofeedback || existingBf || {};
+
+        const mergedBf = {
+          // Pré-treino (manter valores existentes se já salvos)
+          sleep:        preBf.sleep        || existingBf?.sleep        || null,
+          tqr:          preBf.tqr          || existingBf?.tqr          || null,
+          energy:       preBf.energy       || existingBf?.energy       || null,
+          stress:       preBf.stress       || existingBf?.stress       || null,
+          pain:         preBf.pain         || existingBf?.pain         || null,
+          painRegions:  preBf.painRegions  || existingBf?.painRegions  || [],
+          food:         preBf.food         || existingBf?.food         || null,
+          motivation:   preBf.motivation   || existingBf?.motivation   || null,
+          menstrual:    preBf.menstrual    || existingBf?.menstrual    || null,
+          mood:         preBf.mood         || existingBf?.mood         || null,
+          // Pós-treino
+          pse, tqrPost, feeling, satisfaction, trainingLoad,
+          duration: dur,
+          notes: existingBf?.notes
+            ? existingBf.notes + (data.notes ? ' | Pós: ' + data.notes : '')
+            : (data.notes || ''),
+          postNotes: data.notes || '',
+          // Metadados
+          id: bfId,
+          studentId: session.studentId,
+          trainerId: session.trainerId || data.trainerId || '',
+          trainer_id: session.trainerId || data.trainerId || '',
+          date: session.date || (dateStr + 'T12:00:00.000Z'),
+          formType: 'complete',
+          sessionId: data.sessionId || session.id,
+          submittedByStudent: true,
+          submittedAt: Calc.nowISO(),
+          completedAt: Calc.nowISO(),
+        };
+
         if (existingBf) {
-          await publicPut('biofeedback', {
-            ...existingBf,
-            pse, tqrPost, duration: dur,
-            trainingLoad: pse * dur,
-            satisfaction,
-            notes: existingBf.notes ? existingBf.notes + (data.notes ? ' | Pós: '+data.notes : '') : data.notes||'',
-            postNotes: data.notes||'',
-            formType: 'complete',
-            sessionId: data.sessionId, completedAt: Calc.nowISO(),
-          });
+          await publicPut('biofeedback', { ...existingBf, ...mergedBf });
         } else {
-          await publicAdd('biofeedback', {
-            id: bfId,
-            studentId: studentId, trainerId: trainerId,
-            date: session.date||Calc.nowISO(),
-            pse, tqrPost, duration: dur, trainingLoad: pse*dur,
-            satisfaction,
-            notes: data.notes||'',
-            formType:'post', sessionId: data.sessionId,
-          });
+          await publicAdd('biofeedback', mergedBf);
         }
       }
 

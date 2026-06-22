@@ -228,9 +228,16 @@ class Database {
         }
 
         // 2. Add remote items that don't exist locally
+        // Re-ler tombstones frescos do localStorage para capturar deleções que
+        // aconteceram durante este sync (evita re-importar itens recém-excluídos)
+        const freshTombstones = new Set(
+          this._getTombstones(trainerId)
+            .filter(t => t.storeName === storeName)
+            .map(t => t.id)
+        );
         for (const remoteItem of remote) {
           if (!remoteItem.id) continue;
-          if (currentStoreTombstones.has(remoteItem.id)) continue;
+          if (freshTombstones.has(remoteItem.id)) continue;
           if (!merged.has(remoteItem.id)) {
             merged.set(remoteItem.id, remoteItem);
           }
@@ -852,14 +859,17 @@ class Database {
       const { error } = await q;
       if (!error) {
         this._removeTombstone(storeName, id, trainerId);
+        console.log(`[Delete] Remote delete OK for ${storeName} ID ${id}`);
       } else {
         console.warn(`Supabase delete error (${storeName}):`, error.message);
+        // Tombstone permanece para retry no próximo syncBothWays
       }
-    } catch {}
-
-    if (trainerId) {
-      setTimeout(() => this.syncBothWays(trainerId).catch(() => {}), 500);
+    } catch (err) {
+      console.warn(`Supabase delete exception:`, err.message);
+      // Tombstone permanece para retry
     }
+    // NÃO disparar syncBothWays aqui — evita race condition onde o item
+    // recém-excluído ainda aparece no Supabase e é re-importado
   }
 
   // ── CLEAR ──
