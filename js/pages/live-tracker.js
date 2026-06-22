@@ -663,7 +663,7 @@ export function initTracker(navigateFn) {
         title: `Editar Sessão — ${student?.name||'Aluno'}`,
         size: 'xl',
         content: `
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:14px">
             <div class="form-group">
               <label class="form-label">Data</label>
               <input class="form-input" type="date" id="editSessDate" value="${sessDate}" />
@@ -678,6 +678,10 @@ export function initTracker(navigateFn) {
             <div class="form-group">
               <label class="form-label">PSE geral</label>
               <input class="form-input" type="number" id="editSessPse" value="${pse}" min="1" max="10" placeholder="1-10" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duração (min)</label>
+              <input class="form-input" type="number" id="editSessDuration" value="${durMin}" min="1" placeholder="min" />
             </div>
           </div>
           <div style="margin-bottom:8px">
@@ -723,6 +727,8 @@ export function initTracker(navigateFn) {
             const newDate  = document.getElementById('editSessDate')?.value || sessDate;
             const newWkId  = document.getElementById('editSessWorkout')?.value || session.workoutId;
             const newWk    = newWkId ? workouts.find(w=>w.id===newWkId) : null;
+            const newDurMin = parseInt(document.getElementById('editSessDuration')?.value) || durMin || 0;
+            const newTotalDuration = newDurMin * 60;
 
             const updated = {
               ...session,
@@ -732,6 +738,8 @@ export function initTracker(navigateFn) {
               setLog:       newSetLog,
               totalVolume:  Math.round(newVol),
               totalSets:    newSets,
+              totalDuration: newTotalDuration,
+              workSeconds:  newTotalDuration,
               postBiofeedback: {
                 ...(session.postBiofeedback||{}),
                 pse: pseParse,
@@ -739,6 +747,52 @@ export function initTracker(navigateFn) {
             };
 
             await db.put('sessions', updated);
+
+            // Sincronizar com tabela biofeedback
+            try {
+              const allBfs = await db.getAll('biofeedback');
+              let bf = allBfs.find(b => b.sessionId === session.id);
+              if (!bf) {
+                const bfId = 'bf_' + session.studentId + '_' + session.date.substring(0, 10);
+                bf = await db.get('biofeedback', bfId);
+              }
+
+              const trainingLoad = Calc.cargaTreino ? Calc.cargaTreino(pseParse, newDurMin) : (pseParse * newDurMin);
+
+              if (bf) {
+                const updatedBf = {
+                  ...bf,
+                  date: newDate,
+                  pse: pseParse,
+                  duration: newDurMin,
+                  trainingLoad: trainingLoad,
+                };
+                const oldBfId = bf.id;
+                const newBfId = 'bf_' + session.studentId + '_' + newDate.substring(0, 10);
+                if (oldBfId !== newBfId) {
+                  await db.delete('biofeedback', oldBfId);
+                  updatedBf.id = newBfId;
+                }
+                await db.put('biofeedback', updatedBf);
+              } else {
+                const newBfId = 'bf_' + session.studentId + '_' + newDate.substring(0, 10);
+                const newBf = {
+                  id: newBfId,
+                  studentId: session.studentId,
+                  date: newDate,
+                  pse: pseParse,
+                  duration: newDurMin,
+                  trainingLoad: trainingLoad,
+                  sessionId: session.id,
+                  formType: 'complete',
+                  submittedAt: new Date().toISOString()
+                };
+                await db.put('biofeedback', newBf);
+              }
+            } catch (bfErr) {
+              console.error('Erro ao sincronizar biofeedback na edição:', bfErr);
+            }
+
             notify.success('Sessão atualizada!');
             closeModal();
             navigateFn('/tracker');
