@@ -22,6 +22,7 @@ const ICON_DROP   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="
 const ICON_PIN    = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
 const ICON_CHART  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`;
 const ICON_CLOCK  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+const ICON_FOOD   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M12 22c4.97 0 9-3.03 9-9 0-3.83-2.62-5.7-5.5-5.7-1.84 0-2.88.94-3.5 1.7-.62-.76-1.66-1.7-3.5-1.7C6.12 7.3 3.5 9.17 3.5 13c0 5.97 4.03 9 9 9Z"/><path d="M12 7V3a1 1 0 0 1 1-1h2"/></svg>`;
 
 function colorForVal(val, inverse) {
   if (val == null) return 'var(--text-muted)';
@@ -277,17 +278,17 @@ export function initBiofeedback(navigateFn) {
           </div>
         </div>
         ${[
-          { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 5 = muito bem',                    val: 4, max: 5 },
-          { id:'tqr',        label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: 5, max: 10 },
-          { id:'food',       label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: 4, max: 5 },
-          { id:'stress',     label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: 5, max: 10 },
-          { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 5 = dor intensa',                    val: 1, max: 5,
+          { id:'sleep',      icon: ICON_MOON,   label:'Como dormiu?',                      hint:'1 = muito mal · 5 = muito bem',                    val: 4, max: 5 },
+          { id:'tqr',        icon: ICON_ZAP,    label:'TQR — Nível de recuperação?',       hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: 5, max: 10 },
+          { id:'food',       icon: ICON_FOOD,   label:'Alimentação nas últimas 24h?',      hint:'1 = péssima · 5 = excelente',                       val: 4, max: 5 },
+          { id:'stress',     icon: ICON_BRAIN,  label:'Nível de estresse?',                hint:'1 = relaxado · 10 = muito estressado',              val: 5, max: 10 },
+          { id:'pain',       icon: ICON_PAIN,   label:'Sente alguma dor?',                 hint:'1 = nenhuma · 5 = dor intensa',                    val: 1, max: 5,
             extra:`document.getElementById('painGrp').style.display=this.value>=2?'block':'none'` },
-          { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 5 = muito alta',                 val: 4, max: 5 },
+          { id:'motivation', icon: ICON_FIRE,   label:'Motivação para treinar?',           hint:'1 = muito baixa · 5 = muito alta',                 val: 4, max: 5 },
         ].map(f=>`
           <div class="form-group" style="margin-bottom:14px">
             <div class="flex items-center justify-between mb-xs">
-              <label class="form-label" style="margin:0">${f.label}</label>
+              <label class="form-label" style="margin:0;display:flex;align-items:center;gap:6px">${f.icon} ${f.label}</label>
               <span style="font-size:1.2rem;font-weight:800;color:var(--primary)" id="bfV_${f.id}">${f.val}</span>
             </div>
             <input type="range" name="${f.id}" min="1" max="${f.max}" value="${f.val}"
@@ -299,7 +300,7 @@ export function initBiofeedback(navigateFn) {
             </div>
           </div>`).join('')}
         <div class="form-group" style="margin-bottom:14px">
-          <label class="form-label">🩸 Ciclo Menstrual (Se aplicável)</label>
+          <label class="form-label" style="display:flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual (Se aplicável)</label>
           <select class="form-select" name="menstrualCycle" style="font-size:0.85rem">
             <option value="">Não se aplica / Prefiro não informar</option>
             <option value="Menstruacao">Menstruação</option>
@@ -538,17 +539,17 @@ function bindBfActions(navigateFn, studentsCache) {
             </div>
           </div>
           ${[
-            { id:'sleep',      label:'😴 Como dormiu?',                   hint:'1 = muito mal · 5 = muito bem',                    val: sleepUiVal, max: 5 },
-            { id:'tqr',        label:'⚡ TQR — Nível de recuperação?',    hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5, max: 10 },
-            { id:'food',       label:'🍎 Alimentação nas últimas 24h?',    hint:'1 = péssima · 5 = excelente',                       val: entry.food || 4, max: 5 },
-            { id:'stress',     label:'🧠 Nível de estresse?',             hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5, max: 10 },
-            { id:'pain',       label:'🤕 Sente alguma dor?',              hint:'1 = nenhuma · 5 = dor intensa',                    val: painUiVal, max: 5,
+            { id:'sleep',      icon: ICON_MOON,   label:'Como dormiu?',                      hint:'1 = muito mal · 5 = muito bem',                    val: sleepUiVal, max: 5 },
+            { id:'tqr',        icon: ICON_ZAP,    label:'TQR — Nível de recuperação?',       hint:'1 = exausto/sem recuperação · 10 = totalmente recuperado', val: entry.tqr ?? entry.energy ?? 5, max: 10 },
+            { id:'food',       icon: ICON_FOOD,   label:'Alimentação nas últimas 24h?',      hint:'1 = péssima · 5 = excelente',                       val: entry.food || 4, max: 5 },
+            { id:'stress',     icon: ICON_BRAIN,  label:'Nível de estresse?',                hint:'1 = relaxado · 10 = muito estressado',              val: entry.stress || 5, max: 10 },
+            { id:'pain',       icon: ICON_PAIN,   label:'Sente alguma dor?',                 hint:'1 = nenhuma · 5 = dor intensa',                    val: painUiVal, max: 5,
               extra:`document.getElementById('editPainGrp').style.display=this.value>=2?'block':'none'` },
-            { id:'motivation', label:'🔥 Motivação para treinar?',    hint:'1 = muito baixa · 5 = muito alta',                 val: motivationUiVal, max: 5 },
+            { id:'motivation', icon: ICON_FIRE,   label:'Motivação para treinar?',           hint:'1 = muito baixa · 5 = muito alta',                 val: motivationUiVal, max: 5 },
           ].map(f=>`
             <div class="form-group" style="margin-bottom:14px">
               <div class="flex items-center justify-between mb-xs">
-                <label class="form-label" style="margin:0">${f.label}</label>
+                <label class="form-label" style="margin:0;display:flex;align-items:center;gap:6px">${f.icon} ${f.label}</label>
                 <span style="font-size:1.2rem;font-weight:800;color:var(--primary)" id="editBfV_${f.id}">${f.val}</span>
               </div>
               <input type="range" name="${f.id}" min="1" max="${f.max}" value="${f.val}"
@@ -560,7 +561,7 @@ function bindBfActions(navigateFn, studentsCache) {
               </div>
             </div>`).join('')}
           <div class="form-group" style="margin-bottom:14px">
-            <label class="form-label">🩸 Ciclo Menstrual (Se aplicável)</label>
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual (Se aplicável)</label>
             <select class="form-select" name="menstrualCycle" style="font-size:0.85rem">
               <option value="" ${!entry.menstrualCycle?'selected':''}>Não se aplica / Prefiro não informar</option>
               <option value="Menstruacao" ${entry.menstrualCycle==='Menstruacao'?'selected':''}>Menstruação</option>
