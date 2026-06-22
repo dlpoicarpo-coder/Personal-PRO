@@ -654,6 +654,7 @@ export function initTracker(navigateFn) {
 
       const pse      = session.postBiofeedback?.pse || '';
       const sessDate = session.date ? session.date.slice(0,10) : Calc.todayLocal();
+      const durMin   = Math.round((session.totalDuration || 0) / 60);
       const wkOptions = workouts
         .filter(w => w.studentId === session.studentId)
         .map(w => `<option value="${w.id}" ${w.id===session.workoutId?'selected':''}>${w.name}</option>`)
