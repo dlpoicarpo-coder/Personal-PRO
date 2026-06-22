@@ -109,6 +109,7 @@ export async function renderTracker() {
       preBiofeedback: s.preBiofeedback || {
         sleep: bf.sleep, tqr: bf.tqr || bf.energy, stress: bf.stress,
         pain: bf.pain, painRegions: bf.painRegions, food: bf.food, motivation: bf.motivation,
+        menstrual: bf.menstrual, mood: bf.mood, notes: bf.notes,
       },
       postBiofeedback: {
         ...(s.postBiofeedback || {}),
@@ -298,6 +299,45 @@ function renderLiveView(students) {
       </div>
       <div class="text-center text-xs text-muted mb-md">${doneSets}/${totalSets} séries · ${pct}% concluído</div>
 
+      <!-- Painel de Métricas Superior (Stats Grid) -->
+      <div class="stats-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px">
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.1)">
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Total
+          </div>
+          <div id="liveTotal" style="font-size:1.35rem;font-weight:800;font-family:monospace;color:var(--primary);line-height:1">00:00</div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.1)">
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Trabalho
+          </div>
+          <div id="liveWork" style="font-size:1.35rem;font-weight:800;font-family:monospace;color:var(--success);line-height:1">00:00</div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.1)">
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="10" x2="10" y1="15" y2="9"/><line x1="14" x2="14" y1="15" y2="9"/></svg>
+            Descanso
+          </div>
+          <div id="liveRest" style="font-size:1.35rem;font-weight:800;font-family:monospace;color:var(--warning);line-height:1">00:00</div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.1)">
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+            Densidade
+          </div>
+          <div id="liveDens" style="font-size:1.35rem;font-weight:800;font-family:monospace;color:var(--accent);line-height:1">0.00</div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.1)">
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>
+            Volume
+          </div>
+          <div id="liveVol" style="font-size:1.35rem;font-weight:800;font-family:monospace;color:#eab308;line-height:1">${totalVolume()} kg</div>
+        </div>
+      </div>
+
       <!-- NOVO LAYOUT: 2 colunas -->
       <div style="display:grid;grid-template-columns:1fr 300px;gap:12px;align-items:start">
 
@@ -479,13 +519,13 @@ function renderLiveView(students) {
           </div>
         </div>
 
-        <!-- ── COLUNA DIREITA: Cronômetro + Descanso + Anotações ── -->
+        <!-- ── COLUNA DIREITA: Descanso + Anotações ── -->
         <div style="display:flex;flex-direction:column;gap:10px;position:sticky;top:80px">
 
-          <!-- Cronômetro geral -->
-          <div class="card" style="padding:12px;text-align:center">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-              <span style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Sessão</span>
+          <!-- Timer de descanso -->
+          <div class="card" style="padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Descanso</span>
               <div style="display:flex;align-items:center;gap:8px">
                 <span id="restStateTag" style="font-size:0.65rem;font-weight:700;color:var(--success)">▶ TRABALHANDO</span>
                 <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;cursor:pointer;color:var(--text-muted)">
@@ -493,31 +533,6 @@ function renderLiveView(students) {
                 </label>
               </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
-                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Total</div>
-                <div id="liveTotal" style="font-size:1.3rem;font-weight:800;font-family:monospace;color:var(--primary)">00:00</div>
-              </div>
-              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
-                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Trabalho</div>
-                <div id="liveWork" style="font-size:1.3rem;font-weight:800;font-family:monospace;color:var(--success)">00:00</div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
-                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Descanso</div>
-                <div id="liveRest" style="font-size:1.1rem;font-weight:800;font-family:monospace;color:var(--warning)">00:00</div>
-              </div>
-              <div style="text-align:center;background:var(--bg-page);border-radius:8px;padding:6px 4px">
-                <div style="font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Dens.</div>
-                <div id="liveDens" style="font-size:1.1rem;font-weight:800;font-family:monospace;color:var(--accent)">0.00</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Timer de descanso -->
-          <div class="card" style="padding:12px">
-            <div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Descanso</div>
             <div style="text-align:center;padding:12px 0 8px">
               <div id="restCount" style="font-size:3.2rem;font-weight:800;font-family:monospace;color:var(--accent);transition:color 0.3s;line-height:1">
                 ${formatTime(parseInt(ex.rest) || 60)}
@@ -528,19 +543,48 @@ function renderLiveView(students) {
               <button class="btn btn-primary" id="goRest" style="flex:1;font-size:0.82rem">▶ Iniciar Descanso</button>
               <button class="btn btn-secondary btn-sm" id="rstRest" style="padding:6px 10px">↺</button>
             </div>
-            <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
+            <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">
               ${[15, 30, 45, 60, 90, 120, 180].map(t => `
                 <button class="btn btn-ghost btn-sm rp" data-t="${t}" style="font-size:0.7rem;padding:3px 6px">
                   ${t >= 60 ? (t/60) + 'min' : t + 's'}
                 </button>`).join('')}
             </div>
-            ${s.preBiofeedback ? `
-            <div style="border-top:1px solid var(--border-color);padding-top:8px;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:0.72rem">
-              <span>Sono <strong style="color:${(s.preBiofeedback.sleep||0)<5?'var(--danger)':'var(--success)'}">${s.preBiofeedback.sleep ? `${Math.round(s.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
-              <span>TQR <strong>${(s.preBiofeedback.tqr ?? s.preBiofeedback.energy) || '-'}</strong></span>
-              <span>Estresse <strong style="color:${(s.preBiofeedback.stress||0)>=7?'var(--warning)':'inherit'}">${s.preBiofeedback.stress||'-'}</strong></span>
-              ${(s.preBiofeedback.pain||0)>=3?`<span>Dor <strong style="color:var(--warning)">${s.preBiofeedback.pain > 6 ? '●' : '●'}</strong></span>`:''}
-            </div>` : ''}
+            ${s.preBiofeedback ? (() => {
+              const bf = s.preBiofeedback;
+              const sleepVal = bf.sleep ? `${Math.round(bf.sleep / 2)}/5` : '—';
+              const foodVal = bf.food ? `${bf.food}/5` : '—';
+              const motivationVal = bf.motivation ? `${Math.round(bf.motivation / 2)}/5` : '—';
+              const stressVal = bf.stress ? `${bf.stress}/10` : '—';
+              const tqrVal = (bf.tqr ?? bf.energy) ? `${bf.tqr ?? bf.energy}/10` : '—';
+              
+              // Humor: se não estiver explicitamente em bf.mood, calcula como média de sleep e tqr
+              const computedMood = bf.mood ?? (bf.sleep && (bf.tqr ?? bf.energy) ? Math.round((bf.sleep + (bf.tqr ?? bf.energy)) / 2) : null);
+              const moodVal = computedMood ? `${Math.round(computedMood / 2)}/5` : '—';
+
+              let painVal = '—';
+              if (bf.pain != null) {
+                const p = parseInt(bf.pain) || 0;
+                painVal = p > 8 ? '5/5' : p > 6 ? '4/5' : p > 4 ? '3/5' : p > 2 ? '2/5' : '1/5';
+              }
+              const painRegionsStr = bf.painRegions && bf.painRegions.length ? ` (${bf.painRegions.join(', ')})` : '';
+              
+              const isMenstrual = bf.menstrual === true || bf.menstrual === 'sim';
+              
+              return `
+              <div style="border-top:1px solid var(--border-color);padding-top:10px;margin-top:10px;font-size:0.75rem;color:var(--text-secondary)">
+                <div style="font-weight:700;font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Biofeedback Pré-Treino</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                  <div>Sono: <strong style="color:${(bf.sleep||0)<6?'var(--danger)':'var(--success)'}">${sleepVal}</strong></div>
+                  <div>Alim.: <strong style="color:${(bf.food||0)<=2?'var(--danger)':'var(--success)'}">${foodVal}</strong></div>
+                  <div>Motiv.: <strong style="color:${(bf.motivation||0)<6?'var(--danger)':'var(--success)'}">${motivationVal}</strong></div>
+                  <div>Estresse: <strong style="color:${(bf.stress||0)>=7?'var(--danger)':'var(--success)'}">${stressVal}</strong></div>
+                  <div>TQR: <strong style="color:${(bf.tqr||0)<5?'var(--danger)':'var(--success)'}">${tqrVal}</strong></div>
+                  <div>Humor: <strong style="color:${(computedMood||0)<6?'var(--danger)':'var(--success)'}">${moodVal}</strong></div>
+                  <div style="grid-column:span 2">Dor: <strong style="color:${(bf.pain||0)>=5?'var(--danger)':'var(--success)'}">${painVal}${painRegionsStr}</strong></div>
+                  ${isMenstrual ? `<div style="grid-column:span 2;color:#ec4899">Ciclo Menstrual: <strong>Sim</strong></div>` : ''}
+                </div>
+              </div>`;
+            })() : ''}
           </div>
 
           <!-- Anotações -->
@@ -964,7 +1008,19 @@ export function initTracker(navigateFn) {
   sBtn?.addEventListener('click', async () => {
     const wk = await db.get('workouts', wSel.value);
     if (!wk) return;
-    const preBf = { sleep:5, tqr:5, energy:5, stress:5, pain:0 }; // defaults neutros
+    const preBf = { 
+      sleep: 8, 
+      food: 5, 
+      motivation: 8, 
+      stress: 5, 
+      tqr: 5, 
+      energy: 5, 
+      pain: 0, 
+      painRegions: [], 
+      menstrual: false, 
+      mood: 6,
+      notes: ''
+    }; // defaults neutros
     // Carregar check-in do aluno via getAllForStudent (pega formulários públicos)
     const _d2 = new Date();
     const todayStr2 = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2,'0')}-${String(_d2.getDate()).padStart(2,'0')}`;
@@ -976,11 +1032,17 @@ export function initTracker(navigateFn) {
     );
     if (todayPre) {
       Object.assign(preBf, {
-        sleep:  todayPre.sleep,
-        tqr:    todayPre.tqr ?? todayPre.energy,
-        energy: todayPre.tqr ?? todayPre.energy,
-        stress: todayPre.stress,
-        pain:   todayPre.pain,
+        sleep:       todayPre.sleep,
+        food:        todayPre.food,
+        motivation:  todayPre.motivation,
+        stress:      todayPre.stress,
+        tqr:         todayPre.tqr ?? todayPre.energy,
+        energy:      todayPre.tqr ?? todayPre.energy,
+        pain:        todayPre.pain,
+        painRegions: todayPre.painRegions || [],
+        menstrual:   todayPre.menstrual === true || todayPre.menstrual === 'sim',
+        mood:        todayPre.mood ?? Math.round((todayPre.sleep + (todayPre.tqr ?? todayPre.energy)) / 2),
+        notes:       todayPre.notes || '',
       });
       notify.success('Dados pré-treino do aluno carregados!');
     }
@@ -1840,9 +1902,13 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
           <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:5px">Check-in Pré</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem">
             <span>Sono <strong>${session.preBiofeedback.sleep ? `${Math.round(session.preBiofeedback.sleep / 2)}/5` : '—'}</strong></span>
+            <span>Alim. <strong>${session.preBiofeedback.food ? `${session.preBiofeedback.food}/5` : '—'}</strong></span>
+            <span>Motiv. <strong>${session.preBiofeedback.motivation ? `${Math.round(session.preBiofeedback.motivation / 2)}/5` : '—'}</strong></span>
             <span>TQR <strong>${(session.preBiofeedback.tqr??session.preBiofeedback.energy)||'—'}/10</strong></span>
-            <span>Est. Mental <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
-            ${(session.preBiofeedback.pain||0)>=3?`<span style="color:var(--warning)">Dor <strong>${session.preBiofeedback.pain > 8 ? 5 : session.preBiofeedback.pain > 6 ? 4 : session.preBiofeedback.pain > 4 ? 3 : session.preBiofeedback.pain > 2 ? 2 : 1}/5</strong></span>`:''}
+            <span>Estresse <strong>${session.preBiofeedback.stress||'—'}/10</strong></span>
+            <span>Humor <strong>${session.preBiofeedback.mood ? `${Math.round(session.preBiofeedback.mood / 2)}/5` : (session.preBiofeedback.sleep && (session.preBiofeedback.tqr??session.preBiofeedback.energy) ? `${Math.round(Math.round((session.preBiofeedback.sleep + (session.preBiofeedback.tqr??session.preBiofeedback.energy))/2)/2)}/5` : '—')}</strong></span>
+            <span>Dor <strong>${session.preBiofeedback.pain != null ? `${session.preBiofeedback.pain > 8 ? 5 : session.preBiofeedback.pain > 6 ? 4 : session.preBiofeedback.pain > 4 ? 3 : session.preBiofeedback.pain > 2 ? 2 : 1}/5` : '—'}${session.preBiofeedback.painRegions?.length ? ` (${session.preBiofeedback.painRegions.join(', ')})` : ''}</strong></span>
+            ${session.preBiofeedback.menstrual === true || session.preBiofeedback.menstrual === 'sim' ? `<span>Ciclo <strong>Sim</strong></span>` : ''}
           </div>
         </div>`:''}
         ${session.postBiofeedback?`<div style="padding:10px 12px;background:var(--bg-page);border-radius:8px">
