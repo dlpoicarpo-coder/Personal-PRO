@@ -752,16 +752,20 @@ export const COMBINED_METHODS = new Set([
 ]);
 
 function collectExercises() {
-  const rows = document.querySelectorAll('.exercise-row');
+  const modalBody = document.getElementById('modalBody');
+  const activeContainer = modalBody?.querySelector('#workoutForm') || document.getElementById('workoutForm');
+  if (!activeContainer) return [];
+
+  const rows = activeContainer.querySelectorAll('.exercise-row');
   const exercises = [];
   rows.forEach(row => {
     const i    = row.dataset.index;
-    const name = document.querySelector(`[name="ex_name_${i}"]`)?.value;
+    const name = row.querySelector(`[name="ex_name_${i}"]`)?.value;
     if (!name) return;
 
-    const method      = document.querySelector(`[name="ex_method_${i}"]`)?.value || '';
-    const loadType    = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
-    const trainerNotes = document.querySelector(`[name="ex_notes_${i}"]`)?.value?.trim() || '';
+    const method      = row.querySelector(`[name="ex_method_${i}"]`)?.value || '';
+    const loadType    = row.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+    const trainerNotes = row.querySelector(`[name="ex_notes_${i}"]`)?.value?.trim() || '';
     const isCombined  = COMBINED_METHODS.has(method);
     const seriesPanel = row.querySelector('.method-series-panel');
 
@@ -794,10 +798,10 @@ function collectExercises() {
       exercises.push({
         name, method, loadType, trainerNotes,
         isCombined,
-        sets:     parseInt(document.querySelector(`[name="ex_sets_${i}"]`)?.value) || 3,
-        reps:     document.querySelector(`[name="ex_reps_${i}"]`)?.value || '12',
-        load:     document.querySelector(`[name="ex_load_${i}"]`)?.value || '',
-        rest:     document.querySelector(`[name="ex_rest_${i}"]`)?.value || '60',
+        sets:     parseInt(row.querySelector(`[name="ex_sets_${i}"]`)?.value) || 3,
+        reps:     row.querySelector(`[name="ex_reps_${i}"]`)?.value || '12',
+        load:     row.querySelector(`[name="ex_load_${i}"]`)?.value || '',
+        rest:     row.querySelector(`[name="ex_rest_${i}"]`)?.value || '60',
       });
     }
   });
@@ -1301,7 +1305,9 @@ export function initWorkouts(navigateFn) {
             const saveBtn = e?.target;
             if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
             try {
-              const fd   = new FormData(document.getElementById('workoutForm'));
+              const modalBody = document.getElementById('modalBody');
+              const activeForm = modalBody?.querySelector('#workoutForm') || document.getElementById('workoutForm');
+              const fd   = new FormData(activeForm);
               const data = { ...w,
                 studentId: fd.get('studentId'),
                 name:      fd.get('name'),
@@ -1373,9 +1379,9 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
 
       if (!methodName) {
         // Limpar indicação de método
-        const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
-        const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
-        const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
+        const setsEl = row?.querySelector(`[name="ex_sets_${i}"]`);
+        const repsEl = row?.querySelector(`[name="ex_reps_${i}"]`);
+        const loadEl = row?.querySelector(`[name="ex_load_${i}"]`);
         if (setsEl) setsEl.closest('div').style.opacity = '';
         if (repsEl) repsEl.closest('div').style.opacity = '';
         if (loadEl) loadEl.closest('div').style.opacity = '';
@@ -1383,9 +1389,9 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       }
 
       // Preencher séries/reps/descanso padrão
-      const setsEl = document.querySelector(`[name="ex_sets_${i}"]`);
-      const repsEl = document.querySelector(`[name="ex_reps_${i}"]`);
-      const restEl = document.querySelector(`[name="ex_rest_${i}"]`);
+      const setsEl = row?.querySelector(`[name="ex_sets_${i}"]`);
+      const repsEl = row?.querySelector(`[name="ex_reps_${i}"]`);
+      const restEl = row?.querySelector(`[name="ex_rest_${i}"]`);
       const sets   = opt?.dataset.sets;
       const reps   = opt?.dataset.reps;
       const rest   = opt?.dataset.rest;
@@ -1474,8 +1480,8 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
         }
         return;
       }
-      const baseLoad = parseFloat(document.querySelector(`[name="ex_load_${i}"]`)?.value) || 0;
-      const loadType = document.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
+      const baseLoad = parseFloat(row?.querySelector(`[name="ex_load_${i}"]`)?.value) || 0;
+      const loadType = row?.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
       const isTime   = loadType === 'time';
 
       // Atualizar contador de séries
@@ -1556,7 +1562,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       panel.querySelector('.method-base-load')?.addEventListener('input', e => {
         const newBase = parseFloat(e.target.value) || 0;
         // Atualizar campo principal de carga
-        const mainLoad = document.querySelector(`[name="ex_load_${i}"]`);
+        const mainLoad = row?.querySelector(`[name="ex_load_${i}"]`);
         if (mainLoad && newBase) mainLoad.value = newBase;
         panel.querySelectorAll('.serie-load').forEach((inp, si) => {
           const s = progression.series[si];
@@ -1569,7 +1575,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       });
 
       // Sincronizar carga base se já preenchida
-      const mainLoadEl = document.querySelector(`[name="ex_load_${i}"]`);
+      const mainLoadEl = row?.querySelector(`[name="ex_load_${i}"]`);
       if (mainLoadEl) {
         mainLoadEl.addEventListener('input', e => {
           const newBase = parseFloat(e.target.value) || 0;
@@ -1593,9 +1599,11 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       const ex = allExercises.find(e => e.name.toLowerCase() === inp.value.toLowerCase());
       if (!ex) return;
       const i     = inp.dataset.index;
-      const ltSel = document.querySelector(`[name="ex_loadtype_${i}"]`);
-      const repsEl= document.querySelector(`[name="ex_reps_${i}"]`);
-      const lbl   = document.getElementById(`loadLbl_${i}`);
+      const row   = inp.closest('.exercise-row');
+      if (!row) return;
+      const ltSel = row.querySelector(`[name="ex_loadtype_${i}"]`);
+      const repsEl= row.querySelector(`[name="ex_reps_${i}"]`);
+      const lbl   = row.querySelector(`#loadLbl_${i}`);
       if (ex.loadType && ltSel) ltSel.value = ex.loadType;
       if (ex.defaultReps && repsEl && (!repsEl.value || repsEl.value === '12')) repsEl.value = ex.defaultReps;
       if (lbl) lbl.textContent = ex.loadType === 'time' ? 'Intensidade' : ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
@@ -1606,10 +1614,12 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
   document.querySelectorAll('.ex-loadtype').forEach(sel => {
     sel.addEventListener('change', () => {
       const i   = sel.dataset.index;
-      const lbl = document.getElementById(`loadLbl_${i}`);
+      const row = sel.closest('.exercise-row');
+      if (!row) return;
+      const lbl = row.querySelector(`#loadLbl_${i}`);
       const lt  = sel.value;
       if (lbl) lbl.textContent = lt === 'time' ? 'Intensidade' : lt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
-      const loadEl = document.querySelector(`[name="ex_load_${i}"]`);
+      const loadEl = row.querySelector(`[name="ex_load_${i}"]`);
       if (loadEl) loadEl.placeholder = lt === 'time' ? 'km/h/W' : lt === 'bodyweight' ? '+kg' : 'kg';
     });
   });
@@ -1617,6 +1627,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
   // ── Sincronizar painéis de métodos pré-existentes (na edição) ──
   document.querySelectorAll('.method-series-panel').forEach(panel => {
     const row = panel.closest('.exercise-row');
+    if (!row) return;
     const i = row.dataset.index;
     const methodName = row.querySelector('.ex-method')?.value;
     const progression = METHOD_PROGRESSIONS[methodName];
@@ -1626,7 +1637,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
 
     panel.querySelector('.method-base-load')?.addEventListener('input', e => {
       const newBase = parseFloat(e.target.value) || 0;
-      const mainLoad = document.querySelector(`[name="ex_load_${i}"]`);
+      const mainLoad = row.querySelector(`[name="ex_load_${i}"]`);
       if (mainLoad && newBase) mainLoad.value = newBase;
       panel.querySelectorAll('.serie-load').forEach((inp, si) => {
         const s = progression.series[si];
@@ -1638,7 +1649,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       });
     });
 
-    const mainLoadEl = document.querySelector(`[name="ex_load_${i}"]`);
+    const mainLoadEl = row.querySelector(`[name="ex_load_${i}"]`);
     if (mainLoadEl) {
       mainLoadEl.addEventListener('input', e => {
         const newBase = parseFloat(e.target.value) || 0;

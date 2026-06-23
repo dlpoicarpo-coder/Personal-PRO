@@ -28,6 +28,9 @@ const state = {
   workSec:  0,
   isResting: false,
   tempSets: {},
+  autoSaveInterval: null,
+  onVisibilityChange: null,
+  onBeforeUnload: null,
 };
 
 function resetState() {
@@ -35,6 +38,18 @@ function resetState() {
   if (state.workoutTimer) { state.workoutTimer.stop(); state.workoutTimer = null; }
   if (state.restTimer)    { state.restTimer.stop();    state.restTimer = null; }
   if (state.workTimer)    { state.workTimer.stop();    state.workTimer = null; }
+  
+  // Limpar listeners do autosave
+  if (state.autoSaveInterval) { clearInterval(state.autoSaveInterval); state.autoSaveInterval = null; }
+  if (state.onVisibilityChange) {
+    document.removeEventListener('visibilitychange', state.onVisibilityChange);
+    state.onVisibilityChange = null;
+  }
+  if (state.onBeforeUnload) {
+    window.removeEventListener('beforeunload', state.onBeforeUnload);
+    state.onBeforeUnload = null;
+  }
+
   state.session = null; state.exIdx = 0; state.setIdx = 0;
   state.setLog = []; state.workSec = 0; state.isResting = false; state.tempSets = {};
 }
@@ -516,6 +531,10 @@ function renderLiveView(students) {
                 ${e.load ? `<span style="font-size:0.68rem;color:var(--text-muted)">${isNumeric(e.load) ? e.load + 'kg' : e.load}</span>` : ''}
               </div>`;
             }).join('')}
+            <button class="btn btn-ghost btn-sm" id="addExtraExBtn" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--primary);border:1px dashed var(--primary);border-radius:6px;padding:6px">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              + Exercício Extra
+            </button>
           </div>
         </div>
 
@@ -1067,7 +1086,7 @@ export function initTracker(navigateFn) {
   // Work timer
   if (!state.workTimer) {
     state.workTimer = new Timer({ mode: 'stopwatch' });
-    state.workTimer.elapsed = state.workSec;
+    state.workTimer.elapsed = 0;
     if (!state.isResting) state.workTimer.start();
   }
 
@@ -1078,7 +1097,7 @@ export function initTracker(navigateFn) {
     // workSec acumulado: soma do tempo de trabalho de todas as séries anteriores
     // + tempo atual do workTimer (se estiver rodando)
     const currentWork = state.isResting ? 0 : (state.workTimer?.getElapsed() || 0);
-    const totalWork = state.workSec + currentWork;
+    const totalWork = Math.min(tot, state.workSec + currentWork);
     const t = document.getElementById('liveTotal');
     const w = document.getElementById('liveWork');
     const r = document.getElementById('liveRest');
@@ -1127,23 +1146,34 @@ export function initTracker(navigateFn) {
     }
   }
 
-  const autoSaveInterval = setInterval(autoSaveSession, 30000);
+  // Limpar listeners antigos antes de registrar novos (evita acúmulo)
+  if (state.autoSaveInterval) clearInterval(state.autoSaveInterval);
+  if (state.onVisibilityChange) document.removeEventListener('visibilitychange', state.onVisibilityChange);
+  if (state.onBeforeUnload) window.removeEventListener('beforeunload', state.onBeforeUnload);
+
+  state.autoSaveInterval = setInterval(autoSaveSession, 30000);
 
   // Salvar ao minimizar / trocar de aba
-  const onVisibilityChange = () => {
+  state.onVisibilityChange = () => {
     if (document.hidden) autoSaveSession();
   };
-  document.addEventListener('visibilitychange', onVisibilityChange);
+  document.addEventListener('visibilitychange', state.onVisibilityChange);
 
   // Salvar ao fechar a aba (beforeunload)
-  const onBeforeUnload = () => autoSaveSession();
-  window.addEventListener('beforeunload', onBeforeUnload);
+  state.onBeforeUnload = () => autoSaveSession();
+  window.addEventListener('beforeunload', state.onBeforeUnload);
 
   // Limpar listeners ao finalizar
   function cleanupAutoSave() {
-    clearInterval(autoSaveInterval);
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-    window.removeEventListener('beforeunload', onBeforeUnload);
+    if (state.autoSaveInterval) { clearInterval(state.autoSaveInterval); state.autoSaveInterval = null; }
+    if (state.onVisibilityChange) {
+      document.removeEventListener('visibilitychange', state.onVisibilityChange);
+      state.onVisibilityChange = null;
+    }
+    if (state.onBeforeUnload) {
+      window.removeEventListener('beforeunload', state.onBeforeUnload);
+      state.onBeforeUnload = null;
+    }
   }
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
   const exs_all = state.session.exercises || [];
@@ -1644,9 +1674,84 @@ export function initTracker(navigateFn) {
       }
       state.setIdx = 0;
 
-      await db.put('sessions', state.session);
-      closeModal();
-      refreshLive();
+    });
+  });
+
+  // Adicionar Exercício Extra
+  document.getElementById('addExtraExBtn')?.addEventListener('click', async () => {
+    const allEx = await db.getAll('exercises');
+
+    openModal({
+      title: 'Adicionar Exercício Extra', size: 'md',
+      content: `
+        <div class="form-group">
+          <label class="form-label">Nome do Exercício *</label>
+          <input class="form-input" id="extraExName" placeholder="Selecione ou digite..." list="extraExDatalist" required />
+          <datalist id="extraExDatalist">
+            ${allEx.map(e => `<option value="${e.name}">`).join('')}
+          </datalist>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Séries *</label>
+            <input class="form-input" type="number" id="extraExSets" value="3" min="1" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reps *</label>
+            <input class="form-input" id="extraExReps" value="12" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Carga / Intensidade</label>
+            <input class="form-input" id="extraExLoad" placeholder="kg ou zona" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descanso (s)</label>
+            <input class="form-input" type="number" id="extraExRest" value="60" min="0" />
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Orientações do Personal</label>
+            <input class="form-input" id="extraExNotes" placeholder="Ex: focar na fase excêntrica..." />
+          </div>
+        </div>
+      `,
+      actions: [
+        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+        { label: 'Adicionar', class: 'btn-primary', onClick: async () => {
+            const name = document.getElementById('extraExName')?.value?.trim();
+            if (!name) { notify.error('Nome do exercício é obrigatório'); return; }
+            const sets = parseInt(document.getElementById('extraExSets')?.value) || 3;
+            const reps = document.getElementById('extraExReps')?.value || '12';
+            const load = document.getElementById('extraExLoad')?.value || '';
+            const rest = parseInt(document.getElementById('extraExRest')?.value) || 60;
+            const notes = document.getElementById('extraExNotes')?.value || '';
+
+            const exObj = allEx.find(e => e.name.toLowerCase() === name.toLowerCase());
+            const loadType = exObj?.loadType || 'weight';
+
+            const newEx = {
+              name,
+              sets,
+              reps,
+              load,
+              rest,
+              loadType,
+              trainerNotes: notes,
+              isExtra: true
+            };
+
+            state.session.exercises = state.session.exercises || [];
+            state.session.exercises.push(newEx);
+
+            await db.put('sessions', state.session);
+            notify.success('Exercício extra adicionado!');
+            closeModal();
+            
+            state.exIdx = state.session.exercises.length - 1;
+            state.setIdx = 0;
+            refreshLive();
+          }
+        }
+      ]
     });
   });
 
@@ -1712,6 +1817,17 @@ export function initTracker(navigateFn) {
 async function finishSession(dur, vol, dens, post, navigateFn) {
   const s = state.session;
   if (!s) { notify.error('Sessão não encontrada'); return; }
+
+  // Limpar listeners do autosave imediatamente para evitar que visibilitychange salve status 'running' de novo
+  if (state.autoSaveInterval) { clearInterval(state.autoSaveInterval); state.autoSaveInterval = null; }
+  if (state.onVisibilityChange) {
+    document.removeEventListener('visibilitychange', state.onVisibilityChange);
+    state.onVisibilityChange = null;
+  }
+  if (state.onBeforeUnload) {
+    window.removeEventListener('beforeunload', state.onBeforeUnload);
+    state.onBeforeUnload = null;
+  }
 
   const sessionData = {
     ...s, status: 'completed', endTime: Date.now(),
