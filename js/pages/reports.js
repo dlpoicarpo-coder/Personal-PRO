@@ -1125,7 +1125,6 @@ async function initReportCharts(studentId, cycleFilter = '') {
     if (ds.length) {
       const existingChart = chartsInstance?.['measuresChart'];
       if (existingChart) { existingChart.destroy(); }
-      chartsInstance = chartsInstance || {};
       chartsInstance['measuresChart'] = new Chart(mCtx, {
         type: 'line',
         data: { labels: sorted.map(a => Calc.formatDate(a.date)), datasets: ds },
