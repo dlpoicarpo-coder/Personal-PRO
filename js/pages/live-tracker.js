@@ -1478,7 +1478,12 @@ export function initTracker(navigateFn) {
     }
 
     document.getElementById('closeSetModal')?.addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    let isMouseDownOnModal = false;
+    modal.addEventListener('mousedown', e => { isMouseDownOnModal = (e.target === modal); });
+    modal.addEventListener('mouseup', e => {
+      if (isMouseDownOnModal && e.target === modal) modal.remove();
+      isMouseDownOnModal = false;
+    });
 
     document.getElementById('confirmSetBtn')?.addEventListener('click', () => {
       if (!selPse) return;

@@ -40,8 +40,12 @@ export function openModal(options = {}) {
 
   // Close handlers
   modal.querySelector('#modalCloseBtn').addEventListener('click', () => closeModal(onClose));
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
+  let isMouseDownOnModal = false;
+  modal.addEventListener('mousedown', (e) => {
+    isMouseDownOnModal = (e.target === modal);
+  });
+  modal.addEventListener('mouseup', (e) => {
+    if (isMouseDownOnModal && e.target === modal) {
       if (preventBackdropClose) {
         const modalEl = modal.querySelector('.modal');
         if (modalEl) {
@@ -53,6 +57,7 @@ export function openModal(options = {}) {
         closeModal(onClose);
       }
     }
+    isMouseDownOnModal = false;
   });
 
   // Action handlers — bind ALL actions with onClick

@@ -2368,7 +2368,12 @@ async function showExerciseModal(ex) {
   `;
 
   document.body.appendChild(modal);
-  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  let isMouseDownOnModal = false;
+  modal.addEventListener('mousedown', (e) => { isMouseDownOnModal = (e.target === modal); });
+  modal.addEventListener('mouseup', (e) => {
+    if (isMouseDownOnModal && e.target === modal) modal.remove();
+    isMouseDownOnModal = false;
+  });
   document.getElementById('closeExModal')?.addEventListener('click', () => modal.remove());
 
   // Handle media interactions (play video, image load errors)
@@ -3994,8 +3999,13 @@ function openCustomSelector(title, options, currentValue, onSelect) {
     setTimeout(() => overlay.remove(), 180);
   };
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeSheet();
+  let isMouseDownOnOverlay = false;
+  overlay.addEventListener('mousedown', (e) => {
+    isMouseDownOnOverlay = (e.target === overlay);
+  });
+  overlay.addEventListener('mouseup', (e) => {
+    if (isMouseDownOnOverlay && e.target === overlay) closeSheet();
+    isMouseDownOnOverlay = false;
   });
   document.getElementById('closePortalSelBtn')?.addEventListener('click', closeSheet);
 
@@ -4306,8 +4316,13 @@ function showPortalCheckoutModal(session) {
     setTimeout(() => overlay.remove(), 180);
   };
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeSheet();
+  let isMouseDownOnOverlay = false;
+  overlay.addEventListener('mousedown', (e) => {
+    isMouseDownOnOverlay = (e.target === overlay);
+  });
+  overlay.addEventListener('mouseup', (e) => {
+    if (isMouseDownOnOverlay && e.target === overlay) closeSheet();
+    isMouseDownOnOverlay = false;
   });
   document.getElementById('closePortalCheckoutBtn').addEventListener('click', closeSheet);
 
