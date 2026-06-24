@@ -533,7 +533,7 @@ function renderLiveView(students) {
             }).join('')}
             <button class="btn btn-ghost btn-sm" id="addExtraExBtn" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--primary);border:1px dashed var(--primary);border-radius:6px;padding:6px">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              + Exercício Extra
+              Adicionar Exercício Extra
             </button>
           </div>
         </div>

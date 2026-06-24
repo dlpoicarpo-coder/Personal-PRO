@@ -1696,7 +1696,7 @@ function initTreinar(workouts, schedules, student) {
         <button id="addExtraExBtn" type="button"
           style="width:100%;padding:10px;background:rgba(16,185,129,0.08);border:1px dashed rgba(16,185,129,0.3);border-radius:10px;color:#10b981;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Adicionar exercício
+          Adicionar Exercício Extra
         </button>
         <div id="extraExercisesBlock"></div>
       `);
