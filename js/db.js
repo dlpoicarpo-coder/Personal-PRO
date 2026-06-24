@@ -528,6 +528,10 @@ class Database {
   // ── GET SINGLE RECORD ──
   async get(storeName, id) {
     const trainerId = await this._getTrainerId();
+    const tombstones = this._getTombstones(trainerId);
+    const isDeleted = tombstones.some(t => t.storeName === storeName && t.id === id);
+    if (isDeleted) return null;
+
     const local = (this._getLocal(storeName, trainerId) || []).find(i => i.id === id) || null;
     if (!this.supabase) return fixObjectEncoding(local);
 
@@ -685,11 +689,14 @@ class Database {
         return itemData;
       });
 
+      const tombstones = this._getTombstones(trainerId);
+      const storeTombstones = new Set(tombstones.filter(t => t.storeName === storeName).map(t => t.id));
+
       // Mesclar com local (local pode ter registros offline) mantendo o registro com updatedAt mais recente
       const merged = new Map();
-      local.forEach(r => { if (r?.id) merged.set(r.id, r); });
+      local.forEach(r => { if (r?.id && !storeTombstones.has(r.id)) merged.set(r.id, r); });
       remote.forEach(r => {
-        if (r?.id) {
+        if (r?.id && !storeTombstones.has(r.id)) {
           const localItem = merged.get(r.id);
           if (localItem) {
             const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
@@ -738,8 +745,11 @@ class Database {
   // ── GET ALL FOR STUDENT (sem filtro de trainer_id) ──────────
   async getAllForStudent(storeName, studentId) {
     const trainerId = await this._getTrainerId();
+    const tombstones = this._getTombstones(trainerId);
+    const storeTombstones = new Set(tombstones.filter(t => t.storeName === storeName).map(t => t.id));
+
     const local = (this._getLocal(storeName, trainerId) || [])
-      .filter(r => r?.studentId === studentId);
+      .filter(r => r?.studentId === studentId && !storeTombstones.has(r?.id));
 
     if (!this.supabase) return fixObjectEncoding(local);
 
@@ -760,7 +770,7 @@ class Database {
           itemData._synced = true;
           return itemData;
         })
-        .filter(r => r?.studentId === studentId);
+        .filter(r => r?.studentId === studentId && !storeTombstones.has(r?.id));
       return fixObjectEncoding(res);
     } catch (e) {
       console.warn('getAllForStudent error:', e);
