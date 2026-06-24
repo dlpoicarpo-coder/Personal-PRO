@@ -713,7 +713,7 @@ async function loadSection(section) {
 
   switch (section) {
     case 'home': content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks); break;
-    case 'treinar': content.innerHTML = renderTreinar(workouts, schedules); initTreinar(workouts, schedules, student); break;
+    case 'treinar': content.innerHTML = renderTreinar(workouts, schedules, sessions); initTreinar(workouts, schedules, student, sessions); break;
     case 'sessoes': content.innerHTML = renderSessoes(sessions, schedules); break;
     case 'bio': content.innerHTML = renderBio(biofeedbacks, sid, tid); initBio(); break;
     case 'avaliacoes': content.innerHTML = renderAvaliacoes(assessments); break;
@@ -1057,7 +1057,34 @@ function getWorkoutSVG(name) {
 }
 
 // ── TREINAR (Smart) ────────────────────────────────────────────────
-function renderTreinar(workouts, schedules) {
+function renderTreinar(workouts, schedules, sessions = []) {
+  const running = sessions.find(s => s.status === 'running' && s.isSolo === true);
+  
+  const recoveryCard = running ? `
+    <div id="soloRecoveryCard" class="glass-card" style="padding:24px 20px;text-align:center;margin-top:10px;border:1px solid rgba(99,102,241,0.25)">
+      <div style="font-size:2.2rem;margin-bottom:12px;animation: pulse 2s infinite">⚡</div>
+      <style>
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.15); opacity: 1; }
+          100% { transform: scale(1); opacity: 0.8; }
+        }
+      </style>
+      <h3 style="font-size:1.15rem;margin-bottom:8px;font-weight:700;color:var(--portal-text)">Treino em Andamento</h3>
+      <p style="font-size:0.85rem;color:var(--portal-text-muted);margin-bottom:24px;line-height:1.4">
+        Você tem uma sessão ativa de <strong>${running.workoutName || 'Treino Autônomo'}</strong> iniciada em ${new Date(running.startTime).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="portal-submit-btn" id="resumeSoloBtn" data-sid="${running.id}" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);margin:0;width:100%">
+          ▶ Continuar Treino
+        </button>
+        <button class="portal-submit-btn" id="discardSoloBtn" data-sid="${running.id}" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.25);color:#ef4444;box-shadow:none;margin:0;width:100%">
+          🗑 Descartar Treino e Iniciar Novo
+        </button>
+      </div>
+    </div>
+  ` : '';
+
   const _d = new Date();
   const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
   const todaySched = schedules.find(s => s.date === todayStr);
@@ -1087,35 +1114,39 @@ function renderTreinar(workouts, schedules) {
     <div class="portal-section">
       <h2 class="portal-section-title">Treinar</h2>
 
-      ${suggestedCard}
+      ${recoveryCard}
 
-      <div class="portal-section-sub" style="margin-top:${suggestedCard?'20px':'0'}">Ou escolha outro treino</div>
-      <div class="portal-bio-field">
-        <div class="portal-workout-picker" id="soloWorkoutPicker">
-          <div class="portal-workout-pick-item selected" data-wid="">
-            <div class="portal-workout-pick-icon">${getWorkoutSVG('Livre')}</div>
-            <div class="portal-workout-pick-name">Livre</div>
-            <div class="portal-workout-pick-sub">Sem base</div>
+      <div id="soloSetupContainer" style="${running ? 'display:none' : ''}">
+        ${suggestedCard}
+
+        <div class="portal-section-sub" style="margin-top:${suggestedCard?'20px':'0'}">Ou escolha outro treino</div>
+        <div class="portal-bio-field">
+          <div class="portal-workout-picker" id="soloWorkoutPicker">
+            <div class="portal-workout-pick-item selected" data-wid="">
+              <div class="portal-workout-pick-icon">${getWorkoutSVG('Livre')}</div>
+              <div class="portal-workout-pick-name">Livre</div>
+              <div class="portal-workout-pick-sub">Sem base</div>
+            </div>
+            ${[...workouts]
+              .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }))
+              .map(w => `
+                <div class="portal-workout-pick-item" data-wid="${w.id}">
+                  <div class="portal-workout-pick-icon">${getWorkoutSVG(w.name)}</div>
+                  <div class="portal-workout-pick-name">${w.name || 'Treino'}</div>
+                  <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
+                </div>
+              `).join('')}
           </div>
-          ${[...workouts]
-            .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }))
-            .map(w => `
-              <div class="portal-workout-pick-item" data-wid="${w.id}">
-                <div class="portal-workout-pick-icon">${getWorkoutSVG(w.name)}</div>
-                <div class="portal-workout-pick-name">${w.name || 'Treino'}</div>
-                <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
-              </div>
-            `).join('')}
+          <input type="hidden" id="soloWorkoutSel" value="">
         </div>
-        <input type="hidden" id="soloWorkoutSel" value="">
+
+        <div id="soloExercisesBlock"></div>
+
+        <button id="soloStartBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 4px 16px rgba(99,102,241,0.3)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Iniciar Sessão
+        </button>
       </div>
-
-      <div id="soloExercisesBlock"></div>
-
-      <button id="soloStartBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 4px 16px rgba(99,102,241,0.3)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Iniciar Sessão
-      </button>
 
       <!-- Active session -->
       <div id="soloActiveSession" style="display:none;margin-top:4px">
@@ -1156,27 +1187,27 @@ function renderTreinar(workouts, schedules) {
         <!-- Session notes -->
         <div class="glass-card" style="margin-top:12px">
           <div class="portal-card-label"> Anotações da Sessão</div>
-          <textarea id="soloNotes" class="portal-textarea" rows="3" placeholder="Observações gerais do treino..."></textarea>
-        </div>
-
-        <div class="portal-bio-field" style="margin-top:12px">
-          <label class="portal-bio-label">PSE Geral da Sessão (Borg CR10)</label>
-          <select id="soloPse" class="portal-textarea" style="display: none;">
-            <option value="1">1 - Extremamente Leve (Repouso)</option>
-            <option value="2">2 - Muito Leve</option>
-            <option value="3">3 - Leve (Fácil)</option>
-            <option value="4">4 - Moderado (Confortável)</option>
-            <option value="5" selected>5 - Algo Pesado</option>
-            <option value="6">6 - Pesado / Forte</option>
-            <option value="7">7 - Muito Forte</option>
-            <option value="8">8 - Muito Forte+</option>
-            <option value="9">9 - Extremamente Forte (Quase Máximo)</option>
-            <option value="10">10 - Esforço Máximo (Exaustão)</option>
-          </select>
-          <button type="button" id="soloPseBtn" class="portal-textarea" style="margin-top:4px;padding:12px;text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:rgba(255,255,255,0.05);color:var(--portal-text);border:1px solid var(--portal-border);border-radius:12px;width:100%;box-sizing:border-box;">
-            <span id="soloPseBtnVal">5 - Algo Pesado</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
+          <textarea class="portal-textarea" id="soloNotes" rows="3" placeholder="Como se sentiu hoje? Ex: Cansaço, rendimento, dores, feedbacks em geral..."></textarea>
+          
+          <div style="margin-top:12px">
+            <div class="portal-card-label" style="margin-bottom:6px">PSE Geral da Sessão (Percepção de Esforço)</div>
+            <select id="soloPse" style="display:none">
+              <option value="1">1 - Extremamente Leve</option>
+              <option value="2">2 - Muito Leve</option>
+              <option value="3">3 - Leve</option>
+              <option value="4">4 - Moderado (Confortável)</option>
+              <option value="5" selected>5 - Algo Pesado</option>
+              <option value="6">6 - Forte</option>
+              <option value="7">7 - Muito Forte</option>
+              <option value="8">8 - Muito Forte+</option>
+              <option value="9">9 - Extremamente Forte (Quase Máximo)</option>
+              <option value="10">10 - Esforço Máximo (Exaustão)</option>
+            </select>
+            <button type="button" id="soloPseBtn" class="portal-textarea" style="margin-top:4px;padding:12px;text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:rgba(255,255,255,0.05);color:var(--portal-text);border:1px solid var(--portal-border);border-radius:12px;width:100%;box-sizing:border-box;">
+              <span id="soloPseBtnVal">5 - Algo Pesado</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
         </div>
 
         <button id="soloFinishBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:8px">
@@ -1187,7 +1218,7 @@ function renderTreinar(workouts, schedules) {
     </div>`;
 }
 
-function initTreinar(workouts, schedules, student) {
+function initTreinar(workouts, schedules, student, sessions = []) {
   let soloTimerInterval = null;
   let soloStartTime = null;
   let workSeconds = 0, restSeconds = 0;
@@ -1201,6 +1232,477 @@ function initTreinar(workouts, schedules, student) {
   const tid = portalState.trainerId;
   const selInput = document.getElementById('soloWorkoutSel');
   const exBlock = document.getElementById('soloExercisesBlock');
+
+  // Dynamic autosave state
+  let soloSessionId = null;
+  let autoSaveInterval = null;
+  let autoSaveTimeout = null;
+
+  function cleanupAutoSaveListeners() {
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'hidden') {
+      autoSaveSoloSession();
+    }
+  }
+
+  function handleBeforeUnload() {
+    autoSaveSoloSession();
+  }
+
+  function collectSoloSessionData() {
+    const wid = selInput?.value || '';
+    let w = workouts.find(wk => wk.id === wid);
+    const pse = parseInt(document.getElementById('soloPse')?.value) || 5;
+    const notes = document.getElementById('soloNotes')?.value || '';
+
+    const setLog = [];
+    const exercisesList = [];
+
+    if (w && w.exercises?.length) {
+      w.exercises.forEach((ex, ei) => {
+        exercisesList.push({
+          name: ex.name,
+          sets: ex.sets || '3',
+          reps: ex.reps || '10',
+          load: parseFloat(ex.load) || 0,
+          method: ex.method || '',
+          groupId: ex.groupId || ''
+        });
+        const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
+        const container = document.getElementById(`sets_container_${ei}`);
+        const rows = container ? container.querySelectorAll('.portal-solo-set-row') : [];
+        rows.forEach((row, si) => {
+          const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value || document.getElementById(`sr_${ei}_${si}_reps`)?.value;
+          const load = row.querySelector(`[id$="_${si}_load"]`)?.value || document.getElementById(`sr_${ei}_${si}_load`)?.value;
+          const psei = row.querySelector(`[id$="_${si}_pse"]`)?.value || document.getElementById(`sr_${ei}_${si}_pse`)?.value;
+          const rir  = row.querySelector(`[id$="_${si}_rir"]`)?.value  || document.getElementById(`sr_${ei}_${si}_rir`)?.value;
+          const doneBtn = row.querySelector(`.portal-solo-done-btn`);
+          const done = doneBtn ? doneBtn.classList.contains('done') : false;
+          setLog.push({
+            exIdx: ei, exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
+            reps: reps !== '' && reps != null ? parseInt(reps) : null,
+            load: load !== '' && load != null ? parseFloat(load) : null,
+            pse: psei ? parseInt(psei) : null,
+            rir: rir !== '' && rir != null ? parseInt(rir) : null,
+            notes: exNotes, isExtra: si >= (parseInt(ex.sets)||3),
+            done
+          });
+        });
+      });
+
+      // Extra exercises
+      const extraBlock = document.getElementById('extraExercisesBlock');
+      if (extraBlock) {
+        extraBlock.querySelectorAll('.portal-live-ex-card').forEach((card, xIdx) => {
+          const xei = card.id.replace('extracard_', '');
+          const nameEl = card.querySelector(`#extraex_${xei}_name`);
+          const name = nameEl?.value || `Exercício Extra ${xIdx+1}`;
+          const exNotes = card.querySelector(`#extraex_${xei}_notes`)?.value || '';
+          const rows = card.querySelectorAll('.portal-solo-set-row');
+          const baseExIdx = (w.exercises?.length || 0) + xIdx;
+          exercisesList.push({ name, sets: String(rows.length), reps: '10', load: 0, method: '', isExtra: true });
+          rows.forEach((row, si) => {
+            const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value;
+            const load = row.querySelector(`[id$="_${si}_load"]`)?.value;
+            const psei = row.querySelector(`[id*="_pse"]`)?.value;
+            const rir  = row.querySelector(`[id*="_rir"]`)?.value;
+            const doneBtn = row.querySelector('.portal-solo-done-btn');
+            const done = doneBtn ? doneBtn.classList.contains('done') : false;
+            setLog.push({
+              exIdx: baseExIdx, exerciseName: name, setIdx: si,
+              reps: reps !== '' && reps != null ? parseInt(reps) : null,
+              load: load !== '' && load != null ? parseFloat(load) : null,
+              pse: psei ? parseInt(psei) : null, rir: rir ? parseInt(rir) : null,
+              notes: exNotes, isExtra: true,
+              done
+            });
+          });
+        });
+      }
+    } else {
+      // Free exercises
+      const freeCards = document.getElementById('soloFreeExercises')?.children || [];
+      Array.from(freeCards).forEach((card, ei) => {
+        const nameInput = card.querySelector(`input[id^="fex_${ei}_name"]`);
+        if (!nameInput) return;
+        const name = nameInput.value || `Exercício ${ei+1}`;
+        const exNotes = document.getElementById(`fex_notes_${ei}`)?.value || '';
+        
+        let si = 0;
+        const tempSetRows = [];
+        while (true) {
+          const rowEl = document.getElementById(`fex_setrow_${ei}_${si}`);
+          if (!rowEl) break;
+          
+          const reps = document.getElementById(`fex_${ei}_${si}_reps`)?.value;
+          const load = document.getElementById(`fex_${ei}_${si}_load`)?.value;
+          const psei = document.getElementById(`fex_${ei}_${si}_pse`)?.value;
+          const rir = document.getElementById(`fex_${ei}_${si}_rir`)?.value;
+          const doneBtn = rowEl.querySelector(`.portal-solo-done-btn`);
+          const done = doneBtn ? doneBtn.classList.contains('done') : false;
+
+          const setEntry = {
+            exIdx: ei,
+            exerciseIdx: ei,
+            exerciseName: name,
+            setIdx: si,
+            reps: reps !== '' && reps != null ? parseInt(reps) : null,
+            load: load !== '' && load != null ? parseFloat(load) : null,
+            pse: psei ? parseInt(psei) : null,
+            rir: rir !== '' && rir != null ? parseInt(rir) : null,
+            notes: exNotes,
+            done
+          };
+          setLog.push(setEntry);
+          tempSetRows.push(setEntry);
+          si++;
+        }
+
+        exercisesList.push({
+          name: name,
+          sets: String(si || 1),
+          reps: document.getElementById(`fex_${ei}_0_reps`)?.value || '10',
+          load: parseFloat(document.getElementById(`fex_${ei}_0_load`)?.value) || 0,
+          method: '',
+          notes: exNotes,
+          setsData: tempSetRows
+        });
+      });
+    }
+
+    return {
+      workoutId: wid || null,
+      workoutName: w?.name || 'Treino Autônomo',
+      exercises: exercisesList,
+      setLog,
+      postBiofeedback: { pse, notes }
+    };
+  }
+
+  async function autoSaveSoloSession() {
+    const activeEl = document.getElementById('soloActiveSession');
+    if (!activeEl || activeEl.style.display === 'none') return;
+    if (!soloSessionId) return;
+
+    const data = collectSoloSessionData();
+    const localDate = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000); return l.toISOString().split('T')[0]; })();
+
+    const sessionData = {
+      id: soloSessionId,
+      studentId: sid,
+      trainerId: tid,
+      trainer_id: tid,
+      workoutId: data.workoutId,
+      workoutName: data.workoutName,
+      date: localDate,
+      status: 'running',
+      isSolo: true,
+      startTime: soloStartTime ? soloStartTime.toISOString() : new Date().toISOString(),
+      workSeconds,
+      restSeconds,
+      isResting,
+      restRemaining,
+      restTotal,
+      activeRestingRowId,
+      isRestPaused,
+      lastSavedTime: new Date().toISOString(),
+      exercises: data.exercises,
+      setLog: data.setLog,
+      postBiofeedback: data.postBiofeedback
+    };
+
+    try {
+      await db.put('sessions', sessionData);
+    } catch (e) {
+      console.warn('Autosave solo session failed:', e);
+    }
+  }
+
+  function triggerAutoSave() {
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(async () => {
+      await autoSaveSoloSession();
+    }, 1000);
+  }
+
+  async function resumeSoloSession(saved) {
+    const recoveryCard = document.getElementById('soloRecoveryCard');
+    if (recoveryCard) recoveryCard.style.display = 'none';
+    
+    document.getElementById('soloActiveSession').style.display = 'block';
+    document.getElementById('soloStartBtn').style.display = 'none';
+    document.getElementById('soloExercisesBlock').style.display = 'none';
+    document.getElementById('soloWorkoutPicker').style.display = 'none';
+    document.getElementById('suggestedCard')?.remove();
+    document.querySelectorAll('.portal-section-sub').forEach(el => el.remove());
+
+    soloSessionId = saved.id;
+    const wid = saved.workoutId || '';
+    if (selInput) selInput.value = wid;
+    
+    const w = workouts.find(wk => wk.id === wid);
+    buildExerciseLog(w);
+
+    if (w && w.exercises?.length) {
+      w.exercises.forEach((ex, ei) => {
+        const defaultSets = parseInt(ex.sets) || 3;
+        const savedSets = saved.setLog.filter(s => s.exIdx === ei);
+        const extraSetsCount = savedSets.filter(s => s.setIdx >= defaultSets).length;
+        for (let i = 0; i < extraSetsCount; i++) {
+          document.getElementById(`addset_${ei}`)?.click();
+        }
+      });
+
+      const extraSavedExs = [];
+      saved.exercises.forEach((ex, idx) => {
+        if (ex.isExtra) {
+          extraSavedExs.push(ex);
+        }
+      });
+      extraSavedExs.forEach((savedEx, xIdx) => {
+        document.getElementById('addExtraExBtn')?.click();
+        const xei = `x${xIdx}`;
+        const nameEl = document.getElementById(`extraex_${xei}_name`);
+        if (nameEl) nameEl.value = savedEx.name;
+        const notesEl = document.getElementById(`extraex_${xei}_notes`);
+        if (notesEl) notesEl.value = savedEx.notes || '';
+
+        const savedExSets = saved.setLog.filter(s => s.exIdx === (w.exercises.length + xIdx));
+        const extraSetsNeeded = savedExSets.length - 1;
+        for (let i = 0; i < extraSetsNeeded; i++) {
+          const card = document.getElementById(`extracard_${xei}`);
+          card?.querySelector('.extra-addset-btn')?.click();
+        }
+      });
+    } else {
+      saved.exercises.forEach((savedEx, ei) => {
+        document.getElementById('soloAddExBtn')?.click();
+        const nameInput = document.getElementById(`fex_${ei}_name`);
+        if (nameInput) nameInput.value = savedEx.name;
+        const restInput = document.getElementById(`fex_${ei}_rest`);
+        if (restInput) restInput.value = savedEx.rest || 60;
+        const notesInput = document.getElementById(`fex_notes_${ei}`);
+        if (notesInput) notesInput.value = savedEx.notes || '';
+
+        const savedSets = saved.setLog.filter(s => s.exIdx === ei);
+        const extraSetsNeeded = savedSets.length - 1;
+        for (let i = 0; i < extraSetsNeeded; i++) {
+          document.getElementById(`fex_addset_${ei}`)?.click();
+        }
+      });
+    }
+
+    saved.setLog.forEach(setEntry => {
+      const { exIdx, setIdx, reps, load, pse, rir, done, notes } = setEntry;
+      if (w && w.exercises?.length) {
+        const isExExtra = exIdx >= w.exercises.length;
+        if (isExExtra) {
+          const xIdx = exIdx - w.exercises.length;
+          const xei = `x${xIdx}`;
+          const repsInput = document.getElementById(`extra_${xei}_${setIdx}_reps`);
+          if (repsInput) repsInput.value = reps !== null ? reps : '';
+          const loadInput = document.getElementById(`extra_${xei}_${setIdx}_load`);
+          if (loadInput) loadInput.value = load !== null ? load : '';
+          if (pse) {
+            const pseSel = document.getElementById(`extra_${xei}_${setIdx}_pse`);
+            if (pseSel) pseSel.value = pse;
+            updatePseButton(document.getElementById(`extra_psebtn_${xei}_${setIdx}`), pse);
+          }
+          if (rir !== null) {
+            const rirSel = document.getElementById(`extra_${xei}_${setIdx}_rir`);
+            if (rirSel) rirSel.value = rir;
+            updateRirButton(document.getElementById(`extra_rirbtn_${xei}_${setIdx}`), rir);
+          }
+          if (done) {
+            const row = document.getElementById(`extrarow_${xei}_${setIdx}`);
+            row?.querySelector('.portal-solo-done-btn')?.classList.add('done');
+            row?.classList.add('set-done');
+          }
+        } else {
+          const repsInput = document.getElementById(`sr_${exIdx}_${setIdx}_reps`);
+          if (repsInput) repsInput.value = reps !== null ? reps : '';
+          const loadInput = document.getElementById(`sr_${exIdx}_${setIdx}_load`);
+          if (loadInput) loadInput.value = load !== null ? load : '';
+          if (pse) {
+            const pseSel = document.getElementById(`sr_${exIdx}_${setIdx}_pse`);
+            if (pseSel) pseSel.value = pse;
+            updatePseButton(document.getElementById(`psebtn_${exIdx}_${setIdx}`), pse);
+          }
+          if (rir !== null) {
+            const rirSel = document.getElementById(`sr_${exIdx}_${setIdx}_rir`);
+            if (rirSel) rirSel.value = rir;
+            updateRirButton(document.getElementById(`rirbtn_${exIdx}_${setIdx}`), rir);
+          }
+          if (done) {
+            const row = document.getElementById(`setrow_${exIdx}_${setIdx}`);
+            const btn = document.getElementById(`sdb_${exIdx}_${setIdx}`);
+            btn?.classList.add('done');
+            row?.classList.add('set-done');
+          }
+          const exNotes = document.getElementById(`exnotes_${exIdx}`);
+          if (exNotes) exNotes.value = notes || '';
+        }
+      } else {
+        const repsInput = document.getElementById(`fex_${exIdx}_${setIdx}_reps`);
+        if (repsInput) repsInput.value = reps !== null ? reps : '';
+        const loadInput = document.getElementById(`fex_${exIdx}_${setIdx}_load`);
+        if (loadInput) loadInput.value = load !== null ? load : '';
+        if (pse) {
+          const pseSel = document.getElementById(`fex_${exIdx}_${setIdx}_pse`);
+          if (pseSel) pseSel.value = pse;
+          updatePseButton(document.getElementById(`fex_psebtn_${exIdx}_${setIdx}`), pse);
+        }
+        if (rir !== null) {
+          const rirSel = document.getElementById(`fex_${exIdx}_${setIdx}_rir`);
+          if (rirSel) rirSel.value = rir;
+          updateRirButton(document.getElementById(`fex_rirbtn_${exIdx}_${setIdx}`), rir);
+        }
+        if (done) {
+          const row = document.getElementById(`fex_setrow_${exIdx}_${setIdx}`);
+          const btn = document.getElementById(`fex_sdb_${exIdx}_${setIdx}`);
+          btn?.classList.add('done');
+          row?.classList.add('set-done');
+        }
+        const exNotes = document.getElementById(`fex_notes_${exIdx}`);
+        if (exNotes) exNotes.value = notes || '';
+      }
+    });
+
+    document.getElementById('soloNotes').value = saved.postBiofeedback?.notes || '';
+    if (saved.postBiofeedback?.pse) {
+      const val = saved.postBiofeedback.pse;
+      const pseSel = document.getElementById('soloPse');
+      if (pseSel) {
+        pseSel.value = val;
+        pseSel.dispatchEvent(new Event('change'));
+        const btnValEl = document.getElementById('soloPseBtnVal');
+        if (btnValEl) {
+          const descMap = {
+            '1': '1 - Extremamente Leve',
+            '2': '2 - Muito Leve',
+            '3': '3 - Leve',
+            '4': '4 - Moderado',
+            '5': '5 - Um Pouco Forte',
+            '6': '6 - Forte',
+            '7': '7 - Muito Forte',
+            '8': '8 - Muito Forte +',
+            '9': '9 - Quase Máximo',
+            '10': '10 - Máximo (Falha)'
+          };
+          btnValEl.textContent = descMap[val] || val;
+        }
+      }
+    }
+
+    const elapsedSinceLastSave = saved.lastSavedTime 
+      ? Math.max(0, Math.floor((new Date() - new Date(saved.lastSavedTime)) / 1000))
+      : 0;
+
+    workSeconds = saved.workSeconds || 0;
+    restSeconds = saved.restSeconds || 0;
+
+    if (saved.isResting) {
+      const timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
+      restSeconds += timeResting;
+      const timeWorking = elapsedSinceLastSave - timeResting;
+      workSeconds += timeWorking;
+
+      const newRestRemaining = (saved.restRemaining || 0) - elapsedSinceLastSave;
+      if (newRestRemaining > 0) {
+        isResting = true;
+        restTotal = saved.restTotal || 60;
+        restRemaining = newRestRemaining;
+        activeRestingRowId = saved.activeRestingRowId;
+        isRestPaused = saved.isRestPaused || false;
+        
+        const row = document.getElementById(activeRestingRowId);
+        const overlay = document.getElementById('restTimerOverlay');
+        if (row && overlay) {
+          row.after(overlay);
+        }
+        startRestTimer(newRestRemaining);
+      } else {
+        isResting = false;
+        activeRestingRowId = null;
+      }
+    } else {
+      workSeconds += elapsedSinceLastSave;
+    }
+
+    soloStartTime = new Date(saved.startTime);
+    soloTimerInterval = setInterval(() => {
+      const elapsed = Math.floor((new Date() - soloStartTime) / 1000);
+      if (!isResting) workSeconds++;
+      const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      const el = document.getElementById('liveTotal');
+      const ew = document.getElementById('liveWork');
+      const er = document.getElementById('liveRest');
+      if (el) el.textContent = fmt(elapsed);
+      if (ew) ew.textContent = fmt(workSeconds);
+      if (er) er.textContent = fmt(restSeconds);
+    }, 1000);
+
+    autoSaveInterval = setInterval(autoSaveSoloSession, 20000);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    setupAutoSaveEventDelegation();
+
+    await autoSaveSoloSession();
+  }
+
+  function setupAutoSaveEventDelegation() {
+    const activeEl = document.getElementById('soloActiveSession');
+    activeEl?.addEventListener('input', (e) => {
+      if (e.target.matches('input, textarea')) {
+        triggerAutoSave();
+      }
+    });
+    activeEl?.addEventListener('change', (e) => {
+      if (e.target.matches('select, input, textarea')) {
+        triggerAutoSave();
+      }
+    });
+    activeEl?.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target.closest('.portal-solo-done-btn') || 
+          target.closest('.portal-add-set-btn') || 
+          target.closest('.add-free-set-btn') || 
+          target.closest('.extra-addset-btn') ||
+          target.closest('#addExtraExBtn') ||
+          target.closest('#soloAddExBtn') ||
+          target.closest('.fex-remove-btn')) {
+        setTimeout(triggerAutoSave, 200);
+      }
+    });
+  }
+
+  document.getElementById('resumeSoloBtn')?.addEventListener('click', async (e) => {
+    const runningSid = e.currentTarget.dataset.sid;
+    const saved = sessions.find(s => s.id === runningSid);
+    if (saved) {
+      resumeSoloSession(saved);
+    } else {
+      await loadSection('treinar');
+    }
+  });
+
+  document.getElementById('discardSoloBtn')?.addEventListener('click', async (e) => {
+    const runningSid = e.currentTarget.dataset.sid;
+    if (confirm('Tem certeza de que deseja descartar este treino em andamento? O progresso não salvo será perdido.')) {
+      try {
+        await db.delete('sessions', runningSid);
+        await loadSection('treinar');
+      } catch (err) {
+        console.error('Erro ao descartar treino:', err);
+      }
+    }
+  });
 
   // Bind premium custom selector for General Session PSE
   document.getElementById('soloPseBtn')?.addEventListener('click', () => {
@@ -1981,18 +2483,56 @@ function initTreinar(workouts, schedules, student) {
     }, 1000);
   }
 
-  document.getElementById('soloStartBtn')?.addEventListener('click', () => {
+  document.getElementById('soloStartBtn')?.addEventListener('click', async () => {
     document.getElementById('soloActiveSession').style.display = 'block';
     document.getElementById('soloStartBtn').style.display = 'none';
     document.getElementById('soloExercisesBlock').style.display = 'none';
     document.getElementById('soloWorkoutPicker').style.display = 'none';
     document.getElementById('suggestedCard')?.remove();
-    document.querySelector('.portal-section-sub')?.remove();
+    document.querySelectorAll('.portal-section-sub').forEach(el => el.remove());
 
     const wid = selInput?.value || '';
     const w = workouts.find(w => w.id === wid);
     buildExerciseLog(w);
     startMainTimer();
+
+    // Create active running session in DB
+    const localDate = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000); return l.toISOString().split('T')[0]; })();
+    const runningSession = {
+      studentId: sid,
+      trainerId: tid,
+      trainer_id: tid,
+      workoutId: wid || null,
+      workoutName: w?.name || 'Treino Autônomo',
+      date: localDate,
+      status: 'running',
+      isSolo: true,
+      startTime: new Date().toISOString(),
+      workSeconds: 0,
+      restSeconds: 0,
+      exercises: [],
+      setLog: [],
+      postBiofeedback: { pse: 5, notes: '' }
+    };
+
+    try {
+      const saved = await db.put('sessions', runningSession);
+      soloSessionId = saved.id;
+    } catch (e) {
+      console.warn('Erro ao criar sessão ativa no DB:', e);
+      soloSessionId = 'solo_' + Date.now();
+    }
+
+    // Setup periodic autosave & lifecycle listeners
+    autoSaveInterval = setInterval(autoSaveSoloSession, 20000);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Setup input/click triggers
+    setupAutoSaveEventDelegation();
+
+    // Trigger immediate autosave to save exercises structure
+    await autoSaveSoloSession();
   });
 
   document.getElementById('soloFinishBtn')?.addEventListener('click', async (e) => {
@@ -2005,127 +2545,20 @@ function initTreinar(workouts, schedules, student) {
 
     clearInterval(soloTimerInterval);
     stopRestTimer();
-    const durationMin = Math.round((new Date() - soloStartTime) / 60000);
-    const wid = selInput?.value || '';
-    let w = workouts.find(wk => wk.id === wid);
-    // Fallback: buscar direto do DB se não encontrou no array local (ex: sync lag)
-    if (!w && wid) {
-      try { w = await db.get('workouts', wid); } catch(_) {}
-    }
-    const pse = parseInt(document.getElementById('soloPse')?.value) || 5;
-    const notes = document.getElementById('soloNotes')?.value || '';
-
-    // Collect setLog
-    const setLog = [];
-    const exercisesList = [];
-
-    if (w && w.exercises?.length) {
-      w.exercises.forEach((ex, ei) => {
-        exercisesList.push({
-          name: ex.name,
-          sets: ex.sets || '3',
-          reps: ex.reps || '10',
-          load: parseFloat(ex.load) || 0,
-          method: ex.method || ''
-        });
-        const exNotes = document.getElementById(`exnotes_${ei}`)?.value || '';
-        // Collect all set rows (including extra sets added with + Série)
-        const container = document.getElementById(`sets_container_${ei}`);
-        const rows = container ? container.querySelectorAll('.portal-solo-set-row') : [];
-        rows.forEach((row, si) => {
-          const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value || document.getElementById(`sr_${ei}_${si}_reps`)?.value;
-          const load = row.querySelector(`[id$="_${si}_load"]`)?.value || document.getElementById(`sr_${ei}_${si}_load`)?.value;
-          const psei = row.querySelector(`[id$="_${si}_pse"]`)?.value || document.getElementById(`sr_${ei}_${si}_pse`)?.value;
-          const rir  = row.querySelector(`[id$="_${si}_rir"]`)?.value  || document.getElementById(`sr_${ei}_${si}_rir`)?.value;
-          setLog.push({
-            exIdx: ei, exerciseIdx: ei, exerciseName: ex.name, setIdx: si,
-            reps: parseInt(reps)||0, load: parseFloat(load)||0,
-            pse: psei ? parseInt(psei) : null,
-            rir: rir !== '' && rir != null ? parseInt(rir) : null,
-            notes: exNotes, isExtra: si >= (parseInt(ex.sets)||3)
-          });
-        });
-      });
-
-      // Collect extra exercises added during session
-      const extraBlock = document.getElementById('extraExercisesBlock');
-      if (extraBlock) {
-        extraBlock.querySelectorAll('.portal-live-ex-card').forEach((card, xIdx) => {
-          const xei = card.id.replace('extracard_', '');
-          const nameEl = card.querySelector(`#extraex_${xei}_name`);
-          const name = nameEl?.value || `Exercício Extra ${xIdx+1}`;
-          const exNotes = card.querySelector(`#extraex_${xei}_notes`)?.value || '';
-          const rows = card.querySelectorAll('.portal-solo-set-row');
-          const baseExIdx = (w.exercises?.length || 0) + xIdx;
-          exercisesList.push({ name, sets: String(rows.length), reps: '10', load: 0, method: '', isExtra: true });
-          rows.forEach((row, si) => {
-            const reps = row.querySelector(`[id$="_${si}_reps"]`)?.value;
-            const load = row.querySelector(`[id$="_${si}_load"]`)?.value;
-            const psei = row.querySelector(`[id*="_pse"]`)?.value;
-            const rir  = row.querySelector(`[id*="_rir"]`)?.value;
-            setLog.push({
-              exIdx: baseExIdx, exerciseName: name, setIdx: si,
-              reps: parseInt(reps)||0, load: parseFloat(load)||0,
-              pse: psei ? parseInt(psei) : null, rir: rir ? parseInt(rir) : null,
-              notes: exNotes, isExtra: true
-            });
-          });
-        });
-      }
-    } else {
-      // Collect from free exercises
-      const freeCards = document.getElementById('soloFreeExercises')?.children || [];
-      Array.from(freeCards).forEach((card, ei) => {
-        const nameInput = card.querySelector(`input[id^="fex_${ei}_name"]`);
-        if (!nameInput) return; // not an exercise card
-        const name = nameInput.value || `Exercício ${ei+1}`;
-        const exNotes = document.getElementById(`fex_notes_${ei}`)?.value || '';
-        
-        let si = 0;
-        while (true) {
-          const rowEl = document.getElementById(`fex_setrow_${ei}_${si}`);
-          if (!rowEl) break;
-          
-          const reps = document.getElementById(`fex_${ei}_${si}_reps`)?.value;
-          const load = document.getElementById(`fex_${ei}_${si}_load`)?.value;
-          const psei = document.getElementById(`fex_${ei}_${si}_pse`)?.value;
-          const rir = document.getElementById(`fex_${ei}_${si}_rir`)?.value;
-
-          setLog.push({
-            exIdx: ei,
-            exerciseIdx: ei,
-            exerciseName: name,
-            setIdx: si,
-            reps: parseInt(reps) || 0,
-            load: parseFloat(load) || 0,
-            pse: psei ? parseInt(psei) : null,
-            rir: rir !== '' && rir != null ? parseInt(rir) : null,
-            notes: exNotes
-          });
-          
-          si++;
-        }
-
-        exercisesList.push({
-          name: name,
-          sets: String(si || 1),
-          reps: document.getElementById(`fex_${ei}_0_reps`)?.value || '10',
-          load: parseFloat(document.getElementById(`fex_${ei}_0_load`)?.value) || 0,
-          method: ''
-        });
-      });
-    }
-
-    const totalVolume = setLog.reduce((t, x) => t + (x.load || 0) * (x.reps || 0), 0);
-    const totalSets = setLog.length;
+    
+    const durationMin = soloStartTime ? Math.round((new Date() - soloStartTime) / 60000) : 0;
+    const collected = collectSoloSessionData();
+    const totalVolume = collected.setLog.reduce((t, x) => t + (x.load || 0) * (x.reps || 0), 0);
+    const totalSets = collected.setLog.length;
     const localDate = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000); return l.toISOString().split('T')[0]; })();
 
     const sessionData = {
+      id: soloSessionId,
       studentId: sid,
       trainerId: tid,
       trainer_id: tid,
-      workoutId: wid || null,
-      workoutName: w?.name || 'Treino Autônomo',
+      workoutId: collected.workoutId,
+      workoutName: collected.workoutName,
       date: localDate,
       status: 'completed',
       isSolo: true,
@@ -2133,9 +2566,9 @@ function initTreinar(workouts, schedules, student) {
       totalDuration: durationMin * 60,
       totalVolume,
       totalSets,
-      exercises: exercisesList,
-      setLog,
-      postBiofeedback: { pse, notes },
+      exercises: collected.exercises,
+      setLog: collected.setLog,
+      postBiofeedback: collected.postBiofeedback,
     };
 
     try {
@@ -2143,7 +2576,7 @@ function initTreinar(workouts, schedules, student) {
       let saved = false;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          await db.add('sessions', sessionData);
+          await db.put('sessions', sessionData);
           saved = true;
           break;
         } catch (err) {
@@ -2166,6 +2599,8 @@ function initTreinar(workouts, schedules, student) {
         }
         return;
       }
+
+      cleanupAutoSaveListeners();
 
       document.getElementById('soloActiveSession').innerHTML = `
         <div class="portal-success">

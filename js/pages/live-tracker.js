@@ -2533,17 +2533,30 @@ function generateSessionPDF(session, student) {
       doc.setTextColor(...AC); doc.setFont('helvetica','normal'); doc.text(String(avgRir),155,y+5);
       doc.setTextColor(...G); doc.text(rm1?rm1+'kg':'—',167,y+5);
       y+=rowH;
-      // Sub-séries só se tiver notas (economiza espaço)
-      const setsWithNotes = sets.filter(s=>s.notes);
-      if (setsWithNotes.length) {
-        setsWithNotes.forEach(s=>{
-          if(y>270){doc.addPage();y=20;}
-          doc.setFillColor(250,252,255); doc.rect(18,y,178,4.5,'F');
-          doc.setTextColor(...MU); doc.setFontSize(5.5); doc.setFont('helvetica','italic');
+      // Detalhamento de todas as séries realizadas
+      if (sets.length > 0) {
+        const realizedText = `Séries:  ${sets.map(s => {
           const loadDisplay = isNumeric(s.load) ? `${s.load}kg` : s.load;
-          doc.text(`S${s.setIdx+1} (${s.reps}×${loadDisplay}): ${s.notes}`,22,y+3.2);
-          y+=4.5;
+          let details = `${s.reps}×${loadDisplay}`;
+          const extra = [];
+          if (s.pse != null) extra.push(`PSE ${s.pse}`);
+          if (s.rir != null) extra.push(`RIR ${s.rir}`);
+          if (s.notes) extra.push(`Obs: ${s.notes}`);
+          if (extra.length > 0) {
+            details += ` (${extra.join(', ')})`;
+          }
+          return `S${s.setIdx + 1}: ${details}`;
+        }).join('   ·   ')}`;
+
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.setTextColor(...MU);
+        const linesReal = doc.splitTextToSize(realizedText, 178);
+        const blockH = linesReal.length * 3.5 + 1.5;
+        if (y + blockH > 275) { doc.addPage(); y = 20; }
+        doc.setFillColor(250, 252, 255); doc.rect(14, y, 182, blockH, 'F');
+        linesReal.forEach((line, li) => {
+          doc.text(line, 16, y + 3.2 + li * 3.5);
         });
+        y += blockH;
       }
       y+=1;
     });
