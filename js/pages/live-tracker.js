@@ -197,12 +197,18 @@ export async function renderTracker() {
 
     ${completed.length ? `
     <div class="card mt-lg">
-      <div class="card-header" style="justify-content:space-between">
+      <div class="card-header" style="justify-content:space-between; gap: 10px; flex-wrap: wrap;">
         <span class="card-title">Sessões Recentes</span>
-        <select id="filterRecentStudent" class="form-select form-select-sm" style="width:auto; max-width:200px">
-          <option value="">Todos os alunos</option>
-          ${active.map(s => `<option value="${s.id}">${s.name.split(' ')[0]}</option>`).join('')}
-        </select>
+        <div style="display:flex; align-items:center; gap:8px">
+          <select id="filterRecentStudent" class="form-select form-select-sm" style="width:auto; max-width:180px">
+            <option value="">Todos os alunos</option>
+            ${active.map(s => `<option value="${s.id}">${s.name.split(' ')[0]}</option>`).join('')}
+          </select>
+          <button class="btn btn-secondary btn-sm" id="viewFullHistoryBtn" style="white-space:nowrap; display:flex; align-items:center; gap:4px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Histórico Completo
+          </button>
+        </div>
       </div>
       <div class="table-container">
         <table class="data-table">
@@ -638,9 +644,16 @@ export function initTracker(navigateFn) {
         } else {
           row.style.display = 'none';
         }
-      });
     });
   }
+
+  // Abrir Histórico Completo
+  document.getElementById('viewFullHistoryBtn')?.addEventListener('click', async () => {
+    const students = await db.getAll('students');
+    const allSessions = await db.getAll('sessions');
+    const allBiofeedback = await db.getAll('biofeedback');
+    openFullHistoryModal(students, allSessions, allBiofeedback, navigateFn);
+  });
 
   // Excluir sessão
   document.querySelectorAll('.delete-session').forEach(btn => {
@@ -2096,6 +2109,180 @@ function showSessionSummary(summaryText, session, student, navigateFn) {
   });
 }
 
+function openFullHistoryModal(students, allSessions, allBiofeedback, navigateFn) {
+  const completed = allSessions
+    .filter(s => s.status === 'completed')
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .map(s => {
+      const dateStr = (s.date || '').substring(0, 10);
+      const bfId = `bf_${s.studentId}_${dateStr}`;
+      const bf = allBiofeedback.find(b => b.id === bfId || (b.studentId === s.studentId && (b.date || '').startsWith(dateStr)));
+      if (!bf) return s;
+      return {
+        ...s,
+        preBiofeedback: s.preBiofeedback || {
+          sleep: bf.sleep, tqr: bf.tqr || bf.energy, stress: bf.stress,
+          motivation: bf.motivation, pain: bf.pain, mood: bf.mood, humor: bf.humor
+        },
+        postBiofeedback: s.postBiofeedback || {
+          pse: bf.pse, notes: bf.notes, submittedByStudent: bf.submittedByStudent
+        }
+      };
+    });
+
+  const contentHTML = `
+    <div style="display:flex; flex-direction:column; gap:12px; max-height: 80vh;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; border:1px solid var(--border-color)">
+        <div style="flex:1; min-width:180px">
+          <input type="text" id="historyModalSearch" class="form-input form-input-sm" placeholder="Buscar aluno ou treino..." style="width:100%; font-size:0.8rem; padding:4px 8px" />
+        </div>
+        <div style="width:160px">
+          <select id="historyModalStudent" class="form-select form-select-sm" style="width:100%; font-size:0.8rem; padding:4px 8px">
+            <option value="">Todos os alunos</option>
+            ${students.filter(s => s.status === 'Ativo').map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex; gap:4px; align-items:center">
+          <input type="date" id="historyModalDateStart" class="form-input form-input-sm" style="width:125px; font-size:0.8rem; padding:4px 8px" title="Data inicial" />
+          <span style="color:var(--text-muted); font-size:0.8rem">a</span>
+          <input type="date" id="historyModalDateEnd" class="form-input form-input-sm" style="width:125px; font-size:0.8rem; padding:4px 8px" title="Data final" />
+        </div>
+      </div>
+
+      <div class="table-container" style="overflow-y:auto; max-height:380px; border:1px solid var(--border-color); border-radius:8px">
+        <table class="data-table" style="width:100%; font-size:0.82rem">
+          <thead><tr>
+            <th>Aluno</th>
+            <th>Treino</th>
+            <th>Data</th>
+            <th>Duração</th>
+            <th>Volume</th>
+            <th>Séries</th>
+            <th>PSE</th>
+            <th>Carga</th>
+            <th>Obs.</th>
+            <th style="width:110px; text-align:center">Ações</th>
+          </tr></thead>
+          <tbody id="historyModalTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  openModal({
+    title: 'Histórico de Treinos Realizados',
+    content: contentHTML,
+    size: 'xl',
+    preventBackdropClose: true
+  });
+
+  const tbody = document.getElementById('historyModalTableBody');
+  const searchInp = document.getElementById('historyModalSearch');
+  const studentSel = document.getElementById('historyModalStudent');
+  const startInp = document.getElementById('historyModalDateStart');
+  const endInp = document.getElementById('historyModalDateEnd');
+
+  function renderRows() {
+    const q = searchInp.value.toLowerCase().trim();
+    const sid = studentSel.value;
+    const start = startInp.value;
+    const end = endInp.value;
+
+    const filtered = completed.filter(s => {
+      const st = students.find(x => x.id === s.studentId);
+      if (sid && s.studentId !== sid) return false;
+      if (q && !(st?.name?.toLowerCase().includes(q) || s.workoutName?.toLowerCase().includes(q))) return false;
+      if (start && s.date < start) return false;
+      if (end && s.date.substring(0,10) > end) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:20px">Nenhum treino realizado encontrado com estes filtros</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(s => {
+      const st = students.find(x => x.id === s.studentId);
+      const pse = s.postBiofeedback?.pse || 0;
+      const dur = s.totalDuration ? Math.round(s.totalDuration/60) : 0;
+      const carga = s.trainingLoad || s.postBiofeedback?.trainingLoad || (pse && dur ? pse*dur : 0);
+      const postNotes = s.postBiofeedback?.notes || '';
+      const setNotes  = (s.setLog||[]).filter(x=>x.notes).map(x=>`S${x.setIdx+1}: ${x.notes}`);
+      const allObs    = [postNotes, ...setNotes].filter(Boolean);
+      const obsTitle  = allObs.join(' | ');
+
+      return `
+        <tr style="border-bottom:1px solid rgba(148,163,184,0.08)">
+          <td style="white-space:nowrap">${st?.name || '?'}</td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.workoutName || '-'}</td>
+          <td style="white-space:nowrap">${Calc.formatDate(s.date)}</td>
+          <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
+          <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
+          <td style="text-align:center">${s.totalSets || '-'}</td>
+          <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':pse?'var(--success)':'var(--text-muted)'}">
+            <strong>${pse || '—'}</strong>
+          </td>
+          <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
+          <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
+            ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
+          </td>
+          <td style="white-space:nowrap;text-align:right">
+            <button class="btn btn-ghost btn-sm view-session-modal" data-id="${s.id}" title="Ver detalhes"
+              style="padding:3px 5px;color:var(--accent);display:inline-flex;align-items:center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-sm pdf-session-modal" data-id="${s.id}" title="Exportar PDF"
+              style="padding:3px 5px;color:var(--primary);display:inline-flex;align-items:center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-sm delete-session-modal" data-id="${s.id}" title="Excluir"
+              style="padding:3px 5px;color:var(--danger);display:inline-flex;align-items:center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.view-session-modal').forEach(btn => {
+      btn.onclick = async () => {
+        const session = completed.find(x => x.id === btn.dataset.id);
+        if (!session) return;
+        const student = students.find(x => x.id === session.studentId);
+        showSessionSummary(buildSessionSummary(session, student), session, student, navigateFn);
+      };
+    });
+
+    tbody.querySelectorAll('.pdf-session-modal').forEach(btn => {
+      btn.onclick = async () => {
+        const session = completed.find(x => x.id === btn.dataset.id);
+        if (!session) return;
+        const student = students.find(x => x.id === session.studentId);
+        generateSessionPDF(session, student);
+      };
+    });
+
+    tbody.querySelectorAll('.delete-session-modal').forEach(btn => {
+      btn.onclick = async () => {
+        if (!window.confirm('Excluir esta sessão permanentemente do histórico?')) return;
+        await db.delete('sessions', btn.dataset.id);
+        notify.success('Sessão excluída.');
+        closeModal();
+        navigateFn('/tracker');
+      };
+    });
+  }
+
+  searchInp.oninput = renderRows;
+  studentSel.onchange = renderRows;
+  startInp.onchange = renderRows;
+  endInp.onchange = renderRows;
+
+  renderRows();
+}
+
 function generateSessionPDF(session, student) {
   try {
     const { jsPDF } = window.jspdf;
@@ -2214,7 +2401,6 @@ function generateSessionPDF(session, student) {
       const rm1=sets.find(s=>s.rm1Estimated)?.rm1Estimated;
       const rowH=ex.method?10:8;
       if(y>265){doc.addPage();y=20;}
-      doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255); doc.rect(14,y,rowH,'F'); // Fix fill rect height
       doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?252:255); doc.rect(14,y,182,rowH,'F');
       doc.setTextColor(...DK); doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.text(ex.name||'—',15,y+5);
       if(ex.method){doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...AC);doc.text(ex.method,15,y+8.5);}
