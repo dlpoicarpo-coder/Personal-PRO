@@ -544,6 +544,375 @@ export const METHOD_CARDIO_META = {
   },
 };
 
+export function generateDynamicSeries(methodName, totalRows, restBase = 60) {
+  const n = parseInt(totalRows) || 3;
+  const list = [];
+
+  switch (methodName) {
+    case 'Unilateral': {
+      for (let si = 0; si < n; si++) {
+        const setNum = Math.floor(si / 2) + 1;
+        const isEsq = si % 2 === 1;
+        list.push({
+          reps: '10-12',
+          loadPct: 0.72,
+          label: `S${setNum} — Lado ${isEsq ? 'E' : 'D'}`,
+          rest: isEsq ? (si === n - 1 ? 0 : 90) : 30
+        });
+      }
+      return list;
+    }
+    case 'Drop-set': {
+      for (let si = 0; si < n; si++) {
+        const setNum = Math.floor(si / 3) + 1;
+        const type = si % 3;
+        let label = `S${setNum} — Principal`;
+        let loadPct = 0.75;
+        let rest = 5;
+        if (type === 1) {
+          label = `S${setNum} — Drop 1 -20%`;
+          loadPct = 0.60;
+          rest = 5;
+        } else if (type === 2) {
+          label = `S${setNum} — Drop 2 -20%`;
+          loadPct = 0.48;
+          rest = si === n - 1 ? 0 : 120;
+        }
+        list.push({ reps: 'até falha', loadPct, label, rest });
+      }
+      return list;
+    }
+    case 'Stripping': {
+      for (let si = 0; si < n; si++) {
+        const setNum = Math.floor(si / 4) + 1;
+        const type = si % 4;
+        let label = `S${setNum} — Carga máx.`;
+        let loadPct = 0.80;
+        let rest = 5;
+        if (type === 1) {
+          label = `S${setNum} — Strip 1 -22%`;
+          loadPct = 0.62;
+        } else if (type === 2) {
+          label = `S${setNum} — Strip 2 -22%`;
+          loadPct = 0.48;
+        } else if (type === 3) {
+          label = `S${setNum} — Strip 3 -22%`;
+          loadPct = 0.37;
+          rest = si === n - 1 ? 0 : 120;
+        }
+        list.push({ reps: 'até falha', loadPct, label, rest });
+      }
+      return list;
+    }
+    case 'Rest-Pause': {
+      for (let si = 0; si < n; si++) {
+        const setNum = Math.floor(si / 3) + 1;
+        const type = si % 3;
+        let label = `C${setNum} — Série`;
+        let rest = 20;
+        if (type === 1) {
+          label = `C${setNum} — Pausa 1`;
+        } else if (type === 2) {
+          label = `C${setNum} — Pausa 2`;
+          rest = si === n - 1 ? 0 : 150;
+        }
+        list.push({ reps: 'até falha', loadPct: 0.82, label, rest });
+      }
+      return list;
+    }
+    case 'Cluster': {
+      for (let si = 0; si < n; si++) {
+        const setNum = Math.floor(si / 5) + 1;
+        const type = si % 5;
+        const label = `Set ${setNum} — Mini ${type + 1}`;
+        const rest = type === 4 ? (si === n - 1 ? 0 : 210) : 30;
+        list.push({ reps: '2-3', loadPct: 0.88, label, rest });
+      }
+      return list;
+    }
+    case 'FST-7': {
+      for (let si = 0; si < n; si++) {
+        list.push({
+          reps: '12-15',
+          loadPct: 0.65,
+          label: `S${si + 1} — alongar 30s`,
+          rest: si === n - 1 ? 0 : 40
+        });
+      }
+      return list;
+    }
+    case 'Excêntrico Acentuado': {
+      for (let si = 0; si < n; si++) {
+        list.push({
+          reps: '6-8',
+          loadPct: 0.75,
+          label: `S${si + 1} — 4s excêntrico`,
+          rest: si === n - 1 ? 0 : 150
+        });
+      }
+      return list;
+    }
+    case 'Isometria': {
+      for (let si = 0; si < n; si++) {
+        list.push({
+          reps: '6-10s × 3',
+          loadPct: 0.65,
+          label: `S${si + 1} — Ângulo A`,
+          rest: si === n - 1 ? 0 : 90
+        });
+      }
+      return list;
+    }
+    case '21s': {
+      for (let si = 0; si < n; si++) {
+        list.push({
+          reps: '21 (7+7+7)',
+          loadPct: 0.52,
+          label: `S${si + 1} — Inf→Sup→Completo`,
+          rest: si === n - 1 ? 0 : 100
+        });
+      }
+      return list;
+    }
+    case 'Pirâmide Crescente': {
+      for (let si = 0; si < n; si++) {
+        const pct = n <= 1 ? 0.88 : 0.60 + (si / (n - 1)) * (0.88 - 0.60);
+        const reps = si === 0 ? '12-15' : si === n - 1 ? '6-8' : (n === 3 ? '8-10' : '10-12');
+        const rest = si === n - 1 ? 0 : (si === n - 2 ? 120 : 90);
+        const labels = ['Leve', 'Moderada', 'Pesada', 'Muito Pesada'];
+        const lbl = si === 0 ? 'Leve' : si === n - 1 ? 'Muito Pesada' : labels[Math.min(labels.length - 2, si)] || 'Pesada';
+        list.push({
+          reps,
+          loadPct: parseFloat(pct.toFixed(2)),
+          label: `S${si + 1} — ${lbl}`,
+          rest
+        });
+      }
+      return list;
+    }
+    case 'Pirâmide Decrescente': {
+      for (let si = 0; si < n; si++) {
+        const pct = n <= 1 ? 0.88 : 0.88 - (si / (n - 1)) * (0.88 - 0.67);
+        const reps = si === 0 ? '4-6' : si === n - 1 ? 'AMRAP' : (n === 3 ? '8-10' : '6-8');
+        const rest = si === n - 1 ? 0 : (si === 0 ? 180 : (si === 1 ? 150 : 120));
+        const labels = ['Máximo', 'Pesada', 'Moderada', 'Leve/Máx'];
+        const lbl = si === 0 ? 'Máximo' : si === n - 1 ? 'Leve/Máx' : labels[Math.min(labels.length - 2, si)] || 'Moderada';
+        list.push({
+          reps,
+          loadPct: parseFloat(pct.toFixed(2)),
+          label: `S${si + 1} — ${lbl}`,
+          rest
+        });
+      }
+      return list;
+    }
+    case 'Pirâmide Dupla': {
+      for (let si = 0; si < n; si++) {
+        const half = Math.floor(n / 2);
+        let pct;
+        if (si <= half) {
+          pct = n <= 1 ? 0.85 : 0.60 + (si / Math.max(1, half)) * (0.85 - 0.60);
+        } else {
+          pct = 0.85 - ((si - half) / Math.max(1, n - 1 - half)) * (0.85 - 0.60);
+        }
+        const reps = si === half ? '6-8' : (si < half ? '12' : 'AMRAP');
+        const rest = si === n - 1 ? 0 : 90;
+        list.push({
+          reps,
+          loadPct: parseFloat(pct.toFixed(2)),
+          label: `S${si + 1} — ${si === half ? 'Pico ↑' : si < half ? 'Crescente' : 'Decrescente'}`,
+          rest
+        });
+      }
+      return list;
+    }
+    case 'Pirâmide Completa': {
+      for (let si = 0; si < n; si++) {
+        const half = Math.floor(n / 2);
+        let pct;
+        if (si <= half) {
+          pct = n <= 1 ? 0.88 : 0.60 + (si / Math.max(1, half)) * (0.88 - 0.60);
+        } else {
+          pct = 0.88 - ((si - half) / Math.max(1, n - 1 - half)) * (0.88 - 0.65);
+        }
+        const reps = si === half ? '6' : (si < half ? '12' : 'AMRAP');
+        const rest = si === n - 1 ? 0 : 120;
+        list.push({
+          reps,
+          loadPct: parseFloat(pct.toFixed(2)),
+          label: `S${si + 1} — ${si === half ? 'Pico ↑' : si < half ? 'Crescente' : 'Decrescente'}`,
+          rest
+        });
+      }
+      return list;
+    }
+    default:
+      return null;
+  }
+}
+
+export function rebuildMethodSeriesPanel(row, index, preserveExisting = true) {
+  const methodName = row.querySelector('.ex-method')?.value || '';
+  
+  // Stash existing custom inputs
+  const existingValues = [];
+  if (preserveExisting) {
+    row.querySelectorAll('.method-series-panel div[data-serie]').forEach(sr => {
+      const si = parseInt(sr.dataset.serie);
+      const loadInp = sr.querySelector('.serie-load');
+      const restInp = sr.querySelector('.serie-rest');
+      if (loadInp || restInp) {
+        existingValues[si] = {
+          load: loadInp ? loadInp.value : '',
+          rest: restInp ? restInp.value : ''
+        };
+      }
+    });
+  }
+
+  // Remove existing panels
+  row.querySelectorAll('.method-series-panel').forEach(p => p.remove());
+  row.querySelectorAll('.method-tip').forEach(p => p.remove());
+
+  if (!methodName) {
+    const setsEl = row.querySelector(`[name="ex_sets_${index}"]`);
+    const repsEl = row.querySelector(`[name="ex_reps_${index}"]`);
+    const loadEl = row.querySelector(`[name="ex_load_${index}"]`);
+    if (setsEl) setsEl.closest('div').style.opacity = '';
+    if (repsEl) repsEl.closest('div').style.opacity = '';
+    if (loadEl) loadEl.closest('div').style.opacity = '';
+    return;
+  }
+
+  const isCombinedMethod = COMBINED_METHODS.has(methodName);
+  const progression = !isCombinedMethod ? METHOD_PROGRESSIONS[methodName] : null;
+
+  if (isCombinedMethod) {
+    return;
+  }
+
+  if (!progression) {
+    return;
+  }
+
+  const setsEl = row.querySelector(`[name="ex_sets_${index}"]`);
+  const repsEl = row.querySelector(`[name="ex_reps_${index}"]`);
+  const restEl = row.querySelector(`[name="ex_rest_${index}"]`);
+  const baseLoad = parseFloat(row.querySelector(`[name="ex_load_${index}"]`)?.value) || 0;
+  const loadType = row.querySelector(`[name="ex_loadtype_${index}"]`)?.value || 'weight';
+  const isTime = loadType === 'time';
+
+  const setsCount = parseInt(setsEl?.value) || (progression.series ? progression.series.length : 3);
+  const dynamicSeries = generateDynamicSeries(methodName, setsCount, restEl?.value || '60') || progression.series;
+
+  const panel = document.createElement('div');
+  panel.className = 'method-series-panel';
+  panel.style.cssText = 'grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px';
+
+  const seriesHeader = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${methodName}</span>
+        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:0.65rem;color:var(--text-muted)">Carga base (kg):</span>
+        <input type="number" step="0.5" value="${baseLoad||''}" placeholder="kg"
+          class="form-input method-base-load" data-index="${index}"
+          style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
+      </div>
+    </div>`;
+
+  const isClusterMethod = methodName === 'Rest-Pause' || methodName === 'Cluster';
+
+  const seriesHTML = dynamicSeries.map((s, si) => {
+    const existing = existingValues[si];
+    let loadVal = '';
+    let restVal = s.rest != null ? s.rest : (restEl?.value || '60');
+
+    if (existing) {
+      loadVal = existing.load;
+      restVal = existing.rest;
+    } else {
+      loadVal = baseLoad > 0 && !isTime ? Math.round(baseLoad * s.loadPct * 2) / 2 : '';
+    }
+
+    // Separador visual entre clusters
+    const prevLabel = si > 0 ? (dynamicSeries[si-1].label || '') : '';
+    const curLabel  = s.label || '';
+    const isNewCluster = isClusterMethod && si > 0 && (() => {
+      const pm = prevLabel.match(/Cluster\s*(\d+)/i);
+      const cm = curLabel.match(/Cluster\s*(\d+)/i);
+      return pm && cm && pm[1] !== cm[1];
+    })();
+
+    return `
+      ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0" title="Próximo cluster — 2-3min descanso"></div>` : ''}
+      <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
+        <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
+        <div>
+          <input type="number" step="0.5" value="${loadVal}" placeholder="${isTime?'km/h':'kg'}"
+            class="form-input serie-load" data-serie="${si}" data-index="${index}"
+            style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${loadVal?`color:var(--primary)`:''}"/>
+        </div>
+        <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
+          ${isTime ? s.reps : `${s.reps} reps`}
+        </div>
+        <div title="${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'Pausa intra-série (20s). Entre clusters: 2-3min.' : ''}">
+          <input type="number" value="${restVal}"
+            class="form-input serie-rest" data-serie="${si}"
+            style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
+            placeholder="s" title="Descanso (s)"/>
+        </div>
+      </div>`;
+  }).join('');
+
+  const seriesLegend = `
+    <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
+      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
+    </div>`;
+
+  panel.innerHTML = seriesHeader + seriesLegend + seriesHTML;
+  row.appendChild(panel);
+
+  // Recalcular cargas quando carga base muda
+  panel.querySelector('.method-base-load')?.addEventListener('input', e => {
+    const newBase = parseFloat(e.target.value) || 0;
+    const mainLoad = row.querySelector(`[name="ex_load_${index}"]`);
+    if (mainLoad && newBase) mainLoad.value = newBase;
+    panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+      const s = dynamicSeries[si];
+      if (s && newBase > 0 && !isTime) {
+        const calc = Math.round(newBase * s.loadPct * 2) / 2;
+        inp.value = calc;
+        inp.style.color = 'var(--primary)';
+      }
+    });
+  });
+
+  // Sincronizar carga base se já preenchida
+  const mainLoadEl = row.querySelector(`[name="ex_load_${index}"]`);
+  if (mainLoadEl) {
+    mainLoadEl.addEventListener('input', e => {
+      const newBase = parseFloat(e.target.value) || 0;
+      const baseInp = panel.querySelector('.method-base-load');
+      if (baseInp) baseInp.value = newBase || '';
+      panel.querySelectorAll('.serie-load').forEach((inp, si) => {
+        const s = dynamicSeries[si];
+        if (s && newBase > 0 && !isTime) {
+          inp.value = Math.round(newBase * s.loadPct * 2) / 2;
+          inp.style.color = 'var(--primary)';
+        }
+      });
+    });
+  }
+}
+
 function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
   const loadType = ex.loadType || 'weight';
   const isTime   = loadType === 'time';
@@ -558,8 +927,10 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
     const baseLoad = parseFloat(ex.load) || 0;
     const restElVal = ex.rest || '60';
     const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+    const setsCount = parseInt(ex.sets) || (ex.seriesProgression ? ex.seriesProgression.length : (progression.series ? progression.series.length : 3));
+    const dynamicSeries = generateDynamicSeries(ex.method, setsCount, restElVal) || progression.series;
 
-    const seriesHTML = progression.series.map((s, si) => {
+    const seriesHTML = dynamicSeries.map((s, si) => {
       const savedSerie = ex.seriesProgression?.[si];
       // Para linhas extras (clusters 2 e 3 sem save), propagar a carga da série 0
       const baseLoadFallback = ex.seriesProgression?.[0]?.load || baseLoad;
@@ -569,7 +940,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       const restVal = savedSerie?.rest != null ? savedSerie.rest : (s.rest != null ? s.rest : restElVal);
 
       // Separador entre clusters
-      const prevLabel = si > 0 ? (progression.series[si-1].label || '') : '';
+      const prevLabel = si > 0 ? (dynamicSeries[si-1].label || '') : '';
       const curLabel  = s.label || '';
       const isNewCluster = isClusterMethod && si > 0 && (() => {
         const pm = prevLabel.match(/Cluster\s*(\d+)/i);
@@ -771,12 +1142,15 @@ function collectExercises() {
 
     if (seriesPanel && METHOD_PROGRESSIONS[method]) {
       const serieRows  = seriesPanel.querySelectorAll('div[data-serie]');
-      const progression = METHOD_PROGRESSIONS[method];
+      const setsCount  = serieRows.length;
+      const restEl     = row.querySelector(`[name="ex_rest_${i}"]`);
+      const restVal    = parseInt(restEl?.value) || 60;
+      const dynamicSeries = generateDynamicSeries(method, setsCount, restVal) || [];
       const serieLogs  = [];
       serieRows.forEach((sr, si) => {
         const loadEl = sr.querySelector('.serie-load');
         const restEl = sr.querySelector('.serie-rest');
-        const s      = progression.series[si];
+        const s      = dynamicSeries[si];
         serieLogs.push({
           set:   si + 1,
           reps:  s?.reps || '—',
@@ -1362,12 +1736,11 @@ function bindRemoveExercise() {
 
 function bindExerciseRowHandlers(allExercises, allMethods) {
   bindRemoveExercise();
-  // Atualizar visual de combinados ao carregar
   refreshCombinedVisuals();
 
   // ── Auto-preenchimento ao selecionar MÉTODO ─────────────────
   document.querySelectorAll('.ex-method').forEach(sel => {
-    sel.addEventListener('change', () => {
+    sel.onchange = () => {
       const opt      = sel.selectedOptions[0];
       const i        = sel.dataset.index;
       const row      = sel.closest('.exercise-row');
@@ -1409,13 +1782,9 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
 
       // ── MÉTODO COMBINADO: banner + auto-adicionar exercício par ──
       if (isCombinedMethod) {
-        // Remover qualquer painel antigo
         row?.querySelectorAll('.method-series-panel,.method-tip,.combined-banner').forEach(p => p.remove());
-
-        // Forçar descanso = 0 neste exercício
         if (restEl) restEl.value = '0';
 
-        // Banner visual
         const COMBINED_DESC = {
           'Bi-set': 'Execute com o próximo exercício sem descanso. Descanse apenas após completar o par.',
           'Super-série Agonista': 'Mesmo grupo muscular em sequência sem pausa. Descanse após o par.',
@@ -1439,20 +1808,14 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
           </div>`;
         row?.appendChild(banner);
 
-        // Ao clicar "+ Adicionar par" — inserir novo exercício com mesmo método logo abaixo
-        banner.querySelector('.btn-add-pair')?.addEventListener('click', () => {
+        banner.querySelector('.btn-add-pair').onclick = () => {
           const container = document.getElementById('exerciseRows');
           if (!container) return;
-
-          // Determinar quantas linhas de par já existem abaixo com o mesmo método
           const rows = Array.from(container.querySelectorAll('.exercise-row'));
           const curIdx = rows.indexOf(row);
-
-          // Novo índice
           const exIndex = rows.length;
           const newHTML = exerciseRowHTML(exIndex, { method: methodName, rest: '0' }, allExercises, allMethods);
 
-          // Inserir após o último exercício do mesmo grupo consecutivo
           let insertAfter = row;
           for (let j = curIdx + 1; j < rows.length; j++) {
             const m = rows[j].querySelector('.ex-method')?.value;
@@ -1462,14 +1825,13 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
           insertAfter.insertAdjacentHTML('afterend', newHTML);
           bindExerciseRowHandlers(allExercises, allMethods);
           refreshCombinedVisuals();
-        });
+        };
 
         refreshCombinedVisuals();
         return;
       }
 
       if (!progression) {
-        // Método simples — apenas dica de descrição
         const desc = opt?.dataset.desc;
         if (desc) {
           const tip = document.createElement('div');
@@ -1480,122 +1842,26 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
         }
         return;
       }
-      const baseLoad = parseFloat(row?.querySelector(`[name="ex_load_${i}"]`)?.value) || 0;
-      const loadType = row?.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
-      const isTime   = loadType === 'time';
 
-      // Atualizar contador de séries
-      if (setsEl) setsEl.value = progression.series.length;
+      rebuildMethodSeriesPanel(row, i, false);
+    };
+  });
 
-      // Criar painel
-      const panel = document.createElement('div');
-      panel.className = 'method-series-panel';
-      panel.style.cssText = 'grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px';
-
-      const seriesHeader = `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div>
-            <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${methodName}</span>
-            <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:0.65rem;color:var(--text-muted)">Carga base (kg):</span>
-            <input type="number" step="0.5" value="${baseLoad||''}" placeholder="kg"
-              class="form-input method-base-load" data-index="${i}"
-              style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
-          </div>
-        </div>`;
-
-      const isClusterMethod = methodName === 'Rest-Pause' || methodName === 'Cluster';
-
-      const seriesHTML = progression.series.map((s, si) => {
-        const calcLoad = baseLoad > 0 && !isTime
-          ? Math.round(baseLoad * s.loadPct * 2) / 2
-          : '';
-        const restVal  = s.rest != null ? s.rest : (restEl?.value || '60');
-        const restDisplay = restVal == 0 ? '—' : restVal >= 60 ? `${Math.round(restVal/60)}min${restVal%60?restVal%60+'s':''}` : `${restVal}s`;
-
-        // Separador visual entre clusters
-        const prevLabel = si > 0 ? (progression.series[si-1].label || '') : '';
-        const curLabel  = s.label || '';
-        const isNewCluster = isClusterMethod && si > 0 && (() => {
-          const pm = prevLabel.match(/Cluster\s*(\d+)/i);
-          const cm = curLabel.match(/Cluster\s*(\d+)/i);
-          return pm && cm && pm[1] !== cm[1];
-        })();
-
-        return `
-          ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0" title="Próximo cluster — 2-3min descanso"></div>` : ''}
-          <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
-            <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
-            <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
-            <div>
-              <input type="number" step="0.5" value="${calcLoad}" placeholder="${isTime?'km/h':'kg'}"
-                class="form-input serie-load" data-serie="${si}" data-index="${i}"
-                style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${calcLoad?`color:var(--primary)`:''}"/>
-            </div>
-            <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
-              ${isTime ? s.reps : `${s.reps} reps`}
-            </div>
-            <div title="${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'Pausa intra-série (20s). Entre clusters: 2-3min.' : ''}">
-              <input type="number" value="${restVal}"
-                class="form-input serie-rest" data-serie="${si}"
-                style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
-                placeholder="s" title="Descanso (s)"/>
-            </div>
-          </div>`;
-      }).join('');
-
-      const seriesLegend = `
-        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
-        </div>`;
-
-      panel.innerHTML = seriesHeader + seriesLegend + seriesHTML;
-      row?.appendChild(panel);
-
-      // ── Recalcular cargas quando carga base muda ─────────────
-      panel.querySelector('.method-base-load')?.addEventListener('input', e => {
-        const newBase = parseFloat(e.target.value) || 0;
-        // Atualizar campo principal de carga
-        const mainLoad = row?.querySelector(`[name="ex_load_${i}"]`);
-        if (mainLoad && newBase) mainLoad.value = newBase;
-        panel.querySelectorAll('.serie-load').forEach((inp, si) => {
-          const s = progression.series[si];
-          if (s && newBase > 0 && !isTime) {
-            const calc = Math.round(newBase * s.loadPct * 2) / 2;
-            inp.value = calc;
-            inp.style.color = 'var(--primary)';
-          }
-        });
-      });
-
-      // Sincronizar carga base se já preenchida
-      const mainLoadEl = row?.querySelector(`[name="ex_load_${i}"]`);
-      if (mainLoadEl) {
-        mainLoadEl.addEventListener('input', e => {
-          const newBase = parseFloat(e.target.value) || 0;
-          const baseInp = panel.querySelector('.method-base-load');
-          if (baseInp) baseInp.value = newBase || '';
-          panel.querySelectorAll('.serie-load').forEach((inp, si) => {
-            const s = progression.series[si];
-            if (s && newBase > 0 && !isTime) {
-              inp.value = Math.round(newBase * s.loadPct * 2) / 2;
-              inp.style.color = 'var(--primary)';
-            }
-          });
-        });
+  // ── Atualizar painel ao mudar número de SÉRIES ───────────────
+  document.querySelectorAll('[name^="ex_sets_"]').forEach(inp => {
+    inp.oninput = () => {
+      const row = inp.closest('.exercise-row');
+      const i = row?.dataset.index;
+      const methodName = row?.querySelector('.ex-method')?.value || '';
+      if (row && methodName && METHOD_PROGRESSIONS[methodName]) {
+        rebuildMethodSeriesPanel(row, i, true);
       }
-    });
+    };
   });
 
   // ── Auto-preencher tipo de carga ao selecionar exercício ────
   document.querySelectorAll('.ex-name-input').forEach(inp => {
-    inp.addEventListener('change', () => {
+    inp.onchange = () => {
       const ex = allExercises.find(e => e.name.toLowerCase() === inp.value.toLowerCase());
       if (!ex) return;
       const i     = inp.dataset.index;
@@ -1607,12 +1873,12 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       if (ex.loadType && ltSel) ltSel.value = ex.loadType;
       if (ex.defaultReps && repsEl && (!repsEl.value || repsEl.value === '12')) repsEl.value = ex.defaultReps;
       if (lbl) lbl.textContent = ex.loadType === 'time' ? 'Intensidade' : ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
-    });
+    };
   });
 
   // ── Atualizar label ao mudar tipo de carga ──────────────────
   document.querySelectorAll('.ex-loadtype').forEach(sel => {
-    sel.addEventListener('change', () => {
+    sel.onchange = () => {
       const i   = sel.dataset.index;
       const row = sel.closest('.exercise-row');
       if (!row) return;
@@ -1621,48 +1887,20 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       if (lbl) lbl.textContent = lt === 'time' ? 'Intensidade' : lt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
       const loadEl = row.querySelector(`[name="ex_load_${i}"]`);
       if (loadEl) loadEl.placeholder = lt === 'time' ? 'km/h/W' : lt === 'bodyweight' ? '+kg' : 'kg';
-    });
+
+      const methodName = row.querySelector('.ex-method')?.value || '';
+      if (methodName && METHOD_PROGRESSIONS[methodName]) {
+        rebuildMethodSeriesPanel(row, i, true);
+      }
+    };
   });
 
   // ── Sincronizar painéis de métodos pré-existentes (na edição) ──
-  document.querySelectorAll('.method-series-panel').forEach(panel => {
-    const row = panel.closest('.exercise-row');
-    if (!row) return;
+  document.querySelectorAll('.exercise-row').forEach(row => {
     const i = row.dataset.index;
     const methodName = row.querySelector('.ex-method')?.value;
-    const progression = METHOD_PROGRESSIONS[methodName];
-    if (!progression) return;
-
-    const isTime = row.querySelector('.ex-loadtype')?.value === 'time';
-
-    panel.querySelector('.method-base-load')?.addEventListener('input', e => {
-      const newBase = parseFloat(e.target.value) || 0;
-      const mainLoad = row.querySelector(`[name="ex_load_${i}"]`);
-      if (mainLoad && newBase) mainLoad.value = newBase;
-      panel.querySelectorAll('.serie-load').forEach((inp, si) => {
-        const s = progression.series[si];
-        if (s && newBase > 0 && !isTime) {
-          const calc = Math.round(newBase * s.loadPct * 2) / 2;
-          inp.value = calc;
-          inp.style.color = 'var(--primary)';
-        }
-      });
-    });
-
-    const mainLoadEl = row.querySelector(`[name="ex_load_${i}"]`);
-    if (mainLoadEl) {
-      mainLoadEl.addEventListener('input', e => {
-        const newBase = parseFloat(e.target.value) || 0;
-        const baseInp = panel.querySelector('.method-base-load');
-        if (baseInp) baseInp.value = newBase || '';
-        panel.querySelectorAll('.serie-load').forEach((inp, si) => {
-          const s = progression.series[si];
-          if (s && newBase > 0 && !isTime) {
-            inp.value = Math.round(newBase * s.loadPct * 2) / 2;
-            inp.style.color = 'var(--primary)';
-          }
-        });
-      });
+    if (methodName && METHOD_PROGRESSIONS[methodName]) {
+      rebuildMethodSeriesPanel(row, i, true);
     }
   });
 }
