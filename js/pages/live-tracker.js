@@ -98,6 +98,7 @@ export async function renderTracker() {
       state.exIdx    = running.currentExIdx || 0;
       state.workSec  = running.workSec || 0;
       state.tempSets = running.tempSets || {};
+      state.isResting = running.isResting || false;
       if (running.lastAutoSave) {
         console.log(`[Sessão recuperada] Último autosave: ${running.lastAutoSave}`);
       }
@@ -644,6 +645,7 @@ export function initTracker(navigateFn) {
         } else {
           row.style.display = 'none';
         }
+      });
     });
   }
 
@@ -1078,7 +1080,7 @@ export function initTracker(navigateFn) {
       });
       notify.success('Dados pré-treino do aluno carregados!');
     }
-    const session = { studentId: wk.studentId, workoutId: wk.id, workoutName: wk.name, exercises: JSON.parse(JSON.stringify(wk.exercises || [])), date: Calc.nowISO(), startTime: Date.now(), status: 'running', soundEnabled: document.getElementById('trkSound')?.checked !== false, preBiofeedback: preBf, setLog: [] };
+    const session = { studentId: wk.studentId, workoutId: wk.id, workoutName: wk.name, exercises: JSON.parse(JSON.stringify(wk.exercises || [])), date: Calc.nowISO(), startTime: Date.now(), status: 'running', soundEnabled: document.getElementById('trkSound')?.checked !== false, preBiofeedback: preBf, setLog: [], isResting: false, stateChangedAt: Date.now() };
     const saved = await db.add('sessions', session);
     resetState();
     state.session = { ...session, id: saved.id };
@@ -1087,6 +1089,70 @@ export function initTracker(navigateFn) {
   });
 
   if (!state.session) return;
+
+  // Recovery of work and rest timers
+  const curEx = (state.session.exercises || [])[state.exIdx] || {};
+  const exs_all = state.session.exercises || [];
+  const isCombinedEx = COMBINED_METHODS?.has(curEx.method);
+  const nextEx = exs_all[state.exIdx + 1];
+  const isLastOfGroup = !nextEx
+    || (curEx.groupId ? nextEx.groupId !== curEx.groupId : (nextEx.method !== curEx.method || !COMBINED_METHODS?.has(nextEx.method)));
+  let curRestDur = isCombinedEx && !isLastOfGroup ? 0 : (parseInt(curEx.rest) || 60);
+
+  let progression = curEx.seriesProgression;
+  if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
+    const progDef = METHOD_PROGRESSIONS[curEx.method];
+    const baseLoad = parseFloat(curEx.load) || 0;
+    progression = progDef.series.map((s, si) => ({
+      set: si + 1,
+      reps: s.reps,
+      load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
+      rest: (isCombinedEx && s.rest === 0) ? 0 : (s.rest != null ? s.rest : parseInt(curEx.rest || 60)),
+      label: s.label || `Série ${si + 1}`
+    }));
+  }
+
+  if (progression && progression[state.setIdx]) {
+    const sRest = progression[state.setIdx].rest;
+    if (sRest != null) curRestDur = parseInt(sRest);
+    if (isCombinedEx && !isLastOfGroup) curRestDur = 0;
+  }
+
+  const now = Date.now();
+  const stateChangedAt = state.session.stateChangedAt || state.session.startTime || now;
+  const timePassed = Math.floor((now - stateChangedAt) / 1000);
+
+  let workElapsed = 0;
+  let restElapsed = 0;
+  let runRestTimer = false;
+
+  if (state.isResting) {
+    const targetRest = state.session.restDuration || curRestDur;
+    if (timePassed < targetRest) {
+      restElapsed = timePassed;
+      runRestTimer = true;
+    } else {
+      // Rest timer finished in background
+      state.isResting = false;
+      state.session.isResting = false;
+      state.session.stateChangedAt = stateChangedAt + (targetRest * 1000);
+      const extraSec = timePassed - targetRest;
+      if (extraSec < 1800) {
+        workElapsed = extraSec;
+      }
+      db.put('sessions', {
+        ...state.session,
+        isResting: false,
+        stateChangedAt: state.session.stateChangedAt,
+        workSec: state.workSec
+      }).catch(e => console.warn('[recovery save] falhou:', e?.message));
+    }
+  } else {
+    // User was working
+    if (timePassed < 1800) {
+      workElapsed = timePassed;
+    }
+  }
 
   // Total timer
   if (!state.workoutTimer) {
@@ -1099,8 +1165,20 @@ export function initTracker(navigateFn) {
   // Work timer
   if (!state.workTimer) {
     state.workTimer = new Timer({ mode: 'stopwatch' });
-    state.workTimer.elapsed = 0;
+    state.workTimer.elapsed = workElapsed;
     if (!state.isResting) state.workTimer.start();
+  }
+
+  // Rest timer (pre-initialize if active)
+  if (runRestTimer && !state.restTimer) {
+    const targetRest = state.session.restDuration || curRestDur;
+    state.restTimer = new Timer({
+      mode: 'countdown',
+      duration: targetRest,
+      soundEnabled: state.session.soundEnabled !== false
+    });
+    state.restTimer.elapsed = restElapsed;
+    state.restTimer.start();
   }
 
   // UI loop
@@ -1153,6 +1231,9 @@ export function initTracker(navigateFn) {
         tempSets:      currentTempSets,
         lastAutoSave:  new Date().toISOString(),
         status: 'running',
+        isResting:     state.isResting,
+        stateChangedAt: state.session.stateChangedAt || state.session.startTime,
+        restDuration:  state.session.restDuration || 0
       });
     } catch(e) {
       console.warn('[autosave] falhou:', e?.message);
@@ -1241,6 +1322,11 @@ export function initTracker(navigateFn) {
         if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
         if (b) b.textContent = '▶ Iniciar Descanso';
         state.isResting = false;
+        if (state.session) {
+          state.session.isResting = false;
+          state.session.stateChangedAt = Date.now();
+        }
+        autoSaveSession();
         state.workTimer?.start();
         notify.success('Descanso finalizado!');
       }
@@ -1264,6 +1350,11 @@ export function initTracker(navigateFn) {
       if (l) { l.textContent = 'HORA DE TREINAR!'; l.style.color = 'var(--primary)'; }
       if (b) b.textContent = '▶ Iniciar Descanso';
       state.isResting = false;
+      if (state.session) {
+        state.session.isResting = false;
+        state.session.stateChangedAt = Date.now();
+      }
+      autoSaveSession();
       state.workTimer?.start();
       notify.success('Descanso finalizado!');
     };
@@ -1281,7 +1372,14 @@ export function initTracker(navigateFn) {
     state.restTimer.soundEnabled = document.getElementById('sndToggle')?.checked !== false;
     const btn = document.getElementById('goRest');
     if (state.restTimer.running) {
-      state.restTimer.stop(); state.isResting = false; state.workTimer?.start();
+      state.restTimer.stop();
+      state.isResting = false;
+      if (state.session) {
+        state.session.isResting = false;
+        state.session.stateChangedAt = Date.now();
+      }
+      autoSaveSession();
+      state.workTimer?.start();
       if (btn) btn.textContent = '▶ Iniciar Descanso';
     } else {
       state.restTimer.reset(); state.restTimer.start();
@@ -1289,6 +1387,12 @@ export function initTracker(navigateFn) {
       // Acumular tempo de trabalho ANTES de parar e resetar o workTimer
       state.workSec = (state.workSec || 0) + (state.workTimer?.getElapsed() || 0);
       state.workTimer?.stop(); state.workTimer?.reset();
+      if (state.session) {
+        state.session.isResting = true;
+        state.session.stateChangedAt = Date.now();
+        state.session.restDuration = state.restTimer.duration;
+      }
+      autoSaveSession();
       if (btn) btn.textContent = '⏸ Pausar Descanso';
       const l = document.getElementById('restLbl');
       if (l) { l.textContent = 'Descansando...'; l.style.color = ''; }
@@ -1297,7 +1401,13 @@ export function initTracker(navigateFn) {
 
   document.getElementById('rstRest')?.addEventListener('click', () => {
     state.restTimer.stop(); state.restTimer.reset();
-    state.isResting = false; state.workTimer?.start();
+    state.isResting = false;
+    if (state.session) {
+      state.session.isResting = false;
+      state.session.stateChangedAt = Date.now();
+    }
+    autoSaveSession();
+    state.workTimer?.start();
     const c = document.getElementById('restCount');
     const l = document.getElementById('restLbl');
     const b = document.getElementById('goRest');
@@ -1354,6 +1464,12 @@ export function initTracker(navigateFn) {
     // Acumular tempo de trabalho ANTES de parar e resetar o workTimer
     state.workSec = (state.workSec || 0) + (state.workTimer?.getElapsed() || 0);
     state.workTimer?.stop(); state.workTimer?.reset();
+    if (state.session) {
+      state.session.isResting = true;
+      state.session.stateChangedAt = Date.now();
+      state.session.restDuration = restDur;
+    }
+    autoSaveSession();
     const c = document.getElementById('restCount');
     const l = document.getElementById('restLbl');
     const b2 = document.getElementById('goRest');
