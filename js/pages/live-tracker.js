@@ -1091,94 +1091,96 @@ export function initTracker(navigateFn) {
   if (!state.session) return;
 
   // Recovery of work and rest timers
-  const curEx = (state.session.exercises || [])[state.exIdx] || {};
-  const exs_all = state.session.exercises || [];
-  const isCombinedEx = COMBINED_METHODS?.has(curEx.method);
-  const nextEx = exs_all[state.exIdx + 1];
-  const isLastOfGroup = !nextEx
-    || (curEx.groupId ? nextEx.groupId !== curEx.groupId : (nextEx.method !== curEx.method || !COMBINED_METHODS?.has(nextEx.method)));
-  let curRestDur = isCombinedEx && !isLastOfGroup ? 0 : (parseInt(curEx.rest) || 60);
+  {
+    const curEx = (state.session.exercises || [])[state.exIdx] || {};
+    const exs_all = state.session.exercises || [];
+    const isCombinedEx = COMBINED_METHODS?.has(curEx.method);
+    const nextEx = exs_all[state.exIdx + 1];
+    const isLastOfGroup = !nextEx
+      || (curEx.groupId ? nextEx.groupId !== curEx.groupId : (nextEx.method !== curEx.method || !COMBINED_METHODS?.has(nextEx.method)));
+    let curRestDur = isCombinedEx && !isLastOfGroup ? 0 : (parseInt(curEx.rest) || 60);
 
-  let progression = curEx.seriesProgression;
-  if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
-    const progDef = METHOD_PROGRESSIONS[curEx.method];
-    const baseLoad = parseFloat(curEx.load) || 0;
-    progression = progDef.series.map((s, si) => ({
-      set: si + 1,
-      reps: s.reps,
-      load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-      rest: (isCombinedEx && s.rest === 0) ? 0 : (s.rest != null ? s.rest : parseInt(curEx.rest || 60)),
-      label: s.label || `Série ${si + 1}`
-    }));
-  }
+    let progression = curEx.seriesProgression;
+    if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
+      const progDef = METHOD_PROGRESSIONS[curEx.method];
+      const baseLoad = parseFloat(curEx.load) || 0;
+      progression = progDef.series.map((s, si) => ({
+        set: si + 1,
+        reps: s.reps,
+        load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
+        rest: (isCombinedEx && s.rest === 0) ? 0 : (s.rest != null ? s.rest : parseInt(curEx.rest || 60)),
+        label: s.label || `Série ${si + 1}`
+      }));
+    }
 
-  if (progression && progression[state.setIdx]) {
-    const sRest = progression[state.setIdx].rest;
-    if (sRest != null) curRestDur = parseInt(sRest);
-    if (isCombinedEx && !isLastOfGroup) curRestDur = 0;
-  }
+    if (progression && progression[state.setIdx]) {
+      const sRest = progression[state.setIdx].rest;
+      if (sRest != null) curRestDur = parseInt(sRest);
+      if (isCombinedEx && !isLastOfGroup) curRestDur = 0;
+    }
 
-  const now = Date.now();
-  const stateChangedAt = state.session.stateChangedAt || state.session.startTime || now;
-  const timePassed = Math.floor((now - stateChangedAt) / 1000);
+    const now = Date.now();
+    const stateChangedAt = state.session.stateChangedAt || state.session.startTime || now;
+    const timePassed = Math.floor((now - stateChangedAt) / 1000);
 
-  let workElapsed = 0;
-  let restElapsed = 0;
-  let runRestTimer = false;
+    let workElapsed = 0;
+    let restElapsed = 0;
+    let runRestTimer = false;
 
-  if (state.isResting) {
-    const targetRest = state.session.restDuration || curRestDur;
-    if (timePassed < targetRest) {
-      restElapsed = timePassed;
-      runRestTimer = true;
-    } else {
-      // Rest timer finished in background
-      state.isResting = false;
-      state.session.isResting = false;
-      state.session.stateChangedAt = stateChangedAt + (targetRest * 1000);
-      const extraSec = timePassed - targetRest;
-      if (extraSec < 1800) {
-        workElapsed = extraSec;
+    if (state.isResting) {
+      const targetRest = state.session.restDuration || curRestDur;
+      if (timePassed < targetRest) {
+        restElapsed = timePassed;
+        runRestTimer = true;
+      } else {
+        // Rest timer finished in background
+        state.isResting = false;
+        state.session.isResting = false;
+        state.session.stateChangedAt = stateChangedAt + (targetRest * 1000);
+        const extraSec = timePassed - targetRest;
+        if (extraSec < 1800) {
+          workElapsed = extraSec;
+        }
+        db.put('sessions', {
+          ...state.session,
+          isResting: false,
+          stateChangedAt: state.session.stateChangedAt,
+          workSec: state.workSec
+        }).catch(e => console.warn('[recovery save] falhou:', e?.message));
       }
-      db.put('sessions', {
-        ...state.session,
-        isResting: false,
-        stateChangedAt: state.session.stateChangedAt,
-        workSec: state.workSec
-      }).catch(e => console.warn('[recovery save] falhou:', e?.message));
+    } else {
+      // User was working
+      if (timePassed < 1800) {
+        workElapsed = timePassed;
+      }
     }
-  } else {
-    // User was working
-    if (timePassed < 1800) {
-      workElapsed = timePassed;
+
+    // Total timer
+    if (!state.workoutTimer) {
+      const e0 = Math.floor((Date.now() - state.session.startTime) / 1000);
+      state.workoutTimer = new Timer({ mode: 'stopwatch' });
+      state.workoutTimer.elapsed = e0;
+      state.workoutTimer.start();
     }
-  }
 
-  // Total timer
-  if (!state.workoutTimer) {
-    const e0 = Math.floor((Date.now() - state.session.startTime) / 1000);
-    state.workoutTimer = new Timer({ mode: 'stopwatch' });
-    state.workoutTimer.elapsed = e0;
-    state.workoutTimer.start();
-  }
+    // Work timer
+    if (!state.workTimer) {
+      state.workTimer = new Timer({ mode: 'stopwatch' });
+      state.workTimer.elapsed = workElapsed;
+      if (!state.isResting) state.workTimer.start();
+    }
 
-  // Work timer
-  if (!state.workTimer) {
-    state.workTimer = new Timer({ mode: 'stopwatch' });
-    state.workTimer.elapsed = workElapsed;
-    if (!state.isResting) state.workTimer.start();
-  }
-
-  // Rest timer (pre-initialize if active)
-  if (runRestTimer && !state.restTimer) {
-    const targetRest = state.session.restDuration || curRestDur;
-    state.restTimer = new Timer({
-      mode: 'countdown',
-      duration: targetRest,
-      soundEnabled: state.session.soundEnabled !== false
-    });
-    state.restTimer.elapsed = restElapsed;
-    state.restTimer.start();
+    // Rest timer (pre-initialize if active)
+    if (runRestTimer && !state.restTimer) {
+      const targetRest = state.session.restDuration || curRestDur;
+      state.restTimer = new Timer({
+        mode: 'countdown',
+        duration: targetRest,
+        soundEnabled: state.session.soundEnabled !== false
+      });
+      state.restTimer.elapsed = restElapsed;
+      state.restTimer.start();
+    }
   }
 
   // UI loop
