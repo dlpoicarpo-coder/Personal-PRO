@@ -1237,21 +1237,79 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   let soloSessionId = null;
   let autoSaveInterval = null;
   let autoSaveTimeout = null;
+  let lastTickTime = null;
 
   function cleanupAutoSaveListeners() {
     if (autoSaveInterval) clearInterval(autoSaveInterval);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.removeEventListener('focus', handleForeground);
   }
 
   function handleVisibilityChange() {
     if (document.visibilityState === 'hidden') {
       autoSaveSoloSession();
+    } else if (document.visibilityState === 'visible') {
+      handleForeground();
     }
   }
 
   function handleBeforeUnload() {
     autoSaveSoloSession();
+  }
+
+  function handleForeground() {
+    if (!lastTickTime) return;
+    const now = Date.now();
+    const elapsed = Math.floor((now - lastTickTime) / 1000);
+    if (elapsed > 1) {
+      catchUpTimers(elapsed);
+      lastTickTime = now;
+      const totalElapsed = soloStartTime ? Math.floor((now - soloStartTime) / 1000) : 0;
+      updateTimerDisplays(totalElapsed);
+    }
+  }
+
+  function catchUpTimers(elapsed) {
+    if (isResting) {
+      if (isRestPaused) {
+        workSeconds += elapsed;
+      } else {
+        const timeResting = Math.min(elapsed, restRemaining);
+        restRemaining -= timeResting;
+        restSeconds += timeResting;
+
+        const timeWorking = elapsed - timeResting;
+        workSeconds += timeWorking;
+
+        if (restRemaining <= 0) {
+          clearInterval(restTimer);
+          isResting = false;
+          activeRestingRowId = null;
+          const overlay = document.getElementById('restTimerOverlay');
+          if (overlay) overlay.style.display = 'none';
+          playBeep(1000, 0.25, 3);
+          triggerAutoSave();
+        } else {
+          const cd = document.getElementById('restCountdown');
+          const bar = document.getElementById('restBarFill');
+          if (cd) cd.textContent = restRemaining;
+          if (bar) bar.style.width = `${(restRemaining / restTotal) * 100}%`;
+        }
+      }
+    } else {
+      workSeconds += elapsed;
+    }
+  }
+
+  function updateTimerDisplays(totalElapsed) {
+    const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    const el = document.getElementById('liveTotal');
+    const ew = document.getElementById('liveWork');
+    const er = document.getElementById('liveRest');
+    if (el) el.textContent = fmt(totalElapsed);
+    if (ew) ew.textContent = fmt(workSeconds);
+    if (er) er.textContent = fmt(restSeconds);
   }
 
   function collectSoloSessionData() {
@@ -1635,21 +1693,30 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     }
 
     soloStartTime = new Date(saved.startTime);
+    lastTickTime = Date.now();
     soloTimerInterval = setInterval(() => {
-      const elapsed = Math.floor((new Date() - soloStartTime) / 1000);
-      if (!isResting) workSeconds++;
-      const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-      const el = document.getElementById('liveTotal');
-      const ew = document.getElementById('liveWork');
-      const er = document.getElementById('liveRest');
-      if (el) el.textContent = fmt(elapsed);
-      if (ew) ew.textContent = fmt(workSeconds);
-      if (er) er.textContent = fmt(restSeconds);
+      const now = Date.now();
+      const actualElapsed = Math.floor((now - lastTickTime) / 1000);
+      lastTickTime = now;
+
+      if (actualElapsed > 1) {
+        catchUpTimers(actualElapsed);
+      } else {
+        if (isResting) {
+          restSeconds++;
+        } else {
+          workSeconds++;
+        }
+      }
+
+      const totalElapsed = Math.floor((now - soloStartTime) / 1000);
+      updateTimerDisplays(totalElapsed);
     }, 1000);
 
     autoSaveInterval = setInterval(autoSaveSoloSession, 20000);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('focus', handleForeground);
 
     setupAutoSaveEventDelegation();
 
@@ -2469,17 +2536,24 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   }
   function startMainTimer() {
     soloStartTime = new Date();
+    lastTickTime = Date.now();
     soloTimerInterval = setInterval(() => {
-      const elapsed = Math.floor((new Date() - soloStartTime) / 1000);
-      // Only count work when NOT resting
-      if (!isResting) workSeconds++;
-      const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-      const el = document.getElementById('liveTotal');
-      const ew = document.getElementById('liveWork');
-      const er = document.getElementById('liveRest');
-      if (el) el.textContent = fmt(elapsed);
-      if (ew) ew.textContent = fmt(workSeconds);
-      if (er) er.textContent = fmt(restSeconds);
+      const now = Date.now();
+      const actualElapsed = Math.floor((now - lastTickTime) / 1000);
+      lastTickTime = now;
+
+      if (actualElapsed > 1) {
+        catchUpTimers(actualElapsed);
+      } else {
+        if (isResting) {
+          restSeconds++;
+        } else {
+          workSeconds++;
+        }
+      }
+
+      const totalElapsed = Math.floor((now - soloStartTime) / 1000);
+      updateTimerDisplays(totalElapsed);
     }, 1000);
   }
 
@@ -2527,6 +2601,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     autoSaveInterval = setInterval(autoSaveSoloSession, 20000);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('focus', handleForeground);
 
     // Setup input/click triggers
     setupAutoSaveEventDelegation();
