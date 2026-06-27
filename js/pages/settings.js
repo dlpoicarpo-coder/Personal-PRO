@@ -5,6 +5,7 @@
 import db from '../db.js';
 import { exportBackup, importBackup } from '../utils/backup.js';
 import { notify } from '../components/toast.js';
+import { signOut } from '../utils/auth.js';
 
 export async function renderSettings() {
   const settings = await db.get('settings', 'trainer') || {};
@@ -184,10 +185,7 @@ export function initSettings(navigateFn) {
   document.getElementById('logoutSettingsBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
     if (window.confirm('Tem certeza que deseja sair da conta?')) {
-      if (db.supabase) {
-        await db.supabase.auth.signOut();
-      }
-      localStorage.removeItem('pp_session');
+      await signOut();
       const baseUrl = window.location.href.split('#')[0];
       window.location.href = baseUrl + '#/';
       setTimeout(() => window.location.reload(), 100);

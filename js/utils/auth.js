@@ -131,17 +131,18 @@ export async function signIn(email, password) {
 
 // Logout
 export async function signOut() {
-  const sb = getSupabase();
-  if (!sb) {
+  try {
+    localStorage.removeItem('pp_cached_uid');
     localStorage.removeItem('pp_session');
-    return;
-  }
+  } catch (_) {}
+
+  const sb = getSupabase();
+  if (!sb) return;
   try {
     await sb.auth.signOut();
   } catch (err) {
     console.warn('signOut failed:', err);
   }
-  localStorage.removeItem('pp_session');
 }
 
 // Send password reset email

@@ -2,6 +2,7 @@
 // PERSONAL PRO — Sidebar Component (v4)
 // ========================================
 import { ICONS } from '../utils/icons.js';
+import { signOut } from '../utils/auth.js';
 import db from '../db.js';
 
 const MENU_ITEMS = [
@@ -116,10 +117,7 @@ export function initSidebar() {
       e.preventDefault();
       e.stopPropagation();
       if (window.confirm('Tem certeza que deseja sair do sistema?')) {
-        if (db.supabase) {
-          await db.supabase.auth.signOut();
-        }
-        localStorage.removeItem('pp_session');
+        await signOut();
         const baseUrl = window.location.href.split('#')[0];
         window.location.href = baseUrl + '#/';
         setTimeout(() => window.location.reload(), 100);
