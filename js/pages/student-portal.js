@@ -2115,16 +2115,85 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         }
         exBlock.innerHTML = `
           <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do Treino</div>
-          ${w.exercises.map((ex,i) => `
-            <div class="glass-card portal-ex-pick-card" data-ei="${i}" data-wid="${w.id}" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.2s">
-              <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
-              <div style="flex:1;min-width:0">
-                <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
-                <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+ex.load+'kg':''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
+          ${w.exercises.map((ex,i) => {
+            const isCardio = isCardioExercise(ex);
+            return `
+            <div class="glass-card portal-ex-pick-card" data-ei="${i}" data-wid="${w.id}" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all 0.2s">
+              <div style="display:flex;align-items:center;gap:12px;width:100%">
+                <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
+                <div style="flex:1;min-width:0">
+                  <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
+                  <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+ex.load+'kg':''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-          `).join('')}`;
+              ${(() => {
+                if (!isCardio) return '';
+                const segments = getCardioSegments(ex);
+                if (segments.length === 0) return '';
+                const totalSec = segments.reduce((sum, seg) => sum + seg.duration, 0);
+                const isTimeSpeed = isSpeedPowerCardio(ex);
+
+                const getZoneColor = (intensity) => {
+                  if (intensity >= 90) return '#ef4444';
+                  if (intensity >= 83) return '#f97316';
+                  if (intensity >= 73) return '#eab308';
+                  if (intensity >= 63) return '#10b981';
+                  return '#3b82f6';
+                };
+
+                const formatTimeLabel = (sec) => {
+                  const m = Math.floor(sec / 60);
+                  const s = Math.floor(sec % 60);
+                  return `${m}:${String(s).padStart(2, '0')}`;
+                };
+
+                const formatDurationText = (sec) => {
+                  const m = Math.floor(sec / 60);
+                  const s = Math.floor(sec % 60);
+                  if (s > 0) return `${m} min ${s}s`;
+                  return `${m} min`;
+                };
+
+                return `
+                  <div class="portal-cardio-embedded" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06);box-sizing:border-box" onclick="event.stopPropagation()">
+                    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+                      <span>📊 Perfil do Ritmo (Cardio)</span>
+                      <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
+                    </div>
+                    <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
+                      <canvas id="cardioEmbedChart_preview_${i}" style="width:100%;height:100%"></canvas>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;padding-right:4px">
+                      ${segments.map((seg, idx) => {
+                        const timeLabel = `${formatTimeLabel(seg.start)} a ${formatTimeLabel(seg.end)}`;
+                        const targetLabel = seg.load != null ? `${seg.load}` : `${seg.intensity}%`;
+                        return `
+                          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.015);border-radius:6px;font-size:0.7rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
+                            <div style="display:flex;flex-direction:column;text-align:left">
+                              <span style="font-weight:700;color:var(--portal-text,#f1f5f9)">${seg.label}</span>
+                              <span style="font-size:0.65rem;color:#94a3b8">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
+                            </div>
+                            <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
+                              ${targetLabel}
+                            </div>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                `;
+              })()}
+            </div>`;
+          }).join('')}`;
+
+        // Initialize embedded charts
+        w.exercises.forEach((ex, i) => {
+          if (isCardioExercise(ex)) {
+            initEmbeddedCardioChart(`cardioEmbedChart_preview_${i}`, ex);
+          }
+        });
+
         // Bind info tap
         exBlock.querySelectorAll('.portal-ex-pick-card').forEach(card => {
           card.addEventListener('click', async () => {
@@ -2191,6 +2260,64 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                   <div style="font-size:0.58rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px"> Orientações</div>
                   <div style="font-size:0.78rem;color:var(--portal-text-secondary,#cbd5e1);line-height:1.5">${ex.trainerNotes || ex.notes}</div>
                 </div>` : ''}
+              ${(() => {
+                const isCardio = isCardioExercise(ex);
+                if (!isCardio) return '';
+                const segments = getCardioSegments(ex);
+                if (segments.length === 0) return '';
+                const totalSec = segments.reduce((sum, seg) => sum + seg.duration, 0);
+                const isTimeSpeed = isSpeedPowerCardio(ex);
+
+                const getZoneColor = (intensity) => {
+                  if (intensity >= 90) return '#ef4444';
+                  if (intensity >= 83) return '#f97316';
+                  if (intensity >= 73) return '#eab308';
+                  if (intensity >= 63) return '#10b981';
+                  return '#3b82f6';
+                };
+
+                const formatTimeLabel = (sec) => {
+                  const m = Math.floor(sec / 60);
+                  const s = Math.floor(sec % 60);
+                  return `${m}:${String(s).padStart(2, '0')}`;
+                };
+
+                const formatDurationText = (sec) => {
+                  const m = Math.floor(sec / 60);
+                  const s = Math.floor(sec % 60);
+                  if (s > 0) return `${m} min ${s}s`;
+                  return `${m} min`;
+                };
+
+                return `
+                  <div class="portal-cardio-embedded" style="margin-top:10px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06)">
+                    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+                      <span>📊 Perfil do Ritmo (Cardio)</span>
+                      <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
+                    </div>
+                    <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
+                      <canvas id="cardioEmbedChart_live_${ei}" style="width:100%;height:100%"></canvas>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;padding-right:4px">
+                      ${segments.map((seg, idx) => {
+                        const timeLabel = `${formatTimeLabel(seg.start)} a ${formatTimeLabel(seg.end)}`;
+                        const targetLabel = seg.load != null ? `${seg.load}` : `${seg.intensity}%`;
+                        return `
+                          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.015);border-radius:6px;font-size:0.7rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
+                            <div style="display:flex;flex-direction:column;text-align:left">
+                              <span style="font-weight:700;color:var(--portal-text,#f1f5f9)">${seg.label}</span>
+                              <span style="font-size:0.6rem;color:#94a3b8">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
+                            </div>
+                            <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
+                              ${targetLabel}
+                            </div>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                `;
+              })()}
             </div>
             ${(() => {
               const isCardio = isCardioExercise(ex);
@@ -2626,6 +2753,15 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       });
       card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+
+    // Initialize any embedded cardio charts in the active logger
+    if (w && w.exercises) {
+      w.exercises.forEach((ex, ei) => {
+        if (isCardioExercise(ex)) {
+          initEmbeddedCardioChart(`cardioEmbedChart_live_${ei}`, ex);
+        }
+      });
+    }
   }
   function startMainTimer() {
     soloStartTime = new Date();
@@ -5565,4 +5701,73 @@ function getYouTubeThumbnailUrl(url) {
     return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   }
   return '';
+}
+
+function initEmbeddedCardioChart(canvasId, ex) {
+  if (typeof Chart === 'undefined') return;
+  setTimeout(() => {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return;
+
+    const segments = getCardioSegments(ex);
+    const isTimeSpeed = isSpeedPowerCardio(ex);
+    const dataPoints = [];
+    segments.forEach(seg => {
+      dataPoints.push({ x: seg.start / 60, y: seg.intensity });
+      dataPoints.push({ x: seg.end / 60, y: seg.intensity });
+    });
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Intensidade',
+          data: dataPoints,
+          borderColor: '#06b6d4',
+          borderWidth: 2,
+          backgroundColor: 'rgba(6, 182, 212, 0.08)',
+          fill: true,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              title: (context) => {
+                const minutes = context[0].parsed.x;
+                const m = Math.floor(minutes);
+                const s = Math.round((minutes % 1) * 60);
+                return `Tempo: ${m}:${String(s).padStart(2, '0')}`;
+              },
+              label: (context) => {
+                const val = context.parsed.y;
+                return isTimeSpeed ? `Carga: ${val}` : `Intensidade: ${val}% FC Máx`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            ticks: { color: '#94a3b8', font: { size: 7 } },
+            grid: { color: 'rgba(255,255,255,0.03)' }
+          },
+          y: {
+            ticks: { color: '#94a3b8', font: { size: 7 } },
+            grid: { color: 'rgba(255,255,255,0.03)' },
+            suggestedMin: isTimeSpeed ? 0 : 50,
+            suggestedMax: isTimeSpeed ? undefined : 100
+          }
+        }
+      }
+    });
+  }, 100);
 }
