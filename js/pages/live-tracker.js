@@ -91,7 +91,7 @@ export async function renderTracker() {
   const sessions = await db.getAll('sessions');
 
   if (!state.session) {
-    const running = sessions.find(s => s.status === 'running');
+    const running = sessions.find(s => s.status === 'running' && !s.isSolo && !(s.data && s.data.isSolo));
     if (running) {
       state.session  = running;
       state.setLog   = running.setLog || [];
