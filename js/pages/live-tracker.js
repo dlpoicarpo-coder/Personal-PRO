@@ -1732,6 +1732,7 @@ export function initTracker(navigateFn) {
   document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { saveCurrentInputs(); state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
 
   document.getElementById('editExLiveBtn')?.addEventListener('click', () => {
+    saveCurrentInputs();
     const curEx = state.session.exercises[state.exIdx];
     if (!curEx) return;
 
@@ -1781,14 +1782,25 @@ export function initTracker(navigateFn) {
             curEx.load        = document.getElementById('editExLiveLoad')?.value ?? curEx.load;
             curEx.rest        = parseInt(document.getElementById('editExLiveRest')?.value) || 60;
             curEx.trainerNotes = document.getElementById('editExLiveNotes')?.value || '';
+            
             const oneRM = parseFloat(document.getElementById('editExLiveOneRM')?.value);
-            if (!isNaN(oneRM) && oneRM > 0) curEx.oneRM = oneRM;
+            if (!isNaN(oneRM) && oneRM > 0) {
+              curEx.oneRM = oneRM;
+            } else {
+              delete curEx.oneRM;
+            }
 
             // Remover séries além do novo número
             state.setLog = state.setLog.filter(s => !(s.exIdx === state.exIdx && s.setIdx >= curEx.sets));
             state.session.setLog = state.setLog;
 
+            // Ajustar o setIdx ativo se ficou fora dos limites
+            if (state.setIdx > curEx.sets) {
+              state.setIdx = curEx.sets;
+            }
+
             await db.put('sessions', state.session);
+            notify.success('Exercício atualizado!');
             closeModal();
             refreshLive();
           }
@@ -1805,16 +1817,34 @@ export function initTracker(navigateFn) {
       state.setLog.forEach(s => { if (s.exIdx > state.exIdx) s.exIdx--; });
       state.session.setLog = state.setLog;
 
+      // Ajustar chaves no tempSets
+      const newTempSets = {};
+      Object.keys(state.tempSets || {}).forEach(keyStr => {
+        const key = parseInt(keyStr);
+        if (key < state.exIdx) {
+          newTempSets[key] = state.tempSets[key];
+        } else if (key > state.exIdx) {
+          newTempSets[key - 1] = state.tempSets[key];
+        }
+      });
+      state.tempSets = newTempSets;
+      state.session.tempSets = state.tempSets;
+
       if (state.exIdx >= state.session.exercises.length) {
         state.exIdx = Math.max(0, state.session.exercises.length - 1);
       }
       state.setIdx = 0;
 
+      await db.put('sessions', state.session);
+      notify.success('Exercício excluído!');
+      closeModal();
+      refreshLive();
     });
   });
 
   // Adicionar Exercício Extra
   document.getElementById('addExtraExBtn')?.addEventListener('click', async () => {
+    saveCurrentInputs();
     const allEx = await db.getAll('exercises');
 
     openModal({
