@@ -279,10 +279,18 @@ function renderLiveView(students) {
   const exs    = s.exercises || [];
   const exs_all = exs; // alias para uso nos combined-method badges
   const ex     = exs[state.exIdx] || {};
-  const totalSets = exs.reduce((sum, e) => sum + (parseInt(e.sets) || 3), 0);
+  const totalSets = exs.reduce((sum, e) => {
+    if (isCardioExercise(e)) {
+      const segs = getCardioSegments(e);
+      if (segs.length > 0) return sum + segs.length;
+    }
+    return sum + (parseInt(e.sets) || 3);
+  }, 0);
   const doneSets  = state.setLog.length;
   const pct       = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
-  const exSets    = parseInt(ex.sets) || 3;
+  const isExCardio = isCardioExercise(ex);
+  const segments  = isExCardio ? getCardioSegments(ex) : [];
+  const exSets    = (isExCardio && segments.length > 0) ? segments.length : (parseInt(ex.sets) || 3);
 
   // Garantir groupId para métodos combinados que foram salvos antes dessa feature
   // Atribuir dinamicamente se não existir
@@ -412,6 +420,57 @@ function renderLiveView(students) {
                 <div style="font-size:0.58rem;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Orientações</div>
                 <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5">${ex.trainerNotes}</div>
               </div>` : ''}
+            ${(() => {
+              if (!isExCardio) return '';
+              const totalSec = segments.reduce((sum, seg) => sum + seg.duration, 0);
+              const formatTimeLabel = (sec) => {
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60);
+                return `${m}:${String(s).padStart(2, '0')}`;
+              };
+              const formatDurationText = (sec) => {
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60);
+                if (s > 0) return `${m} min ${s}s`;
+                return `${m} min`;
+              };
+              const getZoneColor = (intensity) => {
+                if (intensity >= 90) return '#ef4444';
+                if (intensity >= 83) return '#f97316';
+                if (intensity >= 73) return '#eab308';
+                if (intensity >= 63) return '#10b981';
+                return '#3b82f6';
+              };
+
+              return `
+                <div class="cardio-embedded-trainer" style="margin-top:10px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid var(--border-color);margin-bottom:12px">
+                  <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+                    <span>📊 Perfil do Ritmo (Cardio)</span>
+                    <span style="font-size:0.65rem;color:var(--text-muted);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
+                  </div>
+                  <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
+                    <canvas id="cardioEmbedChart_trainer" style="width:100%;height:100%"></canvas>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;padding-right:4px">
+                    ${segments.map((seg, idx) => {
+                      const timeLabel = `${formatTimeLabel(seg.start)} a ${formatTimeLabel(seg.end)}`;
+                      const targetLabel = seg.load != null ? `${seg.load}` : `${seg.intensity}%`;
+                      return `
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.015);border-radius:6px;font-size:0.7rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
+                          <div style="display:flex;flex-direction:column;text-align:left">
+                            <span style="font-weight:700;color:var(--text-main,#f1f5f9)">${seg.label}</span>
+                            <span style="font-size:0.6rem;color:var(--text-muted)">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
+                          </div>
+                          <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
+                            ${targetLabel}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `;
+            })()}
 
             <!-- Fase de periodização -->
             ${(() => {
@@ -436,51 +495,63 @@ function renderLiveView(students) {
                 const done     = state.setLog.find(l => l.exIdx === state.exIdx && l.setIdx === i);
                 const isActive = !done && i === state.setIdx;
                 const temp     = state.tempSets[state.exIdx]?.[i] || {};
-                let defaultReps = (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
+                let defaultReps = 10;
                 let defaultLoad = ex.load || '';
                 let setLabel = '';
-                let progression = ex.seriesProgression;
-                if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
-                  const progDef = METHOD_PROGRESSIONS[ex.method];
-                  const baseLoad = parseFloat(ex.load) || 0;
-                  progression = progDef.series.map((s, si) => ({
-                    set: si + 1, reps: s.reps,
-                    load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-                    rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
-                    label: s.label || `Série ${si + 1}`
-                  }));
+                let badgeTop = `S${i + 1}`;
+                let badgeBottom = '';
+
+                if (isExCardio && segments.length > 0) {
+                  const seg = segments[i];
+                  badgeTop = `P${i + 1}`;
+                  const zoneMatch = seg.label.match(/z\d/i);
+                  badgeBottom = zoneMatch ? zoneMatch[0].toUpperCase() : seg.label.split(' ')[0];
+
+                  defaultReps = Math.round(seg.duration / 60);
+                  defaultLoad = seg.load != null ? seg.load : (seg.intensity ? Math.round(seg.intensity) : '');
+                } else {
+                  let progression = ex.seriesProgression;
+                  if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
+                    const progDef = METHOD_PROGRESSIONS[ex.method];
+                    const baseLoad = parseFloat(ex.load) || 0;
+                    progression = progDef.series.map((s, si) => ({
+                      set: si + 1, reps: s.reps,
+                      load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
+                      rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
+                      label: s.label || `Série ${si + 1}`
+                    }));
+                  }
+                  if (progression && progression[i]) {
+                    const sp = progression[i];
+                    if (sp.reps) { const m = String(sp.reps).match(/(\d+)/); defaultReps = m ? parseInt(m[1]) : 10; }
+                    if (sp.load !== undefined) defaultLoad = sp.load;
+                    if (sp.label) setLabel = sp.label;
+                  } else {
+                    defaultReps = (String(ex.reps || '')).replace(/[^0-9]/g, '') || 12;
+                  }
+
+                  const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+                  if (isClusterMethod && setLabel) {
+                    const clusterMatch = setLabel.match(/Cluster\s*(\d+)/i);
+                    const cNum = clusterMatch ? clusterMatch[1] : '';
+                    const isMini = setLabel.toLowerCase().includes('pausa');
+                    const miniIdx = progression?.slice(0, i).filter(s => {
+                      const lbl = s.label || '';
+                      return lbl.match(new RegExp(`Cluster\\s*${cNum}`, 'i'));
+                    }).length + 1;
+                    badgeTop    = `C${cNum}`;
+                    badgeBottom = isMini ? `P${miniIdx}` : `M${miniIdx || 1}`;
+                  } else {
+                    badgeTop    = `S${i + 1}`;
+                    badgeBottom = setLabel || '';
+                  }
                 }
-                if (progression && progression[i]) {
-                  const sp = progression[i];
-                  if (sp.reps) { const m = String(sp.reps).match(/(\d+)/); defaultReps = m ? parseInt(m[1]) : 10; }
-                  if (sp.load !== undefined) defaultLoad = sp.load;
-                  if (sp.label) setLabel = sp.label;
-                }
+
                 const repsVal = done ? done.reps : (temp.reps !== undefined ? temp.reps : defaultReps);
                 const loadVal = done ? done.load : (temp.load !== undefined ? temp.load : defaultLoad);
                 const pseVal  = done ? done.pse  : (temp.pse  !== undefined ? temp.pse  : '');
                 const rirVal  = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
                 const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
-
-                // Badge inteligente: mini-série para métodos que usam clusters
-                const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
-                let badgeTop, badgeBottom;
-                if (isClusterMethod && setLabel) {
-                  // Ex: "Cluster 1 — Série" → "C1" + "M1" / "Cluster 2 — Pausa 20s" → "C2" + "P"
-                  const clusterMatch = setLabel.match(/Cluster\s*(\d+)/i);
-                  const cNum = clusterMatch ? clusterMatch[1] : '';
-                  const isMini = setLabel.toLowerCase().includes('pausa');
-                  // Contar quantas mini-séries dentro deste cluster vieram antes
-                  const miniIdx = progression?.slice(0, i).filter(s => {
-                    const lbl = s.label || '';
-                    return lbl.match(new RegExp(`Cluster\\s*${cNum}`, 'i'));
-                  }).length + 1;
-                  badgeTop    = `C${cNum}`;
-                  badgeBottom = isMini ? `P${miniIdx}` : `M${miniIdx || 1}`;
-                } else {
-                  badgeTop    = `S${i + 1}`;
-                  badgeBottom = setLabel || '';
-                }
 
                 return `
                 <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
@@ -494,12 +565,12 @@ function renderLiveView(students) {
                     ${badgeBottom ? `<span style="font-size:0.4rem;color:var(--text-muted);line-height:1;margin-top:1px;text-align:center;white-space:nowrap;overflow:hidden;max-width:34px">${badgeBottom}</span>` : ''}
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
-                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">Reps</span>
-                    <input class="form-input set-reps" style="width:100%;min-width:44px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="number" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${isExCardio ? 'Tempo' : 'Reps'}</span>
+                    <input class="form-input set-reps" style="width:100%;min-width:44px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${isExCardio ? 'text' : 'number'}" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1.2">
                     <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
-                    <input class="form-input set-load" style="width:100%;min-width:50px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${(isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                    <input class="form-input set-load" style="width:100%;min-width:50px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${isExCardio ? 'text' : (isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.85" title="PSE — Percepção Subjetiva de Esforço">
                     <span style="font-size:0.48rem;color:var(--warning);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">PSE</span>
@@ -1668,7 +1739,9 @@ export function initTracker(navigateFn) {
       `;
       btn.replaceWith(doneDiv);
 
-      const exSets = parseInt(curEx.sets) || 3;
+      const isCardio = isCardioExercise(curEx);
+      const segs = isCardio ? getCardioSegments(curEx) : [];
+      const exSets = (isCardio && segs.length > 0) ? segs.length : (parseInt(curEx.sets) || 3);
 
       const rirTxt = rir != null ? ` RIR ${rir}` : '';
       const loadDisplay = isNumeric(load) ? `${load}kg` : load;
@@ -1682,12 +1755,26 @@ export function initTracker(navigateFn) {
       // Atualizar volume e progresso
       const volEl = document.getElementById('liveVol');
       if (volEl) volEl.textContent = totalVolume() + ' kg';
-      const totalS = (state.session.exercises||[]).reduce((s,e)=>s+(parseInt(e.sets)||3),0);
+      const totalS = (state.session.exercises||[]).reduce((s,e) => {
+        if (isCardioExercise(e)) {
+          const segs2 = getCardioSegments(e);
+          if (segs2.length > 0) return s + segs2.length;
+        }
+        return s + (parseInt(e.sets)||3);
+      }, 0);
       const fill   = document.querySelector('.progress-fill');
       if (fill) fill.style.width = Math.round((state.setLog.length/totalS)*100)+'%';
 
       state.session.setLog = state.setLog;
       renderProgress();
+  }
+
+  // Initialize embedded cardio chart if current exercise is cardio
+  if (state.session) {
+    const curEx = (state.session.exercises || [])[state.exIdx];
+    if (curEx && isCardioExercise(curEx)) {
+      initEmbeddedCardioChartTrainer('cardioEmbedChart_trainer', curEx);
+    }
   }
 
   // Completar série — abre modal
@@ -2659,6 +2746,294 @@ function generateSessionPDF(session, student) {
     doc.save(`sessao_${(student?.name||'aluno').replace(/\s/g,'_')}_${date.replace(/\//g,'-')}.pdf`);
     notify.success('PDF gerado!');
   } catch(err){ console.error(err); notify.error('Erro ao gerar PDF.'); }
+}
+
+function isCardioExercise(ex) {
+  if (!ex) return false;
+  const name = String(ex.name || '').toLowerCase();
+  const cat = String(ex.category || '').toLowerCase();
+  const muscle = String(ex.muscleGroup || ex.muscle || '').toLowerCase();
+  return (
+    ex.loadType === 'time' ||
+    cat.includes('cardio') ||
+    muscle.includes('cardio') ||
+    name.includes('esteira') ||
+    name.includes('corrida') ||
+    name.includes('hiit') ||
+    name.includes('tabata') ||
+    name.includes('bike') ||
+    name.includes('bicicleta') ||
+    name.includes('aerob') ||
+    name.includes('caminh') ||
+    name.includes('pedal') ||
+    name.includes('fartlek') ||
+    name.includes('remo erg') ||
+    name.includes('spinning') ||
+    name.includes('pular corda')
+  );
+}
+
+function isSpeedPowerCardio(ex) {
+  if (!ex) return false;
+  const baseLoadStr = String(ex.load || '').toLowerCase();
+  if (baseLoadStr.includes('km/h') || baseLoadStr.includes('kmh') || baseLoadStr.includes('watt') || baseLoadStr.includes('level') || baseLoadStr.includes('bpm')) {
+    return true;
+  }
+  if (ex.seriesProgression) {
+    const hasNumericLoad = ex.seriesProgression.some(sp => {
+      const val = parseFloat(String(sp.load || '').replace(',', '.'));
+      return !isNaN(val) && val > 0;
+    });
+    if (hasNumericLoad) return true;
+  }
+  return false;
+}
+
+function getCardioSegments(ex) {
+  const segments = [];
+  const reps = ex.reps || ex.defaultReps || '20 min';
+  const method = ex.method || '';
+
+  const parseDuration = (val, hasMinutesDefault = false) => {
+    if (!val) return 60;
+    const str = String(val).toLowerCase().trim();
+    const match = str.match(/([\d.,]+)\s*(min|m|s|seg|segundos|seconds)?/);
+    if (!match) return 60;
+    const num = parseFloat(match[1].replace(',', '.'));
+    if (isNaN(num)) return 60;
+    const unit = match[2];
+    if (unit === 'min' || unit === 'm') {
+      return num * 60;
+    }
+    if (unit === 's' || unit === 'seg' || unit === 'segundos' || unit === 'seconds') {
+      return num;
+    }
+    if (hasMinutesDefault) return num * 60;
+    return num <= 15 ? num * 60 : num;
+  };
+
+  const parseIntensity = (loadVal, labelText) => {
+    const loadNum = parseFloat(String(loadVal || '').replace(',', '.'));
+    if (!isNaN(loadNum) && loadNum > 0) {
+      return loadNum;
+    }
+    const lbl = String(labelText).toLowerCase();
+    if (lbl.includes('z5') || lbl.includes('sprint') || lbl.includes('tiro') || lbl.includes('all-out') || lbl.includes('máximo') || lbl.includes('muito pesada') || lbl.includes('vo2max')) {
+      return 95.0;
+    }
+    if (lbl.includes('z4') || lbl.includes('limiar') || lbl.includes('pesada')) {
+      return 88.5;
+    }
+    if (lbl.includes('z3') || lbl.includes('cinzenta') || lbl.includes('moderada')) {
+      return 81.0;
+    }
+    if (lbl.includes('z2') || lbl.includes('base') || lbl.includes('leve')) {
+      return 70.0;
+    }
+    if (lbl.includes('z1') || lbl.includes('aquecimento') || lbl.includes('desaquecimento') || lbl.includes('recuperação') || lbl.includes('cool down')) {
+      return 57.5;
+    }
+    return 70.0;
+  };
+
+  // 1. Check if reps contains percentage splits (e.g. "80% Z2 / 20% Z5")
+  const pctPattern = /(\d+)\s*%\s*(?:em\s+|de\s+|da\s+)?(z\d|zona\s*\d|sprint|recup|tiro|aquec|desaquec|tf|val|alta|baixa|moderada)/gi;
+  const pctMatches = [...reps.matchAll(pctPattern)];
+
+  if (pctMatches.length > 0) {
+    let totalSec = 0;
+    const durationMatch = reps.match(/(\d+)\s*(?:min|m|s|seg|segundos|seconds)(?!\s*%)/i);
+    if (durationMatch) {
+      totalSec = parseDuration(durationMatch[0], true);
+    } else {
+      const firstNumMatch = reps.match(/(\d+)/);
+      const firstNum = firstNumMatch ? parseFloat(firstNumMatch[1]) : 40;
+      totalSec = firstNum * 60;
+    }
+
+    let cumulative = 0;
+    pctMatches.forEach((m, idx) => {
+      const pct = parseFloat(m[1]) / 100;
+      const zoneLabel = m[2];
+      const duration = totalSec * pct;
+      const intensity = parseIntensity(null, zoneLabel);
+      segments.push({
+        label: `${zoneLabel.toUpperCase()} (${Math.round(pct * 100)}%)`,
+        duration,
+        intensity,
+        load: null,
+        start: cumulative,
+        end: cumulative + duration
+      });
+      cumulative += duration;
+    });
+    return segments;
+  }
+
+  // 2. If custom seriesProgression exists, use it
+  if (ex.seriesProgression && ex.seriesProgression.length > 0) {
+    let cumulative = 0;
+    ex.seriesProgression.forEach((sp, idx) => {
+      const duration = parseDuration(sp.reps);
+      const intensity = parseIntensity(sp.load, sp.label || `Série ${idx+1}`);
+      const label = sp.label || `Série ${idx+1}`;
+      segments.push({
+        label,
+        duration,
+        intensity,
+        load: sp.load || null,
+        start: cumulative,
+        end: cumulative + duration
+      });
+      cumulative += duration;
+    });
+    return segments;
+  }
+
+  // 3. Check method for standard templates
+  let cumulative = 0;
+  if (method === 'Tabata') {
+    segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
+    cumulative = 300;
+    for (let r = 1; r <= 8; r++) {
+      segments.push({ label: `Sprint R${r} (Z5)`, duration: 20, intensity: 95.0, start: cumulative, end: cumulative + 20 });
+      cumulative += 20;
+      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 10, intensity: 57.5, start: cumulative, end: cumulative + 10 });
+      cumulative += 10;
+    }
+    segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
+  } else if (method === 'HIIT 1:1') {
+    segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
+    cumulative = 300;
+    for (let r = 1; r <= 10; r++) {
+      segments.push({ label: `Esforço R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
+      cumulative += 30;
+      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 30, intensity: 57.5, start: cumulative, end: cumulative + 30 });
+      cumulative += 30;
+    }
+    segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
+  } else if (method === 'HIIT 1:2') {
+    segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
+    cumulative = 300;
+    for (let r = 1; r <= 8; r++) {
+      segments.push({ label: `Esforço R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
+      cumulative += 30;
+      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 60, intensity: 57.5, start: cumulative, end: cumulative + 60 });
+      cumulative += 60;
+    }
+    segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
+  } else {
+    const totalSec = parseDuration(reps, true);
+    let intensity = 70.0;
+    if (method.includes('Z1')) intensity = 57.5;
+    else if (method.includes('Z2')) intensity = 70.0;
+    else if (method.includes('Z3')) intensity = 81.0;
+    else if (method.includes('Z4')) intensity = 88.5;
+    else if (method.includes('Z5')) intensity = 95.0;
+    
+    segments.push({
+      label: method || ex.name || 'Cardio',
+      duration: totalSec,
+      intensity,
+      start: 0,
+      end: totalSec
+    });
+  }
+
+  // 4. Fallback for Polarized method if it was parsed as a single continuous block
+  if (segments.length === 1 && (method.toLowerCase().includes('polarized') || method.toLowerCase().includes('polarizado') || ex.name.toLowerCase().includes('polarizado') || reps.toLowerCase().includes('polarizado'))) {
+    const totalSec = segments[0].duration;
+    segments.length = 0; // clear
+    const z2Sec = totalSec * 0.8;
+    const z5Sec = totalSec * 0.2;
+    segments.push({
+      label: 'Zona 2 (Z2) - 80%',
+      duration: z2Sec,
+      intensity: 70.0,
+      load: null,
+      start: 0,
+      end: z2Sec
+    });
+    segments.push({
+      label: 'Zona 5 (Z5) - 20%',
+      duration: z5Sec,
+      intensity: 95.0,
+      load: null,
+      start: z2Sec,
+      end: totalSec
+    });
+  }
+
+  return segments;
+}
+
+function initEmbeddedCardioChartTrainer(canvasId, ex) {
+  if (typeof Chart === 'undefined') return;
+  setTimeout(() => {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return;
+
+    const segments = getCardioSegments(ex);
+    const isTimeSpeed = isSpeedPowerCardio(ex);
+    const dataPoints = [];
+    segments.forEach(seg => {
+      dataPoints.push({ x: seg.start / 60, y: seg.intensity });
+      dataPoints.push({ x: seg.end / 60, y: seg.intensity });
+    });
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Intensidade',
+          data: dataPoints,
+          borderColor: '#06b6d4',
+          borderWidth: 2,
+          backgroundColor: 'rgba(6, 182, 212, 0.08)',
+          fill: true,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              title: (context) => {
+                const minutes = context[0].parsed.x;
+                const m = Math.floor(minutes);
+                const s = Math.round((minutes % 1) * 60);
+                return `Tempo: ${m}:${String(s).padStart(2, '0')}`;
+              },
+              label: (context) => {
+                const val = context.parsed.y;
+                return isTimeSpeed ? `Carga: ${val}` : `Intensidade: ${val}% FC Máx`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            ticks: { color: '#94a3b8', font: { size: 7 } },
+            grid: { color: 'rgba(255,255,255,0.03)' }
+          },
+          y: {
+            ticks: { color: '#94a3b8', font: { size: 7 } },
+            grid: { color: 'rgba(255,255,255,0.03)' },
+            suggestedMin: isTimeSpeed ? 0 : 50,
+            suggestedMax: isTimeSpeed ? undefined : 100
+          }
+        }
+      }
+    });
+  }, 100);
 }
 
 }
