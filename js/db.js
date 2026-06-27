@@ -852,23 +852,23 @@ class Database {
   }
 
   // ── DELETE ──
-  async delete(storeName, id) {
-    const trainerId = await this._getTrainerId();
-    const all = this._getLocal(storeName, trainerId).filter(i => i.id !== id);
-    this._saveLocal(storeName, all, trainerId);
+  async delete(storeName, id, trainerId = null) {
+    const resolvedTrainerId = trainerId || await this._getTrainerId() || (typeof portalState !== 'undefined' ? portalState.trainerId : null);
+    const all = this._getLocal(storeName, resolvedTrainerId).filter(i => i.id !== id);
+    this._saveLocal(storeName, all, resolvedTrainerId);
 
     // Save tombstone local log
     if (this.SUPABASE_TABLES.has(storeName)) {
-      this._addTombstone(storeName, id, trainerId);
+      this._addTombstone(storeName, id, resolvedTrainerId);
     }
 
     if (!this.supabase) return;
     try {
       let q = this.supabase.from(storeName).delete().eq('id', id);
-      if (trainerId) q = q.eq('trainer_id', trainerId);
+      if (resolvedTrainerId) q = q.eq('trainer_id', resolvedTrainerId);
       const { error } = await q;
       if (!error) {
-        this._removeTombstone(storeName, id, trainerId);
+        this._removeTombstone(storeName, id, resolvedTrainerId);
         console.log(`[Delete] Remote delete OK for ${storeName} ID ${id}`);
       } else {
         console.warn(`Supabase delete error (${storeName}):`, error.message);

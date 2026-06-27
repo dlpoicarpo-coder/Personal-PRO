@@ -1839,7 +1839,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     const runningSid = e.currentTarget.dataset.sid;
     if (confirm('Tem certeza de que deseja descartar este treino em andamento? O progresso não salvo será perdido.')) {
       try {
-        await db.delete('sessions', runningSid);
+        await db.delete('sessions', runningSid, tid);
         await loadSection('treinar');
       } catch (err) {
         console.error('Erro ao descartar treino:', err);
@@ -2192,9 +2192,18 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                   <div style="font-size:0.78rem;color:var(--portal-text-secondary,#cbd5e1);line-height:1.5">${ex.trainerNotes || ex.notes}</div>
                 </div>` : ''}
             </div>
-            <button class="portal-ex-info-btn" data-ei="${ei}" title="Ver detalhes" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </button>
+            ${(() => {
+              const isCardio = isCardioExercise(ex);
+              const title = isCardio ? 'Ver Gráfico de Ritmo e Zonas' : 'Ver detalhes';
+              const iconSvg = isCardio
+                ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m18.7 8-5.1 5.2-2.8-2.7L7 14.3"/></svg>`
+                : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+              return `
+                <button class="portal-ex-info-btn" data-ei="${ei}" title="${title}" style="background:rgba(99,102,241,0.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  ${iconSvg}
+                </button>
+              `;
+            })()}
             ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
           </div>
 
@@ -2202,122 +2211,129 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
           <!-- Sets container (suporta séries extras adicionadas dinamicamente) -->
           <div id="sets_container_${ei}">
-            ${Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
-              let repsVal = '';
-              let loadVal = '';
-              let restVal = ex.rest || 60;
+            ${(() => {
+              const isExCardio = isCardioExercise(ex);
+              const isExTimeSpeed = isSpeedPowerCardio(ex);
+              const repsPlaceholder = isExCardio ? 'Tempo' : 'Reps';
+              const loadPlaceholder = isExCardio ? (isExTimeSpeed ? 'Ritmo' : 'Zonas') : 'kg';
 
-              if (ex.seriesProgression && ex.seriesProgression[si]) {
-                const sp = ex.seriesProgression[si];
-                repsVal = parseInt(sp.reps) || '';
-                loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
-                restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
-              } else {
-                // Tentar construir progressão a partir do método (treinos salvos sem seriesProgression)
-                if (ex.method) {
-                  const SIMPLE_LABELS = {
-                    'Unilateral': (i) => i%2===0 ? `S${Math.floor(i/2)+1} — Lado D` : `S${Math.floor(i/2)+1} — Lado E`,
-                    'Bi-set': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
-                    'Super-série Agonista': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
-                    'Super-série Antagonista': (i) => i%2===0 ? `Agonista S${Math.floor(i/2)+1}` : `Antagonista S${Math.floor(i/2)+1}`,
-                  };
-                  if (SIMPLE_LABELS[ex.method]) {
-                    // Usar label gerado dinamicamente
-                    if (!ex._dynLabels) ex._dynLabels = {};
-                    ex._dynLabels[si] = SIMPLE_LABELS[ex.method](si);
-                  }
-                }
-                if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
-                  const parts = ex.reps.split('→');
-                  repsVal = parseInt(parts[si] || ex.reps) || '';
+              return Array.from({length: parseInt(ex.sets)||3}, (_, si) => {
+                let repsVal = '';
+                let loadVal = '';
+                let restVal = ex.rest || 60;
+
+                if (ex.seriesProgression && ex.seriesProgression[si]) {
+                  const sp = ex.seriesProgression[si];
+                  repsVal = parseInt(sp.reps) || '';
+                  loadVal = sp.load !== undefined && sp.load !== null ? sp.load : '';
+                  restVal = sp.rest !== undefined && sp.rest !== null ? sp.rest : restVal;
                 } else {
-                  repsVal = parseInt(ex.reps) || '';
-                }
-                loadVal = ex.load || '';
-              }
-
-              // Override hasProgLabel com dynLabels se disponível
-              const dynLabel = ex._dynLabels?.[si];
-
-              // Badge inteligente para TODOS os métodos com progressão de séries
-              const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
-              const hasProgLabel = ex.seriesProgression?.[si]?.label || dynLabel;
-              let setNumLabel = `S${si+1}`;
-              let setSubLabel = '';
-
-              if (hasProgLabel) {
-                const lbl = ex.seriesProgression?.[si]?.label || dynLabel || '';
-                if (isClusterMethod) {
-                  // Rest-Pause: suporta "C1 — Série", "C1 — Pausa 1", "Cluster 1 — Série" etc
-                  const cMatch = lbl.match(/(?:Cluster\s*|C)(\d+)\s*[—\-]\s*(.+)/i);
-                  if (cMatch) {
-                    setNumLabel = `C${cMatch[1]}`;
-                    const part = cMatch[2].toLowerCase();
-                    setSubLabel = part.includes('pausa') || part.startsWith('p') ? 'Pausa' : 'Série';
+                  // Tentar construir progressão a partir do método (treinos salvos sem seriesProgression)
+                  if (ex.method) {
+                    const SIMPLE_LABELS = {
+                      'Unilateral': (i) => i%2===0 ? `S${Math.floor(i/2)+1} — Lado D` : `S${Math.floor(i/2)+1} — Lado E`,
+                      'Bi-set': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
+                      'Super-série Agonista': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
+                      'Super-série Antagonista': (i) => i%2===0 ? `Agonista S${Math.floor(i/2)+1}` : `Antagonista S${Math.floor(i/2)+1}`,
+                    };
+                    if (SIMPLE_LABELS[ex.method]) {
+                      // Usar label gerado dinamicamente
+                      if (!ex._dynLabels) ex._dynLabels = {};
+                      ex._dynLabels[si] = SIMPLE_LABELS[ex.method](si);
+                    }
+                  }
+                  if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+                    const parts = ex.reps.split('→');
+                    repsVal = parseInt(parts[si] || ex.reps) || '';
                   } else {
-                    // fallback: detectar número do cluster no label
-                    const numMatch = lbl.match(/\d+/);
-                    setNumLabel = numMatch ? `C${numMatch[0]}` : `S${si+1}`;
-                    setSubLabel = lbl.toLowerCase().includes('pausa') ? 'Pausa' : 'Série';
+                    repsVal = parseInt(ex.reps) || '';
                   }
-                } else if (ex.method === 'Unilateral') {
-                  // Unilateral: mostrar lado
-                  const ladoD = lbl.toLowerCase().includes('lado d') || lbl.toLowerCase().includes('direito');
-                  const ladoE = lbl.toLowerCase().includes('lado e') || lbl.toLowerCase().includes('esquerdo');
-                  const sMatch = lbl.match(/S(\d+)/i);
-                  setNumLabel = sMatch ? `S${sMatch[1]}` : `S${si+1}`;
-                  setSubLabel = ladoD ? 'Dir.' : ladoE ? 'Esq.' : '';
-                } else {
-                  // Outros métodos: mostrar label curta
-                  // Ex: "S1 — Leve" → badge "S1" + sub "Leve"
-                  // Ex: "Ex A — S1" → badge "A" + sub lbl parcial
-                  const sMatch = lbl.match(/^S(\d+)/i);
-                  const exMatch = lbl.match(/^Ex\s*([A-Z])/i);
-                  const blocoMatch = lbl.match(/^Bloco\s*(\d+)/i);
-                  if (sMatch) {
-                    setNumLabel = `S${sMatch[1]}`;
-                    const after = lbl.replace(/^S\d+\s*[—-]\s*/i,'').trim();
-                    setSubLabel = after.length > 0 && after.length <= 8 ? after : after.split(' ')[0];
-                  } else if (exMatch) {
-                    setNumLabel = `Ex${exMatch[1]}`;
-                    const sNum = lbl.match(/S(\d+)/i);
-                    setSubLabel = sNum ? `S${sNum[1]}` : '';
-                  } else if (blocoMatch) {
-                    setNumLabel = `B${blocoMatch[1]}`;
-                    const exNum = lbl.match(/Ex\s*(\d+)/i);
-                    setSubLabel = exNum ? `E${exNum[1]}` : '';
+                  loadVal = ex.load || '';
+                }
+
+                // Override hasProgLabel com dynLabels se disponível
+                const dynLabel = ex._dynLabels?.[si];
+
+                // Badge inteligente para TODOS os métodos com progressão de séries
+                const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
+                const hasProgLabel = ex.seriesProgression?.[si]?.label || dynLabel;
+                let setNumLabel = `S${si+1}`;
+                let setSubLabel = '';
+
+                if (hasProgLabel) {
+                  const lbl = ex.seriesProgression?.[si]?.label || dynLabel || '';
+                  if (isClusterMethod) {
+                    // Rest-Pause: suporta "C1 — Série", "C1 — Pausa 1", "Cluster 1 — Série" etc
+                    const cMatch = lbl.match(/(?:Cluster\s*|C)(\d+)\s*[—\-]\s*(.+)/i);
+                    if (cMatch) {
+                      setNumLabel = `C${cMatch[1]}`;
+                      const part = cMatch[2].toLowerCase();
+                      setSubLabel = part.includes('pausa') || part.startsWith('p') ? 'Pausa' : 'Série';
+                    } else {
+                      // fallback: detectar número do cluster no label
+                      const numMatch = lbl.match(/\d+/);
+                      setNumLabel = numMatch ? `C${numMatch[0]}` : `S${si+1}`;
+                      setSubLabel = lbl.toLowerCase().includes('pausa') ? 'Pausa' : 'Série';
+                    }
+                  } else if (ex.method === 'Unilateral') {
+                    // Unilateral: mostrar lado
+                    const ladoD = lbl.toLowerCase().includes('lado d') || lbl.toLowerCase().includes('direito');
+                    const ladoE = lbl.toLowerCase().includes('lado e') || lbl.toLowerCase().includes('esquerdo');
+                    const sMatch = lbl.match(/S(\d+)/i);
+                    setNumLabel = sMatch ? `S${sMatch[1]}` : `S${si+1}`;
+                    setSubLabel = ladoD ? 'Dir.' : ladoE ? 'Esq.' : '';
+                  } else {
+                    // Outros métodos: mostrar label curta
+                    // Ex: "S1 — Leve" → badge "S1" + sub "Leve"
+                    // Ex: "Ex A — S1" → badge "A" + sub lbl parcial
+                    const sMatch = lbl.match(/^S(\d+)/i);
+                    const exMatch = lbl.match(/^Ex\s*([A-Z])/i);
+                    const blocoMatch = lbl.match(/^Bloco\s*(\d+)/i);
+                    if (sMatch) {
+                      setNumLabel = `S${sMatch[1]}`;
+                      const after = lbl.replace(/^S\d+\s*[—-]\s*/i,'').trim();
+                      setSubLabel = after.length > 0 && after.length <= 8 ? after : after.split(' ')[0];
+                    } else if (exMatch) {
+                      setNumLabel = `Ex${exMatch[1]}`;
+                      const sNum = lbl.match(/S(\d+)/i);
+                      setSubLabel = sNum ? `S${sNum[1]}` : '';
+                    } else if (blocoMatch) {
+                      setNumLabel = `B${blocoMatch[1]}`;
+                      const exNum = lbl.match(/Ex\s*(\d+)/i);
+                      setSubLabel = exNum ? `E${exNum[1]}` : '';
+                    }
                   }
                 }
-              }
 
-              // Cor do badge por tipo
-              const isDeloadRow = ex.seriesProgression?.[si]?.rest === 0 && setSubLabel.includes('P');
-              const badgeColor = isDeloadRow ? '#f59e0b'
-                : ex.method === 'Unilateral' && setSubLabel === 'Dir.' ? '#818cf8'
-                : ex.method === 'Unilateral' && setSubLabel === 'Esq.' ? '#06b6d4'
-                : 'var(--portal-primary, #6366f1)';
+                // Cor do badge por tipo
+                const isDeloadRow = ex.seriesProgression?.[si]?.rest === 0 && setSubLabel.includes('P');
+                const badgeColor = isDeloadRow ? '#f59e0b'
+                  : ex.method === 'Unilateral' && setSubLabel === 'Dir.' ? '#818cf8'
+                  : ex.method === 'Unilateral' && setSubLabel === 'Esq.' ? '#06b6d4'
+                  : 'var(--portal-primary, #6366f1)';
 
-              return `
-                <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
-                  <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:36px;color:${badgeColor}">
-                    <span style="font-size:0.72rem;font-weight:800">${setNumLabel}</span>
-                    ${setSubLabel ? `<span style="font-size:0.52rem;opacity:0.8;white-space:nowrap">${setSubLabel}</span>` : ''}
-                  </span>
-                  <input type="number" placeholder="Reps" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
-                  <input type="number" placeholder="kg" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
-                  <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
-                    <option value="" disabled selected>PSE</option>
-                    ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
-                  </select>
-                  <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
-                  <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display:none;">
-                    <option value="" disabled selected>RIR</option>
-                    ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}
-                  </select>
-                  <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
-                  <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
-                </div>`;
-            }).join('')}
+                return `
+                  <div class="portal-solo-set-row" id="setrow_${ei}_${si}">
+                    <span class="portal-set-num" style="display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:36px;color:${badgeColor}">
+                      <span style="font-size:0.72rem;font-weight:800">${setNumLabel}</span>
+                      ${setSubLabel ? `<span style="font-size:0.52rem;opacity:0.8;white-space:nowrap">${setSubLabel}</span>` : ''}
+                    </span>
+                    <input type="number" placeholder="${repsPlaceholder}" class="portal-solo-input" id="sr_${ei}_${si}_reps" min="0" value="${repsVal}">
+                    <input type="number" placeholder="${loadPlaceholder}" class="portal-solo-input" id="sr_${ei}_${si}_load" min="0" step="0.5" value="${loadVal}">
+                    <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
+                      <option value="" disabled selected>PSE</option>
+                      ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+                    </select>
+                    <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="psebtn_${ei}_${si}">PSE</button>
+                    <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_rir" style="display:none;">
+                      <option value="" disabled selected>RIR</option>
+                      ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n===0?'0 (Falha)':n+' RIR'}</option>`).join('')}
+                    </select>
+                    <button type="button" class="portal-solo-input portal-solo-pse portal-solo-rir-btn" id="rirbtn_${ei}_${si}">RIR</button>
+                    <button class="portal-solo-done-btn" id="sdb_${ei}_${si}" data-ei="${ei}" data-si="${si}" data-rest="${restVal}">&#10003;</button>
+                  </div>`;
+              }).join('');
+            })()}
           </div>
 
           <!-- + Série -->
@@ -2888,6 +2904,41 @@ function getCardioSegments(ex) {
     return 70.0;
   };
 
+  // 1. Check if reps contains percentage splits (e.g. "80% Z2 / 20% Z5")
+  const pctPattern = /(\d+)\s*%\s*(?:em\s+|de\s+|da\s+)?(z\d|zona\s*\d|sprint|recup|tiro|aquec|desaquec|tf|val|alta|baixa|moderada)/gi;
+  const pctMatches = [...reps.matchAll(pctPattern)];
+
+  if (pctMatches.length > 0) {
+    let totalSec = 0;
+    const durationMatch = reps.match(/(\d+)\s*(?:min|m|s|seg|segundos|seconds)(?!\s*%)/i);
+    if (durationMatch) {
+      totalSec = parseDuration(durationMatch[0], true);
+    } else {
+      const firstNumMatch = reps.match(/(\d+)/);
+      const firstNum = firstNumMatch ? parseFloat(firstNumMatch[1]) : 40;
+      totalSec = firstNum * 60;
+    }
+
+    let cumulative = 0;
+    pctMatches.forEach((m, idx) => {
+      const pct = parseFloat(m[1]) / 100;
+      const zoneLabel = m[2];
+      const duration = totalSec * pct;
+      const intensity = parseIntensity(null, zoneLabel);
+      segments.push({
+        label: `${zoneLabel.toUpperCase()} (${Math.round(pct * 100)}%)`,
+        duration,
+        intensity,
+        load: null,
+        start: cumulative,
+        end: cumulative + duration
+      });
+      cumulative += duration;
+    });
+    return segments;
+  }
+
+  // 2. If custom seriesProgression exists, use it
   if (ex.seriesProgression && ex.seriesProgression.length > 0) {
     let cumulative = 0;
     ex.seriesProgression.forEach((sp, idx) => {
@@ -2907,6 +2958,7 @@ function getCardioSegments(ex) {
     return segments;
   }
 
+  // 3. Check method for standard templates
   let cumulative = 0;
   if (method === 'Tabata') {
     segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
@@ -2952,6 +3004,30 @@ function getCardioSegments(ex) {
       duration: totalSec,
       intensity,
       start: 0,
+      end: totalSec
+    });
+  }
+
+  // 4. Fallback for Polarized method if it was parsed as a single continuous block
+  if (segments.length === 1 && (method.toLowerCase().includes('polarizado') || ex.name.toLowerCase().includes('polarizado') || reps.toLowerCase().includes('polarizado'))) {
+    const totalSec = segments[0].duration;
+    segments.length = 0; // clear
+    const z2Sec = totalSec * 0.8;
+    const z5Sec = totalSec * 0.2;
+    segments.push({
+      label: 'Zona 2 (Z2) - 80%',
+      duration: z2Sec,
+      intensity: 70.0,
+      load: null,
+      start: 0,
+      end: z2Sec
+    });
+    segments.push({
+      label: 'Zona 5 (Z5) - 20%',
+      duration: z5Sec,
+      intensity: 95.0,
+      load: null,
+      start: z2Sec,
       end: totalSec
     });
   }
@@ -3080,7 +3156,7 @@ async function showExerciseModal(ex) {
           <div style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;padding-right:4px">
             ${segments.map((seg, idx) => {
               const timeLabel = `${formatTimeLabel(seg.start)} a ${formatTimeLabel(seg.end)}`;
-              const targetLabel = seg.load !== null ? `${seg.load} ${isTimeSpeed ? '' : ''}` : `${seg.intensity}%`;
+              const targetLabel = seg.load != null ? `${seg.load}` : `${seg.intensity}%`;
               return `
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.015);border-radius:8px;font-size:0.75rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
                   <div style="display:flex;flex-direction:column">
