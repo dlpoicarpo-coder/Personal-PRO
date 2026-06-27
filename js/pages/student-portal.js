@@ -1263,7 +1263,10 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     const now = Date.now();
     const elapsed = Math.floor((now - lastTickTime) / 1000);
     if (elapsed > 1) {
-      catchUpTimers(elapsed);
+      const gap = catchUpTimers(elapsed);
+      if (gap > 0 && soloStartTime) {
+        soloStartTime = new Date(soloStartTime.getTime() + gap * 1000);
+      }
       lastTickTime = now;
       const totalElapsed = soloStartTime ? Math.floor((now - soloStartTime) / 1000) : 0;
       updateTimerDisplays(totalElapsed);
@@ -1271,35 +1274,54 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   }
 
   function catchUpTimers(elapsed) {
-    if (isResting) {
-      if (isRestPaused) {
-        workSeconds += elapsed;
-      } else {
-        const timeResting = Math.min(elapsed, restRemaining);
-        restRemaining -= timeResting;
-        restSeconds += timeResting;
+    let timeResting = 0;
+    let timeWorking = 0;
 
-        const timeWorking = elapsed - timeResting;
-        workSeconds += timeWorking;
-
-        if (restRemaining <= 0) {
-          clearInterval(restTimer);
-          isResting = false;
-          activeRestingRowId = null;
-          const overlay = document.getElementById('restTimerOverlay');
-          if (overlay) overlay.style.display = 'none';
-          playBeep(1000, 0.25, 3);
-          triggerAutoSave();
-        } else {
-          const cd = document.getElementById('restCountdown');
-          const bar = document.getElementById('restBarFill');
-          if (cd) cd.textContent = restRemaining;
-          if (bar) bar.style.width = `${(restRemaining / restTotal) * 100}%`;
-        }
+    if (elapsed > 1800) {
+      // Long inactivity gap (> 30 min)
+      if (isResting && !isRestPaused) {
+        timeResting = Math.min(elapsed, restRemaining);
       }
+      // timeWorking is 0
     } else {
-      workSeconds += elapsed;
+      // Normal catchup
+      if (isResting) {
+        if (isRestPaused) {
+          timeWorking = elapsed;
+        } else {
+          timeResting = Math.min(elapsed, restRemaining);
+          timeWorking = elapsed - timeResting;
+        }
+      } else {
+        timeWorking = elapsed;
+      }
     }
+
+    // Apply active increments
+    restSeconds += timeResting;
+    workSeconds += timeWorking;
+
+    if (isResting && !isRestPaused) {
+      restRemaining -= timeResting;
+      if (restRemaining <= 0) {
+        clearInterval(restTimer);
+        isResting = false;
+        activeRestingRowId = null;
+        const overlay = document.getElementById('restTimerOverlay');
+        if (overlay) overlay.style.display = 'none';
+        playBeep(1000, 0.25, 3);
+        triggerAutoSave();
+      } else {
+        const cd = document.getElementById('restCountdown');
+        const bar = document.getElementById('restBarFill');
+        if (cd) cd.textContent = restRemaining;
+        if (bar) bar.style.width = `${(restRemaining / restTotal) * 100}%`;
+      }
+    }
+
+    const counted = timeResting + timeWorking;
+    const gap = elapsed - counted;
+    return gap;
   }
 
   function updateTimerDisplays(totalElapsed) {
@@ -1663,13 +1685,36 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
     workSeconds = saved.workSeconds || 0;
     restSeconds = saved.restSeconds || 0;
+    let timeResting = 0;
+    let timeWorking = 0;
+
+    if (elapsedSinceLastSave > 1800) {
+      // Long inactivity gap (> 30 min)
+      if (saved.isResting && !saved.isRestPaused) {
+        timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
+      }
+      // timeWorking is 0
+    } else {
+      // Normal catchup
+      if (saved.isResting) {
+        if (saved.isRestPaused) {
+          timeWorking = elapsedSinceLastSave;
+        } else {
+          timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
+          timeWorking = elapsedSinceLastSave - timeResting;
+        }
+      } else {
+        timeWorking = elapsedSinceLastSave;
+      }
+    }
+
+    restSeconds += timeResting;
+    workSeconds += timeWorking;
+
+    const counted = timeResting + timeWorking;
+    const gap = elapsedSinceLastSave - counted;
 
     if (saved.isResting) {
-      const timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
-      restSeconds += timeResting;
-      const timeWorking = elapsedSinceLastSave - timeResting;
-      workSeconds += timeWorking;
-
       const newRestRemaining = (saved.restRemaining || 0) - elapsedSinceLastSave;
       if (newRestRemaining > 0) {
         isResting = true;
@@ -1689,10 +1734,14 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         activeRestingRowId = null;
       }
     } else {
-      workSeconds += elapsedSinceLastSave;
+      isResting = false;
+      activeRestingRowId = null;
     }
 
-    soloStartTime = new Date(saved.startTime);
+    // Shift start time by uncounted gap to keep total duration accurate
+    const originalStart = new Date(saved.startTime).getTime();
+    soloStartTime = new Date(originalStart + gap * 1000);
+
     lastTickTime = Date.now();
     soloTimerInterval = setInterval(() => {
       const now = Date.now();
@@ -1700,7 +1749,10 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       lastTickTime = now;
 
       if (actualElapsed > 1) {
-        catchUpTimers(actualElapsed);
+        const tickGap = catchUpTimers(actualElapsed);
+        if (tickGap > 0 && soloStartTime) {
+          soloStartTime = new Date(soloStartTime.getTime() + tickGap * 1000);
+        }
       } else {
         if (isResting) {
           restSeconds++;
@@ -2543,7 +2595,10 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       lastTickTime = now;
 
       if (actualElapsed > 1) {
-        catchUpTimers(actualElapsed);
+        const tickGap = catchUpTimers(actualElapsed);
+        if (tickGap > 0 && soloStartTime) {
+          soloStartTime = new Date(soloStartTime.getTime() + tickGap * 1000);
+        }
       } else {
         if (isResting) {
           restSeconds++;
