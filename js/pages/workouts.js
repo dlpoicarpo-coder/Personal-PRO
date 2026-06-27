@@ -1029,7 +1029,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
 
   return `
     <div class="exercise-row" style="
-      display:grid;grid-template-columns:2fr 50px 60px 68px 55px 90px 135px 28px;
+      display:grid;grid-template-columns:2fr 50px 60px 68px 55px 90px 125px 28px 28px;
       gap:5px;align-items:end;padding:8px 10px;border-radius:8px;
       background:var(--bg-page);margin-bottom:6px" data-index="${index}">
       <div>
@@ -1104,6 +1104,10 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       <button type="button" class="btn btn-ghost btn-icon remove-exercise" data-index="${index}"
         style="color:var(--danger);padding:4px;align-self:flex-end;margin-bottom:2px" title="Remover">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      </button>
+      <button type="button" class="btn btn-ghost btn-icon view-cardio-chart" data-index="${index}"
+        style="color:var(--primary);padding:4px;align-self:flex-end;margin-bottom:2px;visibility:${isTime ? 'visible' : 'hidden'}" title="Ver Gráfico de Ritmo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m18.7 8-5.1 5.2-2.8-2.7L7 14.3"/></svg>
       </button>
       ${methodPanelHTML}
       <!-- Observações do personal para este exercício -->
@@ -1873,6 +1877,9 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       if (ex.loadType && ltSel) ltSel.value = ex.loadType;
       if (ex.defaultReps && repsEl && (!repsEl.value || repsEl.value === '12')) repsEl.value = ex.defaultReps;
       if (lbl) lbl.textContent = ex.loadType === 'time' ? 'Intensidade' : ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+      
+      const viewChartBtn = row.querySelector('.view-cardio-chart');
+      if (viewChartBtn) viewChartBtn.style.visibility = ex.loadType === 'time' ? 'visible' : 'hidden';
     };
   });
 
@@ -1887,6 +1894,9 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       if (lbl) lbl.textContent = lt === 'time' ? 'Intensidade' : lt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
       const loadEl = row.querySelector(`[name="ex_load_${i}"]`);
       if (loadEl) loadEl.placeholder = lt === 'time' ? 'km/h/W' : lt === 'bodyweight' ? '+kg' : 'kg';
+
+      const viewChartBtn = row.querySelector('.view-cardio-chart');
+      if (viewChartBtn) viewChartBtn.style.visibility = lt === 'time' ? 'visible' : 'hidden';
 
       const methodName = row.querySelector('.ex-method')?.value || '';
       if (methodName && METHOD_PROGRESSIONS[methodName]) {
@@ -1903,6 +1913,9 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       rebuildMethodSeriesPanel(row, i, true);
     }
   });
+
+  // ── Ritmo / Cardio chart preview ──
+  bindCardioChartPreview();
 }
 
 // ── Atualizar visual de pares combinados na lista de exercícios ──
@@ -1956,3 +1969,407 @@ function refreshCombinedVisuals() {
     }
   });
 }
+
+// ── CARDIO GRAPH HELPERS & MODAL FOR TRAINER ────────────────────────
+
+function isCardioExercise(ex) {
+  if (!ex) return false;
+  const name = String(ex.name || '').toLowerCase();
+  const cat = String(ex.category || '').toLowerCase();
+  const muscle = String(ex.muscleGroup || ex.muscle || '').toLowerCase();
+  return (
+    ex.loadType === 'time' ||
+    cat.includes('cardio') ||
+    muscle.includes('cardio') ||
+    name.includes('esteira') ||
+    name.includes('corrida') ||
+    name.includes('hiit') ||
+    name.includes('tabata') ||
+    name.includes('bike') ||
+    name.includes('bicicleta') ||
+    name.includes('aerob') ||
+    name.includes('caminh') ||
+    name.includes('pedal') ||
+    name.includes('fartlek') ||
+    name.includes('remo erg') ||
+    name.includes('spinning') ||
+    name.includes('pular corda')
+  );
+}
+
+function isSpeedPowerCardio(ex) {
+  if (!ex) return false;
+  const baseLoadStr = String(ex.load || '').toLowerCase();
+  if (baseLoadStr.includes('km/h') || baseLoadStr.includes('kmh') || baseLoadStr.includes('watt') || baseLoadStr.includes('level') || baseLoadStr.includes('bpm')) {
+    return true;
+  }
+  if (ex.seriesProgression) {
+    const hasNumericLoad = ex.seriesProgression.some(sp => {
+      const val = parseFloat(String(sp.load || '').replace(',', '.'));
+      return !isNaN(val) && val > 0;
+    });
+    if (hasNumericLoad) return true;
+  }
+  return false;
+}
+
+function getCardioSegments(ex) {
+  const segments = [];
+  const reps = ex.reps || ex.defaultReps || '20 min';
+  const method = ex.method || '';
+
+  const parseDuration = (val, hasMinutesDefault = false) => {
+    if (!val) return 60;
+    const str = String(val).toLowerCase().trim();
+    const match = str.match(/([\d.,]+)\s*(min|m|s|seg|segundos|seconds)?/);
+    if (!match) return 60;
+    const num = parseFloat(match[1].replace(',', '.'));
+    if (isNaN(num)) return 60;
+    const unit = match[2];
+    if (unit === 'min' || unit === 'm') {
+      return num * 60;
+    }
+    if (unit === 's' || unit === 'seg' || unit === 'segundos' || unit === 'seconds') {
+      return num;
+    }
+    if (hasMinutesDefault) return num * 60;
+    return num <= 15 ? num * 60 : num;
+  };
+
+  const parseIntensity = (loadVal, labelText) => {
+    const loadNum = parseFloat(String(loadVal || '').replace(',', '.'));
+    if (!isNaN(loadNum) && loadNum > 0) {
+      return loadNum;
+    }
+    const lbl = String(labelText).toLowerCase();
+    if (lbl.includes('z5') || lbl.includes('sprint') || lbl.includes('tiro') || lbl.includes('all-out') || lbl.includes('máximo') || lbl.includes('muito pesada') || lbl.includes('vo2max')) {
+      return 95.0;
+    }
+    if (lbl.includes('z4') || lbl.includes('limiar') || lbl.includes('pesada')) {
+      return 88.5;
+    }
+    if (lbl.includes('z3') || lbl.includes('cinzenta') || lbl.includes('moderada')) {
+      return 81.0;
+    }
+    if (lbl.includes('z2') || lbl.includes('base') || lbl.includes('leve')) {
+      return 70.0;
+    }
+    if (lbl.includes('z1') || lbl.includes('aquecimento') || lbl.includes('desaquecimento') || lbl.includes('recuperação') || lbl.includes('cool down')) {
+      return 57.5;
+    }
+    return 70.0;
+  };
+
+  // 1. Check if reps contains percentage splits (e.g. "80% Z2 / 20% Z5")
+  const pctPattern = /(\d+)\s*%\s*(?:em\s+|de\s+|da\s+)?(z\d|zona\s*\d|sprint|recup|tiro|aquec|desaquec|tf|val|alta|baixa|moderada)/gi;
+  const pctMatches = [...reps.matchAll(pctPattern)];
+
+  if (pctMatches.length > 0) {
+    let totalSec = 0;
+    const durationMatch = reps.match(/(\d+)\s*(?:min|m|s|seg|segundos|seconds)(?!\s*%)/i);
+    if (durationMatch) {
+      totalSec = parseDuration(durationMatch[0], true);
+    } else {
+      const firstNumMatch = reps.match(/(\d+)/);
+      const firstNum = firstNumMatch ? parseFloat(firstNumMatch[1]) : 40;
+      totalSec = firstNum * 60;
+    }
+
+    let cumulative = 0;
+    pctMatches.forEach((m, idx) => {
+      const pct = parseFloat(m[1]) / 100;
+      const zoneLabel = m[2];
+      const duration = totalSec * pct;
+      const intensity = parseIntensity(null, zoneLabel);
+      segments.push({
+        label: `${zoneLabel.toUpperCase()} (${Math.round(pct * 100)}%)`,
+        duration,
+        intensity,
+        load: null,
+        start: cumulative,
+        end: cumulative + duration
+      });
+      cumulative += duration;
+    });
+    return segments;
+  }
+
+  // 2. If custom seriesProgression exists, use it
+  if (ex.seriesProgression && ex.seriesProgression.length > 0) {
+    let cumulative = 0;
+    ex.seriesProgression.forEach((sp, idx) => {
+      const duration = parseDuration(sp.reps);
+      const intensity = parseIntensity(sp.load, sp.label || `Série ${idx+1}`);
+      const label = sp.label || `Série ${idx+1}`;
+      segments.push({
+        label,
+        duration,
+        intensity,
+        load: sp.load || null,
+        start: cumulative,
+        end: cumulative + duration
+      });
+      cumulative += duration;
+    });
+    return segments;
+  }
+
+  // 3. Check method for standard templates
+  let cumulative = 0;
+  if (method === 'Tabata') {
+    segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
+    cumulative = 300;
+    for (let r = 1; r <= 8; r++) {
+      segments.push({ label: `Sprint R${r} (Z5)`, duration: 20, intensity: 95.0, start: cumulative, end: cumulative + 20 });
+      cumulative += 20;
+      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 10, intensity: 57.5, start: cumulative, end: cumulative + 10 });
+      cumulative += 10;
+    }
+    segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
+  } else if (method === 'HIIT 1:1') {
+    segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
+    cumulative = 300;
+    for (let r = 1; r <= 10; r++) {
+      segments.push({ label: `Esforço R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
+      cumulative += 30;
+      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 30, intensity: 57.5, start: cumulative, end: cumulative + 30 });
+      cumulative += 30;
+    }
+    segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
+  } else if (method === 'HIIT 1:2') {
+    segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
+    cumulative = 300;
+    for (let r = 1; r <= 8; r++) {
+      segments.push({ label: `Esforço R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
+      cumulative += 30;
+      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 60, intensity: 57.5, start: cumulative, end: cumulative + 60 });
+      cumulative += 60;
+    }
+    segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
+  } else {
+    const totalSec = parseDuration(reps, true);
+    let intensity = 70.0;
+    if (method.includes('Z1')) intensity = 57.5;
+    else if (method.includes('Z2')) intensity = 70.0;
+    else if (method.includes('Z3')) intensity = 81.0;
+    else if (method.includes('Z4')) intensity = 88.5;
+    else if (method.includes('Z5')) intensity = 95.0;
+    
+    segments.push({
+      label: method || ex.name || 'Cardio',
+      duration: totalSec,
+      intensity,
+      start: 0,
+      end: totalSec
+    });
+  }
+
+  // 4. Fallback for Polarized method if it was parsed as a single continuous block
+  if (segments.length === 1 && (method.toLowerCase().includes('polarizado') || ex.name.toLowerCase().includes('polarizado') || reps.toLowerCase().includes('polarizado'))) {
+    const totalSec = segments[0].duration;
+    segments.length = 0; // clear
+    const z2Sec = totalSec * 0.8;
+    const z5Sec = totalSec * 0.2;
+    segments.push({
+      label: 'Zona 2 (Z2) - 80%',
+      duration: z2Sec,
+      intensity: 70.0,
+      load: null,
+      start: 0,
+      end: z2Sec
+    });
+    segments.push({
+      label: 'Zona 5 (Z5) - 20%',
+      duration: z5Sec,
+      intensity: 95.0,
+      load: null,
+      start: z2Sec,
+      end: totalSec
+    });
+  }
+
+  return segments;
+}
+
+function bindCardioChartPreview() {
+  document.querySelectorAll('.view-cardio-chart').forEach(btn => {
+    btn.onclick = async () => {
+      const index = btn.dataset.index;
+      const row = btn.closest('.exercise-row');
+      if (!row) return;
+
+      const name = row.querySelector(`[name="ex_name_${index}"]`)?.value || '';
+      const reps = row.querySelector(`[name="ex_reps_${index}"]`)?.value || '';
+      const method = row.querySelector(`[name="ex_method_${index}"]`)?.value || '';
+      const load = row.querySelector(`[name="ex_load_${index}"]`)?.value || '';
+      const loadType = row.querySelector(`[name="ex_loadtype_${index}"]`)?.value || 'weight';
+
+      // Read series panel progression if present
+      const seriesProgression = [];
+      const seriesPanel = row.querySelector('.method-series-panel');
+      if (seriesPanel) {
+        const serieRows = seriesPanel.querySelectorAll('div[data-serie]');
+        serieRows.forEach((sr, si) => {
+          const loadVal = sr.querySelector('.serie-load')?.value || '';
+          const restVal = sr.querySelector('.serie-rest')?.value || '';
+          const labelText = sr.children[0]?.textContent || '';
+          const repsText = sr.children[1]?.textContent || '';
+          seriesProgression.push({
+            label: labelText,
+            reps: repsText,
+            load: loadVal,
+            rest: restVal
+          });
+        });
+      }
+
+      const mockEx = {
+        name,
+        reps,
+        method,
+        load,
+        loadType,
+        seriesProgression: seriesProgression.length > 0 ? seriesProgression : null
+      };
+
+      await showCardioPreviewModal(mockEx);
+    };
+  });
+}
+
+async function showCardioPreviewModal(ex) {
+  const segments = getCardioSegments(ex);
+  const totalSec = segments.reduce((sum, seg) => sum + seg.duration, 0);
+  const isTimeSpeed = isSpeedPowerCardio(ex);
+
+  const getZoneColor = (intensity) => {
+    if (intensity >= 90) return '#ef4444'; // Z5 (red)
+    if (intensity >= 83) return '#f97316'; // Z4 (orange)
+    if (intensity >= 73) return '#eab308'; // Z3 (yellow)
+    if (intensity >= 63) return '#10b981'; // Z2 (green)
+    return '#3b82f6'; // Z1 (blue)
+  };
+
+  const formatTimeLabel = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  const formatDurationText = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    if (s > 0) return `${m} min ${s}s`;
+    return `${m} min`;
+  };
+
+  const content = `
+    <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06);margin-bottom:12px">
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <span>📊 Perfil do Ritmo (Cardio/HIIT)</span>
+        <span style="font-size:0.68rem;color:var(--text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
+      </div>
+      <div style="position:relative;height:180px;width:100%;margin-bottom:14px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
+        <canvas id="cardioPreviewChart" style="width:100%;height:100%"></canvas>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;padding-right:4px">
+        ${segments.map((seg, idx) => {
+          const timeLabel = `${formatTimeLabel(seg.start)} a ${formatTimeLabel(seg.end)}`;
+          const targetLabel = seg.load != null ? `${seg.load}` : `${seg.intensity}%`;
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.015);border-radius:8px;font-size:0.75rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
+              <div style="display:flex;flex-direction:column;text-align:left">
+                <span style="font-weight:700;color:var(--text-main,#f1f5f9)">${seg.label}</span>
+                <span style="font-size:0.65rem;color:var(--text-muted,#94a3b8)">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
+              </div>
+              <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
+                ${targetLabel}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  openModal({
+    title: `Visualização de Ritmo — ${ex.name || 'Cardio'}`,
+    content: content,
+    size: 'md',
+    actions: [{ label: 'Fechar', class: 'btn-secondary', onClick: () => closeModal() }]
+  });
+
+  if (typeof Chart !== 'undefined') {
+    setTimeout(() => {
+      const ctx = document.getElementById('cardioPreviewChart')?.getContext('2d');
+      if (!ctx) return;
+
+      const dataPoints = [];
+      segments.forEach(seg => {
+        dataPoints.push({ x: seg.start / 60, y: seg.intensity });
+        dataPoints.push({ x: seg.end / 60, y: seg.intensity });
+      });
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Intensidade',
+            data: dataPoints,
+            borderColor: '#06b6d4',
+            borderWidth: 2.5,
+            backgroundColor: 'rgba(6, 182, 212, 0.12)',
+            fill: true,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                title: (context) => {
+                  const minutes = context[0].parsed.x;
+                  const m = Math.floor(minutes);
+                  const s = Math.round((minutes % 1) * 60);
+                  return `Tempo: ${m}:${String(s).padStart(2, '0')}`;
+                },
+                label: (context) => {
+                  const val = context.parsed.y;
+                  return isTimeSpeed ? `Carga: ${val}` : `Intensidade: ${val}% FC Máx`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: { display: true, text: 'Duração (minutos)', color: '#94a3b8', font: { size: 9, weight: 'bold' } },
+              ticks: { color: '#94a3b8', font: { size: 8 } },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            },
+            y: {
+              title: { 
+                display: true, 
+                text: isTimeSpeed ? 'Velocidade / Carga' : '% FC Máx', 
+                color: '#94a3b8', 
+                font: { size: 9, weight: 'bold' } 
+              },
+              ticks: { color: '#94a3b8', font: { size: 8 } },
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              suggestedMin: isTimeSpeed ? 0 : 50,
+              suggestedMax: isTimeSpeed ? undefined : 100
+            }
+          }
+        }
+      });
+    }, 100);
+  }
+}
+
