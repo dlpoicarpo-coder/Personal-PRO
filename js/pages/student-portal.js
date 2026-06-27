@@ -97,6 +97,29 @@ async function requestNotificationPermission() {
   }
 }
 
+// Send local notification
+function sendLocalNotification(title, body) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.showNotification(title, {
+        body: body,
+        icon: '/assets/icon-portal-512.png',
+        badge: '/assets/icon-portal-512.png',
+        vibrate: [100, 50, 100],
+        tag: 'rest-timer-expired',
+        renotify: true
+      });
+    });
+  } else {
+    try {
+      new Notification(title, { body });
+    } catch (_) {}
+  }
+}
+
 // ── THEME ──────────────────────────────────────────────────────
 function getPortalTheme() {
   return localStorage.getItem('portal_theme') || 'dark';
@@ -1310,6 +1333,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         const overlay = document.getElementById('restTimerOverlay');
         if (overlay) overlay.style.display = 'none';
         playBeep(1000, 0.25, 3);
+        sendLocalNotification("Descanso Concluído! 💪", "Hora de começar a próxima série!");
         triggerAutoSave();
       } else {
         const cd = document.getElementById('restCountdown');
@@ -1926,6 +1950,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         isResting = false;
         activeRestingRowId = null;
         playBeep(1000, 0.25, 3);
+        sendLocalNotification("Descanso Concluído! 💪", "Hora de começar a próxima série!");
       }
     }, 1000);
   }
