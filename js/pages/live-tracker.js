@@ -2748,6 +2748,8 @@ function generateSessionPDF(session, student) {
   } catch(err){ console.error(err); notify.error('Erro ao gerar PDF.'); }
 }
 
+}
+
 function isCardioExercise(ex) {
   if (!ex) return false;
   const name = String(ex.name || '').toLowerCase();
@@ -3034,6 +3036,4 @@ function initEmbeddedCardioChartTrainer(canvasId, ex) {
       }
     });
   }, 100);
-}
-
 }
