@@ -1886,6 +1886,12 @@ export function initTracker(navigateFn) {
               state.setIdx = curEx.sets;
             }
 
+            // Clear temporary inputs for this exercise so it adopts the new edited default values
+            if (state.tempSets && state.tempSets[state.exIdx]) {
+              delete state.tempSets[state.exIdx];
+            }
+            state.session.tempSets = state.tempSets || {};
+
             await db.put('sessions', state.session);
             notify.success('Exercício atualizado!');
             closeModal();
