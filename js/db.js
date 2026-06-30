@@ -215,12 +215,18 @@ class Database {
               merged.set(localItem.id, localItem);
             }
           } else {
-            const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
-            const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+            const isLocalModified = !localItem._synced;
 
-            if (localTime > remoteTime + 1000) {
-              toUpload.push(localItem);
-              merged.set(localItem.id, localItem);
+            if (isLocalModified) {
+              const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+              const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+
+              if (localTime > remoteTime + 1000) {
+                toUpload.push(localItem);
+                merged.set(localItem.id, localItem);
+              } else {
+                merged.set(localItem.id, remoteItem);
+              }
             } else {
               merged.set(localItem.id, remoteItem);
             }
@@ -409,12 +415,18 @@ class Database {
               merged.set(localItem.id, localItem);
             }
           } else {
-            const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
-            const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+            const isLocalModified = !localItem._synced;
 
-            if (localTime > remoteTime + 1000) {
-              toUpload.push(localItem);
-              merged.set(localItem.id, localItem);
+            if (isLocalModified) {
+              const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+              const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
+
+              if (localTime > remoteTime + 1000) {
+                toUpload.push(localItem);
+                merged.set(localItem.id, localItem);
+              } else {
+                merged.set(localItem.id, remoteItem);
+              }
             } else {
               merged.set(localItem.id, remoteItem);
             }
