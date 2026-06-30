@@ -67,11 +67,9 @@ export async function renderFinancial() {
   const monthRecs   = records.filter(r => inSelMonth(r.dueDate));
   const totalExpect = monthRecs.reduce((t, r) => t + (r.amount||0), 0);
 
-  // RECEBIDO: pagos cuja paidDate OU dueDate cai no mês selecionado
+  // RECEBIDO: pagos com vencimento (dueDate) no mês selecionado
   const paidThisMonth = records.filter(r => {
-    if (r.status !== 'paid') return false;
-    const refDate = r.paidDate || r.dueDate;
-    return inSelMonth(refDate);
+    return r.status === 'paid' && inSelMonth(r.dueDate);
   });
   const totalPaid = paidThisMonth.reduce((t, r) => t + (r.amount||0), 0);
 
@@ -92,7 +90,7 @@ export async function renderFinancial() {
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const mo = d.getMonth(); const yr = d.getFullYear();
-    const paid = records.filter(r => r.status==='paid' && parseLocalDate(r.paidDate||r.dueDate).getMonth()===mo && parseLocalDate(r.paidDate||r.dueDate).getFullYear()===yr).reduce((t,r) => t+(r.amount||0), 0);
+    const paid = records.filter(r => r.status==='paid' && parseLocalDate(r.dueDate).getMonth()===mo && parseLocalDate(r.dueDate).getFullYear()===yr).reduce((t,r) => t+(r.amount||0), 0);
     const expected = records.filter(r => { const dd = parseLocalDate(r.dueDate); return dd.getMonth()===mo && dd.getFullYear()===yr; }).reduce((t,r) => t+(r.amount||0), 0);
     monthlyData.push({ label: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), paid, expected });
   }
@@ -360,9 +358,9 @@ export function initFinancial(navigateFn) {
             return dd.getMonth() === mo && dd.getFullYear() === yr;
           };
           labels.push(d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
-          // Recebido: usa paidDate se existir, senão dueDate
+          // Recebido: usa dueDate
           paid.push(records
-            .filter(r => r.status === 'paid' && inMonth(r.paidDate || r.dueDate))
+            .filter(r => r.status === 'paid' && inMonth(r.dueDate))
             .reduce((t, r) => t + (r.amount||0), 0));
           // Esperado: todos com vencimento neste mês
           expected.push(records
