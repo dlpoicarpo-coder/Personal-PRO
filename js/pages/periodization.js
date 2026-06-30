@@ -10,6 +10,20 @@ import { PERIODIZATION_MODELS, generateProgression } from '../utils/periodizatio
 import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
 import { METHOD_PROGRESSIONS, METHOD_CARDIO_META } from './workouts.js';
 
+function isCardioExercise(name, method) {
+  const nameLower = String(name || '').toLowerCase();
+  const methodLower = String(method || '').toLowerCase();
+  const cardioKeywords = [
+    'esteira', 'caminha', 'corrida', 'correr', 'sprint', 'tiro',
+    'bike', 'bicicleta', 'pedal', 'spinning', 'ciclismo',
+    'escada', 'agilidade', 'coordenac', 'coordenaç',
+    'natação', 'natacao', 'remo', 'ergômetro', 'ergometro',
+    'cardio', 'endurance', 'aerobico', 'aeróbico', 'hiit', 'tabata',
+    'pulando corda', 'pular corda', 'jump'
+  ];
+  return cardioKeywords.some(k => nameLower.includes(k)) || methodLower.includes('cardio') || methodLower.includes('polarizado');
+}
+
 // Adaptar BUILT_IN_TEMPLATES para o formato que o periodization espera
 function adaptTemplate(t) {
   return {
@@ -836,7 +850,10 @@ export function initPeriodization(navigateFn) {
                 const wkExercises = session.exercises.map(ex => {
                   const oneRM = exerciseLoads[ex.name] || 60;
                   const dbEx = allEx.find(e => e.name.toLowerCase().trim() === ex.name.toLowerCase().trim());
-                  const exType = dbEx?.loadType || 'weight';
+                  let exType = dbEx?.loadType || 'weight';
+                  if (isCardioExercise(ex.name, ex.method)) {
+                    exType = 'time';
+                  }
 
                   let load;
                   if (exType === 'time') {
@@ -871,6 +888,7 @@ export function initPeriodization(navigateFn) {
 
                     return {
                       ...ex,
+                      loadType: exType,
                       load: seriesProgression[0]?.load || load,
                       oneRM,
                       week: w + 1,
@@ -881,7 +899,7 @@ export function initPeriodization(navigateFn) {
                     };
                   }
 
-                  return { ...ex, load, oneRM, week: w + 1 };
+                  return { ...ex, loadType: exType, load, oneRM, week: w + 1 };
                 });
 
                 const savedWorkout = await db.add('workouts', {
@@ -1460,6 +1478,33 @@ async function renderLoadInputs(exercises) {
   let html = '';
   for (const ex of exercises) {
     const nameLower = ex.name.toLowerCase();
+
+    // ── Cardio check first ──
+    if (isCardioExercise(ex.name, ex.method)) {
+      const cardioMeta = METHOD_CARDIO_META?.[ex.method] || {};
+      const fcRange = cardioMeta.fcPct ? `${cardioMeta.fcPct[0]}-${cardioMeta.fcPct[1]}% FC Máx` : '65-80% FC Máx';
+      const durRange = cardioMeta.durationMin ? `${cardioMeta.durationMin[0]}-${cardioMeta.durationMin[1]} min` : '';
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
+          <div style="flex:1">
+            <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
+            <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">
+              ${ex.method ? `<span style="font-weight:600">${ex.method}</span> · ` : ''}${fcRange}${durRange ? ` · ${durRange}` : ''}
+              ${cardioMeta.rpe ? ` · RPE ${cardioMeta.rpe}` : ''}
+            </div>
+            ${cardioMeta.note ? `<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;font-style:italic">${cardioMeta.note}</div>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
+            <span style="font-size:0.68rem;color:var(--text-muted)">FC Máx</span>
+            <input class="form-input load-input" data-ex-key="${ex.name}" data-type="cardio"
+              type="number" min="100" max="220" value="180"
+              style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem;border-color:var(--accent)40" />
+            <span style="font-size:0.72rem;color:var(--text-muted);min-width:22px">bpm</span>
+          </div>
+        </div>`;
+      continue;
+    }
+
     const isTimed = ex.loadType === 'time' || TIMED_PATTERN.test(String(ex.reps || ''));
     const isBodyweight = ex.loadType === 'bodyweight'
       || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k))
@@ -1499,33 +1544,6 @@ async function renderLoadInputs(exercises) {
               type="number" min="0" step="0.5" value="0"
               style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem" />
             <span style="font-size:0.72rem;color:var(--text-muted);min-width:24px">+kg</span>
-          </div>
-        </div>`;
-      continue;
-    }
-
-    // ── Cardio method: show FC target instead of 1RM ──
-    const cardioMeta = METHOD_CARDIO_META?.[ex.method];
-    if (cardioMeta || BODYWEIGHT_KEYWORDS.some(k => nameLower.includes(k) && (nameLower.includes('cardio') || nameLower.includes('corrida') || nameLower.includes('esteira') || nameLower.includes('bike') || nameLower.includes('sprint') || nameLower.includes('hiit')))) {
-      const meta = cardioMeta || {};
-      const fcRange = meta.fcPct ? `${meta.fcPct[0]}-${meta.fcPct[1]}% FC Máx` : '65-80% FC Máx';
-      const durRange = meta.durationMin ? `${meta.durationMin[0]}-${meta.durationMin[1]} min` : '';
-      html += `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
-          <div style="flex:1">
-            <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
-            <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">
-              ${ex.method ? `<span style="font-weight:600">${ex.method}</span> · ` : ''}${fcRange}${durRange ? ` · ${durRange}` : ''}
-              ${meta.rpe ? ` · RPE ${meta.rpe}` : ''}
-            </div>
-            ${meta.note ? `<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;font-style:italic">${meta.note}</div>` : ''}
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
-            <span style="font-size:0.68rem;color:var(--text-muted)">FC Máx</span>
-            <input class="form-input load-input" data-ex-key="${ex.name}" data-type="cardio"
-              type="number" min="100" max="220" value="180"
-              style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem;border-color:var(--accent)40" />
-            <span style="font-size:0.72rem;color:var(--text-muted);min-width:22px">bpm</span>
           </div>
         </div>`;
       continue;
