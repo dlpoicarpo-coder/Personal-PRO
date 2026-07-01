@@ -840,6 +840,114 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
+  // Editar modelo padrão (criar cópia personalizada)
+  document.querySelectorAll('.edit-builtin-tpl').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tplId = btn.dataset.tpl;
+      const tpl = BUILT_IN_TEMPLATES.find(t => t.id === tplId);
+      if (!tpl) return;
+      const allEx  = await db.getAll('exercises');
+      const allMet = await db.getAll('methods');
+      let wkCount  = tpl.workouts ? tpl.workouts.length : 0;
+      
+      const workoutsHTML = tpl.workouts && tpl.workouts.length
+        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, allMet, w, allEx)).join('')
+        : buildTplWorkoutHTML(0, allMet, null, allEx);
+
+      openModal({
+        title: 'Editar Modelo Padrão (Criar Cópia)', size: 'xl',
+        preventBackdropClose: true,
+        content: `<form id="editBuiltinTplForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Nome do Modelo *</label>
+              <input class="form-input" name="name" value="${tpl.name} (Cópia)" required placeholder="Ex: Full Body 3x/sem Hipertrofia" />
+            </div>
+            <div class="form-group"><label class="form-label">Objetivo</label>
+              <select class="form-select" name="goal">
+                ${['Hipertrofia','Força','Emagrecimento','Condicionamento','Resistência','Performance','Reabilitação','Funcional']
+                  .map(g => `<option ${tpl.goal===g?'selected':''}>${g}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Descrição</label>
+            <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem é indicado, observações...">${tpl.description||''}</textarea>
+          </div>
+          <div id="tplWorkoutsEdit">
+            ${workoutsHTML}
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm mt-sm" id="addTplWorkoutEdit">+ Adicionar Treino</button>
+        </form>`,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar como meu Modelo', class: 'btn-primary', onClick: async () => {
+            const fd = new FormData(document.getElementById('editBuiltinTplForm'));
+            const name = fd.get('name');
+            if (!name) { notify.error('Nome obrigatório'); return; }
+            const workouts = [];
+            document.querySelectorAll('#tplWorkoutsEdit .tpl-workout').forEach(wkEl => {
+              const wi = wkEl.dataset.wi;
+              const exercises = [];
+              wkEl.querySelectorAll('.tpl-ex-row').forEach(exEl => {
+                const ei = exEl.dataset.ei;
+                const n  = fd.get(`wk_${wi}_ex_${ei}`);
+                if (n) {
+                  const selectEl = exEl.querySelector('.tpl-ex-select');
+                  const opt = selectEl?.selectedOptions[0];
+                  const loadType = opt?.dataset.loadType || 'weight';
+                  
+                  let reps = '';
+                  let load = '';
+                  let duration = '';
+                  let speed = '';
+                  let fc = '';
+
+                  if (loadType === 'time') {
+                    duration = fd.get(`wk_${wi}_duration_${ei}`) || '';
+                    speed = fd.get(`wk_${wi}_speed_${ei}`) || '';
+                    fc = fd.get(`wk_${wi}_fc_${ei}`) || '';
+                    reps = duration;
+                    load = [speed, fc].filter(Boolean).join(' - ');
+                  } else if (loadType === 'bodyweight') {
+                    reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
+                    load = '';
+                  } else { // weight
+                    reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
+                    load = fd.get(`wk_${wi}_load_${ei}`) || '';
+                  }
+
+                  exercises.push({
+                    name: n,
+                    loadType,
+                    sets: parseInt(fd.get(`wk_${wi}_sets_${ei}`))||3,
+                    reps,
+                    load,
+                    duration,
+                    speed,
+                    fc,
+                    rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
+                    method: fd.get(`wk_${wi}_method_${ei}`)||'',
+                  });
+                }
+              });
+              const wn = fd.get(`wk_name_${wi}`) || `Treino ${parseInt(wi)+1}`;
+              if (exercises.length) workouts.push({ name: wn, exercises });
+            });
+            await db.add('cycles', { name, goal: fd.get('goal'), description: fd.get('description'), isTemplate: true, workouts, daysPerWeek: workouts.length });
+            notify.success('Cópia do modelo salva em Meus Modelos!'); closeModal(); navigateFn('/exercicios');
+          }}
+        ]
+      });
+
+      setTimeout(() => {
+        document.getElementById('addTplWorkoutEdit')?.addEventListener('click', () => {
+          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet, null, allEx));
+          bindTplEventsEdit(allMet, allEx);
+        });
+        bindTplEventsEdit(allMet, allEx);
+      }, 100);
+    });
+  });
+
   // Helper bindings for editing
   function bindTplEventsEdit(allMethods = [], allEx = []) {
     document.querySelectorAll('#tplWorkoutsEdit .add-tpl-ex').forEach(btn => {
