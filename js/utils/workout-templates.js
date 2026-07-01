@@ -501,6 +501,52 @@ export const BUILT_IN_TEMPLATES = [
         { name: 'Abdominal Crunch', sets: 3, reps: '40', load: 'Corporal', rest: '45', method: '', loadType: 'bodyweight' },
       ]}
     ]
+  },
+  {
+    id: 'tpl_ildemera_ondulatorio',
+    name: 'Ildemera — DUP Ondulatório (Full Body + Cardio)',
+    category: 'Hipertrofia',
+    goal: 'Emagrecimento / Condicionamento',
+    description: 'Planejamento estratégico de 5 dias semanais para Ildemera. Combina 3 treinos Full Body (Metabólico, Hipertrofia e Força) com 2 dias de Cardio (LISS e HIIT).',
+    daysPerWeek: 5,
+    builtIn: true,
+    periodizationTypes: ['undulating', 'linear'],
+    workouts: [
+      { name: 'Full Body A — Metabólico', exercises: [
+        { name: 'Leg 45°', sets: 3, reps: '20-25', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Puxada Alta Triângulo', sets: 3, reps: '18-20', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Agachamento Sumô', sets: 3, reps: '20', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Supino com Halter', sets: 3, reps: '15-18', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Elevação Pélvica', sets: 3, reps: '20', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Desenvolvimento Unilateral', sets: 2, reps: '18', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Prancha Isométrica', sets: 3, reps: '30-40s', load: 'Corporal', rest: '45', method: '', loadType: 'time' }
+      ]},
+      { name: 'Cardio 1 — LISS', exercises: [
+        { name: 'Caminhada inclinada', sets: 1, reps: '35-40 min', load: 'Zona 2', rest: '0', method: '', loadType: 'time' }
+      ]},
+      { name: 'Full Body B — Hipertrofia', exercises: [
+        { name: 'Búlgaro no Step', sets: 3, reps: '10-12', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Remada Articulada', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Stiff', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Flexão de Braços / Supino Máquina', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Cadeira Extensora', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Cadeira Abdutora', sets: 3, reps: '15', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Dead Bug', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Panturrilha', sets: 3, reps: '15-20', load: '', rest: '60', method: '', loadType: 'weight' }
+      ]},
+      { name: 'Cardio 2 — HIIT', exercises: [
+        { name: 'Escada de Agilidade', sets: 1, reps: '20-25 min', load: 'Borg 7-8', rest: '0', method: 'HIIT 30-30', loadType: 'time' }
+      ]},
+      { name: 'Full Body C — Força (Presencial)', exercises: [
+        { name: 'Leg 45°', sets: 4, reps: '8', load: '', rest: '90', method: 'Pirâmide', loadType: 'weight' },
+        { name: 'Puxada Alta', sets: 4, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
+        { name: 'Agachamento Sumô', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
+        { name: 'Desenvolvimento', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
+        { name: 'Cadeira Flexora', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
+        { name: 'Remada Unilateral', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
+        { name: 'Prancha Lateral', sets: 3, reps: '30s', load: 'Corporal', rest: '90', method: '', loadType: 'time' }
+      ]}
+    ]
   }
 ];
 

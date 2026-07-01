@@ -1447,7 +1447,26 @@ async seedTemplates() {
         
         // MOBILIDADE / ALONGAMENTO
         { name: 'Alongamento de Glúteo (Pigeon)',  muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Alongamento profundo de glúteos e quadril (Pigeon Pose).' },
-        { name: 'Alongamento Gato-Camelo',        muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '45s', description: 'Mobilização de coluna em flexão e extensão quadrupedal.' }
+        { name: 'Alongamento Gato-Camelo',        muscleGroup: 'Mobilidade',    category: 'Mobilidade', equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '45s', description: 'Mobilização de coluna em flexão e extensão quadrupedal.' },
+        
+        // Ildemera Plan Exercises
+        { name: 'Leg 45°',                        muscleGroup: 'Quadríceps',    category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Leg Press a 45 graus.' },
+        { name: 'Puxada Alta Triângulo',          muscleGroup: 'Costas',        category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Puxada alta usando puxador triângulo.' },
+        { name: 'Supino com Halter',              muscleGroup: 'Peito',         category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Supino reto com halteres.' },
+        { name: 'Desenvolvimento Unilateral',     muscleGroup: 'Ombros',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Desenvolvimento de ombros com haltere unilateral.' },
+        { name: 'Prancha Isométrica',             muscleGroup: 'Core',          category: 'Funcional',  equipment: 'Peso corporal',  loadType: 'time',       defaultReps: '30s', description: 'Prancha frontal isométrica no solo.' },
+        { name: 'Búlgaro no Step',                muscleGroup: 'Quadríceps',    category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Agachamento búlgaro com o pé traseiro apoiado no step.' },
+        { name: 'Remada Articulada',              muscleGroup: 'Costas',        category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Remada sentada na máquina articulada.' },
+        { name: 'Stiff',                          muscleGroup: 'Posterior',     category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Exercício stiff para posterior de coxa.' },
+        { name: 'Flexão de Braços / Supino Máquina', muscleGroup: 'Peito',      category: 'Musculação', equipment: 'Peso corporal/Máquina', loadType: 'weight', description: 'Flexão de braços no solo ou supino máquina vertical.' },
+        { name: 'Cadeira Abdutora',               muscleGroup: 'Glúteos',       category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Abdução de quadril na cadeira abdutora.' },
+        { name: 'Dead Bug',                       muscleGroup: 'Core',          category: 'Funcional',  equipment: 'Peso corporal',  loadType: 'weight',     description: 'Estabilização de core deitado alternando braços e pernas.' },
+        { name: 'Panturrilha',                    muscleGroup: 'Panturrilha',   category: 'Musculação', equipment: 'Máquina',       loadType: 'weight',     description: 'Exercício de panturrilha.' },
+        { name: 'Puxada Alta',                    muscleGroup: 'Costas',        category: 'Musculação', equipment: 'Cabo',          loadType: 'weight',     description: 'Puxada alta na polia.' },
+        { name: 'Desenvolvimento',                muscleGroup: 'Ombros',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Desenvolvimento para deltoides.' },
+        { name: 'Remada Unilateral',              muscleGroup: 'Costas',        category: 'Musculação', equipment: 'Halteres',      loadType: 'weight',     description: 'Remada unilateral.' },
+        { name: 'Caminhada inclinada',            muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Esteira',        loadType: 'time',       defaultReps: '30min', description: 'Caminhada com inclinação na esteira.' },
+        { name: 'Escada de Agilidade',            muscleGroup: 'Cardio',        category: 'Cardio',     equipment: 'Variado',        loadType: 'time',       defaultReps: '30s', description: 'Trabalho de agilidade e coordenação na escada de chão.' }
     ];
 
     const existing = await this.getAll('exercises');
