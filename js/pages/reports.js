@@ -6,7 +6,6 @@ import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { notify } from '../components/toast.js';
 import { analyzeBiofeedback, overallStatus, trainingRecommendation } from '../utils/alerts.js';
-import { generateAlgorithmicInsight } from '../insights.js';
 
 export async function renderReports() {
   const storedStudent = sessionStorage.getItem('pp_reports_student_filter') || '';
@@ -58,9 +57,10 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     if (macro) { startDate = new Date(macro.startDate); endDate = new Date(macro.endDate); endDate.setHours(23,59,59,999); }
   }
   const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
-  const workouts = cycleFilter ? allWorkouts.filter(w => w.macrocycleId === cycleFilter || w.cycle === cycleFilter) : allWorkouts;
-  const workoutIds = new Set(workouts.map(w => w.id));
+  const workouts = cycleFilter ? allWorkouts.filter(w => String(w.macrocycleId) === String(cycleFilter) || String(w.cycle) === String(cycleFilter)) : allWorkouts;
+  const workoutIds = new Set(workouts.map(w => String(w.id)));
   
+  const allBiofeedback = await db.getAll('biofeedback');
   const allSessionsRaw = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
   const allSessions = allSessionsRaw.map(s => {
     const durationMin = s.durationMin || (s.totalDuration ? Math.round(s.totalDuration / 60) : 0);
@@ -72,9 +72,30 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       reps: parseFloat(set.reps) || 0,
     }));
     const totalVol = s.totalVolume || setLog.reduce((t,x)=>t+(x.load||0)*(x.reps||0),0);
-    return { ...s, durationMin, setLog, totalVolume: totalVol };
+
+    // Enrich with biofeedback
+    const dateStr = (s.date || '').substring(0, 10);
+    const bfId = `bf_${s.studentId}_${dateStr}`;
+    const bfObj = allBiofeedback.find(b => b.id === bfId || (b.studentId === s.studentId && (b.date || '').startsWith(dateStr)));
+    
+    let postBiofeedback = s.postBiofeedback || null;
+    let trainingLoad = s.trainingLoad || null;
+    if (bfObj) {
+      postBiofeedback = {
+        ...(s.postBiofeedback || {}),
+        pse: bfObj.pse || s.postBiofeedback?.pse,
+        trainingLoad: bfObj.trainingLoad || s.postBiofeedback?.trainingLoad,
+        tqrPost: bfObj.tqrPost || s.postBiofeedback?.tqrPost,
+        feeling: bfObj.feeling || s.postBiofeedback?.feeling,
+        notes: bfObj.postNotes || bfObj.notes || s.postBiofeedback?.notes,
+        submittedByStudent: bfObj.submittedByStudent || s.postBiofeedback?.submittedByStudent,
+      };
+      trainingLoad = bfObj.trainingLoad || s.trainingLoad;
+    }
+
+    return { ...s, durationMin, setLog, totalVolume: totalVol, postBiofeedback, trainingLoad };
   });
-  const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(s.workoutId)) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
+  const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(String(s.workoutId))) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
   
   const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
   const bf = cycleFilter ? allBf.filter(b => sessions.some(s => new Date(s.date).toDateString() === new Date(b.date).toDateString())) : (startDate ? allBf.filter(b => new Date(b.date) >= startDate && new Date(b.date) <= endDate) : allBf);
@@ -196,15 +217,15 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     compareSessionsHtml = `
     <div class="card mb-lg">
       <div class="card-header">
-        <span class="card-title">📈 Comparativo de Sessões Idênticas</span>
+        <span class="card-title">Comparativo de Sessões Idênticas</span>
       </div>
-      <p class="text-xs text-muted mb-md">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
+      <p class="text-xs text-muted mb-md">Comparação cronológica do Volume total levantado e da Percepção de Esforço (PSE) para o mesmo protocolo ao longo das semanas, demonstrando a sobrecarga progressiva e a eficiência neuromuscular.</p>
       <div class="form-group" style="max-width:300px">
         <select id="compareWorkoutSel" class="form-select" style="margin-bottom:12px;padding:8px;font-size:0.85rem">
           ${comparableBases.map((base, idx) => `<option value="${base}" ${idx===0?'selected':''}>${base}</option>`).join('')}
         </select>
       </div>
-      <div style="height:250px;position:relative">
+      <div style="height:350px;position:relative">
         <canvas id="compareWorkoutChart"></canvas>
       </div>
     </div>`;
@@ -250,18 +271,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
     </div>
 
-    <!-- Motor de Insights -->
-    <div class="card mb-lg" style="border:1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); position: relative; overflow: hidden;">
-      <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.05; user-select: none;">✨</div>
-      <div class="card-header"><span class="card-title" style="color:var(--accent); display:flex; align-items:center; gap:8px">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        Resumo da Evolução (Últimas 4 semanas)
-      </span></div>
-      
-      <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color); margin: 0;">
-        ${generateAlgorithmicInsight(student, completed, bf, 28).text}
-      </p>
-    </div>
+
 
     <!-- Sub-stats de treino -->
     <div class="stats-grid mb-lg" style="grid-template-columns:repeat(3,1fr)">
@@ -397,61 +407,61 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <div id="reportPeriodization"></div>
     </div>
 
-    <div class="grid-2 mb-lg">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Evolução do Bem-estar</span></div>
-        <p class="text-xs text-muted mb-sm">Gráfico de linhas mostrando as variáveis de bem-estar ao longo do tempo. <strong>Sono</strong> (roxo), <strong>TQR/Recuperação</strong> (verde) e <strong>Estresse</strong> (amarelo tracejado). Valores acima de 7 indicam boa recuperação. Estresse abaixo de 5 é ideal.</p>
-        <div style="height:280px;position:relative"><canvas id="wellnessChart"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Carga de Treino Semanal</span></div>
-        <p class="text-xs text-muted mb-sm">Volume de carga semanal calculado como <strong>PSE × Duração (min)</strong>. Picos excessivos ou aumento >10% entre semanas podem indicar risco de overtraining. A consistência é mais importante que picos altos.</p>
-        <div style="height:280px;position:relative"><canvas id="loadChart"></canvas></div>
-      </div>
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">Evolução do Bem-estar</span></div>
+      <p class="text-xs text-muted mb-sm">Acompanhamento dos indicadores de Sono, Recuperação Geral (TQR) e Nível de Estresse ao longo do tempo. Valores mais altos de Sono e TQR indicam melhor capacidade adaptativa e recuperação. Valores baixos de Estresse são ideais para o anabolismo e prevenção de fadiga crônica.</p>
+      <div style="height:360px;position:relative"><canvas id="wellnessChart"></canvas></div>
+    </div>
+
+    <div class="card mb-lg">
+      <div class="card-header"><span class="card-title">Carga de Treino Semanal</span></div>
+      <p class="text-xs text-muted mb-sm">Carga total semanal calculada como o produto da Percepção Subjetiva de Esforço (PSE) pela Duração da sessão (minutos). Acompanhe a modulação de carga para evitar aumentos abruptos (superiores a 10% entre semanas) e gerenciar a fadiga.</p>
+      <div style="height:360px;position:relative"><canvas id="loadChart"></canvas></div>
     </div>
 
     <div class="grid-2 mb-lg">
       <div class="card">
-        <div class="card-header"><span class="card-title">PSE por Sessão</span></div>
-        <p class="text-xs text-muted mb-sm">Percepção Subjetiva de Esforço (escala 1-10). Valores <strong>acima de 8 por 3+ sessões consecutivas</strong> indicam fadiga acumulada. A zona ideal para hipertrofia é entre 6 e 8.</p>
-        <div style="height:250px;position:relative"><canvas id="pseChart"></canvas></div>
+        <div class="card-header"><span class="card-title">Percepção Subjetiva de Esforço (PSE)</span></div>
+        <p class="text-xs text-muted mb-sm">Esforço relatado pelo aluno após cada sessão (escala Borg modificada de 1 a 10). Média consistente acima de 8 indica sessões de alta intensidade com necessidade de atenção à recuperação.</p>
+        <div style="height:300px;position:relative"><canvas id="pseChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Radar de Wellness</span></div>
-        <p class="text-xs text-muted mb-sm">Média dos últimos 5 check-ins. Quanto mais expandido o radar, melhor o estado geral do aluno. Áreas "encolhidas" indicam pontos de atenção (ex: sono baixo, estresse alto).</p>
-        <div style="height:250px;position:relative"><canvas id="radarChart"></canvas></div>
+        <div class="card-header"><span class="card-title">Radar de Prontidão</span></div>
+        <p class="text-xs text-muted mb-sm">Snapshot médio das últimas 5 avaliações subjetivas de bem-estar. Uma área de preenchimento maior representa um melhor estado de prontidão física e mental.</p>
+        <div style="height:300px;position:relative"><canvas id="radarChart"></canvas></div>
       </div>
     </div>
 
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Comparação entre Ciclos</span></div>
-      <p class="text-xs text-muted mb-sm">Mostra a <strong>média de cada indicador</strong> dividida por período (primeira metade vs segunda metade dos dados). Barras maiores na segunda metade indicam <strong>melhora</strong> (exceto estresse, onde menos é melhor). Ideal para demonstrar ao aluno a evolução ao longo do tempo.</p>
-      <div style="height:280px;position:relative"><canvas id="cycleDiffChart"></canvas></div>
+      <p class="text-xs text-muted mb-sm">Comparativo da média dos indicadores entre a primeira metade e a segunda metade do período selecionado, avaliando quantitativamente a evolução do sono, da recuperação, da intensidade e do estresse.</p>
+      <div style="height:360px;position:relative"><canvas id="cycleDiffChart"></canvas></div>
     </div>
 
     ${assessments.filter(a => a.type === 'composicao').length ? `
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Evolução de Medidas Corporais</span></div>
-      <p class="text-xs text-muted mb-sm">Acompanhamento de peso corporal e percentual de gordura ao longo das avaliações. A tendência é mais importante que valores isolados.</p>
-      <div style="height:280px;position:relative"><canvas id="measuresChart"></canvas></div>
+      <p class="text-xs text-muted mb-sm">Curva evolutiva do peso corporal e percentual de gordura ao longo das avaliações físicas consecutivas.</p>
+      <div style="height:360px;position:relative"><canvas id="measuresChart"></canvas></div>
     </div>` : ''}
 
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">Gasto Calórico nos Treinos</span></div>
-      <p class="text-xs text-muted mb-sm">Estimativa de calorias gastas por sessão, baseada na duração e peso corporal (MET de musculação).</p>
-      <div style="height:280px;position:relative"><canvas id="kcalChart"></canvas></div>
+      <div class="card-header"><span class="card-title">Gasto Calórico Estimado</span></div>
+      <p class="text-xs text-muted mb-sm">Estimativa de gasto energético por sessão com base no MET do treinamento de força e no peso corporal registrado.</p>
+      <div style="height:360px;position:relative"><canvas id="kcalChart"></canvas></div>
     </div>
     
     <div class="card mb-lg" id="densityChart_card">
       <div class="card-header"><span class="card-title">Densidade de Treino (kg/min)</span></div>
-      <p class="text-xs text-muted mb-sm">Relação entre Volume (kg) e Duração (min) das sessões.</p>
-      <div style="height:280px;position:relative"><canvas id="densityChart"></canvas></div>
+      <p class="text-xs text-muted mb-sm">Quantidade de carga total movimentada dividida pelo tempo da sessão, indicando a eficiência de trabalho por minuto.</p>
+      <div style="height:360px;position:relative"><canvas id="densityChart"></canvas></div>
     </div>
 
-<div class="grid-2 mb-lg">
-      <div class="card"><div class="card-header"><span class="card-title">Frequência — Últimas 8 Semanas</span></div>
-        <p class="text-xs text-muted mb-sm">Sessões realizadas por semana. A <strong>consistência</strong> (mínimo 3x/semana) é o fator mais importante para resultados a longo prazo.</p>
-        <div style="height:220px;position:relative"><canvas id="freqChart"></canvas></div>
+    <div class="grid-2 mb-lg">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Frequência Semanal</span></div>
+        <p class="text-xs text-muted mb-sm">Quantidade de sessões realizadas por semana ao longo das últimas 8 semanas. A consistência de treino é o fator crítico para o sucesso fisiológico de longo prazo.</p>
+        <div style="height:280px;position:relative"><canvas id="freqChart"></canvas></div>
       </div>
       <div class="card"><div class="card-header"><span class="card-title">Alertas Recentes</span></div>
         <p class="text-xs text-muted mb-sm">Resumo dos últimos check-ins de biofeedback com classificação automática e recomendações.</p>
@@ -621,9 +631,47 @@ export async function initReports(navigateFn) {
 
     // ── Dados ──
     const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === sid);
-    const workouts    = cycleFilter ? allWorkouts.filter(w => w.cycle === cycleFilter) : allWorkouts;
-    const sessions    = (await db.getAll('sessions')).filter(s => s.studentId === sid && s.status === 'completed');
-    const bf          = (await db.getAll('biofeedback')).filter(b => b.studentId === sid);
+    const workouts    = cycleFilter ? allWorkouts.filter(w => String(w.macrocycleId) === String(cycleFilter) || String(w.cycle) === String(cycleFilter)) : allWorkouts;
+    const workoutIds  = new Set(workouts.map(w => String(w.id)));
+
+    const allBiofeedback = await db.getAll('biofeedback');
+    const allSessionsRaw = (await db.getAll('sessions')).filter(s => s.studentId === sid);
+    const allSessions = allSessionsRaw.map(s => {
+      const durationMin = s.durationMin || (s.totalDuration ? Math.round(s.totalDuration / 60) : 0);
+      const exercises = s.exercises || [];
+      const setLog = (s.setLog || []).map(set => ({
+        ...set,
+        exerciseName: set.exerciseName || (exercises[set.exIdx]?.name) || (set.exerciseIdx != null ? exercises[set.exerciseIdx]?.name : null) || null,
+        load: parseFloat(set.load) || 0,
+        reps: parseFloat(set.reps) || 0,
+      }));
+      const totalVol = s.totalVolume || setLog.reduce((t,x)=>t+(x.load||0)*(x.reps||0),0);
+
+      // Enrich with biofeedback
+      const dateStr = (s.date || '').substring(0, 10);
+      const bfId = `bf_${s.studentId}_${dateStr}`;
+      const bfObj = allBiofeedback.find(b => b.id === bfId || (b.studentId === s.studentId && (b.date || '').startsWith(dateStr)));
+      
+      let postBiofeedback = s.postBiofeedback || null;
+      let trainingLoad = s.trainingLoad || null;
+      if (bfObj) {
+        postBiofeedback = {
+          ...(s.postBiofeedback || {}),
+          pse: bfObj.pse || s.postBiofeedback?.pse,
+          trainingLoad: bfObj.trainingLoad || s.postBiofeedback?.trainingLoad,
+          tqrPost: bfObj.tqrPost || s.postBiofeedback?.tqrPost,
+          feeling: bfObj.feeling || s.postBiofeedback?.feeling,
+          notes: bfObj.postNotes || bfObj.notes || s.postBiofeedback?.notes,
+          submittedByStudent: bfObj.submittedByStudent || s.postBiofeedback?.submittedByStudent,
+        };
+        trainingLoad = bfObj.trainingLoad || s.trainingLoad;
+      }
+
+      return { ...s, durationMin, setLog, totalVolume: totalVol, postBiofeedback, trainingLoad };
+    });
+
+    const sessions    = cycleFilter ? allSessions.filter(s => s.status === 'completed' && workoutIds.has(String(s.workoutId))) : allSessions.filter(s => s.status === 'completed');
+    const bf          = cycleFilter ? allBiofeedback.filter(b => b.studentId === sid && sessions.some(s => new Date(s.date).toDateString() === new Date(b.date).toDateString())) : allBiofeedback.filter(b => b.studentId === sid);
     const assessments = (await db.getAll('assessments')).filter(a => a.studentId === sid);
 
     // ── Stats ──
@@ -966,11 +1014,45 @@ async function initReportCharts(studentId, cycleFilter = '') {
   }
 
   const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === studentId);
-  const workouts = cycleFilter ? allWorkouts.filter(w => w.macrocycleId === cycleFilter || w.cycle === cycleFilter) : allWorkouts;
-  const workoutIds = new Set(workouts.map(w => w.id));
+  const workouts = cycleFilter ? allWorkouts.filter(w => String(w.macrocycleId) === String(cycleFilter) || String(w.cycle) === String(cycleFilter)) : allWorkouts;
+  const workoutIds = new Set(workouts.map(w => String(w.id)));
 
-  const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
-  const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(s.workoutId)) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
+  const allBiofeedback = await db.getAll('biofeedback');
+  const allSessionsRaw = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  const allSessions = allSessionsRaw.map(s => {
+    const durationMin = s.durationMin || (s.totalDuration ? Math.round(s.totalDuration / 60) : 0);
+    const exercises = s.exercises || [];
+    const setLog = (s.setLog || []).map(set => ({
+      ...set,
+      exerciseName: set.exerciseName || (exercises[set.exIdx]?.name) || (set.exerciseIdx != null ? exercises[set.exerciseIdx]?.name : null) || null,
+      load: parseFloat(set.load) || 0,
+      reps: parseFloat(set.reps) || 0,
+    }));
+    const totalVol = s.totalVolume || setLog.reduce((t,x)=>t+(x.load||0)*(x.reps||0),0);
+
+    // Enrich with biofeedback
+    const dateStr = (s.date || '').substring(0, 10);
+    const bfId = `bf_${s.studentId}_${dateStr}`;
+    const bfObj = allBiofeedback.find(b => b.id === bfId || (b.studentId === s.studentId && (b.date || '').startsWith(dateStr)));
+    
+    let postBiofeedback = s.postBiofeedback || null;
+    let trainingLoad = s.trainingLoad || null;
+    if (bfObj) {
+      postBiofeedback = {
+        ...(s.postBiofeedback || {}),
+        pse: bfObj.pse || s.postBiofeedback?.pse,
+        trainingLoad: bfObj.trainingLoad || s.postBiofeedback?.trainingLoad,
+        tqrPost: bfObj.tqrPost || s.postBiofeedback?.tqrPost,
+        feeling: bfObj.feeling || s.postBiofeedback?.feeling,
+        notes: bfObj.postNotes || bfObj.notes || s.postBiofeedback?.notes,
+        submittedByStudent: bfObj.submittedByStudent || s.postBiofeedback?.submittedByStudent,
+      };
+      trainingLoad = bfObj.trainingLoad || s.trainingLoad;
+    }
+
+    return { ...s, durationMin, setLog, totalVolume: totalVol, postBiofeedback, trainingLoad };
+  });
+  const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(String(s.workoutId))) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
 
   const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
   const bf = cycleFilter ? allBf.filter(b => sessions.some(s => new Date(s.date).toDateString() === new Date(b.date).toDateString())) : (startDate ? allBf.filter(b => new Date(b.date) >= startDate && new Date(b.date) <= endDate) : allBf);
@@ -995,11 +1077,8 @@ async function initReportCharts(studentId, cycleFilter = '') {
         labels: bfWellness.map(b => Calc.formatDate(b.date).slice(0,5)),
         datasets: [
           { label: 'Sono',       data: bfWellness.map(b => b.sleep  || null), borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
-          { label: 'TQR',      data: bfWellness.map(b => b.tqr ?? b.energy ?? null), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
-          { label: 'Estresse (↓=melhor)', data: bfWellness.map(b => b.stress || null), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true, borderDash: [5,3] },
-          { label: 'Dor', data: bfWellness.map(b => b.pain || null), borderColor: '#ef4444', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true, borderDash: [2,2] },
-          { label: 'Motivação', data: bfWellness.map(b => b.motivation || null), borderColor: '#3b82f6', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
-          { label: 'Alimentação', data: bfWellness.map(b => b.food || null), borderColor: '#f97316', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
+          { label: 'Recuperação (TQR)',      data: bfWellness.map(b => b.tqr ?? b.energy ?? null), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
+          { label: 'Estresse (menor = melhor)', data: bfWellness.map(b => b.stress || null), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true, borderDash: [5,3] }
         ]
       },
       options: {

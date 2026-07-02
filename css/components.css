@@ -261,7 +261,8 @@
 }
 
 .modal-xl {
-  max-width: 960px;
+  max-width: 1200px;
+  width: 95vw;
 }
 
 .modal-header {
