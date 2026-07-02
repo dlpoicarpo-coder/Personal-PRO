@@ -7,7 +7,7 @@
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { PAIN_REGIONS } from '../utils/alerts.js';
-import { generateAlgorithmicInsight, generateAIInsight } from '../insights.js';
+import { generateAlgorithmicInsight } from '../insights.js';
 
 const ICON_MOON   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
 const ICON_ZAP    = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
@@ -4278,19 +4278,16 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
 
     ${exHtml}
 
-    <!-- Evolução IA -->
+    <!-- Evolução Analítica -->
     <div class="glass-card" style="border:1px solid rgba(139, 92, 246, 0.4); position: relative; overflow: hidden; margin-bottom:12px">
       <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.05; user-select: none;">✨</div>
       <div class="portal-card-label" style="color:var(--accent)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
         Sua Evolução Analítica (Últimas 4 semanas)
       </div>
-      <div id="aiInsightResultPortal" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-color); position:relative; z-index:2">
-        <p style="font-size:0.85rem; line-height:1.5; color:var(--portal-text);" id="aiInsightTextPortal"></p>
-      </div>
-      <button id="btnGenerateAIPortal" class="portal-reminder-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border:none; width:100%; color:#fff; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; border-radius:8px; font-weight:700; position:relative; z-index:2; margin-top: 12px;">
-        <span>Analisar Gráficos com IA ✨</span>
-      </button>
+      <p style="font-size:0.85rem; line-height:1.6; color:var(--portal-text); margin: 8px 0 0;">
+        ${generateAlgorithmicInsight(student, completed, bf, 28).text}
+      </p>
     </div>
 
     <div class="glass-card portal-feed-card" style="margin-bottom:12px">
@@ -4397,34 +4394,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       return {name,first,last,maxLoad,delta,pct,totalVol,series:sorted.length,sets:sorted};
     }).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct)).slice(0,8);
 
-  const btnAI = document.getElementById('btnGenerateAIPortal');
-  const txtAI = document.getElementById('aiInsightTextPortal');
-  const resAI = document.getElementById('aiInsightResultPortal');
-  
-  if (btnAI && txtAI && resAI) {
-    btnAI.addEventListener('click', async () => {
-      btnAI.disabled = true;
-      btnAI.innerHTML = '<div class="portal-spin-ring" style="width:16px;height:16px;border-width:2px;border-top-color:#fff;margin-right:8px"></div> <span>Analisando gráficos...</span>';
-      resAI.style.display = 'block';
-      txtAI.innerHTML = 'A IA está processando suas tendências dos últimos 28 dias...';
-      
-      try {
-        const sortedSes = [...sessions].filter(s => s.status === 'completed').sort((a,b) => new Date(a.date) - new Date(b.date));
-        const aiText = await generateAIInsight(student, sortedSes, biofeedbacks, 28);
-        txtAI.innerHTML = `<strong>Insight Analítico ✨:</strong><br/><br/>`;
-        const textNode = document.createElement('div');
-        textNode.style.whiteSpace = 'pre-wrap';
-        textNode.style.wordBreak = 'break-word';
-        textNode.textContent = aiText;
-        txtAI.appendChild(textNode);
-        btnAI.style.display = 'none';
-      } catch(err) {
-        txtAI.innerHTML = `<span style="color:var(--portal-danger)">Erro: ${err.message}</span>`;
-        btnAI.innerHTML = '<span>Tentar novamente</span>';
-        btnAI.disabled = false;
-      }
-    });
-  }
+
 
   const fmtDate = d => {
     if (!d) return '';

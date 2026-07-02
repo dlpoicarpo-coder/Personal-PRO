@@ -6,7 +6,7 @@ import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { notify } from '../components/toast.js';
 import { analyzeBiofeedback, overallStatus, trainingRecommendation } from '../utils/alerts.js';
-import { generateAlgorithmicInsight, generateAIInsight } from '../insights.js';
+import { generateAlgorithmicInsight } from '../insights.js';
 
 export async function renderReports() {
   const storedStudent = sessionStorage.getItem('pp_reports_student_filter') || '';
@@ -61,7 +61,19 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   const workouts = cycleFilter ? allWorkouts.filter(w => w.macrocycleId === cycleFilter || w.cycle === cycleFilter) : allWorkouts;
   const workoutIds = new Set(workouts.map(w => w.id));
   
-  const allSessions = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  const allSessionsRaw = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+  const allSessions = allSessionsRaw.map(s => {
+    const durationMin = s.durationMin || (s.totalDuration ? Math.round(s.totalDuration / 60) : 0);
+    const exercises = s.exercises || [];
+    const setLog = (s.setLog || []).map(set => ({
+      ...set,
+      exerciseName: set.exerciseName || (exercises[set.exIdx]?.name) || (set.exerciseIdx != null ? exercises[set.exerciseIdx]?.name : null) || null,
+      load: parseFloat(set.load) || 0,
+      reps: parseFloat(set.reps) || 0,
+    }));
+    const totalVol = s.totalVolume || setLog.reduce((t,x)=>t+(x.load||0)*(x.reps||0),0);
+    return { ...s, durationMin, setLog, totalVolume: totalVol };
+  });
   const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(s.workoutId)) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
   
   const allBf = (await db.getAll('biofeedback')).filter(b => b.studentId === studentId).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -121,7 +133,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .forEach(s => {
       (s.setLog || []).forEach(set => {
-        const exName = (s.exercises || [])[set.exIdx]?.name;
+        const exName = set.exerciseName;
         if (!exName || !set.load || set.load <= 0) return;
         if (!loadProgression[exName]) loadProgression[exName] = [];
         loadProgression[exName].push({
@@ -154,7 +166,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   const totalVolAllSessions = completed.reduce((t, s) => t + Math.round(s.totalVolume || 0), 0);
   const avgVolPerSession    = completed.length ? Math.round(totalVolAllSessions / completed.length) : 0;
   const maxVolSession       = completed.length ? Math.max(...completed.map(s => Math.round(s.totalVolume || 0))) : 0;
-  const avgDuration         = completed.length ? Math.round(completed.reduce((t, s) => t + (s.totalDuration || 0), 0) / completed.length / 60) : 0;
+  const avgDuration         = completed.length ? Math.round(completed.reduce((t, s) => t + (s.durationMin || 0), 0) / completed.length) : 0;
 
   const workoutSummary = ''; // mantido por compatibilidade
 
@@ -246,17 +258,9 @@ async function renderStudentReport(studentId, cycleFilter = '') {
         Resumo da Evolução (Últimas 4 semanas)
       </span></div>
       
-      <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color); margin-bottom: 16px;">
+      <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color); margin: 0;">
         ${generateAlgorithmicInsight(student, completed, bf, 28).text}
       </p>
-
-      <div id="aiInsightResult" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--border-color)">
-        <p style="font-size:0.95rem; line-height:1.6; color:var(--text-color);" id="aiInsightText"></p>
-      </div>
-
-      <button id="btnGenerateAI" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border:none; display:flex; align-items:center; gap:8px">
-        <span>Analisar Gráficos com IA ✨</span>
-      </button>
     </div>
 
     <!-- Sub-stats de treino -->
@@ -979,32 +983,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
   const co = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, scales: { y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#94a3b8' }, grid: { display: false } } } };
   const chartsInstance = {};
 
-  const btnAI = document.getElementById('btnGenerateAI');
-  const txtAI = document.getElementById('aiInsightText');
-  const resAI = document.getElementById('aiInsightResult');
-  if (btnAI && txtAI && resAI) {
-    btnAI.addEventListener('click', async () => {
-      btnAI.disabled = true;
-      btnAI.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;border-top-color:#fff;margin-right:8px"></div> <span>Gerando análise...</span>';
-      resAI.style.display = 'block';
-      txtAI.innerHTML = 'A Inteligência Artificial está analisando suas métricas de sono, volume e esforço...';
-      
-      try {
-        const aiText = await generateAIInsight(student, sortedSes, bf, 28);
-        txtAI.innerHTML = `<strong>Insight de Ouro ✨:</strong><br/><br/>`;
-        const textNode = document.createElement('div');
-        textNode.style.whiteSpace = 'pre-wrap';
-        textNode.style.wordBreak = 'break-word';
-        textNode.textContent = aiText;
-        txtAI.appendChild(textNode);
-        btnAI.style.display = 'none';
-      } catch(err) {
-        txtAI.innerHTML = `<span style="color:var(--danger)">Erro: ${err.message}</span>`;
-        btnAI.innerHTML = '<span>Tentar novamente</span>';
-        btnAI.disabled = false;
-      }
-    });
-  }
+
 
   // Wellness chart — filtrar apenas registros que têm dados de bem-estar (não só PSE do tracker)
   const wCtx = document.getElementById('wellnessChart');
