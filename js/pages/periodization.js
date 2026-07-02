@@ -1274,19 +1274,29 @@ export function initPeriodization(navigateFn) {
           'Tempo Run Z3':   { color: '#a855f7',  bg: 'rgba(168,85,247,0.08)', icon: '⏱', rpe: '7-8' },
           'LSD Z2':         { color: '#22c55e',  bg: 'rgba(34,197,94,0.08)',   icon: '🏃', rpe: '4-5' },
           'HIIT':           { color: '#f97316',  bg: 'rgba(249,115,22,0.08)', icon: '🔥', rpe: '8-9' },
+          'Ganho':          { color: '#f97316',  bg: 'rgba(249,115,22,0.08)', icon: '📈', rpe: '7-9' },
+          'Manutenção Manut.': { color: '#eab308', bg: 'rgba(234,179,8,0.08)',  icon: '⚖️', rpe: '6-7' },
+          'Regenerativo':   { color: '#3b82f6',  bg: 'rgba(59,130,246,0.08)',  icon: '🧘', rpe: '3-4' },
+          'Transição':      { color: '#6b7280',  bg: 'rgba(107,114,128,0.08)', icon: '🔄', rpe: '4-5' },
+          'Choque':         { color: '#ef4444',  bg: 'rgba(239,68,68,0.08)',   icon: '⚡', rpe: '9-10' },
+          'Estabilização':  { color: '#06b6d4',  bg: 'rgba(6,182,212,0.08)',   icon: '🛡️', rpe: '6-8' },
         };
 
         const getPhaseColor = (phase, intensityPct) => {
           const meta = PHASE_META[phase];
           if (meta) return meta.color;
-          if (phase?.toLowerCase().includes('deload') || phase?.toLowerCase().includes('recuper')) return '#3b82f6';
+          if (phase?.toLowerCase().includes('deload') || phase?.toLowerCase().includes('recuper') || phase?.toLowerCase().includes('regen')) return '#3b82f6';
           if (intensityPct >= 88) return '#ef4444';
           if (intensityPct >= 78) return '#f97316';
           if (intensityPct >= 65) return '#f59e0b';
           return '#22c55e';
         };
 
-        const phases = ['Adaptação','Hipertrofia','Força','Pico/RML','Deload','Resistência','Aeróbico','Cardio HIIT','Acumulação','Intensificação','Realização','DUP','Concorrente'];
+        const phases = [
+          'Adaptação','Hipertrofia','Força','Pico/RML','Deload','Resistência','Aeróbico','Cardio HIIT',
+          'Acumulação','Intensificação','Realização','DUP','Concorrente',
+          'Ganho', 'Manutenção Manut.', 'Regenerativo', 'Transição', 'Choque', 'Estabilização'
+        ];
 
         let html = `
           <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%; border-collapse:separate; border-spacing:0 2px">
