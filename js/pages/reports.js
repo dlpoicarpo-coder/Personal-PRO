@@ -1019,6 +1019,11 @@ async function initReportCharts(studentId, cycleFilter = '') {
 
   const allBiofeedback = await db.getAll('biofeedback');
   const allSessionsRaw = (await db.getAll('sessions')).filter(s => s.studentId === studentId);
+
+  // Build a workoutId -> workout map for name enrichment
+  const allWorkoutsMap = {};
+  allWorkouts.forEach(w => { allWorkoutsMap[String(w.id)] = w; });
+
   const allSessions = allSessionsRaw.map(s => {
     const durationMin = s.durationMin || (s.totalDuration ? Math.round(s.totalDuration / 60) : 0);
     const exercises = s.exercises || [];
@@ -1028,7 +1033,16 @@ async function initReportCharts(studentId, cycleFilter = '') {
       load: parseFloat(set.load) || 0,
       reps: parseFloat(set.reps) || 0,
     }));
-    const totalVol = s.totalVolume || setLog.reduce((t,x)=>t+(x.load||0)*(x.reps||0),0);
+    // Use pre-computed totalVolume first, then fall back to computing from setLog
+    const setLogVol = setLog.reduce((t, x) => t + (x.load || 0) * (x.reps || 0), 0);
+    const totalVol = (s.totalVolume && s.totalVolume > 0) ? s.totalVolume : setLogVol;
+
+    // Enrich workoutName from workouts table if missing
+    let workoutName = s.workoutName || null;
+    if (!workoutName && s.workoutId) {
+      const wkt = allWorkoutsMap[String(s.workoutId)];
+      if (wkt) workoutName = wkt.name || null;
+    }
 
     // Enrich with biofeedback
     const dateStr = (s.date || '').substring(0, 10);
@@ -1050,7 +1064,15 @@ async function initReportCharts(studentId, cycleFilter = '') {
       trainingLoad = bfObj.trainingLoad || s.trainingLoad;
     }
 
-    return { ...s, durationMin, setLog, totalVolume: totalVol, postBiofeedback, trainingLoad };
+    // Resolve PSE from all possible sources (broadest fallback chain)
+    const resolvedPse = postBiofeedback?.pse
+      || s.postBiofeedback?.pse
+      || bfObj?.pse
+      || s.preBiofeedback?.pse
+      || s.pse
+      || null;
+
+    return { ...s, workoutName, durationMin, setLog, totalVolume: totalVol, postBiofeedback, trainingLoad, resolvedPse };
   });
   const sessions = cycleFilter ? allSessions.filter(s => workoutIds.has(String(s.workoutId))) : (startDate ? allSessions.filter(s => new Date(s.date) >= startDate && new Date(s.date) <= endDate) : allSessions);
 
@@ -1361,36 +1383,65 @@ async function initReportCharts(studentId, cycleFilter = '') {
   let compareChart = null;
 
   if (compSel && compCtx && sortedSes.length > 0) {
+    // Broader name normalization — strip week/session suffixes and numbering
     const getBaseWorkoutName = name => {
       if (!name) return 'Treino Avulso';
       return name
         .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
-        .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+        .replace(/\s*[\-—–]\s*Sem\.?\s*\d+/i, '')
         .replace(/\s*Semana\s*\d+/i, '')
-        .replace(/\s*Sem\s*\d+/i, '')
+        .replace(/\s*Sem\.?\s*\d+/i, '')
+        .replace(/\s*S\d+/i, '')       // e.g. "Full Body A S3"
+        .replace(/\s*\(\d+\)/g, '')    // e.g. "Full Body A (3)"
+        .replace(/\s*#\d+/g, '')       // e.g. "Full Body A #3"
         .replace(/\s*[\-—–]\s*$/g, '')
         .trim();
     };
 
     const workoutsByName = {};
     sortedSes.forEach(s => {
-      if (!s.workoutName) return;
-      const base = getBaseWorkoutName(s.workoutName);
+      // Use workoutName (already enriched from DB above) or fall back to 'Treino Avulso'
+      const rawName = s.workoutName || (s.workoutId ? `Treino ${s.workoutId}` : 'Treino Avulso');
+      const base = getBaseWorkoutName(rawName);
       if (!workoutsByName[base]) workoutsByName[base] = [];
       workoutsByName[base].push(s);
     });
 
+    // Only show groups with >= 2 sessions in the dropdown
+    const comparableBases = Object.keys(workoutsByName).filter(b => b !== 'Treino Avulso' && workoutsByName[b].length >= 2);
+    if (comparableBases.length > 0) {
+      // Rebuild the dropdown options with the correct groups
+      compSel.innerHTML = comparableBases.map((base, idx) =>
+        `<option value="${base}" ${idx === 0 ? 'selected' : ''}>${base} (${workoutsByName[base].length} sessões)</option>`
+      ).join('');
+    }
+
     const drawCompareChart = () => {
       const base = compSel.value;
-      const sessList = (workoutsByName[base] || []).sort((a,b) => new Date(a.date) - new Date(b.date));
+      const sessList = (workoutsByName[base] || []).sort((a, b) => new Date(a.date) - new Date(b.date));
 
       if (compareChart) compareChart.destroy();
-      
-      const labels = sessList.map(s => {
-        const dStr = Calc.formatDate(s.date).slice(0,5);
-        const wkMatch = s.workoutName?.match(/Sem\s*(\d+)/i);
-        return wkMatch ? `Sem ${wkMatch[1]} (${dStr})` : dStr;
+      if (sessList.length === 0) return;
+
+      const labels = sessList.map((s, i) => {
+        const dStr = Calc.formatDate(s.date).slice(0, 5);
+        const wkMatch = (s.workoutName || '').match(/Sem\.?\s*(\d+)/i);
+        return wkMatch ? `Sem ${wkMatch[1]} (${dStr})` : `Sessão ${i + 1} (${dStr})`;
       });
+
+      // Volume: use pre-computed totalVolume (most accurate) with setLog as fallback
+      const volumeData = sessList.map(s => {
+        if (s.totalVolume && s.totalVolume > 0) return Math.round(s.totalVolume);
+        return (s.setLog || []).reduce((t, x) => t + (parseFloat(x.load) || 0) * (parseFloat(x.reps) || 0), 0);
+      });
+
+      // PSE: use the pre-resolved resolvedPse field covering all sources
+      const pseData = sessList.map(s => {
+        const pse = s.resolvedPse || s.postBiofeedback?.pse || s.preBiofeedback?.pse || s.pse || null;
+        return pse !== null ? parseFloat(pse) : null;
+      });
+
+      const hasAnyPse = pseData.some(v => v !== null);
 
       compareChart = new Chart(compCtx, {
         type: 'line',
@@ -1399,39 +1450,81 @@ async function initReportCharts(studentId, cycleFilter = '') {
           datasets: [
             {
               label: 'Volume Total (kg)',
-              data: sessList.map(s => (s.setLog||[]).reduce((t,x)=>t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0)),
+              data: volumeData,
               borderColor: '#6366f1',
-              backgroundColor: 'rgba(99,102,241,0.05)',
+              backgroundColor: 'rgba(99,102,241,0.08)',
               tension: 0.3,
               yAxisID: 'y',
               fill: true,
-              pointRadius: 4
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              borderWidth: 2.5,
+              spanGaps: true,
             },
             {
-              label: 'PSE (Borg)',
-              data: sessList.map(s => s.postBiofeedback?.pse || s.pse || null),
+              label: 'PSE — Percepção de Esforço (Borg 0-10)',
+              data: pseData,
               borderColor: '#ef4444',
+              backgroundColor: 'rgba(239,68,68,0.04)',
               tension: 0.3,
               yAxisID: 'y1',
-              borderDash: [5, 3],
-              pointRadius: 4
+              borderDash: [6, 3],
+              pointRadius: hasAnyPse ? 5 : 0,
+              pointHoverRadius: 7,
+              borderWidth: 2,
+              spanGaps: true,
+              hidden: !hasAnyPse,
             }
           ]
         },
         options: {
           ...co,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#94a3b8',
+                font: { size: 11 },
+                usePointStyle: true,
+                pointStyleWidth: 10,
+              }
+            },
+            tooltip: {
+              callbacks: {
+                title: ctx => labels[ctx[0]?.dataIndex] || '',
+                label: ctx => {
+                  if (ctx.datasetIndex === 0) return ` Volume: ${ctx.parsed.y?.toLocaleString('pt-BR')} kg`;
+                  if (ctx.datasetIndex === 1) return ctx.parsed.y !== null ? ` PSE: ${ctx.parsed.y} / 10` : ' PSE: não registrada';
+                  return '';
+                },
+                afterBody: items => {
+                  const i = items[0]?.dataIndex;
+                  if (i === undefined || i === 0) return '';
+                  const diff = volumeData[i] - volumeData[i - 1];
+                  const sign = diff >= 0 ? '+' : '';
+                  const pct = volumeData[i - 1] > 0 ? ` (${sign}${Math.round((diff / volumeData[i - 1]) * 100)}%)` : '';
+                  return `Variação vs anterior: ${sign}${diff.toLocaleString('pt-BR')} kg${pct}`;
+                }
+              }
+            }
+          },
           scales: {
-            x: co.scales.x,
+            x: {
+              ...co.scales.x,
+              ticks: { ...co.scales.x?.ticks, maxRotation: 40, font: { size: 10 } }
+            },
             y: {
               position: 'left',
-              title: { display: true, text: 'Volume (kg)', color: '#94a3b8', font: {size: 10} },
-              ticks: { color: '#6366f1', font: {size: 10} },
+              title: { display: true, text: 'Volume Total (kg)', color: '#6366f1', font: { size: 10 } },
+              ticks: { color: '#6366f1', font: { size: 10 } },
               grid: { color: 'rgba(255,255,255,0.05)' }
             },
             y1: {
               position: 'right',
-              title: { display: true, text: 'PSE', color: '#94a3b8', font: {size: 10} },
-              ticks: { color: '#ef4444', font: {size: 10}, min: 0, max: 10 },
+              min: 0,
+              max: 10,
+              title: { display: hasAnyPse, text: 'PSE (Borg 0-10)', color: '#ef4444', font: { size: 10 } },
+              ticks: { color: '#ef4444', font: { size: 10 }, stepSize: 1 },
               grid: { display: false }
             }
           }
