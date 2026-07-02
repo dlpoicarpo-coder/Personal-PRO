@@ -2099,6 +2099,19 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
   };
 
   await db.put('sessions', sessionData);
+  // Atualizar status na agenda para realizado
+  try {
+    const schedules = await db.getAll('schedules');
+    const targetDate = sessionData.date.substring(0, 10);
+    for (const sch of schedules) {
+      if (sch.studentId === sessionData.studentId && sch.date === targetDate && sch.status !== 'completed') {
+        sch.status = 'completed';
+        await db.put('schedules', sch);
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao atualizar status na agenda:', err);
+  }
   // Limpar autosave após finalizar
   if (typeof cleanupAutoSave === 'function') try { cleanupAutoSave(); } catch(_) {}
   const bfId = 'bf_' + s.studentId + '_' + s.date.substring(0, 10);

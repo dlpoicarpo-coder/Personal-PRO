@@ -763,29 +763,74 @@ export function initPeriodization(navigateFn) {
             // Obter plano semanal ajustado no grid pelo treinador
             const weeks = [];
             const weekRows = document.querySelectorAll('#weeklyPlanGrid .week-row');
+            const dayLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
             // Bug fix: se o grid não tem linhas (não foi renderizado ainda), gerar internamente
             if (weekRows.length === 0) {
               const typeVal = document.querySelector('#macroForm [name="type"]')?.value || 'linear';
               const deloadVal = d.deloadEvery ?? 4;
               const generated = generateInternalWeeklyPlan(typeVal, d.totalWeeks, deloadVal);
+              generated.forEach(w => {
+                const isWeekDeload = w.phase === 'deload';
+                w.days = d.trainingDays.map((dayNum, di) => {
+                  let dayPhase = w.phase;
+                  let dayInt = w.intensityPct;
+                  let dayVol = w.volumePct;
+                  let dayReps = w.repsRange;
+
+                  if (typeVal === 'undulating' && !isWeekDeload) {
+                    const cycle = di % 3;
+                    if (cycle === 0) {
+                      dayPhase = 'Força'; dayInt = 82; dayVol = 55; dayReps = '4-6';
+                    } else if (cycle === 1) {
+                      dayPhase = 'Hipertrofia'; dayInt = 70; dayVol = 80; dayReps = '8-12';
+                    } else {
+                      dayPhase = 'Resistência'; dayInt = 60; dayVol = 95; dayReps = '15-20';
+                    }
+                  }
+                  return {
+                    day: dayNum,
+                    phase: dayPhase.toLowerCase() === 'deload' ? 'deload' : dayPhase,
+                    label: `${dayLabels[dayNum] || 'Treino'} — ${dayPhase}`,
+                    intensityPct: dayInt,
+                    volumePct: dayVol,
+                    repsRange: dayReps
+                  };
+                });
+              });
               weeks.push(...generated);
             } else {
+              const weekMap = {};
               weekRows.forEach(row => {
                 const weekNum = parseInt(row.dataset.week);
+                const dayNum = parseInt(row.dataset.day);
                 const phase = row.querySelector('.week-phase').value;
                 const intensityPct = parseInt(row.querySelector('.week-intensity').value) || 70;
                 const volumePct = parseInt(row.querySelector('.week-volume').value) || 70;
                 const repsRange = row.querySelector('.week-reps').value || '10-12';
-                weeks.push({
-                  week: weekNum,
+
+                if (!weekMap[weekNum]) {
+                  weekMap[weekNum] = {
+                    week: weekNum,
+                    phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
+                    label: `Microciclo ${weekNum} — ${phase}`,
+                    intensityPct,
+                    volumePct,
+                    repsRange,
+                    days: []
+                  };
+                }
+                const dayName = dayLabels[dayNum] || 'Treino';
+                weekMap[weekNum].days.push({
+                  day: dayNum,
                   phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
-                  label: `Semana ${weekNum} — ${phase}`,
+                  label: `${dayName} — ${phase}`,
                   intensityPct,
                   volumePct,
                   repsRange
                 });
               });
+              weeks.push(...Object.values(weekMap));
             }
 
             // Garantir que o número de semanas bate com totalWeeks
@@ -793,29 +838,80 @@ export function initPeriodization(navigateFn) {
               const typeVal = document.querySelector('#macroForm [name="type"]')?.value || 'linear';
               const extra = generateInternalWeeklyPlan(typeVal, d.totalWeeks, d.deloadEvery ?? 4);
               for (let wi = weeks.length; wi < d.totalWeeks; wi++) {
-                weeks.push(extra[wi] || { week: wi+1, phase:'Hipertrofia', label:`Semana ${wi+1}`, intensityPct:70, volumePct:75, repsRange:'10-12' });
+                const w = extra[wi] || { week: wi+1, phase:'Hipertrofia', label:`Semana ${wi+1}`, intensityPct:70, volumePct:75, repsRange:'10-12' };
+                const isWeekDeload = w.phase === 'deload';
+                w.days = d.trainingDays.map((dayNum, di) => {
+                  let dayPhase = w.phase;
+                  let dayInt = w.intensityPct;
+                  let dayVol = w.volumePct;
+                  let dayReps = w.repsRange;
+
+                  if (typeVal === 'undulating' && !isWeekDeload) {
+                    const cycle = di % 3;
+                    if (cycle === 0) {
+                      dayPhase = 'Força'; dayInt = 82; dayVol = 55; dayReps = '4-6';
+                    } else if (cycle === 1) {
+                      dayPhase = 'Hipertrofia'; dayInt = 70; dayVol = 80; dayReps = '8-12';
+                    } else {
+                      dayPhase = 'Resistência'; dayInt = 60; dayVol = 95; dayReps = '15-20';
+                    }
+                  }
+                  return {
+                    day: dayNum,
+                    phase: dayPhase.toLowerCase() === 'deload' ? 'deload' : dayPhase,
+                    label: `${dayLabels[dayNum] || 'Treino'} — ${dayPhase}`,
+                    intensityPct: dayInt,
+                    volumePct: dayVol,
+                    repsRange: dayReps
+                  };
+                });
+                weeks.push(w);
               }
             }
             d.weeks = weeks;
 
             const allExercises = sessions.flatMap(s => s.exercises);
 
-            d.weekDetails = (d.weeks || []).map((w, i) => {
-              if (!w) return null;
-              const isDeload = w.phase === 'deload';
+            d.weekDetails = [];
+            (d.weeks || []).forEach((w, i) => {
+              if (!w) return;
               const prevWeek = i > 0 ? d.weeks[i-1] : null;
-              return {
-                week: w.week, phase: w.label || w.phase,
-                sets: isDeload ? '2-3' : w.volumePct > 80 ? '4-5' : w.volumePct > 60 ? '3-4' : '3',
-                reps: w.repsRange || '10-12',
-                intensity: w.intensityPct,
-                rpe: isDeload ? '4-5' : w.intensityPct >= 85 ? '8-9' : w.intensityPct >= 70 ? '7-8' : '6-7',
-                volDelta: prevWeek ? Math.round(w.volumePct - prevWeek.volumePct) : 0,
-                trainA: allExercises.slice(0,3).map(e=>e.name).join(', ') || '-',
-                trainB: allExercises.slice(3,6).map(e=>e.name).join(', ') || '-',
-              };
-            }).filter(Boolean);
 
+              if (w.days && w.days.length > 0) {
+                w.days.forEach((dp, di) => {
+                  const isDeload = dp.phase === 'deload';
+                  const prevDay = prevWeek?.days?.find(pd => pd.day === dp.day) || null;
+                  const dayName = dayLabels[dp.day] || 'Treino';
+
+                  d.weekDetails.push({
+                    week: `${w.week} - ${dayName}`,
+                    phase: dp.phase,
+                    sets: isDeload ? '2-3' : dp.volumePct > 80 ? '4-5' : dp.volumePct > 60 ? '3-4' : '3',
+                    reps: dp.repsRange || '10-12',
+                    intensity: dp.intensityPct,
+                    rpe: isDeload ? '4-5' : dp.intensityPct >= 85 ? '8-9' : dp.intensityPct >= 70 ? '7-8' : '6-7',
+                    volDelta: prevDay ? Math.round(dp.volumePct - prevDay.volumePct) : 0,
+                    trainA: allExercises.slice(0,3).map(e=>e.name).join(', ') || '-',
+                    trainB: allExercises.slice(3,6).map(e=>e.name).join(', ') || '-',
+                  });
+                });
+              } else {
+                const isDeload = w.phase === 'deload';
+                d.weekDetails.push({
+                  week: `S${w.week}`,
+                  phase: w.label || w.phase,
+                  sets: isDeload ? '2-3' : w.volumePct > 80 ? '4-5' : w.volumePct > 60 ? '3-4' : '3',
+                  reps: w.repsRange || '10-12',
+                  intensity: w.intensityPct,
+                  rpe: isDeload ? '4-5' : w.intensityPct >= 85 ? '8-9' : w.intensityPct >= 70 ? '7-8' : '6-7',
+                  volDelta: prevWeek ? Math.round(w.volumePct - prevWeek.volumePct) : 0,
+                  trainA: allExercises.slice(0,3).map(e=>e.name).join(', ') || '-',
+                  trainB: allExercises.slice(3,6).map(e=>e.name).join(', ') || '-',
+                });
+              }
+            });
+
+            d._offline = true;
             const savedMacro = await db.add('macrocycles', d);
             d.id = savedMacro.id;
             d.generatedWorkouts = 0;
@@ -831,14 +927,24 @@ export function initPeriodization(navigateFn) {
               weekStart.setDate(weekStart.getDate() + (w * 7));
 
               const baseIntensity = d.weeks[0]?.intensityPct || 60;
-              const isDeload = weekPlan.phase === 'deload';
-              const loadMultiplier = isDeload
-                ? 0.6
-                : 1 + ((weekPlan.intensityPct - baseIntensity) / 100);
 
               for (let di = 0; di < d.trainingDays.length; di++) {
                 const session = sessions[di % sessions.length];
                 const dayOfWeek = d.trainingDays[di];
+
+                const dayPlan = weekPlan.days?.find(dp => dp.day === dayOfWeek) || {
+                  phase: weekPlan.phase,
+                  label: weekPlan.label,
+                  intensityPct: weekPlan.intensityPct,
+                  volumePct: weekPlan.volumePct,
+                  repsRange: weekPlan.repsRange
+                };
+
+                const isDeload = dayPlan.phase === 'deload';
+                const loadMultiplier = isDeload
+                  ? 0.6
+                  : 1 + ((dayPlan.intensityPct - baseIntensity) / 100);
+
                 const date = new Date(weekStart);
                 const currentDay = date.getDay();
 
@@ -861,7 +967,7 @@ export function initPeriodization(navigateFn) {
                   } else if (exType === 'bodyweight') {
                     load = Math.round(oneRM * loadMultiplier * 2) / 2;
                   } else {
-                    load = Math.round(oneRM * (weekPlan.intensityPct / 100) * 2) / 2;
+                    load = Math.round(oneRM * (dayPlan.intensityPct / 100) * 2) / 2;
                     if (isDeload) load = Math.round(oneRM * 0.5 * 2) / 2;
                   }
 
@@ -902,15 +1008,16 @@ export function initPeriodization(navigateFn) {
                   return { ...ex, loadType: exType, load, oneRM, week: w + 1 };
                 });
 
-                const savedWorkout = await db.add('workouts', {
+                 const savedWorkout = await db.add('workouts', {
                   studentId: d.studentId,
                   macrocycleId: savedMacro.id,
                   name: `${session.name} — Sem ${w+1}`,
                   date: date.toISOString().slice(0,10),
                   exercises: wkExercises,
-                  phase: weekPlan.label || weekPlan.phase,
-                  intensityPct: weekPlan.intensityPct,
-                  isDeload: weekPlan.phase === 'deload',
+                  phase: dayPlan.label || dayPlan.phase,
+                  intensityPct: dayPlan.intensityPct,
+                  isDeload: dayPlan.phase === 'deload',
+                  _offline: true,
                 });
 
                 await db.add('schedules', {
@@ -923,12 +1030,23 @@ export function initPeriodization(navigateFn) {
                   workoutName: savedWorkout.name,
                   status: 'scheduled',
                   repeat: 'none',
+                  _offline: true,
                 });
                 d.generatedWorkouts++;
               }
             }
 
             await db.put('macrocycles', { ...savedMacro, ...d });
+
+            // Sync everything once at the end
+            try {
+              if (db.supabase) {
+                await db.syncStudentData(d.studentId, d.trainerId);
+              }
+            } catch (err) {
+              console.warn('Erro no sync final da periodização:', err);
+            }
+
             notify.success(`Macrociclo gerado — ${d.generatedWorkouts} treinos criados`);
             closeModal();
             navigateFn('/periodizacao');
@@ -1132,6 +1250,10 @@ export function initPeriodization(navigateFn) {
         const gridContainer = document.getElementById('weeklyPlanGrid');
         if (!gridContainer) return;
 
+        const checkedDays = Array.from(document.querySelectorAll('#macroForm [name="trainingDays"]:checked')).map(el => parseInt(el.value));
+        const activeDays = checkedDays.length > 0 ? checkedDays : [1, 3, 5];
+        const dayLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
         const PHASE_META = {
           'Adaptação':      { color: '#22c55e',  bg: 'rgba(34,197,94,0.08)',   icon: '🌱', rpe: '5-6' },
           'Hipertrofia':    { color: '#f59e0b',  bg: 'rgba(245,158,11,0.08)',  icon: '💪', rpe: '7-8' },
@@ -1170,9 +1292,9 @@ export function initPeriodization(navigateFn) {
           <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%; border-collapse:separate; border-spacing:0 2px">
             <thead>
               <tr style="background:var(--bg-card)">
-                <th style="width:54px; padding:5px 6px">Sem</th>
+                <th style="width:120px; padding:5px 6px">Microciclo / Dia</th>
                 <th style="width:14px; padding:5px 2px"></th>
-                <th style="padding:5px 6px">Fase / Trabalho Principal</th>
+                <th style="padding:5px 6px">Fase (Mesociclo)</th>
                 <th style="width:90px; padding:5px 6px">Int %</th>
                 <th style="width:90px; padding:5px 6px">Vol %</th>
                 <th style="width:100px; padding:5px 6px">Reps</th>
@@ -1182,41 +1304,64 @@ export function initPeriodization(navigateFn) {
         `;
 
         baseWeeks.forEach(w => {
-          const c = getPhaseColor(w.phase, w.intensityPct);
-          const meta = PHASE_META[w.phase] || {};
-          const icon = meta.icon || '●';
-          html += `
-            <tr class="week-row" data-week="${w.week}" style="background:${meta.bg || 'transparent'};border-radius:6px">
-              <td style="padding:5px 6px;border-radius:6px 0 0 6px">
-                <strong style="font-size:0.78rem;color:${c}">S${w.week}</strong>
-              </td>
-              <td style="padding:5px 2px" title="${w.phase}">
-                <div style="width:4px;height:28px;background:${c};border-radius:2px;opacity:0.8"></div>
-              </td>
-              <td style="padding:5px 6px">
-                <select class="form-select week-phase" style="padding:3px 5px;font-size:0.73rem;width:100%;height:auto;background:var(--bg-card);border-color:${c}40;color:${c};font-weight:600">
-                  ${phases.map(p => {
-                    const isSelected = w.phase === p ||
-                      w.phase.toLowerCase().includes(p.toLowerCase().substring(0,4)) ||
-                      (p === 'Deload' && w.phase === 'deload');
-                    return `<option value="${p}" ${isSelected ? 'selected' : ''}>${icon} ${p}</option>`;
-                  }).join('')}
-                </select>
-              </td>
-              <td style="padding:5px 6px">
-                <input class="form-input week-intensity" type="number" min="30" max="100" value="${w.intensityPct}"
-                  style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card);border-color:${c}40;color:${c};font-weight:600" />
-              </td>
-              <td style="padding:5px 6px">
-                <input class="form-input week-volume" type="number" min="10" max="100" value="${w.volumePct}"
-                  style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card)" />
-              </td>
-              <td style="padding:5px 6px;border-radius:0 6px 6px 0">
-                <input class="form-input week-reps" value="${w.repsRange}"
-                  style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card)" />
-              </td>
-            </tr>
-          `;
+          const isWeekDeload = w.phase === 'deload';
+
+          activeDays.forEach((dayNum, di) => {
+            let dayPhase = w.phase;
+            let dayInt = w.intensityPct;
+            let dayVol = w.volumePct;
+            let dayReps = w.repsRange;
+
+            // Smart undulating default values inside the microcycle if type is undulating
+            if (type === 'undulating' && !isWeekDeload) {
+              const cycle = di % 3;
+              if (cycle === 0) {
+                dayPhase = 'Força'; dayInt = 82; dayVol = 55; dayReps = '4-6';
+              } else if (cycle === 1) {
+                dayPhase = 'Hipertrofia'; dayInt = 70; dayVol = 80; dayReps = '8-12';
+              } else {
+                dayPhase = 'Resistência'; dayInt = 60; dayVol = 95; dayReps = '15-20';
+              }
+            }
+
+            const c = getPhaseColor(dayPhase, dayInt);
+            const meta = PHASE_META[dayPhase] || {};
+            const icon = meta.icon || '●';
+            const dayLabel = dayLabels[dayNum] || 'Treino';
+
+            html += `
+              <tr class="week-row" data-week="${w.week}" data-day="${dayNum}" style="background:${meta.bg || 'transparent'};border-radius:6px">
+                <td style="padding:5px 6px;border-radius:6px 0 0 6px">
+                  <strong style="font-size:0.75rem;color:${c}">M${w.week} - ${dayLabel}</strong>
+                </td>
+                <td style="padding:5px 2px" title="${dayPhase}">
+                  <div style="width:4px;height:28px;background:${c};border-radius:2px;opacity:0.8"></div>
+                </td>
+                <td style="padding:5px 6px">
+                  <select class="form-select week-phase" style="padding:3px 5px;font-size:0.73rem;width:100%;height:auto;background:var(--bg-card);border-color:${c}40;color:${c};font-weight:600">
+                    ${phases.map(p => {
+                      const isSelected = dayPhase === p ||
+                        dayPhase.toLowerCase().includes(p.toLowerCase().substring(0,4)) ||
+                        (p === 'Deload' && dayPhase === 'deload');
+                      return `<option value="${p}" ${isSelected ? 'selected' : ''}>${icon} ${p}</option>`;
+                    }).join('')}
+                  </select>
+                </td>
+                <td style="padding:5px 6px">
+                  <input class="form-input week-intensity" type="number" min="30" max="100" value="${dayInt}"
+                    style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card);border-color:${c}40;color:${c};font-weight:600" />
+                </td>
+                <td style="padding:5px 6px">
+                  <input class="form-input week-volume" type="number" min="10" max="100" value="${dayVol}"
+                    style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card)" />
+                </td>
+                <td style="padding:5px 6px;border-radius:0 6px 6px 0">
+                  <input class="form-input week-reps" value="${dayReps}"
+                    style="padding:3px 5px;font-size:0.75rem;text-align:center;width:100%;height:auto;background:var(--bg-card)" />
+                </td>
+              </tr>
+            `;
+          });
         });
 
         html += `</tbody></table>`;
@@ -1292,7 +1437,10 @@ export function initPeriodization(navigateFn) {
 
       // Bind trainingDays checkboxes changes to update the builder dynamically
       document.querySelectorAll('#builderDaysSelector input[name="trainingDays"]').forEach(checkbox => {
-        checkbox.addEventListener('change', updateCustomBuilder);
+        checkbox.addEventListener('change', () => {
+          updateCustomBuilder();
+          renderWeeklyPlanGrid();
+        });
       });
 
       // Card custom builder selection

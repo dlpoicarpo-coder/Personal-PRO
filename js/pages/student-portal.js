@@ -441,12 +441,14 @@ function initPortalNav() {
   db.studentPortalTrainerId = root?.dataset.tid;
 
   document.querySelectorAll('.portal-nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const activeSession = document.getElementById('soloActiveSession');
-      if (activeSession && activeSession.style.display === 'block') {
-        if (!confirm('Você tem um treino em andamento! Tem certeza que deseja sair sem salvar? O progresso será perdido.')) {
-          return;
-        }
+    btn.addEventListener('click', async () => {
+      if (typeof portalState.autoSaveSoloSession === 'function') {
+        try { await portalState.autoSaveSoloSession(); } catch(_) {}
+      }
+      if (typeof portalState.cleanupAutoSave === 'function') {
+        try { portalState.cleanupAutoSave(); } catch(_) {}
+        portalState.autoSaveSoloSession = null;
+        portalState.cleanupAutoSave = null;
       }
       document.querySelectorAll('.portal-nav-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -2888,6 +2890,19 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           await db.put('sessions', sessionData);
+          // Atualizar status na agenda para realizado
+          try {
+            const schedules = await db.getAll('schedules');
+            const targetDate = sessionData.date.substring(0, 10);
+            for (const sch of schedules) {
+              if (sch.studentId === sessionData.studentId && sch.date === targetDate && sch.status !== 'completed') {
+                sch.status = 'completed';
+                await db.put('schedules', sch);
+              }
+            }
+          } catch (err) {
+            console.warn('Erro ao atualizar status na agenda:', err);
+          }
           saved = true;
           break;
         } catch (err) {
@@ -2939,6 +2954,23 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
     }
   });
+
+  // Store callbacks on portalState for seamless navigation
+  portalState.autoSaveSoloSession = autoSaveSoloSession;
+  portalState.cleanupAutoSave = () => {
+    cleanupAutoSaveListeners();
+    if (soloTimerInterval) {
+      clearInterval(soloTimerInterval);
+      soloTimerInterval = null;
+    }
+    stopRestTimer();
+  };
+
+  // Auto-resume if there is an active running session
+  const running = sessions.find(s => s.status === 'running' && s.isSolo === true);
+  if (running) {
+    resumeSoloSession(running);
+  }
 }
 
 // ── SESSÕES ────────────────────────────────────────────────────

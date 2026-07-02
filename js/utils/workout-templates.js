@@ -504,10 +504,10 @@ export const BUILT_IN_TEMPLATES = [
   },
   {
     id: 'tpl_ildemera_ondulatorio',
-    name: 'Ildemera — DUP Ondulatório (Full Body + Cardio)',
+    name: 'DUP Ondulatório (Full Body + Cardio)',
     category: 'Hipertrofia',
     goal: 'Emagrecimento / Condicionamento',
-    description: 'Planejamento estratégico de 5 dias semanais para Ildemera. Combina 3 treinos Full Body (Metabólico, Hipertrofia e Força) com 2 dias de Cardio (LISS e HIIT).',
+    description: 'Planejamento estratégico de 5 dias semanais. Combina 3 treinos Full Body (Metabólico, Hipertrofia e Força) com 2 dias de Cardio (LISS e HIIT).',
     daysPerWeek: 5,
     builtIn: true,
     periodizationTypes: ['undulating', 'linear'],
