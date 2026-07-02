@@ -633,7 +633,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
 
             <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:4px">
               <p class="text-xs text-muted mb-sm">Seus modelos</p>
-              <div style="display:flex;flex-direction:column;gap:5px" id="personalTpls">${personalHTML}</div>
+              <div style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;padding-right:2px" id="personalTpls">${personalHTML}</div>
             </div>
           </div>
 
@@ -1613,6 +1613,152 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
         customBuilderContainer.querySelectorAll('.tpl-ex-row').forEach(row => bindPeriodoMethodAutoFill(row));
       }
     };
+
+    // ── TEMPLATE CARD SELECTION ──────────────────────────────────────────────
+    // Helper to highlight selected card
+    const selectCard = (card) => {
+      document.querySelectorAll('.periodo-tpl-card').forEach(c => {
+        c.style.borderColor = 'var(--border-color)';
+        c.style.background = 'var(--bg-card)';
+        c.style.opacity = '1';
+        c.classList.remove('selected');
+        const radio = c.querySelector('.tpl-radio');
+        if (radio) { radio.style.borderColor = 'var(--border-color)'; radio.style.background = ''; radio.innerHTML = ''; }
+      });
+      if (card) {
+        card.classList.add('selected');
+        card.style.borderColor = 'var(--primary)';
+        card.style.background = 'var(--primary-glow, rgba(16,185,129,0.07))';
+        const radio = card.querySelector('.tpl-radio');
+        if (radio) {
+          radio.style.borderColor = 'var(--primary)';
+          radio.style.background = 'var(--primary)';
+          radio.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#fff;display:block"></span>';
+        }
+      }
+    };
+
+    // Custom builder card
+    document.getElementById('customBuilderCard')?.addEventListener('click', () => {
+      selectCard(document.getElementById('customBuilderCard'));
+      selectedTemplate = { id: 'custom_builder', name: 'Personalizado', sessions: [] };
+      document.getElementById('standardTplList').style.display = 'none';
+      document.getElementById('customBuilderList').style.display = 'block';
+      document.getElementById('tplPreview')?.style && (document.getElementById('tplPreview').style.display = 'none');
+      updateCustomBuilder();
+    });
+
+    // Cancel custom builder → go back to template list
+    document.getElementById('cancelCustomBuilderBtn')?.addEventListener('click', () => {
+      selectedTemplate = null;
+      document.getElementById('customBuilderList').style.display = 'none';
+      document.getElementById('standardTplList').style.display = 'block';
+    });
+
+    // Built-in & custom cycle template cards
+    document.querySelectorAll('.periodo-tpl-card:not(#customBuilderCard)').forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        if (!card.classList.contains('selected')) {
+          card.style.borderColor = 'var(--border-active, var(--primary))';
+          card.style.background = 'var(--bg-card-hover, rgba(255,255,255,0.04))';
+        }
+      });
+      card.addEventListener('mouseleave', () => {
+        if (!card.classList.contains('selected')) {
+          card.style.borderColor = 'var(--border-color)';
+          card.style.background = 'var(--bg-card)';
+        }
+      });
+      card.addEventListener('click', () => {
+        selectCard(card);
+        const tplId = card.dataset.tplId;
+
+        // ── Custom cycle (from Exercises → My Models) ──
+        if (tplId?.startsWith('cycle_')) {
+          const cycleId = tplId.replace('cycle_', '');
+          db.get('cycles', cycleId).then(cycle => {
+            if (!cycle) return;
+            selectedTemplate = {
+              id: 'cycle_' + cycleId,
+              name: cycle.name,
+              sessions: (cycle.workouts || []).map(w => ({
+                name: w.name,
+                exercises: (w.exercises || []).map(ex => ({
+                  name: ex.name,
+                  sets: ex.sets || 3,
+                  reps: ex.reps || '10-12',
+                  rest: ex.rest || 60,
+                  method: ex.method || '',
+                  loadType: ex.loadType || 'weight',
+                }))
+              }))
+            };
+            const allEx = selectedTemplate.sessions.flatMap(s => s.exercises)
+              .filter(e => (e.loadType || 'weight') === 'weight');
+            renderLoadInputs(allEx);
+          });
+          return;
+        }
+
+        // ── Built-in template ──
+        const tpl = BUILT_IN_TEMPLATES.find(t => t.id === tplId);
+        if (!tpl) return;
+        selectedTemplate = tpl;
+
+        // Auto-set periodization type to template default
+        if (tpl.perioModel || tpl.periodizationTypes?.[0]) {
+          const typeSelect = document.querySelector('#macroForm [name="type"]');
+          if (typeSelect) {
+            typeSelect.value = tpl.perioModel || tpl.periodizationTypes[0];
+            typeSelect.dispatchEvent(new Event('change'));
+          }
+        }
+
+        const isCardio = tpl.category === 'Cardio / Endurance' || tpl.category === 'Cardio Endurance';
+        const loadsEl = document.getElementById('tplExerciseLoads');
+
+        // Normalize sessions
+        if (!tpl.sessions && tpl.workouts) {
+          selectedTemplate = {
+            ...tpl,
+            sessions: tpl.workouts.map(w => ({ name: w.name, exercises: (w.exercises || []).map(ex => ({ ...ex })) }))
+          };
+        }
+        const allSess = selectedTemplate.allSessions || selectedTemplate.sessions || [];
+
+        if (isCardio && loadsEl) {
+          const hasMultiSess = allSess.length > 1;
+          loadsEl.innerHTML = `
+            <div style="padding:10px 12px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid var(--accent);margin-bottom:10px">
+              <div style="font-size:0.78rem;color:var(--accent);font-weight:600;margin-bottom:3px">Template Cardio / Endurance</div>
+              <div class="text-xs text-muted">Sessões baseadas em tempo e zonas de FC/VO₂max. Sem entradas de carga.</div>
+            </div>
+            ${hasMultiSess ? `
+            <div class="form-group">
+              <label class="form-label">Protocolo principal</label>
+              <select class="form-select" id="cardioProtocolSel">
+                ${allSess.map((s, i) => `<option value="${i}">${s.name}</option>`).join('')}
+              </select>
+            </div>` : ''}`;
+          const tplPreview = document.getElementById('tplPreview');
+          if (tplPreview) tplPreview.style.display = '';
+          if (hasMultiSess) {
+            setTimeout(() => {
+              document.getElementById('cardioProtocolSel')?.addEventListener('change', e => {
+                const idx = parseInt(e.target.value);
+                selectedTemplate = { ...selectedTemplate, sessions: [allSess[idx]] };
+              });
+            }, 50);
+          }
+          selectedTemplate = { ...selectedTemplate, sessions: [allSess[0]] };
+        } else {
+          const allEx = (selectedTemplate.sessions || []).flatMap(s => s.exercises || [])
+            .filter(e => (e.loadType || 'weight') === 'weight');
+          renderLoadInputs(allEx);
+        }
+      });
+    });
+    // ── END TEMPLATE CARD SELECTION ──────────────────────────────────────────
 
     // Bind trainingDays checkboxes changes to update the builder dynamically
     document.querySelectorAll('#builderDaysSelector input[name="trainingDays"]').forEach(checkbox => {
