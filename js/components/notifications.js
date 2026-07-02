@@ -11,6 +11,14 @@ async function getSupabase() {
   } catch { return null; }
 }
 
+async function getTrainerId() {
+  try {
+    const { getCurrentUser } = await import('../utils/auth.js');
+    const user = await getCurrentUser();
+    return user?.id || null;
+  } catch { return null; }
+}
+
 async function loadDismissed() {
   // Start with localStorage (instant, offline)
   const local = JSON.parse(localStorage.getItem('pp_notifs_dismissed') || '{}');
@@ -25,10 +33,12 @@ async function loadDismissed() {
   // Merge with Supabase (so dismisses from other devices also apply)
   try {
     const sb = await getSupabase();
-    if (sb) {
+    const trainerId = await getTrainerId();
+    if (sb && trainerId) {
       const { data, error } = await sb
         .from('notification_dismissed')
-        .select('id, dismissed_at');
+        .select('id, dismissed_at')
+        .eq('trainer_id', trainerId);
       if (!error && data) {
         let localChanged = false;
         data.forEach(row => {
@@ -51,8 +61,9 @@ async function dismissNotification(id) {
   // Persist to Supabase
   try {
     const sb = await getSupabase();
-    if (sb) {
-      await sb.from('notification_dismissed').upsert({ id, dismissed_at: new Date().toISOString() }, { onConflict: 'id,trainer_id' });
+    const trainerId = await getTrainerId();
+    if (sb && trainerId) {
+      await sb.from('notification_dismissed').upsert({ id, trainer_id: trainerId, dismissed_at: new Date().toISOString() }, { onConflict: 'id,trainer_id' });
     }
   } catch { /* offline — localStorage already saved */ }
 }
@@ -65,9 +76,10 @@ async function dismissAll(ids) {
 
   try {
     const sb = await getSupabase();
-    if (sb && ids.length > 0) {
+    const trainerId = await getTrainerId();
+    if (sb && trainerId && ids.length > 0) {
       await sb.from('notification_dismissed').upsert(
-        ids.map(id => ({ id, dismissed_at: now })),
+        ids.map(id => ({ id, trainer_id: trainerId, dismissed_at: now })),
         { onConflict: 'id,trainer_id' }
       );
     }
@@ -194,7 +206,7 @@ export async function checkNotifications() {
           desc: `<strong>${st.name}</strong> enviou check-in${estresseAlert}${painAlert}.`,
           link: '#/treino-ao-vivo'
         });
-      } else if (b.formType === 'post') {
+      } else if (b.formType === 'post' || b.formType === 'complete') {
         notifications.push({
           id: `post-bio-${b.id || b.date}`,
           type: 'info', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', title: 'Biofeedback Pós-treino',
