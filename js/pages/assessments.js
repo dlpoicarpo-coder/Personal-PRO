@@ -248,9 +248,15 @@ export async function renderAssessments() {
                           <td><strong>${a.peso?a.peso+'kg':'—'}</strong></td>
                           <td>${a.altura?a.altura+'cm':'—'}</td>
                           <td>${imc?`<span class="badge badge-${imcC.color}" title="${imcC.label}">${Calc.formatNum(imc)}</span>`:'—'}</td>
-                          <td style="color:${pctColor};font-weight:600">${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':'—'}</td>
+                          <td style="color:${pctColor};font-weight:600">
+                            ${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':(a.massaGorda?Calc.formatNum(a.massaGorda)+'kg':'—')}
+                            ${a.percentualGordura && a.massaGorda ? `<div style="font-size:0.65rem;opacity:0.65;font-weight:500;margin-top:2px">${Calc.formatNum(a.massaGorda)}kg</div>` : ''}
+                          </td>
                           <td style="color:var(--primary);font-weight:600">${a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'}</td>
-                          <td style="color:var(--accent);font-weight:600">${a.pctMassaMuscular?Calc.formatNum(a.pctMassaMuscular)+'%':'—'}</td>
+                          <td style="color:var(--accent);font-weight:600">
+                            ${a.pctMassaMuscular?Calc.formatNum(a.pctMassaMuscular)+'%':(a.massaMuscularEsqueletica?Calc.formatNum(a.massaMuscularEsqueletica)+'kg':'—')}
+                            ${a.pctMassaMuscular && a.massaMuscularEsqueletica ? `<div style="font-size:0.65rem;opacity:0.65;font-weight:500;margin-top:2px">${Calc.formatNum(a.massaMuscularEsqueletica)}kg</div>` : ''}
+                          </td>
                           <td>${a.cintura?a.cintura+'cm':'—'}</td>
                           <td>${a.rcq?Calc.formatNum(a.rcq,2):'—'}</td>
                           <td>
@@ -892,9 +898,10 @@ export function initAssessments(navigateFn) {
               ['Peso',        a.peso?a.peso+'kg':'—'],
               ['Altura',      a.altura?a.altura+'cm':'—'],
               ['IMC',         imc?`${Calc.formatNum(imc)} — ${imcC?.label}`:'-'],
-              ['% Gordura',   a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':'—'],
+              ['% Gordura',   a.percentualGordura?`${Calc.formatNum(a.percentualGordura)}%${a.massaGorda?` (${Calc.formatNum(a.massaGorda)}kg)`:''}` : (a.massaGorda?`${Calc.formatNum(a.massaGorda)}kg`:'—')],
               ['Massa Magra', a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'],
               ['Massa Gorda', a.massaGorda?Calc.formatNum(a.massaGorda)+'kg':'—'],
+              ['M. Musc. Esq.', a.massaMuscularEsqueletica?`${Calc.formatNum(a.massaMuscularEsqueletica)}kg${a.pctMassaMuscular?` (${Calc.formatNum(a.pctMassaMuscular)}%)`:''}` : (a.pctMassaMuscular?`${Calc.formatNum(a.pctMassaMuscular)}%`:'—')],
               ['RCQ',         a.rcq?Calc.formatNum(a.rcq,2):'—'],
               ['Cintura',     a.cintura?a.cintura+'cm':'—'],
               ['Quadril',     a.quadril?a.quadril+'cm':'—'],
