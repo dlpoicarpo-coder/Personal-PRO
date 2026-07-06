@@ -1035,16 +1035,33 @@ export function initAssessments(navigateFn) {
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">% Gordura</label>
-              <input class="form-input" name="percentualGordura" type="number" step="0.1" value="${a.percentualGordura || ''}" placeholder="Ex: 20" />
+              <input class="form-input" id="ef_pctGordura" name="percentualGordura" type="number" step="0.1" value="${a.percentualGordura || ''}" placeholder="Ex: 20" />
             </div>
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;gap:5px">
+                Gordura (kg)
+                <span style="font-size:0.68rem;color:var(--primary);font-weight:600;background:rgba(16,185,129,0.1);padding:1px 6px;border-radius:4px">auto</span>
+              </label>
+              <input class="form-input" id="ef_kgGordura" name="massaGordaEdit" type="number" step="0.1" value="${a.massaGorda || ''}" placeholder="kg" />
+            </div>
+          </div>
+          <div class="form-row">
             <div class="form-group"><label class="form-label">Massa Magra (kg)</label>
               <input class="form-input" name="massaMagra" type="number" step="0.1" value="${a.massaMagra || ''}" />
             </div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">% Massa Musc. Esq.</label>
-              <input class="form-input" name="pctMassaMuscular" type="number" step="0.1" value="${a.pctMassaMuscular || ''}" placeholder="Ex: 32" />
+            <div class="form-group"><label class="form-label">% Musc. Esq.</label>
+              <input class="form-input" id="ef_pctMusc" name="pctMassaMuscular" type="number" step="0.1" value="${a.pctMassaMuscular || ''}" placeholder="Ex: 32" />
             </div>
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;gap:5px">
+                Musc. Esq. (kg)
+                <span style="font-size:0.68rem;color:var(--accent);font-weight:600;background:rgba(6,182,212,0.1);padding:1px 6px;border-radius:4px">auto</span>
+              </label>
+              <input class="form-input" id="ef_kgMusc" name="massaMuscularEsqEdit" type="number" step="0.1" value="${a.massaMuscularEsqueletica ? Math.round(a.massaMuscularEsqueletica*10)/10 : ''}" placeholder="kg" />
+            </div>
+          </div>
             <div class="form-group"><label class="form-label">Cintura (cm)</label>
               <input class="form-input" name="cintura" type="number" step="0.1" value="${a.cintura || ''}" />
             </div>
@@ -1066,17 +1083,31 @@ export function initAssessments(navigateFn) {
           const peso = parseFloat(fd.get('peso')) || a.peso;
           const altura = parseFloat(fd.get('altura')) || a.altura;
           const percentualGordura = parseFloat(fd.get('percentualGordura')) || a.percentualGordura;
+          const massaGordaEdit    = parseFloat(fd.get('massaGordaEdit')) || null;
           const massaMagra = parseFloat(fd.get('massaMagra')) || a.massaMagra;
-          const pctMassaMuscular = parseFloat(fd.get('pctMassaMuscular')) || a.pctMassaMuscular;
+          // Gordura kg: use edit field, or derive from %, or existing
+          const massaGorda = massaGordaEdit
+            || (percentualGordura && peso ? Math.round((percentualGordura/100)*peso*10)/10 : null)
+            || a.massaGorda;
+          const pctMuscRaw  = parseFloat(fd.get('pctMassaMuscular'));
+          const kgMuscRaw   = parseFloat(fd.get('massaMuscularEsqEdit'));
+          // Bidirectional muscle calc
+          let pctMassaMuscular = pctMuscRaw || a.pctMassaMuscular;
+          let massaMuscularEsqueletica = kgMuscRaw || a.massaMuscularEsqueletica;
+          if (pctMassaMuscular && peso && !kgMuscRaw) {
+            massaMuscularEsqueletica = Math.round((pctMassaMuscular/100)*peso*10)/10;
+          } else if (kgMuscRaw && peso && !pctMuscRaw) {
+            pctMassaMuscular = Math.round((kgMuscRaw/peso)*1000)/10;
+          }
           const cintura = parseFloat(fd.get('cintura')) || a.cintura;
           const quadril = parseFloat(fd.get('quadril')) || a.quadril;
           const braco = parseFloat(fd.get('braco')) || a.braco;
-          const massaGorda = peso && massaMagra ? Math.round((peso - massaMagra) * 10) / 10 : a.massaGorda;
           const rcq = cintura && quadril ? Math.round((cintura / quadril) * 100) / 100 : a.rcq;
           const updated = {
             ...a, date: fd.get('date') || a.date,
             peso, altura, percentualGordura, massaMagra, massaGorda,
-            pctMassaMuscular, cintura, quadril, braco, rcq,
+            massaMuscularEsqueletica, pctMassaMuscular,
+            cintura, quadril, braco, rcq,
             notes: fd.get('notes'),
           };
           await db.put('assessments', updated);
@@ -1097,8 +1128,11 @@ export function initAssessments(navigateFn) {
           }}
         ]
       });
+      // Bind live calc para o formulario de edicao
+      if (a.type === 'composicao') setTimeout(() => initComposicaoLiveCalc(), 80);
     });
   });
+
 
   // ── VER 1RM (zonas de carga) ────────────────────────────────
   document.querySelectorAll('.view-rm1').forEach(btn=>{
@@ -1229,7 +1263,67 @@ function openAssessmentForm(tipo, students, navigateFn) {
       const el  = document.querySelector('#assessForm [name="vo2max"]');
       if(vma&&el) el.value = Calc.vo2maxConconi(vma);
     });
+
+    // Calculo bidirecional em tempo real: composicao corporal
+    initComposicaoLiveCalc();
   }, 80);
+}
+
+// ── CALCULO EM TEMPO REAL: Gordura kg⇔% / Musc Esq kg⇔% ────────────
+function initComposicaoLiveCalc() {
+  // IDs do formulario novo (#assessForm)
+  const prefixes = [
+    { pctId: 'af_pctGordura', kgId: 'af_kgGordura', pesoSel: '#assessForm [name="peso"]', type: 'fat' },
+    { pctId: 'af_pctMusc',    kgId: 'af_kgMusc',    pesoSel: '#assessForm [name="peso"]', type: 'musc' },
+  ];
+  // IDs do formulario de edicao (#editAssForm)
+  const editPrefixes = [
+    { pctId: 'ef_pctGordura', kgId: 'ef_kgGordura', pesoSel: '#editAssForm [name="peso"]', type: 'fat' },
+    { pctId: 'ef_pctMusc',    kgId: 'ef_kgMusc',    pesoSel: '#editAssForm [name="peso"]', type: 'musc' },
+  ];
+
+  const bind = (pctId, kgId, pesoSel) => {
+    const pctEl  = document.getElementById(pctId);
+    const kgEl   = document.getElementById(kgId);
+    if (!pctEl || !kgEl) return;
+    const getPeso = () => parseFloat(document.querySelector(pesoSel)?.value) || 0;
+
+    pctEl.addEventListener('input', () => {
+      const pct  = parseFloat(pctEl.value);
+      const peso = getPeso();
+      if (pct > 0 && peso > 0) {
+        kgEl.value = Math.round((pct / 100) * peso * 10) / 10;
+        kgEl.style.background = 'rgba(16,185,129,0.06)';
+      } else {
+        kgEl.value = '';
+        kgEl.style.background = '';
+      }
+    });
+
+    kgEl.addEventListener('input', () => {
+      const kg   = parseFloat(kgEl.value);
+      const peso = getPeso();
+      if (kg > 0 && peso > 0) {
+        pctEl.value = Math.round((kg / peso) * 1000) / 10;
+        pctEl.style.background = 'rgba(6,182,212,0.06)';
+      } else {
+        pctEl.value = '';
+        pctEl.style.background = '';
+      }
+    });
+
+    // Recalcular ao alterar peso
+    document.querySelector(pesoSel)?.addEventListener('input', () => {
+      const peso = getPeso();
+      if (!peso) return;
+      const pct = parseFloat(pctEl.value);
+      const kg  = parseFloat(kgEl.value);
+      if (pct > 0 && !kg) kgEl.value = Math.round((pct / 100) * peso * 10) / 10;
+      else if (kg > 0 && !pct) pctEl.value = Math.round((kg / peso) * 1000) / 10;
+    });
+  };
+
+  [...prefixes, ...editPrefixes].forEach(({ pctId, kgId, pesoSel }) => bind(pctId, kgId, pesoSel));
 }
 
 async function saveAssessment(tipo, d, navigateFn) {
@@ -1241,24 +1335,51 @@ async function saveAssessment(tipo, d, navigateFn) {
     const imc    = peso&&altura ? Calc.imc(peso,altura) : null;
     const genero = d.genero||'M';
     const idade  = parseInt(d.idadeCalc)||30;
-    // % gordura por dobras ou manual
+    // % gordura por dobras, manual ou kg gordura (calcula pct a partir de kg se necessário)
     let pct = parseFloat(d.percentualGorduraManual)||null;
     if(!pct && d.dobra1&&d.dobra2&&d.dobra3) {
       pct = Calc.percentualGordura3dobras(genero, idade, d.dobra1, d.dobra2, d.dobra3);
     }
+    const massaGorduraManual= parseFloat(d.massaGorduraManual)||null;
+    if(!pct && massaGorduraManual && peso) {
+      pct = Math.round((massaGorduraManual / peso) * 1000) / 10;
+    }
     const comp = pct&&peso ? Calc.composicaoCorporal(peso,pct) : {};
     const rcq  = d.cintura&&d.quadril ? Calc.rcq(parseFloat(d.cintura),parseFloat(d.quadril)) : null;
-    const pctMassaManual = parseFloat(d.pctMassaMuscularManual)||null;
-    const smm = pctMassaManual && peso ? (pctMassaManual / 100) * peso : Calc.massaMuscularEsqueletica(peso, altura, idade, genero, 0);
-    const pctMassaMuscular = pctMassaManual || Calc.pctMassaMuscular(smm, peso);
+    const pctMassaManual    = parseFloat(d.pctMassaMuscularManual)||null;
+    const kgMassaManual     = parseFloat(d.kgMassaMuscularManual)||null;
+
+    // Se gordura em kg foi informada mas não %: derivar; se % informado sem kg: derivar kg
+    const massaGordaFinal = (() => {
+      if (comp.massaGorda) return comp.massaGorda;
+      if (massaGorduraManual) return massaGorduraManual;
+      if (pct && peso) return Math.round((pct / 100) * peso * 10) / 10;
+      return null;
+    })();
+
+    // % e kg de Massa Muscular Esq. bidireccional
+    let pctMuscFinal = pctMassaManual;
+    let kgMuscFinal  = kgMassaManual;
+    if (pctMuscFinal && peso && !kgMuscFinal) {
+      kgMuscFinal = Math.round((pctMuscFinal / 100) * peso * 10) / 10;
+    } else if (kgMuscFinal && peso && !pctMuscFinal) {
+      pctMuscFinal = Math.round((kgMuscFinal / peso) * 1000) / 10;
+    }
+    if (!pctMuscFinal && !kgMuscFinal) {
+      const smm0 = Calc.massaMuscularEsqueletica(peso, altura, idade, genero, 0);
+      kgMuscFinal  = smm0;
+      pctMuscFinal = Calc.pctMassaMuscular(smm0, peso);
+    }
+
+    const rcq  = d.cintura&&d.quadril ? Calc.rcq(parseFloat(d.cintura),parseFloat(d.quadril)) : null;
 
     await db.add('assessments',{...base, peso, altura,
       imc:     imc?Math.round(imc*10)/10:null,
       percentualGordura: comp.percentualGordura||pct,
       massaMagra:  comp.massaMagra||null,
-      massaGorda:  comp.massaGorda||null,
-      massaMuscularEsqueletica: smm,
-      pctMassaMuscular: pctMassaMuscular,
+      massaGorda:  massaGordaFinal,
+      massaMuscularEsqueletica: kgMuscFinal,
+      pctMassaMuscular: pctMuscFinal,
       cintura:     parseFloat(d.cintura)||null,
       quadril:     parseFloat(d.quadril)||null,
       braco:       parseFloat(d.braco)||null,
@@ -1345,8 +1466,30 @@ function composicaoFormHTML(students) {
     </div>
     <div style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:8px">
       <div class="form-row">
-        <div class="form-group"><label class="form-label">% Gordura (manual)</label><input class="form-input" name="percentualGorduraManual" type="number" step="0.1" placeholder="Se não usar dobras" /></div>
-        <div class="form-group"><label class="form-label">% M. Muscular Esq.</label><input class="form-input" name="pctMassaMuscularManual" type="number" step="0.1" placeholder="Via Bioimpedância" /></div>
+        <div class="form-group">
+          <label class="form-label">% Gordura (manual)</label>
+          <input class="form-input" id="af_pctGordura" name="percentualGorduraManual" type="number" step="0.1" placeholder="Se não usar dobras" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:5px">
+            Gordura (kg)
+            <span style="font-size:0.68rem;color:var(--primary);font-weight:600;background:rgba(16,185,129,0.1);padding:1px 6px;border-radius:4px">auto</span>
+          </label>
+          <input class="form-input" id="af_kgGordura" name="massaGorduraManual" type="number" step="0.1" placeholder="Calcula do % gordura" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">% M. Muscular Esq.</label>
+          <input class="form-input" id="af_pctMusc" name="pctMassaMuscularManual" type="number" step="0.1" placeholder="Via Bioimpedância" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:5px">
+            Musc. Esq. (kg)
+            <span style="font-size:0.68rem;color:var(--accent);font-weight:600;background:rgba(6,182,212,0.1);padding:1px 6px;border-radius:4px">auto</span>
+          </label>
+          <input class="form-input" id="af_kgMusc" name="kgMassaMuscularManual" type="number" step="0.1" placeholder="Calcula do %" />
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">PA Sistólica</label><input class="form-input" name="paSistolica" type="number" placeholder="120" /></div>
