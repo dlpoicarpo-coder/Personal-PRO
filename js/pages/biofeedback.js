@@ -73,6 +73,11 @@ export async function renderBiofeedback() {
           <option value="">Todos os alunos</option>
           ${active.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
         </select>
+        <div class="flex gap-xs" style="align-items:center">
+          <button class="btn btn-sm" id="bfPeriodAll" style="border:1px solid var(--border-color);background:var(--bg-card)">Tudo</button>
+          <button class="btn btn-sm" id="bfPeriodMonth" style="border:1px solid var(--primary);color:var(--primary);background:var(--primary-glow,rgba(16,185,129,0.08))">Este mês</button>
+          <button class="btn btn-sm" id="bfPeriod30d" style="border:1px solid var(--border-color);background:var(--bg-card)">30 dias</button>
+        </div>
         <button class="btn btn-primary" id="addBfBtn">+ Registrar</button>
       </div>
     </div>
@@ -127,10 +132,25 @@ export async function renderBiofeedback() {
   `;
 }
 
-function renderBfContent(entries, students, filterStudentId) {
+function renderBfContent(entries, students, filterStudentId, limitOverride = 30, periodFilter = 'month') {
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last30Start = new Date(now.getTime() - 30 * 86400000);
+
   const filtered = filterStudentId ? entries.filter(e => e.studentId === filterStudentId) : entries;
-  const sorted   = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
-  const recent   = sorted.slice(0, 30);
+  let periodFiltered = [...filtered];
+  if (periodFilter === 'month') {
+    periodFiltered = filtered.filter(e => new Date(e.date) >= thisMonthStart);
+    // If no records this month, fall back to show last 30 records (don't show empty)
+    if (periodFiltered.length === 0) periodFiltered = [...filtered];
+  } else if (periodFilter === '30d') {
+    periodFiltered = filtered.filter(e => new Date(e.date) >= last30Start);
+    if (periodFiltered.length === 0) periodFiltered = [...filtered];
+  }
+  const sorted   = [...periodFiltered].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const limit    = limitOverride || 30;
+  const recent   = sorted.slice(0, limit);
+  const hasMore  = sorted.length > limit;
   const student  = filterStudentId ? students.find(s => s.id === filterStudentId) : null;
 
   // ACWR
@@ -232,31 +252,76 @@ function renderBfContent(entries, students, filterStudentId) {
           }).join('')}</tbody>
         </table>
       </div>
+      ${hasMore ? `
+      <div style="text-align:center;margin-top:12px">
+        <button id="bfLoadMoreBtn" class="btn btn-secondary btn-sm" data-limit="${limit + 30}" data-period="${periodFilter}" data-student="${filterStudentId || ''}">
+          Carregar mais 30 (${sorted.length - limit} restantes)
+        </button>
+      </div>` : `<div class="text-xs text-muted" style="text-align:center;margin-top:10px;padding:8px 0">
+        Exibindo todos os ${sorted.length} registros${periodFilter === 'month' ? ' deste mês' : periodFilter === '30d' ? ' dos últimos 30 dias' : ''}
+      </div>`}
       ${filtered.length >= 3 ? `
       <div style="margin-top:16px;border-top:1px solid var(--border-color);padding-top:12px">
-        <div class="text-xs text-muted mb-sm" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Tendência — últimas ${Math.min(filtered.length,14)} entradas</div>
+        <div class="text-xs text-muted mb-sm" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Tendência &mdash; últimas ${Math.min(filtered.length,14)} entradas</div>
         <div style="height:140px"><canvas id="bfTrendChart"></canvas></div>
       </div>` : ''}
-      ` : `<div class="empty-state" style="padding:40px"><p class="text-muted">Nenhum registro ainda</p></div>`}
+      ` : `<div class="empty-state" style="padding:40px"><p class="text-muted">Nenhum registro no período selecionado</p></div>`}
     </div>`;
 }
 
 export function initBiofeedback(navigateFn) {
-  document.getElementById('bfStudentFilter')?.addEventListener('change', async (e) => {
-    const sid      = e.target.value;
+  // Shared state for period filter
+  let _bfPeriod = 'month';
+
+  const refreshBfContent = async (limit = 30, period = _bfPeriod) => {
+    const sid      = document.getElementById('bfStudentFilter')?.value || '';
     const students = await db.getAll('students');
     const allBf    = (await db.getAll('biofeedback')).sort((a,b) => new Date(b.date)-new Date(a.date));
     const el       = document.getElementById('bfContent');
     if (el) {
-      el.innerHTML = renderBfContent(allBf, students, sid);
+      el.innerHTML = renderBfContent(allBf, students, sid, limit, period);
       setTimeout(() => {
         initBfCharts(allBf, students, sid);
         bindBfActions(navigateFn, students);
+        bindBfLoadMore(navigateFn);
       }, 100);
     }
+  };
+
+  const bindBfLoadMore = (navFn) => {
+    document.getElementById('bfLoadMoreBtn')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const newLimit = parseInt(btn.dataset.limit) || 60;
+      const period = btn.dataset.period || _bfPeriod;
+      await refreshBfContent(newLimit, period);
+    });
+  };
+
+  const setPeriodActive = (active) => {
+    ['bfPeriodAll','bfPeriodMonth','bfPeriod30d'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const isActive = id === active;
+      btn.style.borderColor = isActive ? 'var(--primary)' : 'var(--border-color)';
+      btn.style.color       = isActive ? 'var(--primary)' : '';
+      btn.style.background  = isActive ? 'var(--primary-glow,rgba(16,185,129,0.08))' : 'var(--bg-card)';
+    });
+  };
+
+  document.getElementById('bfPeriodAll')?.addEventListener('click', () => {
+    _bfPeriod = 'all'; setPeriodActive('bfPeriodAll'); refreshBfContent(30, 'all');
+  });
+  document.getElementById('bfPeriodMonth')?.addEventListener('click', () => {
+    _bfPeriod = 'month'; setPeriodActive('bfPeriodMonth'); refreshBfContent(30, 'month');
+  });
+  document.getElementById('bfPeriod30d')?.addEventListener('click', () => {
+    _bfPeriod = '30d'; setPeriodActive('bfPeriod30d'); refreshBfContent(30, '30d');
   });
 
+  document.getElementById('bfStudentFilter')?.addEventListener('change', () => refreshBfContent(30, _bfPeriod));
+
   bindBfActions(navigateFn, null);
+  bindBfLoadMore(navigateFn);
   setTimeout(() => initBfCharts(null, null, null), 300);
 
   document.getElementById('addBfBtn')?.addEventListener('click', async () => {

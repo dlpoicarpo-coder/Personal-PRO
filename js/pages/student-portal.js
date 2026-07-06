@@ -259,6 +259,138 @@ export function initStudentPortal(rawParam) {
   if (deferredPrompt) setTimeout(() => showPwaPopup(), 3000);
   // Request push notification permission after 5s
   setTimeout(() => requestNotificationPermission(), 5000);
+  // Show interactive tutorial for first-time users (after PWA + notification prompts)
+  setTimeout(() => showTutorialPopup(sid), 8000);
+}
+
+// ── TUTORIAL INTERATIVO (POPUP) ──────────────────────────────────
+function showTutorialPopup(studentId) {
+  const storageKey = `portal_tutorial_done_${studentId || 'guest'}`;
+  if (localStorage.getItem(storageKey)) return; // já viu
+
+  const root = document.querySelector('.portal-root');
+  if (!root) return;
+  if (document.getElementById('portalTutorialOverlay')) return; // já aberto
+
+  const slides = [
+    {
+      icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+      color: '#10b981',
+      title: 'Bem-vindo ao seu Portal!',
+      text: 'Este é o seu espaço exclusivo de treino. Aqui você acompanha seus exercícios, registra como está se sentindo e vê sua evolução ao longo do tempo.',
+    },
+    {
+      icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+      color: '#f59e0b',
+      title: 'Check-in antes do treino',
+      text: 'Antes de treinar, acesse a aba Check-in. Avalie seu sono, estresse e disposição. Seu treinador verá isso em tempo real e pode adaptar o treino do dia!',
+    },
+    {
+      icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>`,
+      color: '#6366f1',
+      title: 'Como treinar pelo portal',
+      text: 'Na aba Treinar, selecione o treino sugerido ou escolha outro. Execute cada exercício e, ao terminar, clique em Concluir Treino para salvar sua sessão.',
+    },
+    {
+      icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+      color: '#ec4899',
+      title: 'Acompanhe sua evolução',
+      text: 'Na aba Relatórios veja gráficos de volume, bem-estar e progressão de carga. Quanto mais você registrar, mais detalhada será a sua análise!',
+    },
+    {
+      icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>`,
+      color: '#06b6d4',
+      title: 'Instale como aplicativo',
+      text: 'Adicione o portal à tela inicial do celular para acesso rápido sem precisar do link! No iPhone: Compartilhar → Adicionar à Tela Inicial. No Android: use o botão "App" no topo.',
+    },
+  ];
+
+  let currentSlide = 0;
+
+  const renderSlide = (idx) => `
+    <div style="text-align:center;padding:8px 0 16px">
+      <div style="margin-bottom:16px">${slides[idx].icon}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:var(--portal-text);margin-bottom:10px;line-height:1.3">${slides[idx].title}</div>
+      <p style="font-size:0.84rem;color:var(--portal-text-secondary);line-height:1.65;margin:0">${slides[idx].text}</p>
+    </div>
+  `;
+
+  const renderDots = (idx) => slides.map((_, i) =>
+    `<span style="display:inline-block;width:${i===idx?'20px':'8px'};height:8px;border-radius:4px;
+      background:${i===idx?slides[idx].color:'rgba(255,255,255,0.18)'};
+      transition:width 0.25s,background 0.25s;margin:0 3px"></span>`
+  ).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'portalTutorialOverlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    animation:fadeInTut 0.3s ease;
+  `;
+  overlay.innerHTML = `
+    <style>
+      @keyframes fadeInTut { from { opacity:0; transform:scale(0.94); } to { opacity:1; transform:scale(1); } }
+      #portalTutorialBox { max-width:360px;width:100%;background:var(--portal-surface,#1a1f2e);border-radius:20px;
+        border:1px solid rgba(255,255,255,0.1);padding:28px 24px 22px;box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+    </style>
+    <div id="portalTutorialBox">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;color:var(--portal-text-muted);text-transform:uppercase">Como usar · <span id="tutSlideNum">${currentSlide+1}/${slides.length}</span></span>
+        <button id="tutSkipBtn" style="background:none;border:none;color:var(--portal-text-muted);cursor:pointer;font-size:0.78rem;padding:4px 8px;border-radius:6px">Pular</button>
+      </div>
+      <div id="tutSlideContent">${renderSlide(currentSlide)}</div>
+      <div style="text-align:center;margin:16px 0 20px" id="tutDots">${renderDots(currentSlide)}</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+        <button id="tutPrevBtn" style="flex:0 0 auto;background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--portal-text-muted);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:0.82rem;${currentSlide===0?'opacity:0.3;pointer-events:none':''}">←</button>
+        <button id="tutNextBtn" style="flex:1;padding:12px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:0.88rem;
+          background:linear-gradient(135deg,${slides[currentSlide].color},${slides[currentSlide].color}cc);color:#fff;transition:opacity 0.2s">
+          ${currentSlide === slides.length-1 ? 'Começar!' : 'Próximo →'}
+        </button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;justify-content:center">
+        <input type="checkbox" id="tutNeverShow" style="accent-color:var(--portal-primary);width:14px;height:14px">
+        <span style="font-size:0.74rem;color:var(--portal-text-muted)">Não mostrar novamente</span>
+      </label>
+    </div>
+  `;
+  root.appendChild(overlay);
+
+  const closeTutorial = () => {
+    if (document.getElementById('tutNeverShow')?.checked) {
+      localStorage.setItem(storageKey, '1');
+    }
+    overlay.style.animation = 'none';
+    overlay.style.opacity = '0';
+    overlay.style.transform = 'scale(0.94)';
+    overlay.style.transition = 'opacity 0.2s,transform 0.2s';
+    setTimeout(() => overlay.remove(), 200);
+  };
+
+  const goToSlide = (idx) => {
+    currentSlide = idx;
+    document.getElementById('tutSlideContent').innerHTML = renderSlide(currentSlide);
+    document.getElementById('tutDots').innerHTML = renderDots(currentSlide);
+    document.getElementById('tutSlideNum').textContent = `${currentSlide+1}/${slides.length}`;
+    const prevBtn = document.getElementById('tutPrevBtn');
+    const nextBtn = document.getElementById('tutNextBtn');
+    if (prevBtn) { prevBtn.style.opacity = currentSlide===0?'0.3':'1'; prevBtn.style.pointerEvents = currentSlide===0?'none':'auto'; }
+    if (nextBtn) {
+      nextBtn.textContent = currentSlide===slides.length-1 ? 'Começar!' : 'Próximo →';
+      nextBtn.style.background = `linear-gradient(135deg,${slides[currentSlide].color},${slides[currentSlide].color}cc)`;
+    }
+  };
+
+  document.getElementById('tutSkipBtn')?.addEventListener('click', closeTutorial);
+  document.getElementById('tutNextBtn')?.addEventListener('click', () => {
+    if (currentSlide < slides.length - 1) goToSlide(currentSlide + 1);
+    else { localStorage.setItem(storageKey, '1'); closeTutorial(); }
+  });
+  document.getElementById('tutPrevBtn')?.addEventListener('click', () => {
+    if (currentSlide > 0) goToSlide(currentSlide - 1);
+  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeTutorial(); });
 }
 
 
@@ -751,6 +883,11 @@ async function loadSection(section) {
   if (section === 'sessoes') initSessoesSection(sessions);
   if (section === 'home') initHomeSection(student, tid, sessions, biofeedbacks);
 
+  // Auto-detect missed workouts (background, non-blocking)
+  if (section === 'home' || section === 'treinar') {
+    checkAndMarkMissedWorkouts(sid, schedules, sessions).catch(e => console.warn('Missed check error:', e));
+  }
+
   // Check-in reminder (day of session)
   checkSessionReminders(schedules, sessions);
 }
@@ -758,13 +895,14 @@ async function loadSection(section) {
 // ── SESSION REMINDERS ──────────────────────────────────────────
 function checkSessionReminders(schedules, sessions) {
   const _d = new Date();
+  const now = _d.getTime();
   const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
 
-  // 1. Check-in reminder: session TODAY
-  const todaySessions = schedules.filter(s => s.date === todayStr);
+  // 1. Check-in reminder: session TODAY (only if not already completed)
+  const todaySessions = schedules.filter(s => s.date === todayStr && s.status !== 'completed');
   if (todaySessions.length > 0) {
     const s = todaySessions[0];
-    showToast(`📅 Você tem treino hoje${s.time ? ' às ' + s.time : ''}! Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
+    showToast(`Você tem treino hoje${s.time ? ' às ' + s.time : ''}! Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
   }
 
   // 2. Checkout reminder: sessions without student checkout
@@ -774,13 +912,45 @@ function checkSessionReminders(schedules, sessions) {
     if (!s.date) return false;
     const dateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date;
     const daysAgo = (now - new Date(dateStr + 'T12:00')) / 86400000;
-    return daysAgo <= 3; // only recent ones
+    return daysAgo <= 3;
   });
   if (needsCheckout.length > 0) {
     setTimeout(() => {
-      showToast(` Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
+      showToast(`Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
     }, 2000);
   }
+}
+
+// ── MISSED WORKOUT DETECTION ────────────────────────────────────
+async function checkAndMarkMissedWorkouts(sid, schedules, sessions) {
+  if (!sid || !schedules || !sessions) return [];
+  const _d = new Date();
+  const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+
+  // Build set of dates with completed sessions for this student
+  const completedDates = new Set(
+    sessions
+      .filter(s => s.status === 'completed' && s.studentId === sid)
+      .map(s => (s.date || '').substring(0, 10))
+  );
+
+  const missed = [];
+  for (const sch of schedules) {
+    if (sch.studentId !== sid) continue;
+    if (sch.status === 'completed' || sch.status === 'missed') continue;
+    if (sch.date >= todayStr) continue; // only past dates
+    // If no session completed on this date → mark as missed
+    if (!completedDates.has(sch.date)) {
+      const updated = { ...sch, status: 'missed' };
+      try {
+        await db.put('schedules', updated);
+        missed.push(updated);
+      } catch(e) {
+        console.warn('Erro ao marcar falta:', e);
+      }
+    }
+  }
+  return missed;
 }
 
 function showToast(msg, type = 'info', duration = 5000) {
@@ -1104,7 +1274,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
           ▶ Continuar Treino
         </button>
         <button class="portal-submit-btn" id="discardSoloBtn" data-sid="${running.id}" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.25);color:#ef4444;box-shadow:none;margin:0;width:100%">
-          🗑 Descartar Treino e Iniciar Novo
+          Descartar Treino e Iniciar Novo
         </button>
       </div>
     </div>
@@ -1112,9 +1282,41 @@ function renderTreinar(workouts, schedules, sessions = []) {
 
   const _d = new Date();
   const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
-  const todaySched = schedules.find(s => s.date === todayStr);
+
+  // Treinos perdidos (marcados como 'missed') com workout disponível
+  const missedScheds = schedules
+    .filter(s => s.status === 'missed' && s.workoutId)
+    .sort((a, b) => b.date.localeCompare(a.date)) // mais recente primeiro
+    .slice(0, 1); // mostrar apenas o mais recente
+  const missedSched = missedScheds[0] || null;
+  const missedWorkout = missedSched ? workouts.find(w => w.id === missedSched.workoutId) : null;
+
+  const missedCard = (missedSched && missedWorkout) ? `
+    <div class="glass-card" id="missedWorkoutCard" style="margin-bottom:14px;border:1px solid rgba(239,68,68,0.35);background:rgba(239,68,68,0.07);padding:16px 18px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size:0.72rem;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:0.06em">Treino Pendente</span>
+      </div>
+      <div style="font-size:0.95rem;font-weight:700;color:var(--portal-text);margin-bottom:3px">${missedWorkout.name}</div>
+      <div style="font-size:0.78rem;color:var(--portal-text-muted);margin-bottom:14px">
+        Previsto para ${new Date(missedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})} · ${(missedWorkout.exercises||[]).length} exercícios
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="portal-submit-btn" id="startMissedBtn" data-wid="${missedWorkout.id}" data-schid="${missedSched.id}"
+          style="margin:0;flex:1;min-width:130px;background:linear-gradient(135deg,#ef4444,#dc2626);font-size:0.82rem;padding:10px 14px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Fazer Agora
+        </button>
+        <button class="portal-submit-btn" id="dismissMissedBtn" data-schid="${missedSched.id}"
+          style="margin:0;flex:1;min-width:130px;background:transparent;border-color:rgba(255,255,255,0.15);color:var(--portal-text-muted);box-shadow:none;font-size:0.82rem;padding:10px 14px">
+          Dispensar
+        </button>
+      </div>
+    </div>` : '';
+
+  const todaySched = schedules.find(s => s.date === todayStr && s.status !== 'completed' && s.status !== 'missed');
   const nextSched = schedules
-    .filter(s => s.date > todayStr)
+    .filter(s => s.date > todayStr && s.status !== 'completed')
     .sort((a,b) => a.date.localeCompare(b.date))[0];
   const suggestedSched = todaySched || nextSched;
   const suggestedWorkout = suggestedSched ? workouts.find(w => w.id === suggestedSched.workoutId) : null;
@@ -1124,7 +1326,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
       <div class="portal-suggested-label">
         ${todaySched
           ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Treino de HOJE`
-          : `📅 Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
+          : `Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
         ${suggestedSched.time ? ` · ${suggestedSched.time}` : ''}
       </div>
       <div class="portal-suggested-name">${suggestedWorkout.name || 'Treino'}</div>
@@ -1142,9 +1344,10 @@ function renderTreinar(workouts, schedules, sessions = []) {
       ${recoveryCard}
 
       <div id="soloSetupContainer" style="${running ? 'display:none' : ''}">
+        ${missedCard}
         ${suggestedCard}
 
-        <div class="portal-section-sub" style="margin-top:${suggestedCard?'20px':'0'}">Ou escolha outro treino</div>
+        <div class="portal-section-sub" style="margin-top:${(missedCard||suggestedCard)?'20px':'0'}">Ou escolha outro treino</div>
         <div class="portal-bio-field">
           <div class="portal-workout-picker" id="soloWorkoutPicker">
             <div class="portal-workout-pick-item selected" data-wid="">
@@ -1257,6 +1460,34 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   const tid = portalState.trainerId;
   const selInput = document.getElementById('soloWorkoutSel');
   const exBlock = document.getElementById('soloExercisesBlock');
+
+  // ── Missed Workout Card Handlers ──
+  document.getElementById('startMissedBtn')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    const wid = btn.dataset.wid;
+    if (!wid) return;
+    // Select that workout in the picker and scroll to it
+    document.querySelectorAll('.portal-workout-pick-item').forEach(item => {
+      const isMatch = item.dataset.wid === wid;
+      item.classList.toggle('selected', isMatch);
+    });
+    // Trigger the start button scroll
+    const startBtn = document.getElementById('soloStartBtn');
+    if (startBtn) startBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('missedWorkoutCard')?.remove();
+  });
+
+  document.getElementById('dismissMissedBtn')?.addEventListener('click', async (e) => {
+    const schId = e.currentTarget.dataset.schid;
+    if (schId) {
+      try {
+        const sch = await db.get('schedules', schId);
+        if (sch) { sch.status = 'dismissed'; await db.put('schedules', sch); }
+      } catch(_) {}
+    }
+    document.getElementById('missedWorkoutCard')?.remove();
+  });
+
 
   // Dynamic autosave state
   let soloSessionId = null;
@@ -2894,11 +3125,24 @@ function initTreinar(workouts, schedules, student, sessions = []) {
           try {
             const schedules = await db.getAll('schedules');
             const targetDate = sessionData.date.substring(0, 10);
-            for (const sch of schedules) {
-              if (sch.studentId === sessionData.studentId && sch.date === targetDate && sch.status !== 'completed') {
-                sch.status = 'completed';
-                await db.put('schedules', sch);
-              }
+            // Prioridade: match por workoutId + date; fallback: qualquer agendamento do dia
+            const byWorkout = schedules.filter(sch =>
+              sch.studentId === sessionData.studentId &&
+              sch.date === targetDate &&
+              String(sch.workoutId) === String(sessionData.workoutId) &&
+              sch.status !== 'completed'
+            );
+            const byDate = schedules.filter(sch =>
+              sch.studentId === sessionData.studentId &&
+              sch.date === targetDate &&
+              sch.status !== 'completed'
+            );
+            // Marcar apenas o mais específico (por workoutId se existir, senão o primeiro do dia)
+            const toMark = byWorkout.length > 0 ? [byWorkout[0]] : (byDate.length > 0 ? [byDate[0]] : []);
+            for (const sch of toMark) {
+              sch.status = 'completed';
+              sch.completedSessionId = sessionData.id;
+              await db.put('schedules', sch);
             }
           } catch (err) {
             console.warn('Erro ao atualizar status na agenda:', err);
@@ -5599,12 +5843,27 @@ function renderStudentTutorial() {
           Basta clicar em <strong>Compartilhar &gt; Adicionar à Tela Inicial</strong> (no Safari/iPhone) ou usar o botão "App" no topo da tela (se disponível no Android).
         </p>
       </div>
+
+      <div style="padding-top:16px;text-align:center">
+        <button id="tutorialRestartBtn" class="portal-submit-btn" style="max-width:240px;margin:0 auto;background:transparent;border-color:rgba(255,255,255,0.2);color:var(--portal-text-muted);box-shadow:none;font-size:0.82rem;padding:10px 18px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+          Ver Tutorial Novamente
+        </button>
+      </div>
     </div>
   `;
 }
 
 function initStudentTutorial() {
-  // No specific interactivity needed yet
+  // Tutorial section page — botão para reiniciar tutorial popup
+  const restartBtn = document.getElementById('tutorialRestartBtn');
+  if (restartBtn) {
+    restartBtn.addEventListener('click', () => {
+      const sid = portalState.studentId;
+      if (sid) localStorage.removeItem(`portal_tutorial_done_${sid}`);
+      showTutorialPopup(sid);
+    });
+  }
 }
 
 // ── EMAIL LOGIN SCREEN ────────────────────────────────────────
