@@ -1371,7 +1371,6 @@ async function saveAssessment(tipo, d, navigateFn) {
       pctMuscFinal = Calc.pctMassaMuscular(smm0, peso);
     }
 
-    const rcq  = d.cintura&&d.quadril ? Calc.rcq(parseFloat(d.cintura),parseFloat(d.quadril)) : null;
 
     await db.add('assessments',{...base, peso, altura,
       imc:     imc?Math.round(imc*10)/10:null,
