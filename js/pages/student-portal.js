@@ -8,6 +8,7 @@ import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
 import { PAIN_REGIONS } from '../utils/alerts.js';
 import { generateAlgorithmicInsight } from '../insights.js';
+import { openModal, closeModal } from '../components/modal.js';
 
 const ICON_MOON   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
 const ICON_ZAP    = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
@@ -1331,10 +1332,15 @@ function renderTreinar(workouts, schedules, sessions = []) {
       </div>
       <div class="portal-suggested-name">${suggestedWorkout.name || 'Treino'}</div>
       <div class="portal-suggested-meta">${(suggestedWorkout.exercises||[]).length} exercícios</div>
-      <button class="portal-submit-btn" id="startSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin-top:12px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Iniciar Este Treino
-      </button>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <button class="portal-submit-btn" id="previewSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin:0;flex:1;min-width:130px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:0.82rem;padding:10px 14px">
+          Ver Exercícios
+        </button>
+        <button class="portal-submit-btn" id="startSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin:0;flex:1;min-width:130px;font-size:0.82rem;padding:10px 14px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Iniciar Treino
+        </button>
+      </div>
     </div>` : '';
 
   return `
