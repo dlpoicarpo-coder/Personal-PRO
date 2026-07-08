@@ -15,6 +15,26 @@ const isNumeric = (val) => {
   return !isNaN(str) && !isNaN(parseFloat(str));
 };
 
+// Helper para calcular e formatar a intensidade com a projeção em bpm (Fórmula Tanaka)
+function formatLoadWithBpm(ex, student, format = 'full') {
+  let loadStr = String(ex.load || '');
+  if (!loadStr) return '';
+  let suffix = (ex.loadType === 'bodyweight' || loadStr.includes('%') || ex.loadType === 'time') ? '' : 'kg';
+  
+  if (loadStr.includes('%') && student?.birthDate) {
+    const age = Calc.calcularIdade(student.birthDate);
+    const fcMax = Calc.fcMax(age);
+    const pct = parseInt(loadStr.match(/(\d+)%/)?.[1] || 0);
+    if (pct > 0) {
+      const bpm = Math.round(fcMax * (pct / 100));
+      return format === 'short' 
+        ? `${loadStr} <span style="font-size:0.85em;opacity:0.8">(${bpm}bpm)</span>`
+        : `${loadStr}${suffix} <span style="font-size:0.7em;opacity:0.8">(${bpm} bpm)</span>`;
+    }
+  }
+  return `${loadStr}${suffix}`;
+}
+
 // ── STATE ────────────────────────────────────────────────────
 const state = {
   session: null,
@@ -403,7 +423,7 @@ function renderLiveView(students) {
             <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
               <span>${exSets} séries</span>
               <span>${ex.reps || '12'} reps</span>
-              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${(isNumeric(ex.load) && ex.loadType !== 'time') ? ex.load + 'kg' : ex.load}</span>` : ''}
+              ${ex.load ? `<span style="color:var(--accent);font-weight:600">${formatLoadWithBpm(ex, st, 'short')}</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted)">1RM: ${ex.oneRM}kg</span>` : ''}
               ${COMBINED_METHODS?.has(ex.method)
                 ? `<span style="color:var(--warning);font-weight:600;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg> sem descanso</span>`

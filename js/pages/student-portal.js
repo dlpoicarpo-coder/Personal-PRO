@@ -13,6 +13,26 @@ import { openModal, closeModal } from '../components/modal.js';
 const ICON_MOON   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
 const ICON_ZAP    = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
 const ICON_BRAIN  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2zM14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"/></svg>`;
+
+// Helper para calcular e formatar a intensidade com a projeção em bpm (Fórmula Tanaka)
+function formatLoadWithBpm(ex, student, format = 'full') {
+  let loadStr = String(ex.load || '');
+  if (!loadStr) return '';
+  let suffix = (ex.loadType === 'bodyweight' || loadStr.includes('%') || ex.loadType === 'time') ? '' : 'kg';
+  
+  if (loadStr.includes('%') && student?.birthDate) {
+    const age = Calc.calcularIdade(student.birthDate);
+    const fcMax = Calc.fcMax(age);
+    const pct = parseInt(loadStr.match(/(\d+)%/)?.[1] || 0);
+    if (pct > 0) {
+      const bpm = Math.round(fcMax * (pct / 100));
+      return format === 'short' 
+        ? `${loadStr} <span style="font-size:0.85em;opacity:0.8">(${bpm}bpm)</span>`
+        : `${loadStr}${suffix} <span style="font-size:0.7em;opacity:0.8">(${bpm} bpm)</span>`;
+    }
+  }
+  return `${loadStr}${suffix}`;
+}
 const ICON_PAIN   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
 const ICON_FIRE   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>`;
 const ICON_DROP   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>`;
@@ -2364,7 +2384,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                 <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
                 <div style="flex:1;min-width:0">
                   <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
-                  <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+ex.load+'kg':''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
+                  <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+formatLoadWithBpm(ex, portalState.student, 'short'):''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
@@ -2467,7 +2487,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             <div class="portal-ex-num">${ei+1}</div>
             <div style="flex:1;min-width:0">
               <div class="portal-ex-name">${ex.name}</div>
-              <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${ex.load}kg`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
+              <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${formatLoadWithBpm(ex, portalState.student)}`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
               ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
               ${(() => {
                 const CARDIO = {
@@ -3677,8 +3697,8 @@ async function showExerciseModal(ex) {
           <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Reps</div>
         </div>` : ''}
         ${ex.load ? `<div style="background:rgba(249,115,22,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:800;color:#f97316">${ex.load}${ex.loadType!=='bodyweight'?'kg':'%'}</div>
-          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">${loadTypeLabel}</div>
+          <div style="font-size:1.1rem;font-weight:800;color:#f97316">${formatLoadWithBpm(ex, portalState.student)}</div>
+          <div style="font-size:0.68rem;color:#ea580c;margin-top:2px">${loadTypeLabel}</div>
         </div>` : ''}
         ${ex.rest ? `<div style="background:rgba(6,182,212,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
           <div style="font-size:1.1rem;font-weight:800;color:#06b6d4">${ex.rest}s</div>

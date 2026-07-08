@@ -852,7 +852,7 @@ export function rebuildMethodSeriesPanel(row, index, preserveExisting = true) {
         <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
         <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
         <div>
-          <input type="number" step="0.5" value="${loadVal}" placeholder="${isTime?'km/h':'kg'}"
+          <input type="${isTime?'text':'number'}" ${isTime?'':'step="0.5"'} value="${loadVal}" placeholder="${isTime?'vel, lvl, %':'kg'}"
             class="form-input serie-load" data-serie="${si}" data-index="${index}"
             style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${loadVal?`color:var(--primary)`:''}"/>
         </div>
@@ -954,7 +954,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
           <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
           <div>
-            <input type="number" step="0.5" value="${loadVal}" placeholder="${isTime?'km/h':'kg'}"
+            <input type="${isTime?'text':'number'}" ${isTime?'':'step="0.5"'} value="${loadVal}" placeholder="${isTime?'vel, lvl, %':'kg'}"
               class="form-input serie-load" data-serie="${si}" data-index="${index}"
               style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${loadVal?`color:var(--primary)`:''}"/>
           </div>
@@ -1052,7 +1052,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           ${isTime ? 'Intensidade' : isBW ? 'Extra (kg)' : 'Carga (kg)'}
         </label>
         <input class="form-input" name="ex_load_${index}" value="${ex.load||''}"
-          placeholder="${isTime ? 'km/h/W' : isBW ? '+kg' : 'kg'}"
+          placeholder="${isTime ? 'vel, lvl, %' : isBW ? '+kg' : 'kg'}"
           style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>

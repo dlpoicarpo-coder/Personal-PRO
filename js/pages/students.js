@@ -282,13 +282,14 @@ async function viewStudentHTML(student) {
     </div>
 
     <!-- Stats rápidas -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(65px, 1fr));gap:8px;margin-bottom:20px">
       ${[
         { label: 'Idade', value: age !== '-' ? age + ' anos' : '-' },
+        { label: 'FC Max', value: age !== '-' ? Calc.fcMax(age) + ' bpm' : '-' },
         { label: 'Sessões', value: String(sessions.length) },
-        { label: 'Volume Total', value: totalVol > 0 ? (totalVol/1000).toFixed(1) + 't' : '-' },
+        { label: 'Volume', value: totalVol > 0 ? (totalVol/1000).toFixed(1) + 't' : '-' },
         { label: 'PSE Médio', value: String(avgPse) },
-      ].map(s => `<div style="text-align:center;padding:10px 8px;background:var(--bg-page);border-radius:8px">
+      ].map(s => `<div style="text-align:center;padding:10px 4px;background:var(--bg-page);border-radius:8px">
         <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">${s.label}</div>
         <div style="font-size:1.2rem;font-weight:700;color:var(--primary);margin-top:2px">${s.value}</div>
       </div>`).join('')}
