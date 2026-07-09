@@ -74,6 +74,47 @@ export async function renderDashboard() {
     .filter(m => m.daysLeft <= 7)
     .sort((a, b) => a.daysLeft - b.daysLeft);
 
+  // 4. Radar de Ajustes (Lembretes)
+  const adjustmentAlerts = [];
+  
+  // A. Gatilho de PSE
+  const recentDays = 7;
+  const recentMs = recentDays * 86400000;
+  completedSessions.forEach(s => {
+    if (now.getTime() - new Date(s.date).getTime() < recentMs) {
+      if (s.postBiofeedback && s.postBiofeedback.pse) {
+        const pse = parseInt(s.postBiofeedback.pse);
+        if (pse > 9) {
+          const st = students.find(x => x.id === s.studentId);
+          if (st) adjustmentAlerts.push({ type: 'pse_high', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Reduzir volume ou carga.` });
+        } else if (pse < 5) {
+          const st = students.find(x => x.id === s.studentId);
+          if (st) adjustmentAlerts.push({ type: 'pse_low', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Aumentar intensidade.` });
+        }
+      }
+    }
+  });
+
+  // B. Gatilho de Macrociclo (Troca de Fase)
+  macrocycles.forEach(m => {
+    if (m.status === 'active' && m.startDate) {
+      const startMs = new Date(m.startDate + 'T12:00:00').getTime();
+      const diffMs = now.getTime() - startMs;
+      const currentWeek = Math.floor(diffMs / (7 * 86400000)) + 1;
+      const daysIntoWeek = Math.floor((diffMs % (7 * 86400000)) / 86400000);
+      
+      if (currentWeek > 1 && currentWeek <= m.totalWeeks && daysIntoWeek <= 2) {
+        const st = students.find(x => x.id === m.studentId);
+        if (st) adjustmentAlerts.push({ 
+          type: 'macro_phase', 
+          student: st, 
+          text: `${st.name.split(' ')[0]} entrou na Semana ${currentWeek} do macrociclo. Avalie a necessidade de ajuste de cargas.` 
+        });
+      }
+    }
+  });
+
+
   return `
     <div class="page-header">
       <div>
@@ -201,6 +242,28 @@ export async function renderDashboard() {
         </div>
       </div>
 
+    </div>
+
+    <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Radar de Ajustes (Carga e Volume)</h3>
+    <div class="card mb-lg" style="padding: 16px;">
+      <div class="flex flex-col gap-xs">
+        ${adjustmentAlerts.length > 0 ? adjustmentAlerts.map(a => {
+          const color = a.type === 'pse_high' ? 'var(--danger)' : a.type === 'pse_low' ? 'var(--warning)' : 'var(--primary)';
+          const iconPath = a.type.startsWith('pse') ? 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' : 'M12 20v-6M6 20V10M18 20V4';
+          return `
+            <div class="flex items-center gap-sm" style="padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+              <div class="avatar avatar-sm" style="width: 36px; height: 36px; font-size: 1rem; background: ${color}15; color: ${color};">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${iconPath}"/></svg>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.95rem; font-weight: 500;">${a.text}</div>
+                <div class="text-muted text-xs">${a.type.startsWith('pse') ? 'Feedback de Treino' : 'Avanço de Macrociclo'}</div>
+              </div>
+              <a href="#/treinos" class="btn btn-ghost btn-sm" style="color: var(--primary);">Revisar</a>
+            </div>
+          `;
+        }).join('') : '<p class="text-muted text-sm text-center" style="padding: 20px 0;">Nenhum ajuste pendente identificado no momento.</p>'}
+      </div>
     </div>
 
     <div class="grid-2">

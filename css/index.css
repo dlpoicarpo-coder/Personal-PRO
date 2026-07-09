@@ -64,6 +64,7 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.15);
+  --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
 
   /* Sidebar */
   --sidebar-width: 260px;
@@ -210,11 +211,11 @@ h4 {
 /* --- Cards --- */
 .card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-card);
   transition: all var(--transition-normal);
 }
 
@@ -251,11 +252,12 @@ h4 {
 
 .stat-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border: none;
+  border-radius: var(--radius-xl);
   padding: var(--space-lg);
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
   transition: all var(--transition-normal);
 }
 
@@ -1177,7 +1179,7 @@ h4 {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f1f5f9;
-  --bg-card: rgba(0, 0, 0, 0.02);
+  --bg-card: #ffffff;
   --bg-card-hover: rgba(0, 0, 0, 0.04);
   --bg-glass: rgba(255, 255, 255, 0.9);
   --border-color: rgba(0, 0, 0, 0.08);
@@ -1195,6 +1197,7 @@ h4 {
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
   --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.08);
+  --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="light"] body {

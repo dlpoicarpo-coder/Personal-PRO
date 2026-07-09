@@ -34,7 +34,7 @@
   --portal-bg-1: #f0f4f8;
   --portal-bg-2: #e8eff7;
   --portal-bg-3: #f5f8fc;
-  --portal-surface: rgba(255,255,255,0.75);
+  --portal-surface: #ffffff;
   --portal-surface-hover: rgba(255,255,255,0.9);
   --portal-border: rgba(0,0,0,0.08);
   --portal-text: #1e293b;
@@ -72,11 +72,11 @@
   background: var(--portal-surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--portal-border);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+  border: none;
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15);
   transition: background 0.3s, border-color 0.3s;
 }
 
