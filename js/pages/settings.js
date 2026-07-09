@@ -67,12 +67,12 @@ export async function renderSettings() {
             </div>
             <p class="text-xs text-muted" style="margin-top:8px">Se desmarcados, os campos não aparecerão para o aluno durante o Live Tracker.</p>
           </div>
-          <div class="form-group" style="border:1px solid rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.05); padding:12px; border-radius:8px; margin-top:16px;">
-            <label style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--accent)">
-              ✨ Integração de IA (Gemini)
+          <div class="form-group" style="border:1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); padding:12px; border-radius:8px; margin-top:16px;">
+            <label style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--primary)">
+              💳 Chave PIX Padrão
             </label>
-            <p class="text-xs text-muted mb-md">Insira sua chave de API do Google Gemini para habilitar a geração de insights avançados na tela de relatórios e portal do aluno.</p>
-            <input class="form-input" type="password" name="geminiApiKey" value="${settings.geminiApiKey || ''}" placeholder="AIzaSy..." />
+            <p class="text-xs text-muted mb-md">Insira sua chave PIX para utilizá-la em mensagens automáticas de cobrança enviadas via WhatsApp.</p>
+            <input class="form-input" type="text" name="pixKey" value="${settings.pixKey || ''}" placeholder="Sua Chave PIX (CPF, E-mail, Telefone...)" />
           </div>
           <button type="submit" class="btn btn-primary mt-md" style="width:100%">Salvar Perfil</button>
         </form>

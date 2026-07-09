@@ -257,7 +257,6 @@ export async function renderTracker() {
             const obsTitle  = allObs.join(' | ');
             return `<tr>
         <td style="white-space:nowrap;display:flex;align-items:center;gap:6px">
-          <span class="badge badge-success">Concluído</span>
           ${st?.name || '?'}
         </td>
         <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.workoutName||''}">${s.workoutName || '-'}</td>
@@ -2496,7 +2495,6 @@ function openFullHistoryModal(students, allSessions, allBiofeedback, navigateFn)
 
       return `<tr>
         <td style="white-space:nowrap;display:flex;align-items:center;gap:6px">
-          <span class="badge badge-success">Concluído</span>
           ${st?.name || '?'}
         </td>
         <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.workoutName||''}">${s.workoutName || '-'}</td>

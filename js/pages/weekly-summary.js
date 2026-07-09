@@ -26,11 +26,18 @@ export async function renderWeeklySummary() {
     const sCompleted = sSessions.filter(s => s.status === 'completed');
     const sMissed = sSessions.filter(s => s.status === 'missed');
     const sVol = sCompleted.reduce((acc, curr) => acc + (curr.totalVolume || 0), 0);
+    const sDurSec = sCompleted.reduce((acc, curr) => acc + (curr.totalDuration || 0), 0);
+    const sDurMin = sDurSec / 60;
+    const density = sDurMin > 0 ? (sVol / sDurMin) : 0; // kg/min
+    const kcal = sDurMin * 6; // Estimativa de 6 kcal por minuto de treino resistido
+
     return {
       ...st,
       completedCount: sCompleted.length,
       missedCount: sMissed.length,
-      volume: sVol
+      volume: sVol,
+      density: density,
+      kcal: kcal
     };
   }).sort((a,b) => b.completedCount - a.completedCount);
 
@@ -96,17 +103,21 @@ export async function renderWeeklySummary() {
                   <th style="padding:12px 16px">Aluno</th>
                   <th style="text-align:center">Concluídas</th>
                   <th style="text-align:center">Faltas</th>
-                  <th style="text-align:right; padding-right:16px">Volume (15d)</th>
+                  <th style="text-align:right">Volume (15d)</th>
+                  <th style="text-align:right">Gasto Calórico</th>
+                  <th style="text-align:right; padding-right:16px">Densidade</th>
                 </tr>
               </thead>
               <tbody>
-                ${studentMetrics.length === 0 ? '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Nenhum aluno ativo.</td></tr>' : ''}
+                ${studentMetrics.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">Nenhum aluno ativo.</td></tr>' : ''}
                 ${studentMetrics.map(s => `
                   <tr>
                     <td style="padding:12px 16px; font-weight:600">${s.name}</td>
                     <td style="text-align:center; color:var(--success)">${s.completedCount}</td>
                     <td style="text-align:center; color:${s.missedCount > 0 ? 'var(--danger)' : 'var(--text-muted)'}">${s.missedCount}</td>
-                    <td style="text-align:right; padding-right:16px; color:var(--text-muted)">${s.volume ? (s.volume/1000).toFixed(1)+'t' : '-'}</td>
+                    <td style="text-align:right; color:var(--text-muted)">${s.volume ? (s.volume/1000).toFixed(1)+'t' : '-'}</td>
+                    <td style="text-align:right; color:var(--warning)">${s.kcal ? Math.round(s.kcal) + ' kcal' : '-'}</td>
+                    <td style="text-align:right; padding-right:16px; color:var(--accent)">${s.density ? Math.round(s.density) + ' kg/min' : '-'}</td>
                   </tr>
                 `).join('')}
               </tbody>
