@@ -213,7 +213,9 @@ export async function renderStudentPortal(rawParam) {
 
   // Token validado: injetar no cliente Supabase global (para o db.js)
   if (window.supabase) {
-    window.supabase = window.supabase.createClient('https://vbxedlloesvjpqzunqyv.supabase.co', 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E', {
+    // Importamos dinamicamente para evitar problemas de dependência circular ou sujeira global no início do arquivo
+    const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
+    window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       global: { headers: { 'x-student-token': token } }
     });
   }

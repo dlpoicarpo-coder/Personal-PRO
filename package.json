@@ -1,0 +1,7 @@
+{
+  "name": "personal-pro",
+  "version": "2.2.0",
+  "scripts": {
+    "build": "node build.js"
+  }
+}

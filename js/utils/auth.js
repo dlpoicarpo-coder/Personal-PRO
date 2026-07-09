@@ -4,8 +4,7 @@
 // Multi-tenant: each trainer has isolated data
 // ========================================
 
-const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 
 // Singleton client — reuse across modules
 let _client = null;
