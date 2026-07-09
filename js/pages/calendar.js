@@ -109,7 +109,7 @@ async function buildCalendarHTML() {
         </div>
       </div>`;
     })()}
-    <div class="grid-2">
+    <div style="display: grid; grid-template-columns: minmax(340px, 1.4fr) minmax(280px, 1fr); gap: var(--space-lg); align-items: start;">
       <div class="card">
         <div class="card-header">
           <button class="btn btn-ghost btn-sm" id="prevMonth">← </button>
@@ -140,9 +140,9 @@ async function buildCalendarHTML() {
         </div>
       </div>
 
-      <div class="card" id="dayEventsCard">
+      <div class="card" id="dayEventsCard" style="display: flex; flex-direction: column; max-height: 520px;">
         <div class="card-header"><span class="card-title" id="dayTitle">Hoje — ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
-        <div id="dayEventsList">${renderDayEvents(todayEvents, students, statusColors, statusLabels)}</div>
+        <div id="dayEventsList" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">${renderDayEvents(todayEvents, students, statusColors, statusLabels)}</div>
       </div>
     </div>
 

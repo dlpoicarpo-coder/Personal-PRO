@@ -249,11 +249,13 @@ export async function renderDashboard() {
       <div class="flex flex-col gap-xs">
         ${adjustmentAlerts.length > 0 ? adjustmentAlerts.map(a => {
           const color = a.type === 'pse_high' ? 'var(--danger)' : a.type === 'pse_low' ? 'var(--warning)' : 'var(--primary)';
-          const iconPath = a.type.startsWith('pse') ? 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' : 'M12 20v-6M6 20V10M18 20V4';
+          const iconSvg = a.type.startsWith('pse') 
+            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
           return `
             <div class="flex items-center gap-sm" style="padding: 12px 0; border-bottom: 1px solid var(--border-color);">
               <div class="avatar avatar-sm" style="width: 36px; height: 36px; font-size: 1rem; background: ${color}15; color: ${color};">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${iconPath}"/></svg>
+                ${iconSvg}
               </div>
               <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 0.95rem; font-weight: 500;">${a.text}</div>
