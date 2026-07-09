@@ -4558,77 +4558,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
 
     ${exHtml}
 
-    <!-- Evolução Analítica -->
-    <div class="glass-card" style="border:1px solid rgba(139, 92, 246, 0.4); position: relative; overflow: hidden; margin-bottom:12px">
-      <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.05; user-select: none;">✨</div>
-      <div class="portal-card-label" style="color:var(--accent)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        Sua Evolução Analítica (Últimas 4 semanas)
-      </div>
-      <p style="font-size:0.85rem; line-height:1.6; color:var(--portal-text); margin: 8px 0 0;">
-        ${generateAlgorithmicInsight(student, completed, bf, 28).text}
-      </p>
-    </div>
-
-    <div class="glass-card portal-feed-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Resumo do seu Desempenho</div>
-      <p style="font-size:0.82rem;line-height:1.7;color:var(--portal-text-secondary);margin-top:8px">${feedTxt}</p>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Evolucao do Bem-estar</div>
-      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Sono (roxo) &middot; TQR (verde) &middot; Estresse (amarelo) &middot; Dor (verm.) &middot; Motiv. (azul) &middot; Alim. (laranja)</p>
-      <div style="height:200px;position:relative"><canvas id="portalWellnessChart"></canvas></div>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">PSE por Sessao</div>
-      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Zona ideal: 6-8. Acima de 8 por 3+ sessoes = atencao a fadiga.</p>
-      <div style="height:180px;position:relative"><canvas id="portalPseChart"></canvas></div>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Volume por Sessao (kg)</div>
-      <div style="height:180px;position:relative"><canvas id="portalVolChart"></canvas></div>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Carga de Treino Semanal (PSE x min)</div>
-      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Aumentos graduais de ~10%/semana sao ideais.</p>
-      <div style="height:180px;position:relative"><canvas id="portalLoadChart"></canvas></div>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Gasto Calorico nas Sessoes (kcal)</div>
-      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Estimativa com MET de musculacao x peso x duracao.</p>
-      <div style="height:180px;position:relative"><canvas id="portalKcalChart"></canvas></div>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Densidade de Treino (kg/min)</div>
-      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Volume levantado por minuto de treino.</p>
-      <div style="height:180px;position:relative"><canvas id="portalDensityChart"></canvas></div>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Frequencia Semanal (ultimas 8 semanas)</div>
-      <div style="height:160px;position:relative"><canvas id="portalFreqChart"></canvas></div>
-    </div>
-
-    <div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Radar de Wellness</div>
-      <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Media dos ultimos 5 check-ins. Quanto maior, melhor.</p>
-      <div style="height:220px;position:relative"><canvas id="portalRadarChart"></canvas></div>
-    </div>
-
     ${compareSessionsHtml}
-
-    ${exerciseProgressionChartHtml}
-
-    ${compAss.length>=1?`<div class="glass-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Evolução da Composição Corporal</div>
-      <div style="height:200px;position:relative"><canvas id="portalMeasuresChart"></canvas></div>
-    </div>`:''}
 
     ${completed.length===0?`<div class="portal-empty">Realize sessoes de treino para ver os graficos de evolucao.</div>`:''}
   </div>`;
