@@ -4531,17 +4531,27 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
       </select>
     </div>
 
-    <div class="portal-stats-row" style="grid-template-columns:repeat(2,1fr)">
-      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:var(--portal-primary)">${completed.length}</div><div class="portal-stat-lbl">Sessoes</div></div>
-      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:var(--portal-accent)">${avgPse}</div><div class="portal-stat-lbl">PSE Medio</div></div>
-    </div>
-    <div class="portal-stats-row" style="grid-template-columns:repeat(2,1fr)">
-      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#10b981;font-size:1.1rem">${(totalVol/1000).toFixed(1)}t</div><div class="portal-stat-lbl">Volume Total</div></div>
-      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#f59e0b;font-size:1.1rem">${avgDurMin}min</div><div class="portal-stat-lbl">Duracao Media</div></div>
-    </div>
-    <div class="portal-stats-row" style="grid-template-columns:repeat(2,1fr)">
-      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#6366f1;font-size:1.1rem">${avgVolPerSess.toLocaleString('pt-BR')}kg</div><div class="portal-stat-lbl">Vol/Sessao</div></div>
-      <div class="portal-stat-card glass-card"><div class="portal-stat-val" style="color:#06b6d4;font-size:1.1rem">${sessionsMonth}</div><div class="portal-stat-lbl">Treinos/mes</div></div>
+    <div style="display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; scroll-snap-type: x mandatory;">
+      <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Sessões</div>
+        <div style="font-size:1.6rem; font-weight:800; color:var(--portal-primary)">${completed.length}</div>
+      </div>
+      <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Volume Total</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#10b981">${(totalVol/1000).toFixed(1)}t</div>
+      </div>
+      <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Vol/Sessão</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#6366f1">${avgVolPerSess.toLocaleString('pt-BR')}kg</div>
+      </div>
+      <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Duração</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#f59e0b">${avgDurMin}min</div>
+      </div>
+      <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Treinos/Mês</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#06b6d4">${sessionsMonth}</div>
+      </div>
     </div>
 
     ${caloricHtml}
