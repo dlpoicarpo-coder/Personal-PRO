@@ -87,7 +87,7 @@ export async function renderWeeklySummary() {
       <!-- Coluna 1 -->
       <div class="flex flex-col gap-lg">
         <div class="card">
-          <div class="card-header"><span class="card-title" style="color:var(--primary)">🏆 Alunos em Destaque</span></div>
+          <div class="card-header"><span class="card-title" style="color:var(--primary)">Alunos em Destaque</span></div>
           ${topStudents.length === 0 ? '<p class="text-muted text-sm" style="padding:16px 0">Nenhum treino registrado ainda nesta semana.</p>' : ''}
           <div class="flex flex-col gap-sm">
             ${topStudents.map(s => `
@@ -103,7 +103,7 @@ export async function renderWeeklySummary() {
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title" style="color:var(--warning)">💰 Financeiro da Semana</span></div>
+          <div class="card-header"><span class="card-title" style="color:var(--warning)">Financeiro da Semana</span></div>
           ${wkFinance.length === 0 ? '<p class="text-muted text-sm" style="padding:16px 0">Nenhuma cobrança pendente para esta semana.</p>' : ''}
           <div class="flex flex-col gap-sm">
             ${wkFinance.map(f => {
@@ -124,7 +124,7 @@ export async function renderWeeklySummary() {
       <!-- Coluna 2 -->
       <div class="flex flex-col gap-lg">
         <div class="card">
-          <div class="card-header"><span class="card-title" style="color:var(--accent)">🎂 Aniversariantes</span></div>
+          <div class="card-header"><span class="card-title" style="color:var(--accent)">Aniversariantes</span></div>
           ${bdays.length === 0 ? '<p class="text-muted text-sm" style="padding:16px 0">Nenhum aniversariante nesta semana.</p>' : ''}
           <div class="flex flex-col gap-sm">
             ${bdays.map(s => {
@@ -136,14 +136,14 @@ export async function renderWeeklySummary() {
                   <div style="font-weight:600">${s.name}</div>
                   <div class="text-xs text-muted">${Calc.calcularIdade(s.birthDate)} anos</div>
                 </div>
-                ${s.phone ? `<button class="btn btn-ghost btn-sm" onclick="window.open('https://wa.me/55${s.phone.replace(/\\D/g,'')}?text=Parabéns%20${encodeURIComponent(s.name.split(' ')[0])}!%20Feliz%20aniversário!%20🎉🥳','_blank')" style="color:#25d366">Dar Parabéns</button>` : ''}
+                ${s.phone ? `<button class="btn btn-ghost btn-sm" onclick="window.open('https://wa.me/55${s.phone.replace(/\\D/g,'')}?text=Parabéns%20${encodeURIComponent(s.name.split(' ')[0])}!%20Feliz%20aniversário!','_blank')" style="color:#25d366">Dar Parabéns</button>` : ''}
               </div>
             `}).join('')}
           </div>
         </div>
         
         <div class="card">
-          <div class="card-header"><span class="card-title" style="color:var(--danger)">⚠️ Atenção: Faltas</span></div>
+          <div class="card-header"><span class="card-title" style="color:var(--danger)">Atenção: Faltas</span></div>
           ${missed.length === 0 ? '<p class="text-muted text-sm" style="padding:16px 0">Nenhuma falta registrada nesta semana. Excelente!</p>' : ''}
           <div class="flex flex-col gap-sm">
             ${missed.map(m => {

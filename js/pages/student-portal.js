@@ -2467,6 +2467,16 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     });
   });
 
+  // Preview suggested workout
+  document.getElementById('previewSuggestedBtn')?.addEventListener('click', (e) => {
+    const wid = e.currentTarget.dataset.wid;
+    const matchCard = document.querySelector(`.portal-workout-pick-item[data-wid="${wid}"]`);
+    if (matchCard) {
+      matchCard.scrollIntoView({behavior: 'smooth', block: 'center'});
+      matchCard.click();
+    }
+  });
+
   // Start suggested workout
   document.getElementById('startSuggestedBtn')?.addEventListener('click', (e) => {
     const wid = e.currentTarget.dataset.wid;
@@ -5138,7 +5148,7 @@ const MOTIVACAO_OPTIONS = [
 function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
   return `
     <input type="hidden" name="${name}" id="portal_${name}" value="${currentValue}" />
-    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px;" id="inline_scale_${name}">
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="inline_scale_${name}">
       ${options.map(opt => {
         const isActive = String(currentValue) === String(opt.value);
         return `
