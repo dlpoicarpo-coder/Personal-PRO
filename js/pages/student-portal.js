@@ -205,14 +205,20 @@ export async function renderStudentPortal(rawParam) {
   // PIN auth
   const sessionKey = `portal_auth_${studentId}`;
   const token = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
-  const isAuth = !!token;
+  
+  // Trainer bypass
+  const { getCurrentUser } = await import('../utils/auth.js');
+  const trainerUser = await getCurrentUser();
+  const isTrainerAuth = !!trainerUser;
+  
+  const isAuth = !!token || isTrainerAuth;
 
   if (!isAuth) {
     return renderPINScreen(null, studentId, trainerId);
   }
 
-  // Token validado: injetar no cliente Supabase global (para o db.js)
-  if (window.supabase) {
+  // Token validado: injetar no cliente Supabase global APENAS se não for o treinador (pois o treinador já tem RLS aberto)
+  if (window.supabase && !isTrainerAuth) {
     // Importamos dinamicamente para evitar problemas de dependência circular ou sujeira global no início do arquivo
     const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
     const { setPortalClient } = await import('../utils/auth.js');
