@@ -6,7 +6,7 @@
 
 -- 1. Table to track wrong PIN attempts (Rate Limiting)
 CREATE TABLE IF NOT EXISTS public.student_pin_attempts (
-    student_id uuid PRIMARY KEY REFERENCES public.students(id) ON DELETE CASCADE,
+    student_id text PRIMARY KEY REFERENCES public.students(id) ON DELETE CASCADE,
     attempts int DEFAULT 0,
     last_attempt timestamptz DEFAULT now()
 );
@@ -14,13 +14,13 @@ CREATE TABLE IF NOT EXISTS public.student_pin_attempts (
 -- 2. Table to store valid student sessions
 CREATE TABLE IF NOT EXISTS public.student_sessions (
     token uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id uuid REFERENCES public.students(id) ON DELETE CASCADE,
+    student_id text REFERENCES public.students(id) ON DELETE CASCADE,
     created_at timestamptz DEFAULT now(),
     expires_at timestamptz DEFAULT now() + interval '7 days'
 );
 
 -- 3. Security Definer RPC to Verify PIN without exposing 'portalPin'
-CREATE OR REPLACE FUNCTION public.verify_student_pin(p_student_id uuid, p_pin text)
+CREATE OR REPLACE FUNCTION public.verify_student_pin(p_student_id text, p_pin text)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -79,7 +79,7 @@ $$;
 
 -- 4. Helper function to read the 'x-student-token' header sent by Supabase JS Client
 CREATE OR REPLACE FUNCTION public.get_active_student_id() 
-RETURNS uuid
+RETURNS text
 LANGUAGE sql
 STABLE
 AS $$
