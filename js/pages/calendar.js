@@ -140,9 +140,9 @@ async function buildCalendarHTML() {
         </div>
       </div>
 
-      <div class="card" id="dayEventsCard" style="display: flex; flex-direction: column; max-height: 520px;">
+      <div class="card" id="dayEventsCard">
         <div class="card-header"><span class="card-title" id="dayTitle">Hoje — ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
-        <div id="dayEventsList" style="flex: 1; overflow-y: auto; padding-right: 8px; margin-right: -8px;">${renderDayEvents(todayEvents, students, statusColors, statusLabels)}</div>
+        <div id="dayEventsList">${renderDayEvents(todayEvents, students, statusColors, statusLabels)}</div>
       </div>
     </div>
 
@@ -161,7 +161,7 @@ async function buildCalendarHTML() {
           .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
           .slice(0, 20);
         if (!upcoming.length) return '<p class="text-muted text-center" style="padding:20px">Nenhuma sessão futura agendada</p>';
-        return `<div class="table-container"><table class="data-table"><thead>
+        return `<div class="table-container" style="max-height: 400px; overflow-y: auto; border-radius: var(--radius-md);"><table class="data-table"><thead>
           <tr><th>Data</th><th>Hora</th><th>Aluno</th><th>Treino</th><th>Dur.</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>${upcoming.map(ev => {
