@@ -199,27 +199,45 @@ export async function renderStudentPortal(rawParam) {
   const params = new URLSearchParams(query || '');
   let trainerId = params.get('t') || '';
 
-  const student = await db.get('students', studentId).catch(() => null);
-  if (student && !trainerId) {
-    trainerId = student.trainerId || student.trainer_id || '';
-  }
-
   portalState.studentId = studentId;
   portalState.trainerId = trainerId;
-  db.studentPortalTrainerId = trainerId;
-
-  // If name loaded from DB, save it for PWA/offline use
-  if (student?.name) {
-    localStorage.setItem(`portal_name_${studentId}`, student.name);
-    localStorage.setItem(`portal_logged_student_id`, studentId);
-  }
 
   // PIN auth
   const sessionKey = `portal_auth_${studentId}`;
-  const isAuth = sessionStorage.getItem(sessionKey) === 'ok' || localStorage.getItem(sessionKey) === 'ok';
+  const token = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
+  const isAuth = !!token;
 
   if (!isAuth) {
-    return renderPINScreen(student, studentId, trainerId);
+    return renderPINScreen(null, studentId, trainerId);
+  }
+
+  // Token validado: injetar no cliente Supabase global (para o db.js)
+  if (window.supabase) {
+    window.supabase = window.supabase.createClient('https://vbxedlloesvjpqzunqyv.supabase.co', 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E', {
+      global: { headers: { 'x-student-token': token } }
+    });
+  }
+
+  // Agora podemos buscar o student com segurança (RLS validará o token)
+  const student = await db.get('students', studentId).catch(() => null);
+  if (!student) {
+    // Token inválido/expirado
+    localStorage.removeItem(sessionKey);
+    sessionStorage.removeItem(sessionKey);
+    return renderPINScreen(null, studentId, trainerId);
+  }
+
+  // Atualiza trainerId se veio do banco
+  if (student.trainerId || student.trainer_id) {
+    trainerId = student.trainerId || student.trainer_id;
+    portalState.trainerId = trainerId;
+    db.studentPortalTrainerId = trainerId;
+  }
+
+  // PWA offline info
+  if (student.name) {
+    localStorage.setItem(`portal_name_${studentId}`, student.name);
+    localStorage.setItem(`portal_logged_student_id`, studentId);
   }
 
   portalState.student = student;
@@ -418,16 +436,16 @@ function showTutorialPopup(studentId) {
 
 // ── PIN SCREEN ─────────────────────────────────────────────────
 function renderPINScreen(student, studentId, trainerId) {
-  const name = student?.name || 'Aluno';
-  const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   return `
     <div class="portal-root" data-sid="${studentId}" data-tid="${trainerId}" data-theme="${getPortalTheme()}">
       <div class="portal-pin-screen">
         <div class="portal-pin-card">
           <div class="portal-logo">Personal<strong>PRO</strong></div>
-          <div class="portal-avatar-big">${initials}</div>
-          <h2 class="portal-pin-name">${name}</h2>
-          <p class="portal-pin-sub">Digite seu PIN de acesso</p>
+          <div class="portal-avatar-big" style="background:rgba(16,185,129,0.1);color:var(--portal-primary)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          </div>
+          <h2 class="portal-pin-name">Acesso ao Portal</h2>
+          <p class="portal-pin-sub">Digite seu PIN de segurança</p>
 
           <form id="portalPinForm" autocomplete="off">
             <div class="portal-pin-dots" id="pinDots">
@@ -461,9 +479,57 @@ function initPINHandlers() {
   const root = document.querySelector('.portal-root');
   const sid = root?.dataset.sid;
   let pin = '';
+  let isLoading = false;
+
+  const verifyPin = async () => {
+    if (isLoading) return;
+    isLoading = true;
+    const errorEl = document.getElementById('pinError');
+    const dots = document.querySelectorAll('.pin-dot');
+    errorEl.style.display = 'none';
+
+    try {
+      if (!window.supabase) throw new Error('Serviço indisponível no momento.');
+      
+      const { data, error } = await window.supabase.rpc('verify_student_pin', {
+        p_student_id: sid,
+        p_pin: pin
+      });
+
+      if (error || !data || !data.success) {
+        throw new Error(error?.message || data?.error || 'PIN incorreto.');
+      }
+
+      const token = data.token;
+      const rememberMe = document.getElementById('rememberLoginCheck')?.checked;
+      
+      if (rememberMe) {
+        localStorage.setItem(`portal_auth_${sid}`, token);
+      } else {
+        localStorage.removeItem(`portal_auth_${sid}`);
+      }
+      sessionStorage.setItem(`portal_auth_${sid}`, token);
+
+      // Force reload to bypass any memory cache and re-render safely
+      window.location.reload();
+
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = 'block';
+      dots.forEach(d => d.classList.add('pin-dot-error'));
+      
+      setTimeout(() => {
+        pin = '';
+        updateDots(pin);
+        dots.forEach(d => d.classList.remove('pin-dot-error', 'pin-dot-filled'));
+        isLoading = false;
+      }, 1500);
+    }
+  };
 
   document.querySelectorAll('.keypad-btn:not(.keypad-empty)').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', () => {
+      if (isLoading) return;
       const k = btn.dataset.key;
       if (k === '⌫') {
         pin = pin.slice(0, -1);
@@ -473,29 +539,7 @@ function initPINHandlers() {
       updateDots(pin);
 
       if (pin.length === 4) {
-        const student = await db.get('students', sid).catch(() => null);
-        const correctPin = student?.portalPin || '1234';
-        if (pin === String(correctPin)) {
-          const rememberMe = document.getElementById('rememberLoginCheck')?.checked;
-          if (rememberMe) {
-            localStorage.setItem(`portal_auth_${sid}`, 'ok');
-          } else {
-            localStorage.removeItem(`portal_auth_${sid}`);
-          }
-          sessionStorage.setItem(`portal_auth_${sid}`, 'ok');
-          // Save student name so PWA/header shows it immediately
-          if (student?.name) localStorage.setItem(`portal_name_${sid}`, student.name);
-          window.location.reload();
-        } else {
-          document.getElementById('pinError').style.display = 'block';
-          document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('pin-dot-error'));
-          setTimeout(() => {
-            pin = '';
-            updateDots(pin);
-            document.getElementById('pinError').style.display = 'none';
-            document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('pin-dot-error', 'pin-dot-filled'));
-          }, 1200);
-        }
+        verifyPin();
       }
     });
   });
