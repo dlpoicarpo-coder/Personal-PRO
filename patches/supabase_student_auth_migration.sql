@@ -51,8 +51,8 @@ BEGIN
         v_attempts := 0;
     END IF;
 
-    -- Pegar o PIN correto e o trainer_id do estudante
-    SELECT "portalPin", trainer_id INTO v_correct_pin, v_trainer_id 
+    -- Pegar o PIN correto (dentro do JSON data) e o trainer_id do estudante
+    SELECT (data->>'portalPin'), trainer_id INTO v_correct_pin, v_trainer_id 
     FROM public.students 
     WHERE id = p_student_id;
     
