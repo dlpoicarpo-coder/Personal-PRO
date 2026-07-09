@@ -493,7 +493,10 @@ function initPINHandlers() {
     try {
       if (!window.supabase) throw new Error('Serviço indisponível no momento.');
       
-      const { data, error } = await window.supabase.rpc('verify_student_pin', {
+      const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
+      const tempClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const { data, error } = await tempClient.rpc('verify_student_pin', {
         p_student_id: sid,
         p_pin: pin
       });
