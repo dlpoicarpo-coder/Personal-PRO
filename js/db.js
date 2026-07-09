@@ -45,8 +45,7 @@ export function fixObjectEncoding(obj) {
   return obj;
 }
 
-const SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
+import { SUPABASE_URL, SUPABASE_KEY } from './utils/config.js';
 
 function slugify(text) {
   return (text || '')
@@ -64,6 +63,24 @@ class Database {
   constructor() {
     // Use the singleton from auth.js
     this._currentUser = null;
+    this._subscription = null;
+  }
+
+  async getSubscription() {
+    if (this._subscription) return this._subscription;
+    try {
+      const supabase = getSupabase();
+      if (!supabase) return null;
+      const { data, error } = await supabase.from('subscriptions').select('*').single();
+      if (data) {
+        this._subscription = data;
+        return data;
+      }
+    } catch (e) {
+      console.warn('Subscription check failed', e);
+    }
+    // Fallback permissivo para não quebrar localmente
+    return { status: 'active', plan: 'Start', current_period_end: new Date(Date.now() + 86400000).toISOString() };
   }
 
   _deletionsKey(trainerId) {

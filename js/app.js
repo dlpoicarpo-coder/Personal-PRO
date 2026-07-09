@@ -19,6 +19,7 @@ import { renderPreForm, initPreForm, renderPostForm, initPostForm } from './page
 import { renderAnamnesis, initAnamnesis, renderAnamneseForm, initAnamneseForm } from './pages/anamnesis.js';
 import { renderTutorial, initTutorial } from './pages/tutorial.js';
 import { renderStudentPortal, initStudentPortal } from './pages/student-portal.js';
+import { renderPlans, initPlans } from './pages/plans.js';
 
 // Global UI Helpers
 window.getModalityBadge = function(modality) {
@@ -45,7 +46,8 @@ const routes = {
   '/relatorios': { render: renderReports, init: initReports },
   '/anamnese': { render: renderAnamnesis, init: initAnamnesis },
   '/tutorial': { render: renderTutorial, init: initTutorial },
-  '/config': { render: renderSettings, init: initSettings }
+  '/config': { render: renderSettings, init: initSettings },
+  '/planos': { render: renderPlans, init: initPlans }
 };
 
 export async function navigateTo(path) {
@@ -112,6 +114,31 @@ export async function navigateTo(path) {
   // Asynchronously seed templates once the trainer is authenticated
   import('./db.js').then(({ default: db }) => {
     db.seedTemplates().catch(console.error);
+
+    // Billing Guard Check
+    db.getSubscription().then(sub => {
+      window._currentPlan = sub?.plan || 'Start';
+      if (sub && (sub.status === 'past_due' || sub.status === 'canceled')) {
+        // Verifica se o current_period_end já passou (prazo de carência)
+        const isExpired = new Date(sub.current_period_end) < new Date();
+        if (isExpired) {
+          if (!document.getElementById('billingBanner')) {
+            const banner = document.createElement('div');
+            banner.id = 'billingBanner';
+            banner.style = "background:var(--danger);color:white;text-align:center;padding:12px;font-weight:bold;z-index:9999;position:relative;";
+            banner.innerHTML = `Sua assinatura está vencida ou o trial expirou (Plano ${sub.plan}). O sistema está operando em modo somente-leitura. <a href="#/planos" style="color:white;text-decoration:underline">Regularizar agora</a>`;
+            appContainer.insertBefore(banner, appContainer.firstChild);
+          }
+          window._isBillingPastDue = true;
+        } else {
+          window._isBillingPastDue = false;
+        }
+      } else {
+        window._isBillingPastDue = false;
+        const banner = document.getElementById('billingBanner');
+        if (banner) banner.remove();
+      }
+    });
   });
   
   // 2. Create layout if missing

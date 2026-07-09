@@ -390,7 +390,24 @@ async function viewStudentHTML(student) {
 
 export function initStudents(navigateFn) {
   // Add student
-  const openAddModal = () => openModal({
+  const openAddModal = async () => {
+    if (window._isBillingPastDue) {
+      alert('Sua assinatura está vencida. Regularize seu plano para cadastrar novos alunos.');
+      window.location.hash = '/planos';
+      return;
+    }
+    const allStudents = await db.getAll('students');
+    const plan = window._currentPlan || 'Start';
+    let limit = 5;
+    if (plan === 'Pro') limit = 20;
+    if (plan === 'Studio') limit = 50;
+    if (allStudents.length >= limit) {
+      alert(`O limite de ${limit} alunos do plano ${plan} foi atingido. Faça upgrade para adicionar mais alunos.`);
+      window.location.hash = '/planos';
+      return;
+    }
+
+    openModal({
     title: '+ Novo Aluno', size: 'lg',
     preventBackdropClose: true,
     content: studentFormHTML(),
