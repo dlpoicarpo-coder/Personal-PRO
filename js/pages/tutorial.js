@@ -138,42 +138,42 @@ export function initTutorial(navigateFn) {
     const total = TUTORIAL_STEPS.length;
     const progress = ((currentStep + 1) / total) * 100;
     
-    wizardEl.innerHTML = \`
+    wizardEl.innerHTML = `
       <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.05); position: absolute; top: 0; left: 0; border-top-left-radius: inherit; border-top-right-radius: inherit; overflow:hidden;">
-        <div style="width: \${progress}%; height: 100%; background: var(--gradient-primary); transition: width 0.3s ease;"></div>
+        <div style="width: ${progress}%; height: 100%; background: var(--gradient-primary); transition: width 0.3s ease;"></div>
       </div>
       
       <div style="flex:1; padding: 24px 10px;">
-        <div class="text-xs text-muted mb-xs" style="text-transform:uppercase; letter-spacing:1px">\${stepData.section} (\${currentStep + 1} de \${total})</div>
-        <h2 style="color:var(--primary); margin-bottom: 24px; font-size: 1.5rem;">\${stepData.title}</h2>
+        <div class="text-xs text-muted mb-xs" style="text-transform:uppercase; letter-spacing:1px">${stepData.section} (${currentStep + 1} de ${total})</div>
+        <h2 style="color:var(--primary); margin-bottom: 24px; font-size: 1.5rem;">${stepData.title}</h2>
         
         <div class="flex flex-col gap-md" style="margin-bottom: 32px">
-          \${stepData.steps.map((s, i) => \`
+          ${stepData.steps.map((s, i) => `
             <div class="flex gap-md items-start">
-              <div style="width:24px;height:24px;border-radius:50%;background:rgba(16,185,129,0.1);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;margin-top:2px;">\${i+1}</div>
-              <div style="font-size:0.95rem; color:var(--text); line-height: 1.5;">\${s}</div>
+              <div style="width:24px;height:24px;border-radius:50%;background:rgba(16,185,129,0.1);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;margin-top:2px;">${i+1}</div>
+              <div style="font-size:0.95rem; color:var(--text); line-height: 1.5;">${s}</div>
             </div>
-          \`).join('')}
+          `).join('')}
         </div>
         
-        \${stepData.tip ? \`
+        ${stepData.tip ? `
           <div style="background: rgba(6,182,212,0.1); border-left: 3px solid #06b6d4; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-top: auto;">
             <div style="font-size: 0.75rem; text-transform:uppercase; color: #06b6d4; font-weight:700; margin-bottom: 4px;">Dica PRO</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted);">\${stepData.tip}</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">${stepData.tip}</div>
           </div>
-        \` : ''}
+        ` : ''}
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
-        \${currentStep > 0 
-          ? \`<button class="btn btn-ghost" id="tutPrevBtn">Anterior</button>\` 
-          : \`<div></div>\`}
+        ${currentStep > 0 
+          ? `<button class="btn btn-ghost" id="tutPrevBtn">Anterior</button>` 
+          : `<div></div>`}
         
-        \${currentStep < total - 1 
-          ? \`<button class="btn btn-primary" id="tutNextBtn">Próximo Passo</button>\` 
-          : \`<button class="btn btn-success" id="tutFinishBtn">Finalizar Tutorial</button>\`}
+        ${currentStep < total - 1 
+          ? `<button class="btn btn-primary" id="tutNextBtn">Próximo Passo</button>` 
+          : `<button class="btn btn-success" id="tutFinishBtn">Finalizar Tutorial</button>`}
       </div>
-    \`;
+    `;
 
     document.getElementById('tutPrevBtn')?.addEventListener('click', () => {
       if (currentStep > 0) {
