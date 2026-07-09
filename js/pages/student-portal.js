@@ -215,9 +215,12 @@ export async function renderStudentPortal(rawParam) {
   if (window.supabase) {
     // Importamos dinamicamente para evitar problemas de dependência circular ou sujeira global no início do arquivo
     const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
-    window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    const { setPortalClient } = await import('../utils/auth.js');
+    
+    const portalClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       global: { headers: { 'x-student-token': token } }
     });
+    setPortalClient(portalClient);
   }
 
   // Agora podemos buscar o student com segurança (RLS validará o token)

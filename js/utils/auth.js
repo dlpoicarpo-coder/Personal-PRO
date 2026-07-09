@@ -9,7 +9,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 // Singleton client — reuse across modules
 let _client = null;
 export function getSupabase() {
-  if (!_client && window.supabase) {
+  if (!_client && window.supabase && typeof window.supabase.createClient === 'function') {
     _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: {
         autoRefreshToken: true,
@@ -19,6 +19,10 @@ export function getSupabase() {
     });
   }
   return _client;
+}
+
+export function setPortalClient(client) {
+  _client = client;
 }
 
 // Helper: wraps a promise with a timeout
