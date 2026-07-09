@@ -104,34 +104,34 @@ USING (id = public.get_active_student_id());
 -- Workouts
 DROP POLICY IF EXISTS "workouts_select_anonymous" ON workouts;
 CREATE POLICY "workouts_select_anonymous" ON workouts FOR SELECT TO anon
-USING (student_id = public.get_active_student_id());
+USING ((data->>'studentId') = public.get_active_student_id());
 
 -- Assessments
 DROP POLICY IF EXISTS "assessments_select_anonymous" ON assessments;
 CREATE POLICY "assessments_select_anonymous" ON assessments FOR SELECT TO anon
-USING (student_id = public.get_active_student_id());
+USING ((data->>'studentId') = public.get_active_student_id());
 
 -- Macrocycles
 DROP POLICY IF EXISTS "macrocycles_select_anonymous" ON macrocycles;
 CREATE POLICY "macrocycles_select_anonymous" ON macrocycles FOR SELECT TO anon
-USING (student_id = public.get_active_student_id());
+USING ((data->>'studentId') = public.get_active_student_id());
 
 -- Schedules
 DROP POLICY IF EXISTS "schedules_select_anonymous" ON schedules;
 CREATE POLICY "schedules_select_anonymous" ON schedules FOR SELECT TO anon
-USING (student_id = public.get_active_student_id());
+USING ((data->>'studentId') = public.get_active_student_id());
 
 -- Sessions
 DROP POLICY IF EXISTS "sessions_select_anonymous" ON sessions;
 CREATE POLICY "sessions_select_anonymous" ON sessions FOR SELECT TO anon
-USING (student_id = public.get_active_student_id());
+USING ((data->>'studentId') = public.get_active_student_id());
 
 -- Biofeedback
 DROP POLICY IF EXISTS "biofeedback_select_anonymous" ON biofeedback;
 CREATE POLICY "biofeedback_select_anonymous" ON biofeedback FOR SELECT TO anon
-USING (student_id = public.get_active_student_id());
+USING ((data->>'studentId') = public.get_active_student_id());
 
 -- Financial
 DROP POLICY IF EXISTS "financial_select_anonymous" ON financial;
 CREATE POLICY "financial_select_anonymous" ON financial FOR SELECT TO anon
-USING (student_id = public.get_active_student_id());
+USING ((data->>'studentId') = public.get_active_student_id());
