@@ -4409,16 +4409,28 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
     </div>`;
   }
 
-  // Motivational feed
+  // Motivational feed (Parecer do Aluno e Tecnico)
   const pseNum = parseFloat(avgPse)||0;
   const sleepNum = parseFloat(avgSleep)||0;
-  let feedTxt = '';
-  if (pseNum>8) feedTxt='Seus treinos estao muito intensos! Vamos ajustar o ritmo para garantir boa recuperacao.';
-  else if (pseNum>6) feedTxt='Voce esta treinando na intensidade ideal! Continue assim.';
-  else feedTxt='Boa consistencia! Temos margem para evoluir a intensidade gradualmente.';
-  if (sleepNum>0 && sleepNum<6) feedTxt+=' O sono esta abaixo do ideal.';
-  else if (sleepNum>=7) feedTxt+=' Otima qualidade de sono!';
-  if (completed.length>0) feedTxt+=` ${completed.length} sessoes concluidas. Incrivel!`;
+  
+  let parecerAluno = '';
+  if (pseNum > 8) parecerAluno += 'Você tem treinado com bastante intensidade ultimamente. ';
+  else if (pseNum > 6) parecerAluno += 'Você está mantendo um ótimo ritmo de treinos. ';
+  else parecerAluno += 'Seus treinos estão consistentes. ';
+
+  if (sleepNum > 0 && sleepNum < 6) parecerAluno += 'Tente priorizar mais suas horas de sono para melhorar a recuperação muscular e ter mais energia. ';
+  else if (sleepNum >= 7) parecerAluno += 'Seu sono está excelente, o que é fundamental para seus resultados! ';
+
+  if (completed.length > 0) parecerAluno += `Parabéns pela consistência! Você já completou ${completed.length} sessões. Continue firme e vamos juntos buscar seus objetivos.`;
+  else parecerAluno = 'Ainda não temos dados suficientes. Comece a registrar seus treinos para acompanhar sua evolução!';
+
+  let parecerTecnico = '';
+  if (pseNum > 8) parecerTecnico += 'PSE média elevada (>8): possível fadiga acumulada. Recomenda-se reduzir o volume em 20-30% na próxima semana. ';
+  else if (pseNum > 6) parecerTecnico += 'PSE em nível adequado para progressão. O aluno está respondendo bem ao estímulo de treino. ';
+  else parecerTecnico += 'PSE baixa, o que indica margem segura para aumento progressivo de intensidade ou volume. ';
+
+  if (sleepNum > 0 && sleepNum < 6) parecerTecnico += 'Sono comprometido (<6h) — necessário orientar sobre higiene do sono e monitorar overreaching. ';
+  if (totalVol > 20000) parecerTecnico += 'Carga de volume total acumulada bastante significativa.';
 
   // Exercise progression — full table card
   const exHtml = topEx.length>0 ? `<div class="glass-card" style="margin-bottom:12px">
@@ -4562,6 +4574,16 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
         <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Treinos/Mês</div>
         <div style="font-size:1.6rem; font-weight:800; color:#06b6d4">${sessionsMonth}</div>
       </div>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px; border-left:3px solid var(--portal-primary)">
+      <div class="portal-card-label" style="margin-bottom:8px">Resumo para o Aluno</div>
+      <p style="font-size:0.8rem; color:var(--portal-text); line-height:1.6">${parecerAluno}</p>
+    </div>
+
+    <div class="glass-card" style="margin-bottom:12px; border-left:3px solid var(--portal-accent)">
+      <div class="portal-card-label" style="margin-bottom:8px">Análise Técnica do Treinador</div>
+      <p style="font-size:0.8rem; color:var(--portal-text); line-height:1.6">${parecerTecnico}</p>
     </div>
 
     ${caloricHtml}

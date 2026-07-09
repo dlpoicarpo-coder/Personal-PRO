@@ -912,6 +912,18 @@ h4 {
 }
 
 @media (max-width: 768px) {
+  body {
+    overscroll-behavior-y: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+  .sidebar {
+    display: none;
+  }
   .main-content {
     margin-left: 0;
     padding: var(--space-sm);
@@ -1354,7 +1366,8 @@ h4 {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 62px;
+    min-height: 62px;
+    height: calc(62px + env(safe-area-inset-bottom, 0px));
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
     align-items: center;

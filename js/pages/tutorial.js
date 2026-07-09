@@ -1,290 +1,199 @@
 // ========================================
-// PERSONAL PRO — Tutorial Page (v1)
-// Interactive guide for all system features
+// PERSONAL PRO — Tutorial Page (Interactive)
+// Guide for all system features
 // ========================================
 
-const TUTORIALS = [
+const TUTORIAL_STEPS = [
   {
+    title: 'Configurar seu perfil de Personal Trainer',
     section: 'Primeiros Passos',
-    icon: '▶',
-    items: [
-      {
-        title: 'Configurar seu perfil de Personal Trainer',
-        steps: [
-          'Acesse <strong>Configurações</strong> no menu lateral',
-          'Preencha seu nome, CREF e outras informações profissionais',
-          'Defina o tema visual (claro ou escuro) da sua preferência',
-          'Salve as configurações — seu nome e CREF aparecerão automaticamente nos PDFs gerados',
-        ],
-        tip: 'O CREF é exibido em todos os documentos PDF gerados pelo sistema, garantindo a identificação profissional.'
-      },
-      {
-        title: 'Cadastrar um novo aluno',
-        steps: [
-          'Acesse <strong>Alunos</strong> no menu lateral',
-          'Clique em <strong>+ Novo Aluno</strong>',
-          'Preencha nome, código, data de nascimento, gênero, contato e objetivo',
-          'Defina a <strong>Zona-Alvo de Treino</strong> e <strong>Frequência Semanal</strong>',
-          'Clique em <strong>Salvar</strong>',
-        ],
-        tip: 'O código do aluno é usado na identificação em relatórios e PDFs. Ex: JOA-001.'
-      },
-    ]
+    steps: [
+      'Acesse Configurações no menu lateral',
+      'Preencha seu nome, CREF e outras informações profissionais',
+      'Defina o tema visual (claro ou escuro) da sua preferência',
+      'Salve as configurações — seu nome e CREF aparecerão automaticamente nos PDFs gerados',
+    ],
+    tip: 'O CREF é exibido em todos os documentos PDF gerados pelo sistema, garantindo a identificação profissional.'
   },
   {
-    section: 'Treinos & Periodização',
-    icon: '💪',
-    items: [
-      {
-        title: 'Criar uma ficha de treino',
-        steps: [
-          'Acesse <strong>Treinos</strong> e clique em <strong>+ Novo Treino</strong>',
-          'Selecione o aluno e dê um nome ao treino (ex: Treino A - Superior)',
-          'Adicione exercícios: nome, séries, repetições, carga, descanso e método',
-          'Use o campo <strong>Ciclo</strong> para organizar treinos por fase (ex: Ciclo 1 - Adaptação)',
-          'Salve e depois gere o PDF com o botão <strong>PDF</strong> na listagem',
-        ],
-        tip: 'O nome dos exercícios possui autocompletar baseado na biblioteca do sistema. Comece a digitar para ver sugestões.'
-      },
-      {
-        title: 'Criar um macrociclo de periodização',
-        steps: [
-          'Acesse <strong>Periodização</strong> e clique em <strong>+ Novo Macrociclo</strong>',
-          'Selecione o aluno e defina o nome do macrociclo',
-          'Escolha o modelo de periodização (linear, ondulatório, bloco)',
-          'Defina as semanas totais, data de início e frequência de deload',
-          'Selecione os dias da semana e horário de treino',
-          'Opcionalmente, selecione um <strong>modelo de treino existente</strong> ou deixe o sistema gerar automaticamente',
-          'Clique em <strong>Gerar Macrociclo</strong> — os treinos e sessões na agenda são criados automaticamente',
-        ],
-        tip: 'Cada semana é colorida por intensidade: verde (leve) → amarelo → laranja → vermelho (muito alta) → azul (deload).'
-      },
-      {
-        title: 'Filtrar treinos por ciclo ativo',
-        steps: [
-          'Na página de <strong>Treinos</strong>, use o dropdown <strong>Ciclos</strong> ao lado dos filtros por aluno',
-          'Selecione <strong>Apenas ciclo ativo</strong> para ver somente os treinos do macrociclo em andamento',
-          'Ou selecione um macrociclo específico para visualização',
-        ],
-        tip: 'Combinando o filtro de aluno com o filtro de ciclo, você isola exatamente o que precisa.'
-      },
-    ]
+    title: 'Cadastrar um novo aluno',
+    section: 'Primeiros Passos',
+    steps: [
+      'Acesse Alunos no menu lateral',
+      'Clique em + Novo Aluno',
+      'Preencha nome, código, data de nascimento, gênero, contato e objetivo',
+      'Defina a Zona-Alvo de Treino e Frequência Semanal',
+      'Clique em Salvar',
+    ],
+    tip: 'O código do aluno é usado na identificação em relatórios e PDFs. Ex: JOA-001.'
   },
   {
-    section: 'Agenda & Treino ao Vivo',
-    icon: '📅',
-    items: [
-      {
-        title: 'Agendar sessões de treino',
-        steps: [
-          'Acesse <strong>Agenda</strong> e clique em <strong>+ Agendar Treino</strong>',
-          'Selecione o aluno e o treino desejado',
-          'Escolha <strong>dias da semana</strong> e o número de semanas para repetição automática',
-          'Defina horário e duração da sessão',
-          'Clique em <strong>Agendar</strong> — as sessões são criadas na agenda automaticamente',
-        ],
-        tip: 'Use o filtro de aluno no topo da agenda para ver apenas as sessões de um aluno específico.'
-      },
-      {
-        title: 'Iniciar um treino ao vivo',
-        steps: [
-          'Na agenda, clique em <strong>▶ Iniciar</strong> na sessão desejada',
-          'O sistema abre o <strong>Treino ao Vivo</strong> já com o aluno e treino pré-selecionados',
-          'Registre cada série com carga e repetições realizadas',
-          'Use o cronômetro de descanso integrado entre as séries',
-          'Ao finalizar, preencha o pós-treino (PSE, sono, energia) ou gere o link para o aluno preencher',
-        ],
-        tip: 'O link de pós-treino pode ser copiado e enviado via WhatsApp. Ao copiar, a sessão é finalizada automaticamente.'
-      },
-      {
-        title: 'Enviar lembretes e links de biofeedback',
-        steps: [
-          'Na agenda, clique em <strong>WhatsApp</strong> para enviar lembrete de treino',
-          'Clique em <strong>🏃 Pré</strong> para enviar o link do formulário pré-treino ao aluno',
-          'Clique em <strong>🏋 Pós</strong> para enviar o link do formulário pós-treino',
-          'Os dados preenchidos pelo aluno são salvos automaticamente no sistema',
-        ],
-        tip: 'O formulário de pré-treino pergunta sobre sono, energia e estresse. Ideal para monitorar a prontidão do aluno.'
-      },
-    ]
+    title: 'Criar uma ficha de treino',
+    section: 'Treinos e Periodização',
+    steps: [
+      'Acesse Treinos e clique em + Novo Treino',
+      'Selecione o aluno e dê um nome ao treino (ex: Treino A - Superior)',
+      'Adicione exercícios: nome, séries, repetições, carga, descanso e método',
+      'Use o campo Ciclo para organizar treinos por fase (ex: Ciclo 1 - Adaptação)',
+      'Salve e depois gere o PDF com o botão PDF na listagem',
+    ],
+    tip: 'O nome dos exercícios possui autocompletar baseado na biblioteca do sistema. Comece a digitar para ver sugestões.'
   },
   {
-    section: 'Avaliações & Saúde',
-    icon: '📊',
-    items: [
-      {
-        title: 'Registrar avaliação física',
-        steps: [
-          'Acesse <strong>Avaliações</strong> e clique em <strong>+ Nova Avaliação</strong>',
-          'Selecione o tipo: Composição Corporal, Conconi ou Força',
-          'Para composição: preencha peso, altura e dobras cutâneas — o IMC e % gordura são calculados automaticamente',
-          'Para força: informe exercício, carga e repetições — o 1RM estimado é calculado (fórmula de Epley)',
-        ],
-        tip: 'A fórmula de Pollock 3 dobras é usada para % de gordura, diferenciada por sexo e idade.'
-      },
-      {
-        title: 'Calcular zonas de treino pelo aluno',
-        steps: [
-          'Acesse <strong>Avaliações</strong> → aba <strong>Zonas de Treino</strong>',
-          'Selecione o aluno no dropdown — a idade é preenchida automaticamente',
-          'Informe a FC de repouso e clique em <strong>Calcular Zonas</strong>',
-          'As 5 zonas de FC são calculadas pela fórmula de Karvonen',
-        ],
-        tip: 'FC Máxima estimada pela fórmula de Tanaka: 208 - (0.7 × idade). Mais precisa que a fórmula 220 - idade.'
-      },
-    ]
+    title: 'Criar um macrociclo de periodização',
+    section: 'Treinos e Periodização',
+    steps: [
+      'Acesse Periodização e clique em + Novo Macrociclo',
+      'Selecione o aluno e defina o nome do macrociclo',
+      'Escolha o modelo de periodização (linear, ondulatório, bloco)',
+      'Defina as semanas totais, data de início e frequência de deload',
+      'Opcionalmente, selecione um modelo de treino existente',
+      'Clique em Gerar Macrociclo — os treinos e sessões na agenda são criados automaticamente',
+    ],
+    tip: 'Cada semana é colorida por intensidade: verde (leve) a vermelho (muito alta) e azul (deload).'
   },
   {
-    section: 'Biblioteca de Modelos & Financeiro',
-    icon: '📚',
-    items: [
-      {
-        title: 'Criar seus próprios Modelos de Treino',
-        steps: [
-          'Acesse <strong>Exercícios</strong> e vá na aba <strong>Meus Modelos</strong>',
-          'Clique em <strong>+ Novo Modelo</strong>',
-          'Monte o template com exercícios, cargas e intervalos',
-          'Ao salvar, ele ficará disponível para uso rápido na criação de Fichas e Macrociclos',
-        ],
-        tip: 'Você pode visualizar ou editar seus modelos criados a qualquer momento.'
-      },
-      {
-        title: 'Cálculo de Custo por Sessão (Financeiro)',
-        steps: [
-          'No cadastro do aluno, defina as <strong>Sessões Esperadas (Mês)</strong> e a <strong>Mensalidade</strong>',
-          'Na aba <strong>Financeiro</strong>, o sistema calculará automaticamente o <strong>Custo/sessão</strong> (Mensalidade ÷ Sessões Esperadas)',
-          'Veja o <strong>Valor proporcional</strong> gerado pelas sessões efetivamente realizadas no mês',
-        ],
-        tip: 'Isso ajuda a ter controle exato da rentabilidade de cada aluno por treino executado.'
-      },
-    ]
+    title: 'Agendar sessões de treino',
+    section: 'Agenda e Treino ao Vivo',
+    steps: [
+      'Acesse Agenda e clique em + Agendar Treino',
+      'Selecione o aluno e o treino desejado',
+      'Escolha dias da semana e o número de semanas para repetição',
+      'Defina horário e duração da sessão',
+      'Clique em Agendar',
+    ],
+    tip: 'Use o filtro de aluno no topo da agenda para ver apenas as sessões de um aluno específico.'
   },
   {
-    section: 'Relatórios & Dossiê',
-    icon: '📋',
-    items: [
-      {
-        title: 'Gerar o dossiê de performance',
-        steps: [
-          'Acesse <strong>Relatórios</strong> e selecione o aluno',
-          'O dossiê é gerado automaticamente com gráficos de bem-estar, carga, PSE e comparação de ciclos',
-          'A periodização ativa do aluno é exibida com a semana atual destacada',
-          'Clique em <strong>Exportar PDF</strong> para baixar o relatório completo',
-        ],
-        tip: 'O parecer do aluno é escrito em linguagem acessível. O parecer técnico inclui análise de overtraining e prontidão.'
-      },
-    ]
+    title: 'Iniciar um treino ao vivo',
+    section: 'Agenda e Treino ao Vivo',
+    steps: [
+      'Na agenda, clique em Iniciar na sessão desejada',
+      'O sistema abre o Treino ao Vivo',
+      'Registre cada série com carga e repetições realizadas',
+      'Ao finalizar, preencha o pós-treino ou gere o link para o aluno',
+    ],
+    tip: 'O link de pós-treino pode ser copiado e enviado via WhatsApp. Ao copiar, a sessão é finalizada automaticamente.'
   },
   {
-    section: 'Anamnese',
-    icon: '📝',
-    items: [
-      {
-        title: 'Enviar anamnese para novo aluno',
-        steps: [
-          'Acesse <strong>Anamnese</strong> no menu lateral',
-          'Clique em <strong>Gerar Link de Anamnese</strong> — o link é copiado automaticamente',
-          'Envie o link para o possível aluno via WhatsApp ou e-mail',
-          'O aluno preenche o formulário completo: saúde, histórico, objetivos e estilo de vida',
-          'Ao receber a anamnese, clique em <strong>Cadastrar Aluno</strong> para convertê-la em um cadastro automaticamente',
-        ],
-        tip: 'O formulário de anamnese contém 35 perguntas divididas em 5 seções, cobrindo todos os aspectos necessários para a prescrição segura.'
-      },
-    ]
+    title: 'Avaliações e Zonas de FC',
+    section: 'Saúde e Métricas',
+    steps: [
+      'Acesse Avaliações e clique em + Nova Avaliação para composição corporal ou força',
+      'Para Zonas de Treino, selecione o aluno, informe a FC de repouso e clique em Calcular Zonas',
+    ],
+    tip: 'As zonas são calculadas pela fórmula de Karvonen e a FC Máxima por Tanaka.'
   },
   {
-    section: 'Portal do Aluno',
-    icon: '📱',
-    items: [
-      {
-        title: 'Como o aluno acessa o Portal',
-        steps: [
-          'No cadastro do aluno, ou na aba de alunos, copie o <strong>Link do Portal</strong>.',
-          'Envie o link para o aluno pelo WhatsApp.',
-          'O aluno não precisa de senha! O acesso é simplificado pelo link único que salva o progresso localmente.',
-          'No portal, o aluno visualizará seus treinos, histórico, e gráficos de evolução.'
-        ],
-        tip: 'O Portal do Aluno pode ser adicionado à tela inicial do celular como um aplicativo (PWA).'
-      },
-      {
-        title: 'Check-in e Checkout pelo Portal',
-        steps: [
-          'Antes de iniciar o treino, o aluno pode preencher o Biofeedback (Sono, TQR, Estresse, Dor).',
-          'O aluno dá o "Check-in" em cada exercício que for completando.',
-          'No final da sessão, ele preenche o formulário Pós-treino informando a Percepção de Esforço (PSE) e satisfação.',
-          'O sistema sincroniza automaticamente esses dados para o seu painel de Relatórios!'
-        ],
-        tip: 'Todos os gráficos do Portal (Volume, Densidade, Radar de Wellness) atualizam sozinhos com esses dados!'
-      }
-    ]
+    title: 'Modelos e Financeiro',
+    section: 'Biblioteca e Custos',
+    steps: [
+      'Crie seus templates na aba Exercícios -> Meus Modelos para reaproveitamento rápido',
+      'Defina Mensalidade e Sessões Esperadas no cadastro do aluno para obter o Custo por Sessão exato na aba Financeiro',
+    ],
+    tip: 'Isso ajuda a ter controle da rentabilidade de cada aluno por treino executado.'
+  },
+  {
+    title: 'Portal do Aluno',
+    section: 'Acesso e Check-in',
+    steps: [
+      'No cadastro do aluno, copie o Link do Portal',
+      'Envie o link para o aluno. Não requer senha e funciona como um app (PWA)',
+      'O aluno pode preencher o check-in pré-treino (Biofeedback) e checkout pós-treino',
+      'Todos os gráficos do portal atualizam em tempo real',
+    ],
+    tip: 'O aluno visualizará seus treinos, histórico, e gráficos de evolução completos no portal.'
   }
 ];
 
 export function renderTutorial() {
   return `
     <div class="page-header">
-      <div><h1>Tutorial do Sistema</h1><p class="subtitle">Guia completo de todas as funcionalidades do Personal PRO</p></div>
+      <div><h1>Tutorial do Sistema</h1><p class="subtitle">Guia interativo passo a passo</p></div>
     </div>
 
     <div class="card mb-lg" style="background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.08));border:1px solid var(--primary)">
       <div class="flex items-center gap-md">
-        <div style="font-size:2rem">▶</div>
         <div>
           <h3 style="margin:0">Bem-vindo ao Personal PRO</h3>
-          <p class="text-muted text-sm" style="margin:4px 0 0">Sistema completo de gestão para Personal Trainers. Use este guia para dominar todas as funcionalidades.</p>
+          <p class="text-muted text-sm" style="margin:4px 0 0">Sistema completo de gestão para Personal Trainers. Use este guia interativo para dominar todas as funcionalidades.</p>
         </div>
       </div>
     </div>
 
-    <div class="flex gap-sm mb-lg" style="flex-wrap:wrap">
-      ${TUTORIALS.map((sec, i) => `<button class="btn ${i === 0 ? 'btn-primary' : 'btn-secondary'} tutorial-section-btn" data-section="${i}">${sec.icon} ${sec.section}</button>`).join('')}
+    <div id="tutorialWizard" class="card" style="min-height: 380px; display:flex; flex-direction:column; position:relative;">
+      <!-- Content will be injected here by initTutorialWizard -->
     </div>
-
-    ${TUTORIALS.map((sec, si) => `
-      <div class="tutorial-section ${si !== 0 ? 'hidden' : ''}" data-section="${si}">
-        <h2 class="mb-lg" style="color:var(--primary)">${sec.icon} ${sec.section}</h2>
-        ${sec.items.map((item, ii) => `
-          <div class="card mb-md tutorial-item" id="tutorial_${si}_${ii}">
-            <div class="card-header tutorial-toggle" data-target="tutorial_body_${si}_${ii}" style="cursor:pointer">
-              <span class="card-title">${item.title}</span>
-              <span class="tutorial-arrow" style="font-size:0.8rem;transition:transform 0.2s">▼</span>
-            </div>
-            <div id="tutorial_body_${si}_${ii}" class="tutorial-body" style="${ii === 0 ? '' : 'display:none'}">
-              <ol style="margin:0 0 12px;padding-left:20px;line-height:1.9">
-                ${item.steps.map(s => `<li>${s}</li>`).join('')}
-              </ol>
-              ${item.tip ? `<div class="tutorial-tip"><strong>Dica:</strong> ${item.tip}</div>` : ''}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `).join('')}
   `;
 }
 
-export function initTutorial() {
-  // Section navigation
-  document.querySelectorAll('.tutorial-section-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = btn.dataset.section;
-      document.querySelectorAll('.tutorial-section-btn').forEach(b => b.classList.replace('btn-primary', 'btn-secondary'));
-      btn.classList.replace('btn-secondary', 'btn-primary');
-      document.querySelectorAll('.tutorial-section').forEach(s => s.classList.add('hidden'));
-      document.querySelector(`.tutorial-section[data-section="${idx}"]`)?.classList.remove('hidden');
-    });
-  });
+export function initTutorial(navigateFn) {
+  let currentStep = 0;
+  
+  function renderCurrentStep() {
+    const wizardEl = document.getElementById('tutorialWizard');
+    if (!wizardEl) return;
+    
+    const stepData = TUTORIAL_STEPS[currentStep];
+    const total = TUTORIAL_STEPS.length;
+    const progress = ((currentStep + 1) / total) * 100;
+    
+    wizardEl.innerHTML = \`
+      <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.05); position: absolute; top: 0; left: 0; border-top-left-radius: inherit; border-top-right-radius: inherit; overflow:hidden;">
+        <div style="width: \${progress}%; height: 100%; background: var(--gradient-primary); transition: width 0.3s ease;"></div>
+      </div>
+      
+      <div style="flex:1; padding: 24px 10px;">
+        <div class="text-xs text-muted mb-xs" style="text-transform:uppercase; letter-spacing:1px">\${stepData.section} (\${currentStep + 1} de \${total})</div>
+        <h2 style="color:var(--primary); margin-bottom: 24px; font-size: 1.5rem;">\${stepData.title}</h2>
+        
+        <div class="flex flex-col gap-md" style="margin-bottom: 32px">
+          \${stepData.steps.map((s, i) => \`
+            <div class="flex gap-md items-start">
+              <div style="width:24px;height:24px;border-radius:50%;background:rgba(16,185,129,0.1);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;margin-top:2px;">\${i+1}</div>
+              <div style="font-size:0.95rem; color:var(--text); line-height: 1.5;">\${s}</div>
+            </div>
+          \`).join('')}
+        </div>
+        
+        \${stepData.tip ? \`
+          <div style="background: rgba(6,182,212,0.1); border-left: 3px solid #06b6d4; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-top: auto;">
+            <div style="font-size: 0.75rem; text-transform:uppercase; color: #06b6d4; font-weight:700; margin-bottom: 4px;">Dica PRO</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">\${stepData.tip}</div>
+          </div>
+        \` : ''}
+      </div>
 
-  // Accordion toggle
-  document.querySelectorAll('.tutorial-toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-      const bodyId = toggle.dataset.target;
-      const body = document.getElementById(bodyId);
-      const arrow = toggle.querySelector('.tutorial-arrow');
-      if (body) {
-        const open = body.style.display !== 'none';
-        body.style.display = open ? 'none' : '';
-        if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
+        \${currentStep > 0 
+          ? \`<button class="btn btn-ghost" id="tutPrevBtn">Anterior</button>\` 
+          : \`<div></div>\`}
+        
+        \${currentStep < total - 1 
+          ? \`<button class="btn btn-primary" id="tutNextBtn">Próximo Passo</button>\` 
+          : \`<button class="btn btn-success" id="tutFinishBtn">Finalizar Tutorial</button>\`}
+      </div>
+    \`;
+
+    document.getElementById('tutPrevBtn')?.addEventListener('click', () => {
+      if (currentStep > 0) {
+        currentStep--;
+        renderCurrentStep();
       }
     });
-  });
+
+    document.getElementById('tutNextBtn')?.addEventListener('click', () => {
+      if (currentStep < total - 1) {
+        currentStep++;
+        renderCurrentStep();
+      }
+    });
+
+    document.getElementById('tutFinishBtn')?.addEventListener('click', () => {
+      alert("Tutorial concluído! Você já pode explorar todas as ferramentas.");
+      if(navigateFn) navigateFn('dashboard');
+    });
+  }
+
+  renderCurrentStep();
 }

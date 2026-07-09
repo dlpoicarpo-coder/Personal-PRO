@@ -237,6 +237,7 @@ export async function renderTracker() {
             <th>Aluno</th>
             <th>Treino</th>
             <th>Data</th>
+            <th>Tipo</th>
             <th>Duração</th>
             <th>Volume</th>
             <th>Séries</th>
@@ -254,22 +255,24 @@ export async function renderTracker() {
             const setNotes  = (s.setLog||[]).filter(x=>x.notes).map(x=>`S${x.setIdx+1}: ${x.notes}`);
             const allObs    = [postNotes, ...setNotes].filter(Boolean);
             const obsTitle  = allObs.join(' | ');
-            return `<tr class="recent-session-row" data-sid="${s.studentId}">
-              <td style="white-space:nowrap">${st?.name || '?'}</td>
-              <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.workoutName || '-'}</td>
-              <td style="white-space:nowrap">${Calc.formatDate(s.date)}</td>
-              <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
-              <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
-              <td style="text-align:center">${s.totalSets || '-'}</td>
-              <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':pse?'var(--success)':'var(--text-muted)'}">
-                ${pse
-                  ? `<strong>${pse}</strong>`
-                  : `<span style="font-size:0.65rem;color:var(--text-muted);padding:2px 5px;background:var(--bg-page);border-radius:4px;border:1px solid var(--border-color)" title="Aguardando preenchimento do aluno">aguard.</span>`}
-              </td>
-              <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
-              <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
-                ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
-              </td>
+            return `<tr>
+        <td style="white-space:nowrap;display:flex;align-items:center;gap:6px">
+          <span class="badge badge-success">Concluído</span>
+          ${st?.name || '?'}
+        </td>
+        <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.workoutName||''}">${s.workoutName || '-'}</td>
+        <td style="white-space:nowrap">${Calc.formatDate(s.date)} ${s.time || ''}</td>
+        <td><span class="badge badge-${s.type==='Presencial'?'primary':s.type==='Híbrido'?'warning':'accent'}">${s.type || 'Online'}</span></td>
+        <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
+        <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
+        <td style="text-align:center">${s.totalSets || '-'}</td>
+        <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':pse?'var(--success)':'var(--text-muted)'}">
+          ${pse ? `<strong>${pse}</strong>` : `<span style="font-size:0.65rem;color:var(--text-muted);padding:2px 5px;background:var(--bg-page);border-radius:4px;border:1px solid var(--border-color)">aguard.</span>`}
+        </td>
+        <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
+          ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
+        </td>
               <td style="white-space:nowrap;text-align:right;padding-right:8px">
                 <button class="btn btn-ghost btn-sm view-session" data-id="${s.id}" title="Ver"
                   style="padding:4px 6px;color:var(--accent);display:inline-flex;align-items:center">
@@ -2432,6 +2435,7 @@ function openFullHistoryModal(students, allSessions, allBiofeedback, navigateFn)
             <th>Aluno</th>
             <th>Treino</th>
             <th>Data</th>
+            <th>Tipo</th>
             <th>Duração</th>
             <th>Volume</th>
             <th>Séries</th>
@@ -2490,22 +2494,25 @@ function openFullHistoryModal(students, allSessions, allBiofeedback, navigateFn)
       const allObs    = [postNotes, ...setNotes].filter(Boolean);
       const obsTitle  = allObs.join(' | ');
 
-      return `
-        <tr style="border-bottom:1px solid rgba(148,163,184,0.08)">
-          <td style="white-space:nowrap">${st?.name || '?'}</td>
-          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.workoutName || '-'}</td>
-          <td style="white-space:nowrap">${Calc.formatDate(s.date)}</td>
-          <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
-          <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
-          <td style="text-align:center">${s.totalSets || '-'}</td>
-          <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':pse?'var(--success)':'var(--text-muted)'}">
-            <strong>${pse || '—'}</strong>
-          </td>
-          <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
-          <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
-            ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
-          </td>
-          <td style="white-space:nowrap;text-align:right">
+      return `<tr>
+        <td style="white-space:nowrap;display:flex;align-items:center;gap:6px">
+          <span class="badge badge-success">Concluído</span>
+          ${st?.name || '?'}
+        </td>
+        <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.workoutName||''}">${s.workoutName || '-'}</td>
+        <td style="white-space:nowrap">${Calc.formatDate(s.date)} ${s.time || ''}</td>
+        <td><span class="badge badge-${s.type==='Presencial'?'primary':s.type==='Híbrido'?'warning':'accent'}">${s.type || 'Online'}</span></td>
+        <td style="white-space:nowrap">${formatTimeHMS(s.totalDuration || 0)}</td>
+        <td style="white-space:nowrap">${s.totalVolume ? Math.round(s.totalVolume) : '-'} kg</td>
+        <td style="text-align:center">${s.totalSets || '-'}</td>
+        <td style="text-align:center;color:${pse>8?'var(--danger)':pse>6?'var(--warning)':pse?'var(--success)':'var(--text-muted)'}">
+          ${pse ? `<strong>${pse}</strong>` : `<span style="font-size:0.65rem;color:var(--text-muted);padding:2px 5px;background:var(--bg-page);border-radius:4px;border:1px solid var(--border-color)">aguard.</span>`}
+        </td>
+        <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${carga||'-'}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);font-size:0.75rem;font-style:italic" title="${obsTitle}">
+          ${allObs.length ? allObs[0].slice(0,30)+(allObs[0].length>30||allObs.length>1?'…':'') : '-'}
+        </td>
+        <td style="white-space:nowrap;text-align:right">
             <button class="btn btn-ghost btn-sm view-session-modal" data-id="${s.id}" title="Ver detalhes"
               style="padding:3px 5px;color:var(--accent);display:inline-flex;align-items:center">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
