@@ -440,6 +440,7 @@ export function initStudents(navigateFn) {
       }
     ]
   });
+  };
 
   document.getElementById('addStudentBtn')?.addEventListener('click', openAddModal);
   document.getElementById('addStudentBtnEmpty')?.addEventListener('click', openAddModal);
