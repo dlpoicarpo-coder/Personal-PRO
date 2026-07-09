@@ -4400,6 +4400,9 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   const totalVol = completed.reduce((t,s)=>t+(s.setLog||[]).reduce((tt,x)=>tt+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0),0);
   const avgVolPerSess = completed.length ? Math.round(totalVol/completed.length) : 0;
   const avgDurMin = completed.length ? Math.round(completed.reduce((t,s)=>t+(s.durationMin||0),0)/completed.length) : 0;
+  
+  const avgDensity = avgDurMin > 0 ? (avgVolPerSess / avgDurMin).toFixed(1) : 0;
+  const avgKcal = avgDurMin * 6;
 
   const lastComp = compAss[compAss.length-1];
   const age = student?.birthDate ? Calc.calcularIdade(student.birthDate) : (student?.age||0);
@@ -4619,6 +4622,16 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
         <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Treinos/Mês</div>
         <div style="font-size:1.6rem; font-weight:800; color:#06b6d4">${sessionsMonth}</div>
+      </div>
+      <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Gasto Calórico</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#ef4444">${avgKcal}</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); margin-top:2px;">kcal/sessão</div>
+      </div>
+      <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Densidade</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#8b5cf6">${avgDensity}</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); margin-top:2px;">kg/min</div>
       </div>
     </div>
 
