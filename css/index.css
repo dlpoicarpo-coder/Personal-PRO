@@ -212,8 +212,9 @@ h4 {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
+  padding: 1.5rem;
   backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15);
   transition: all var(--transition-normal);
 }
 
@@ -543,6 +544,16 @@ h4 {
 .badge-info {
   background: rgba(59, 130, 246, 0.15);
   color: var(--info);
+}
+
+.badge-primary {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+.badge-purple {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
 }
 
 /* --- Avatar --- */

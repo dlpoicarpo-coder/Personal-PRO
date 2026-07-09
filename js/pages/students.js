@@ -46,9 +46,11 @@ export async function renderStudents() {
       </div>
     </div>
 
-    <div class="tabs" id="studentTabs">
+    <div class="tabs" id="studentTabs" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;margin-bottom:20px;border-bottom:1px solid var(--border-color)">
       <button class="tab active" data-filter="all">Todos (${students.length})</button>
-      <button class="tab" data-filter="Ativo">Ativos (${students.filter(s => s.status === 'Ativo').length})</button>
+      <button class="tab" data-filter="Presencial">Presencial (${students.filter(s => s.modality === 'Presencial').length})</button>
+      <button class="tab" data-filter="Consultoria Online">Online (${students.filter(s => s.modality === 'Consultoria Online').length})</button>
+      <button class="tab" data-filter="Híbrido">Híbrido (${students.filter(s => s.modality === 'Híbrido').length})</button>
       <button class="tab" data-filter="Inativo">Inativos (${students.filter(s => s.status === 'Inativo').length})</button>
     </div>
 
@@ -74,14 +76,17 @@ function renderStudentCards(students, trainerId = 'trainer') {
     const waUrl = phone ? `https://wa.me/${phone.startsWith('55') ? phone : '55' + phone}` : null;
 
     return `
-    <div class="card student-card" data-id="${s.id}" data-status="${s.status}" data-name="${s.name.toLowerCase()}">
+    <div class="card student-card" data-id="${s.id}" data-status="${s.status}" data-modality="${s.modality||''}" data-name="${s.name.toLowerCase()}">
       <div class="flex items-center gap-md mb-sm">
         <div class="avatar avatar-lg" style="font-size:1.1rem">${initials}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
           <div class="text-muted text-xs">${s.code || ''}${age ? ` · ${age} anos` : ''}${s.gender ? ` · ${s.gender === 'M' ? 'Masc.' : 'Fem.'}` : ''}</div>
         </div>
-        <span class="badge ${s.status === 'Ativo' ? 'badge-success' : 'badge-warning'}">${s.status}</span>
+        <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">
+          ${window.getModalityBadge ? window.getModalityBadge(s.modality) : ''}
+          <span class="badge ${s.status === 'Ativo' ? 'badge-success' : 'badge-warning'}" style="font-size:0.6rem;opacity:0.8">${s.status}</span>
+        </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
@@ -174,6 +179,16 @@ function studentFormHTML(student = {}) {
             ${['Hipertrofia','Emagrecimento','Condicionamento','Saúde','Reabilitação','Performance','Força Máxima','Qualidade de Vida'].map(g => `<option ${student.goal === g ? 'selected' : ''}>${g}</option>`).join('')}
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Modalidade</label>
+          <select class="form-select" name="modality">
+            <option value="Presencial" ${student.modality === 'Presencial' ? 'selected' : ''}>Presencial</option>
+            <option value="Consultoria Online" ${student.modality === 'Consultoria Online' ? 'selected' : ''}>Consultoria Online</option>
+            <option value="Híbrido" ${student.modality === 'Híbrido' ? 'selected' : ''}>Híbrido</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label class="form-label">Status</label>
           <select class="form-select" name="status">
@@ -269,6 +284,7 @@ async function viewStudentHTML(student) {
         <h2 style="margin:0 0 4px">${student.name}</h2>
         <div class="flex gap-sm items-center flex-wrap">
           <span class="text-muted text-sm">${student.code || ''}</span>
+          ${window.getModalityBadge ? window.getModalityBadge(student.modality) : ''}
           <span class="badge ${student.status === 'Ativo' ? 'badge-success' : 'badge-warning'}">${student.status}</span>
           ${student.goal ? `<span class="badge badge-info">${student.goal}</span>` : ''}
         </div>
@@ -426,7 +442,13 @@ export function initStudents(navigateFn) {
       tab.classList.add('active');
       const filter = tab.dataset.filter;
       document.querySelectorAll('.student-card').forEach(card => {
-        card.style.display = (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+        if (filter === 'all') {
+          card.style.display = '';
+        } else if (filter === 'Inativo' || filter === 'Ativo') {
+          card.style.display = card.dataset.status === filter ? '' : 'none';
+        } else {
+          card.style.display = card.dataset.modality === filter ? '' : 'none';
+        }
       });
     });
   });

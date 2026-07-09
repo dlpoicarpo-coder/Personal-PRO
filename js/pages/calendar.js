@@ -15,21 +15,24 @@ const WEEKDAYS = [
   { id: 4, label: 'Qui', short: 'Q' }, { id: 5, label: 'Sex', short: 'S' },
   { id: 6, label: 'Sáb', short: 'S' },
 ];
-let currentYear, currentMonth, studentFilter = '';
+let currentYear, currentMonth, studentFilter = '', modalityFilter = '';
 
 export async function renderCalendar() {
   const now = new Date();
   const storedYear = sessionStorage.getItem('pp_cal_year');
   const storedMonth = sessionStorage.getItem('pp_cal_month');
   const storedStudent = sessionStorage.getItem('pp_cal_student_filter');
+  const storedModality = sessionStorage.getItem('pp_cal_modality_filter');
 
   currentYear = storedYear ? parseInt(storedYear) : now.getFullYear();
   currentMonth = storedMonth ? parseInt(storedMonth) : now.getMonth();
   studentFilter = storedStudent || '';
+  modalityFilter = storedModality || '';
 
   sessionStorage.setItem('pp_cal_year', currentYear);
   sessionStorage.setItem('pp_cal_month', currentMonth);
   sessionStorage.setItem('pp_cal_student_filter', studentFilter);
+  sessionStorage.setItem('pp_cal_modality_filter', modalityFilter);
 
   return buildCalendarHTML();
 }
@@ -44,7 +47,13 @@ async function buildCalendarHTML() {
   const today = new Date().toISOString().slice(0, 10);
   
   // Apply student filter
-  const filteredEvents = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
+  let filteredEvents = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
+  if (modalityFilter) {
+    filteredEvents = filteredEvents.filter(e => {
+      const st = students.find(s => s.id === e.studentId);
+      return st && st.modality === modalityFilter;
+    });
+  }
   const todayEvents = filteredEvents.filter(e => e.date === today).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   const statusColors = { scheduled: 'info', confirmed: 'primary', completed: 'success', missed: 'danger' };
   const statusLabels = { scheduled: 'Agendado', confirmed: 'Confirmado', completed: 'Realizado', missed: 'Faltou' };
@@ -52,9 +61,15 @@ async function buildCalendarHTML() {
   return `
     <div class="page-header"><div><h1>Agenda de Treinos</h1><p class="subtitle">Agende sessões e envie lembretes automáticos</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
+        <select class="form-select" id="calModalityFilter" style="min-width:140px">
+          <option value="">Modalidades</option>
+          <option value="Presencial" ${modalityFilter === 'Presencial' ? 'selected' : ''}>Presencial</option>
+          <option value="Consultoria Online" ${modalityFilter === 'Consultoria Online' ? 'selected' : ''}>Online</option>
+          <option value="Híbrido" ${modalityFilter === 'Híbrido' ? 'selected' : ''}>Híbrido</option>
+        </select>
         <select class="form-select" id="calStudentFilter" style="min-width:180px">
           <option value="">Todos os alunos</option>
-          ${active.map(s => `<option value="${s.id}" ${studentFilter === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+          ${active.map(s => `<option value="${s.id}" ${studentFilter === s.id ? 'selected' : ''}>${s.modality ? `[${s.modality}] ` : ''}${s.name}</option>`).join('')}
         </select>
         <button class="btn btn-primary" id="addEventBtn">+ Agendar Treino</button>
       </div>
@@ -204,7 +219,10 @@ function renderDayEvents(dayEvents, students, statusColors, statusLabels) {
         <div class="flex items-center gap-sm">
           <div class="avatar avatar-sm">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
           <div>
-            <div style="font-weight:600;font-size:0.9rem">${st?.name || '?'}</div>
+            <div style="font-weight:600;font-size:0.9rem;display:flex;align-items:center;gap:6px">
+              ${st?.name || '?'}
+              ${st && window.getModalityBadge ? window.getModalityBadge(st.modality) : ''}
+            </div>
             <div class="text-xs text-muted">${ev.time || '—'} · ${ev.duration || 60}min</div>
           </div>
         </div>
@@ -250,6 +268,12 @@ export function initCalendar(navigateFn) {
   document.getElementById('calStudentFilter')?.addEventListener('change', async (e) => {
     studentFilter = e.target.value;
     sessionStorage.setItem('pp_cal_student_filter', studentFilter);
+    const content = document.getElementById('pageContent');
+    if (content) { content.innerHTML = await buildCalendarHTML(); initCalendar(navigateFn); }
+  });
+  document.getElementById('calModalityFilter')?.addEventListener('change', async (e) => {
+    modalityFilter = e.target.value;
+    sessionStorage.setItem('pp_cal_modality_filter', modalityFilter);
     const content = document.getElementById('pageContent');
     if (content) { content.innerHTML = await buildCalendarHTML(); initCalendar(navigateFn); }
   });

@@ -20,6 +20,15 @@ import { renderAnamnesis, initAnamnesis, renderAnamneseForm, initAnamneseForm } 
 import { renderTutorial, initTutorial } from './pages/tutorial.js';
 import { renderStudentPortal, initStudentPortal } from './pages/student-portal.js';
 
+// Global UI Helpers
+window.getModalityBadge = function(modality) {
+  if (!modality) return '';
+  if (modality === 'Presencial') return '<span class="badge badge-primary">Presencial</span>';
+  if (modality === 'Consultoria Online') return '<span class="badge badge-purple">Online</span>';
+  if (modality === 'Híbrido') return '<span class="badge badge-success">Híbrido</span>';
+  return '';
+};
+
 // Central Router
 const routes = {
   '/': { render: renderDashboard, init: initDashboardCharts },

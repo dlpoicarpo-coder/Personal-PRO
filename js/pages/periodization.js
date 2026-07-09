@@ -268,8 +268,9 @@ function renderMacroCard(m, students) {
         <div class="flex items-center gap-md" style="flex:1;min-width:0">
           <div class="avatar">${st ? st.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px">
               ${st ? st.name : '?'} — ${m.name}
+              ${st && window.getModalityBadge ? window.getModalityBadge(st.modality) : ''}
             </div>
             <div class="text-xs text-muted">
               ${m.totalWeeks} semanas · ${modelDef.label || m.type}

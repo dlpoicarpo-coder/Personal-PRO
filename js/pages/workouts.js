@@ -155,6 +155,7 @@ export async function renderWorkouts() {
                     <div class="flex items-center gap-sm">
                       <div class="avatar avatar-sm" style="width:26px;height:26px;font-size:0.7rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
                       <span style="font-size:0.85rem">${st?.name || '?'}</span>
+                      ${st && window.getModalityBadge ? window.getModalityBadge(st.modality) : ''}
                     </div>
                   </td>
                   <td>
@@ -216,7 +217,7 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
           <label class="form-label">Aluno *</label>
           <select class="form-select" name="studentId" required>
             <option value="">Selecione</option>
-            ${students.map(s => `<option value="${s.id}" ${workout.studentId===s.id?'selected':''}>${s.name} (${s.code})</option>`).join('')}
+            ${students.map(s => `<option value="${s.id}" ${workout.studentId===s.id?'selected':''}>${s.modality ? `[${s.modality}] ` : ''}${s.name} (${s.code})</option>`).join('')}
           </select>
         </div>
         <div class="form-group">

@@ -335,7 +335,10 @@ function renderLiveView(students) {
         <div class="flex items-center gap-md">
           <div class="avatar">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
           <div>
-            <div style="font-weight:700;font-size:1.05rem">${st?.name || 'Aluno'}</div>
+            <div style="font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:6px">
+              ${st?.name || 'Aluno'}
+              ${st && window.getModalityBadge ? window.getModalityBadge(st.modality) : ''}
+            </div>
             <div class="text-muted text-sm">${s.workoutName || 'Treino'}</div>
           </div>
         </div>
