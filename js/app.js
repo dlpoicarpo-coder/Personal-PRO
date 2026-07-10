@@ -60,6 +60,26 @@ export async function navigateTo(path) {
     initAnamneseForm();
     return;
   }
+  if (path.startsWith('access_token=') || path.startsWith('error=')) {
+    if (path.includes('type=invite')) {
+      setTimeout(() => window.location.hash = '/convite', 500);
+    } else if (path.includes('type=recovery')) {
+      setTimeout(() => window.location.hash = '/reset-password', 500);
+    } else {
+      setTimeout(() => window.location.hash = '/', 500);
+    }
+    appContainer.innerHTML = '<div class="page-loading"><div class="spinner"></div><p style="margin-top:20px;text-align:center;color:var(--text-muted)">Autenticando...</p></div>';
+    return;
+  }
+
+  if (path.startsWith('/convite')) {
+    appContainer.className = '';
+    const { renderInviteScreen, initInviteScreen } = await import('./pages/invite.js');
+    appContainer.innerHTML = renderInviteScreen();
+    initInviteScreen();
+    return;
+  }
+
   if (path.startsWith('/portal')) {
     // Inject custom PWA Mobile student portal stylesheet
     if (!document.getElementById('studentPortalStylesheet')) {

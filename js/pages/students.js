@@ -86,6 +86,7 @@ function renderStudentCards(students, trainerId = 'trainer') {
         <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">
           ${window.getModalityBadge ? window.getModalityBadge(s.modality) : ''}
           <span class="badge ${s.status === 'Ativo' ? 'badge-success' : 'badge-warning'}" style="font-size:0.6rem;opacity:0.8">${s.status}</span>
+          <span class="badge" style="font-size:0.6rem;background:transparent;border:1px solid var(--border-color)">${s.auth_user_id ? '🟢 Conta' : '⚪ Sem conta'}</span>
         </div>
       </div>
 
@@ -287,11 +288,15 @@ async function viewStudentHTML(student) {
           ${window.getModalityBadge ? window.getModalityBadge(student.modality) : ''}
           <span class="badge ${student.status === 'Ativo' ? 'badge-success' : 'badge-warning'}">${student.status}</span>
           ${student.goal ? `<span class="badge badge-info">${student.goal}</span>` : ''}
+          <span class="badge" style="background:transparent;border:1px solid var(--border-color)" id="authStatus_${student.id}">
+             ${student.auth_user_id ? '🟢 Conta Ativa' : '⚪ Sem conta'}
+          </span>
         </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
+        ${student.email ? `<button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', this)">✉️ ${student.auth_user_id ? 'Reenviar Convite' : 'Convidar p/ App'}</button>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
-        <a href="#/portal/${student.id}?t=${trainerId}" target="_blank" class="btn btn-secondary btn-sm" style="color:var(--primary);border-color:var(--primary);padding:4px 8px">Portal do Aluno</a>
+        <a href="#/portal/${student.id}?t=${trainerId}" target="_blank" class="btn btn-secondary btn-sm" style="color:var(--primary);border-color:var(--primary);padding:4px 8px">Portal</a>
         <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${portalUrl}'); notify.success('Link do portal copiado!');">Copiar Link</button>
         <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">▶ Treino</a>
       </div>
@@ -440,6 +445,50 @@ export function initStudents(navigateFn) {
       }
     ]
   });
+  };
+
+  window.inviteStudent = async (studentId, email, btn) => {
+    if (!confirm(`Deseja enviar um convite de acesso para ${email}?`)) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Enviando...';
+    btn.disabled = true;
+
+    try {
+      const { supabase } = await import('../utils/auth.js');
+      if (!supabase) throw new Error('Supabase cliente indisponível');
+      
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) throw new Error('Treinador não autenticado. Faça login novamente.');
+
+      const res = await fetch('/api/invite-student', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ studentId, email })
+      });
+
+      const result = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(result.error || 'Erro desconhecido ao convidar');
+      }
+
+      notify.success('Convite enviado com sucesso para o aluno!');
+      
+      // Atualizar badge instantaneamente no modal
+      const badge = document.getElementById(`authStatus_${studentId}`);
+      if (badge) badge.innerHTML = '🟢 Conta Ativa / Convite';
+      btn.innerHTML = '✉️ Reenviar Convite';
+      btn.disabled = false;
+      
+    } catch (err) {
+      console.error(err);
+      notify.error('Falha no convite: ' + err.message);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   };
 
   document.getElementById('addStudentBtn')?.addEventListener('click', openAddModal);
