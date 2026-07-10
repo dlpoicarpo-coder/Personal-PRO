@@ -767,35 +767,17 @@ async function loadSection(section) {
           const { data: md } = await db.supabase.from(table).select('*').eq('is_default', true);
           rows = md || [];
         }
-      } else if (table === 'workouts') {
-        if (resolvedTid) {
-          const { data: wd } = await db.supabase.from(table).select('*').eq('trainer_id', resolvedTid);
-          rows = wd || [];
-        } else {
-          const { data: wd } = await db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
-          rows = wd || [];
-        }
       } else {
-        const q1 = db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
-        const { data: d1 } = await q1;
-        if (d1) rows = d1;
-
-        if (table === 'sessions' && resolvedTid) {
-          try {
-            const { data: d2 } = await db.supabase.from(table).select('*').eq('trainer_id', resolvedTid);
-            if (d2 && d2.length > 0) {
-              const seenIds = new Set(rows.map(r => r.id));
-              for (const r of d2) {
-                const parsed = r.data ? { ...r.data, id: r.id } : r;
-                const rSid = parsed.studentId || parsed.student_id;
-                if (rSid === sid && !seenIds.has(r.id)) {
-                  rows.push(r);
-                  seenIds.add(r.id);
-                }
-              }
-            }
-          } catch(_) {}
+        // Workouts, Sessions, Macrocycles, Assessments, Biofeedback, Schedules, Financial
+        // Todas essas tabelas possuem RLS restrito via get_active_student_id().
+        // Nunca usamos fallback por trainer_id no portal do aluno.
+        const { data, error } = await db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
+        
+        if (error) {
+          console.warn(`[Student Portal] Erro ao buscar ${table}:`, error);
         }
+        
+        rows = data || [];
       }
 
       const remote = rows.map(r => {
