@@ -294,7 +294,7 @@ async function viewStudentHTML(student) {
         </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
-        ${student.email ? `<button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', this)">✉️ ${student.auth_user_id ? 'Reenviar Convite' : 'Convidar p/ App'}</button>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
+        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this)">✉️ ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
         <a href="#/portal/${student.id}?t=${trainerId}" target="_blank" class="btn btn-secondary btn-sm" style="color:var(--primary);border-color:var(--primary);padding:4px 8px">Portal</a>
         <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${portalUrl}'); notify.success('Link do portal copiado!');">Copiar Link</button>
@@ -447,10 +447,10 @@ export function initStudents(navigateFn) {
   });
   };
 
-  window.inviteStudent = async (studentId, email, btn) => {
-    if (!confirm(`Deseja enviar um convite de acesso para ${email}?`)) return;
+  window.inviteStudent = async (studentId, email, name, phone, btn) => {
+    if (!confirm(`Deseja gerar um link de convite seguro para ${email}?`)) return;
     const originalText = btn.innerHTML;
-    btn.innerHTML = 'Enviando...';
+    btn.innerHTML = 'Gerando...';
     btn.disabled = true;
 
     try {
@@ -472,20 +472,37 @@ export function initStudents(navigateFn) {
       const result = await res.json();
       
       if (!res.ok) {
-        throw new Error(result.error || 'Erro desconhecido ao convidar');
+        throw new Error(result.error || 'Erro desconhecido ao gerar convite');
       }
 
-      notify.success('Convite enviado com sucesso para o aluno!');
+      notify.success('Link de convite gerado com sucesso!');
       
       // Atualizar badge instantaneamente no modal
       const badge = document.getElementById(`authStatus_${studentId}`);
-      if (badge) badge.innerHTML = '🟢 Conta Ativa / Convite';
-      btn.innerHTML = '✉️ Reenviar Convite';
-      btn.disabled = false;
+      if (badge && badge.innerHTML.includes('Sem conta')) badge.innerHTML = '🟡 Convite Gerado';
+      
+      const link = `${window.location.origin}${window.location.pathname}#/convite?t=${result.token}`;
+      
+      let waBtn = '';
+      if (phone) {
+        const clean = phone.replace(/\\D/g, '');
+        const num = clean.length <= 11 ? '55' + clean : clean;
+        const msg = `Olá ${name.split(' ')[0]}! Seu acesso ao portal Vetor: ${link}`;
+        const waHref = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+        waBtn = `<a href="${waHref}" target="_blank" class="btn btn-primary btn-sm" style="padding:4px 8px;background:#25d366;border-color:#25d366;color:white;text-decoration:none">💬 Enviar WhatsApp</a>`;
+      }
+
+      const container = document.getElementById(`inviteBox_${studentId}`);
+      if (container) {
+         container.innerHTML = `
+           <button class="btn btn-secondary btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${link}'); window.notify?.success ? window.notify.success('Link copiado!') : alert('Link copiado!')">📋 Copiar Link</button>
+           ${waBtn}
+         `;
+      }
       
     } catch (err) {
       console.error(err);
-      notify.error('Falha no convite: ' + err.message);
+      notify.error('Falha ao gerar convite: ' + err.message);
       btn.innerHTML = originalText;
       btn.disabled = false;
     }

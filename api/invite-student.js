@@ -59,113 +59,49 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'O e-mail do convite não corresponde ao e-mail cadastrado na ficha do aluno.' });
     }
 
-    let targetUid = student.auth_user_id;
-    let shouldLink = false;
-    let shouldSendMagicLink = false;
-
-    // 2. CONVIDAR ALUNO (Tratando casos de borda)
-    let inviteRes = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
-      method: 'POST',
+    // 2. INVALIDAR TOKENS ANTERIORES PARA ESTE ALUNO (Service Role)
+    await fetch(`${SUPABASE_URL}/rest/v1/student_invites?student_id=eq.${studentId}&used=eq.false`, {
+      method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
         'apikey': SUPABASE_SERVICE_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email: inputEmail })
+      body: JSON.stringify({ used: true })
     });
 
-    let inviteData = await inviteRes.json();
+    // 3. GERAR NOVO TOKEN SEGURO COM 48H DE VALIDADE (Service Role)
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/student_invites`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        student_id: studentId,
+        email: inputEmail,
+        expires_at: expiresAt,
+        used: false
+      })
+    });
 
-    if (!inviteRes.ok) {
-      const errorMsg = inviteData.msg || inviteData.message || '';
-      
-      if (errorMsg.toLowerCase().includes('already registered')) {
-        // Obtém o usuário silenciosamente via Admin API para inspeção
-        const generateRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'apikey': SUPABASE_SERVICE_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ type: 'magiclink', email: inputEmail })
-        });
-        
-        const generateData = await generateRes.json();
-        if (!generateRes.ok || !generateData.user) {
-          return res.status(500).json({ error: 'Failed to retrieve existing user ID', details: generateData });
-        }
-        
-        const existingUser = generateData.user;
-        targetUid = existingUser.id;
-
-        // Regra 2: Impedir vínculo com conta de Treinador
-        const isTrainer = existingUser.user_metadata?.trainer_name || existingUser.user_metadata?.cref;
-        if (isTrainer) {
-          return res.status(403).json({ error: 'Este e-mail pertence a um treinador. Não pode ser vinculado como aluno.' });
-        }
-
-        // Regra 1: Verificar se este UID já está vinculado a outro aluno
-        const linkCheckRes = await fetch(`${SUPABASE_URL}/rest/v1/students?auth_user_id=eq.${targetUid}&select=id`, {
-          method: 'GET',
-          headers: {
-             'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-             'apikey': SUPABASE_SERVICE_KEY
-          }
-        });
-        const linkedStudents = await linkCheckRes.json();
-
-        if (linkedStudents && linkedStudents.length > 0) {
-          if (linkedStudents[0].id !== student.id) {
-            // Regra 1: Sequestro detectado. O email pertence a outro aluno!
-            return res.status(403).json({ error: 'Este e-mail já está vinculado a outro aluno no sistema.' });
-          } else {
-            // Regra 5: Reenvio legítimo (O aluno já é deste perfil)
-            shouldSendMagicLink = true;
-            shouldLink = false; 
-          }
-        } else {
-          // Usuário existe no banco, não é treinador e está livre.
-          shouldSendMagicLink = true;
-          shouldLink = true;
-        }
-
-      } else {
-        return res.status(400).json({ error: 'Invite failed', details: inviteData });
-      }
-    } else {
-      // Convite disparado com sucesso para usuário novo
-      targetUid = inviteData.id || inviteData.user?.id;
-      shouldLink = true;
+    const insertData = await insertRes.json();
+    if (!insertRes.ok || !insertData || insertData.length === 0) {
+      return res.status(500).json({ error: 'Falha ao gerar token de convite', details: insertData });
     }
 
-    // 3. ENVIO DE MAGIC LINK (Se for caso de borda legítimo)
-    if (shouldSendMagicLink) {
-      await fetch(`${SUPABASE_URL}/auth/v1/magiclink`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email: inputEmail })
-      });
-    }
+    const token = insertData[0].token;
 
-    // 4. VÍNCULO SEGURO E IRREVOGÁVEL
-    if (shouldLink && targetUid && targetUid !== student.auth_user_id) {
-      await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${studentId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ auth_user_id: targetUid })
-      });
-    }
-
-    return res.status(200).json({ success: true, auth_user_id: targetUid, message: 'Invite processed successfully' });
+    // Retorna o token para o frontend montar a URL do WhatsApp
+    return res.status(200).json({ 
+      success: true, 
+      token: token, 
+      message: 'Invite token generated successfully' 
+    });
   } catch (error) {
     console.error('API Error /invite-student:', error);
     return res.status(500).json({ error: 'Internal Server Error', details: error.message });

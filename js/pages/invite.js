@@ -38,52 +38,46 @@ export function renderInviteScreen() {
 }
 
 export async function initInviteScreen() {
-  const sb = getSupabase();
-  if (!sb) {
-    notify.error('Erro de conexão.');
-    return;
-  }
-
   const loadingEl = document.getElementById('inviteLoading');
   const contentEl = document.getElementById('inviteContent');
   const errorEl = document.getElementById('inviteError');
   const form = document.getElementById('invitePasswordForm');
   const nameEl = document.getElementById('inviteStudentName');
 
+  // Extrair o token do hash: #/convite?t=123
+  const hash = window.location.hash;
+  const tokenMatch = hash.match(/\?t=([^&]+)/);
+  const token = tokenMatch ? tokenMatch[1] : null;
+
+  if (!token) {
+    loadingEl.style.display = 'none';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  let studentEmail = '';
+
   try {
-    // 1. Verificar se a sessão foi estabelecida com sucesso
-    const { data: { session }, error: sessionError } = await sb.auth.getSession();
-    
-    if (sessionError || !session) {
+    // 1. GET: Validar token no servidor
+    const res = await fetch(`/api/accept-invite?token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.valid) {
       loadingEl.style.display = 'none';
       errorEl.style.display = 'block';
       return;
     }
 
-    // 2. Buscar o nome do aluno via RLS (já está vinculado pelo backend)
-    const { data: student, error: studentError } = await sb
-      .from('students')
-      .select('id, name')
-      .eq('auth_user_id', session.user.id)
-      .single();
-
-    if (studentError || !student) {
-      console.warn('Aluno não encontrado via RLS:', studentError);
-      // Fallback: se não achar o nome, só exibe mensagem genérica
-      nameEl.innerHTML = `Defina sua senha de acesso ao portal`;
-    } else {
-      const firstName = (student.name || 'Aluno').split(' ')[0];
-      nameEl.innerHTML = `Olá, <strong>${firstName}</strong>!<br>Defina sua senha de acesso ao portal`;
-      
-      // Salva o ID do estudante logado no localStorage para o portal saber qual abrir
-      localStorage.setItem('portal_logged_student_id', student.id);
-    }
+    studentEmail = data.email;
+    const firstName = (data.studentName || 'Aluno').split(' ')[0];
+    nameEl.innerHTML = `Olá, <strong>${firstName}</strong>!<br>Defina sua senha de acesso ao portal`;
+    if (data.studentId) localStorage.setItem('portal_logged_student_id', data.studentId);
 
     // Exibir formulário
     loadingEl.style.display = 'none';
     contentEl.style.display = 'block';
 
-    // 3. Submeter formulário
+    // 2. POST: Definir senha e aceitar convite
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const pwd = document.getElementById('invitePassword').value;
@@ -92,26 +86,33 @@ export async function initInviteScreen() {
       btn.disabled = true;
       btn.innerHTML = 'Salvando...';
 
-      const { error: updateError } = await sb.auth.updateUser({
-        password: pwd
+      const postRes = await fetch('/api/accept-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password: pwd })
       });
 
-      if (updateError) {
-        notify.error('Erro ao salvar senha: ' + updateError.message);
+      const postData = await postRes.json();
+
+      if (!postRes.ok) {
+        notify.error('Erro: ' + (postData.error || 'Falha ao aceitar convite'));
         btn.disabled = false;
         btn.innerHTML = 'Salvar e Entrar';
         return;
       }
 
-      notify.success('Senha definida com sucesso!');
+      notify.success('Senha definida com sucesso! Entrando...');
       
-      // Redireciona para o portal. O id já está no localStorage.
+      // 3. Login silencioso com a nova senha
+      const { getSupabase } = await import('../utils/auth.js');
+      const sb = getSupabase();
+      if (sb) {
+        await sb.auth.signInWithPassword({ email: studentEmail, password: pwd });
+      }
+      
+      // Redireciona para o portal principal
       setTimeout(() => {
-        if (student && student.id) {
-           window.location.hash = `/portal/${student.id}`;
-        } else {
-           window.location.hash = '/portal';
-        }
+        window.location.hash = '/portal';
       }, 1000);
     });
 
