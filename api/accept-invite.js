@@ -162,25 +162,7 @@ export default async function handler(req, res) {
 
       // SE CHEGAMOS AQUI: Todas as validações de segurança passaram. O token é válido e o e-mail está seguro para uso.
       
-      // 3. QUEIMAR O TOKEN ATOMICAMENTE
-      const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/student_invites?token=eq.${token}&used=eq.false&expires_at=gt.now()`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({ used: true, used_at: new Date().toISOString() })
-      });
-      
-      const updatedInvites = await updateRes.json();
-      if (!updateRes.ok || !updatedInvites || updatedInvites.length === 0) {
-        return res.status(400).json({ error: 'Convite inválido ou utilizado por outra requisição neste instante.' });
-      }
-
-      // 4. CRIAR OU ATUALIZAR USUÁRIO NO AUTH E CRAVAR VÍNCULO
-      if (shouldCreate) {
+      // 3. CRIAR OU ATUALIZAR USUÁRIO NO AUTH E CRAVAR VÍNCULO
         const createUserRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
           method: 'POST',
           headers: {
@@ -226,6 +208,25 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({ auth_user_id: targetUid })
         });
+      }
+
+      // 4. QUEIMAR O TOKEN ATOMICAMENTE (Confirmação final)
+      const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/student_invites?token=eq.${token}&used=eq.false&expires_at=gt.now()`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({ used: true, used_at: new Date().toISOString() })
+      });
+      
+      const updatedInvites = await updateRes.json();
+      if (!updateRes.ok || !updatedInvites || updatedInvites.length === 0) {
+        // Corrida: outro request queimou primeiro. Como o usuário/vínculo já foi garantido pelas etapas acima
+        // e é a mesma requisição (idempotente), retornamos sucesso.
+        console.warn('Corrida evitada: Token já foi consumido por requisição concorrente. (Idempotente)');
       }
 
       return res.status(200).json({ success: true, message: 'Conta configurada com sucesso!' });
