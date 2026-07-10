@@ -4473,19 +4473,19 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
           <div style="font-size:0.65rem;color:var(--portal-text-muted)">${metaRes.label}</div>
         </div>
       </div>
-      ${macrosRes ? \`
+      ${macrosRes ? `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        \${[['Proteína',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>\`
-          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid \${c}">
-            <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:700">\${n}</div>
-            <div style="font-size:1.3rem;font-weight:800;color:\${c};margin:4px 0">\${m.g}g</div>
-            <div style="font-size:0.7rem;color:var(--portal-text-muted)">\${m.kcal}kcal &middot; \${m.pct}%</div>
-          </div>\`).join('')}
+        ${[['Proteína',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>`
+          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid ${c}">
+            <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:700">${n}</div>
+            <div style="font-size:1.3rem;font-weight:800;color:${c};margin:4px 0">${m.g}g</div>
+            <div style="font-size:0.7rem;color:var(--portal-text-muted)">${m.kcal}kcal &middot; ${m.pct}%</div>
+          </div>`).join('')}
       </div>
       <div style="margin-top:12px;font-size:0.72rem;color:var(--portal-text-muted);line-height:1.4">
-        Proteína: <strong>\${macrosRes.protPorKg}g/kg</strong> &middot; ISSN Position Stand (2018)<br>
-        Peso: \${lastComp.peso}kg\${lastComp.massaMagra?\` &middot; Massa magra: \${lastComp.massaMagra}kg\`:\`\`}
-      </div>\` : ''}
+        Proteína: <strong>${macrosRes.protPorKg}g/kg</strong> &middot; ISSN Position Stand (2018)<br>
+        Peso: ${lastComp.peso}kg${lastComp.massaMagra?` &middot; Massa magra: ${lastComp.massaMagra}kg`:``}
+      </div>` : ''}
     </div>`;
   }
 
