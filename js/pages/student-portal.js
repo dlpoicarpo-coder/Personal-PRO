@@ -217,7 +217,6 @@ export async function renderStudentPortal(rawParam) {
     return renderPINScreen(null, studentId, trainerId);
   }
 
-  // Token validado: injetar no cliente Supabase global APENAS se não for o treinador (pois o treinador já tem RLS aberto)
   if (window.supabase && !isTrainerAuth) {
     // Importamos dinamicamente para evitar problemas de dependência circular ou sujeira global no início do arquivo
     const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
@@ -227,6 +226,7 @@ export async function renderStudentPortal(rawParam) {
       global: { headers: { 'x-student-token': token } }
     });
     setPortalClient(portalClient);
+    db.supabase = portalClient;
   }
 
   // Agora podemos buscar o student com segurança (RLS validará o token)
@@ -672,9 +672,15 @@ function initPortalNav() {
     loadSection('tutorial');
   });
 
-  document.getElementById('portalLogout')?.addEventListener('click', () => {
+  document.getElementById('portalLogout')?.addEventListener('click', async () => {
     sessionStorage.removeItem(`portal_auth_${portalState.studentId}`);
     localStorage.removeItem(`portal_auth_${portalState.studentId}`);
+    
+    if (window.supabase) {
+      const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
+      db.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+    
     window.location.reload();
   });
 
@@ -915,30 +921,9 @@ async function loadSection(section) {
     return w;
   });
 
-  // Filtrar treinos por studentId — com fallback por trainerId
-  // Garante que treinos apareçam mesmo que o studentId tenha sido salvo
-  // de forma levemente diferente (ex.: com ou sem trainerId no escopo)
-  let workouts = workoutsEnriched.filter(w => w.studentId === sid);
-  if (workouts.length === 0 && tid) {
-    // Fallback: buscar treinos do mesmo treinador que tenham este aluno
-    workouts = workoutsEnriched.filter(w =>
-      (w.trainerId === tid || w.trainer_id === tid) && w.studentId === sid
-    );
-  }
-  if (workouts.length === 0 && tid) {
-    // Fallback mais amplo: qualquer treino cujo trainerId bate (caso studentId esteja errado)
-    const byTrainer = workoutsEnriched.filter(w => w.trainerId === tid || w.trainer_id === tid);
-    // Tentar match parcial de studentId (primeiros 8 chars)
-    const sidShort = sid.substring(0, 8);
-    workouts = byTrainer.filter(w => w.studentId?.startsWith(sidShort));
-    if (workouts.length === 0) {
-      // Último recurso: pegar todos treinos do treinador filtrados
-      // somente se o aluno existe e é deste treinador
-      if (student && (student.trainerId === tid || student.trainer_id === tid)) {
-        workouts = byTrainer.filter(w => w.studentId === sid);
-      }
-    }
-  }
+  // Filtrar treinos pelo studentId (como o cliente do db.js agora
+  // envia o x-student-token, o RLS já isola os dados perfeitamente).
+  const workouts = workoutsEnriched.filter(w => w.studentId === sid);
 
   // Normalize sessions: unify field names from trainer live-tracker vs solo portal
   const sessions = sessionsRaw.map(s => {
