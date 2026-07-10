@@ -228,13 +228,6 @@ export async function renderStudentPortal(rawParam) {
     });
     setPortalClient(portalClient);
     db.setClient(portalClient);
-    
-    // -- DIAG INÍCIO --
-    const _diagClient = db.supabase;
-    console.log('[DIAG] cliente tem .from?', typeof _diagClient?.from);
-    const _t = await _diagClient.rpc('get_active_student_id');
-    console.log('[DIAG] get_active_student_id →', _t.data, '| erro:', _t.error?.message || 'nenhum');
-    // -- DIAG FIM --
   }
 
   // Agora podemos buscar o student com segurança (RLS validará o token)
@@ -779,8 +772,6 @@ async function loadSection(section) {
         // Todas essas tabelas possuem RLS restrito via get_active_student_id().
         // Nunca usamos fallback por trainer_id no portal do aluno.
         const { data, error } = await db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
-        
-        console.log('[DIAG]', table, '→ linhas:', data?.length, '| erro:', error?.message || 'nenhum');
         
         if (error) {
           console.warn(`[Student Portal] Erro ao buscar ${table}:`, error);

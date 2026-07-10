@@ -433,7 +433,9 @@ class Database {
               console.log(`[Student Sync] Item ${localItem.id} from ${storeName} was deleted on remote. Removing locally.`);
               continue;
             } else {
-              toUpload.push(localItem);
+              if (['biofeedback', 'sessions'].includes(storeName)) {
+                toUpload.push(localItem);
+              }
               merged.set(localItem.id, localItem);
             }
           } else {
@@ -444,7 +446,9 @@ class Database {
               const remoteTime = new Date(remoteItem.updatedAt || remoteItem.createdAt || 0).getTime();
 
               if (localTime > remoteTime + 1000) {
-                toUpload.push(localItem);
+                if (['biofeedback', 'sessions'].includes(storeName)) {
+                  toUpload.push(localItem);
+                }
                 merged.set(localItem.id, localItem);
               } else {
                 merged.set(localItem.id, remoteItem);

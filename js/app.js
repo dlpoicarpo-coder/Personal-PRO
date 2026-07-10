@@ -15,7 +15,7 @@ import { renderExercisesLibrary, initExercisesLibrary } from './pages/exercises-
 import { renderPeriodization, initPeriodization } from './pages/periodization.js';
 import { renderWeeklySummary, initWeeklySummary } from './pages/weekly-summary.js';
 import { renderSettings, initSettings } from './pages/settings.js';
-import { renderPreForm, initPreForm, renderPostForm, initPostForm } from './pages/student-forms.js';
+
 import { renderAnamnesis, initAnamnesis, renderAnamneseForm, initAnamneseForm } from './pages/anamnesis.js';
 import { renderTutorial, initTutorial } from './pages/tutorial.js';
 import { renderStudentPortal, initStudentPortal } from './pages/student-portal.js';
@@ -53,21 +53,7 @@ const routes = {
 export async function navigateTo(path) {
   const appContainer = document.getElementById('app');
   
-  // ── FORM ROUTES (no auth required, no sidebar) ──
-  if (path.startsWith('/form/pre/')) {
-    const studentId = path.split('/form/pre/')[1];
-    appContainer.className = '';
-    appContainer.innerHTML = await renderPreForm(studentId);
-    initPreForm();
-    return;
-  }
-  if (path.startsWith('/form/post/')) {
-    const sessionId = path.split('/form/post/')[1];
-    appContainer.className = '';
-    appContainer.innerHTML = await renderPostForm(sessionId);
-    initPostForm();
-    return;
-  }
+
   if (path.startsWith('/form/anamnese')) {
     appContainer.className = '';
     appContainer.innerHTML = await renderAnamneseForm();

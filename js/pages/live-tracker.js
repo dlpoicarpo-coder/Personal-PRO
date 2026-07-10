@@ -197,10 +197,13 @@ export async function renderTracker() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Check-in Pré-Treino</span>
-          <button class="btn btn-ghost btn-sm" id="genPreLinkBtn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Link para aluno
-          </button>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" id="refreshPreLinkBtn" title="Atualizar check-in" style="padding:4px 8px">🔄</button>
+            <button class="btn btn-ghost btn-sm" id="genPreLinkBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Link Portal
+            </button>
+          </div>
         </div>
         <div id="preBioStatus" style="padding:12px;background:rgba(16,185,129,0.06);border-radius:8px;border:1px solid rgba(16,185,129,0.15);text-align:center">
           <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:6px">O check-in é preenchido pelo aluno via link</div>
@@ -1118,21 +1121,32 @@ export function initTracker(navigateFn) {
   document.getElementById('genPreLinkBtn')?.addEventListener('click', async () => {
     const sid = sSel?.value;
     if (!sid) { notify.warning('Selecione um aluno primeiro'); return; }
-    const students = await db.getAll('students');
-    const st = students.find(x => x.id === sid) || {};
-    const url = `${window.location.origin}${window.location.pathname}#/form/pre/${sid}?t=${st.trainerId||st.trainer_id||''}&n=${encodeURIComponent(st.name||'')}`;
+    const url = `${window.location.origin}${window.location.pathname}#/portal/${sid}`;
     navigator.clipboard?.writeText(url);
-    notify.success('Link pré-treino copiado!');
+    notify.success('Link do portal copiado!');
     openModal({
-      title: 'Link Pré-Treino', size: 'sm',
-      content: `<p class="text-muted text-sm mb-md">Envie para o aluno preencher:</p>
+      title: 'Portal do Aluno', size: 'sm',
+      content: `<p class="text-muted text-sm mb-md">Envie para o aluno acessar o check-in e treino:</p>
         <div style="display:flex;gap:8px">
           <input class="form-input" value="${url}" readonly onclick="this.select()" style="font-size:0.78rem;flex:1" />
           <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='✓'">Copiar</button>
         </div>
-        <a href="https://wa.me/?text=${encodeURIComponent('Check-in pré-treino: ' + url)}" target="_blank" class="btn btn-secondary btn-sm mt-sm">WhatsApp</a>`,
+        <a href="https://wa.me/?text=${encodeURIComponent('Seu Portal de Treino: ' + url)}" target="_blank" class="btn btn-secondary btn-sm mt-sm">WhatsApp</a>`,
       actions: [{ label: 'Fechar', class: 'btn-primary', onClick: () => closeModal() }]
     });
+  });
+
+  document.getElementById('refreshPreLinkBtn')?.addEventListener('click', async () => {
+    const sid = sSel?.value;
+    if (!sid) return;
+    const btn = document.getElementById('refreshPreLinkBtn');
+    if (btn) btn.style.opacity = '0.5';
+    // Buscar trainerId
+    const { getCurrentUser } = await import('../utils/auth.js');
+    const user = await getCurrentUser();
+    if (user) await db.syncBothWays(user.id);
+    await checkPreBioStatus(sid);
+    if (btn) btn.style.opacity = '1';
   });
 
   sBtn?.addEventListener('click', async () => {
