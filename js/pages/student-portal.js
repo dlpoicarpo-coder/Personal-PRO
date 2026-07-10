@@ -217,16 +217,17 @@ export async function renderStudentPortal(rawParam) {
     return renderPINScreen(null, studentId, trainerId);
   }
 
-  // Token validado: injetar no cliente Supabase global APENAS se não for o treinador (pois o treinador já tem RLS aberto)
   if (window.supabase && !isTrainerAuth) {
     // Importamos dinamicamente para evitar problemas de dependência circular ou sujeira global no início do arquivo
     const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
     const { setPortalClient } = await import('../utils/auth.js');
     
     const portalClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: { headers: { 'x-student-token': token } }
+      global: { headers: { 'x-student-token': token } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
     });
     setPortalClient(portalClient);
+    db.setClient(portalClient);
   }
 
   // Agora podemos buscar o student com segurança (RLS validará o token)
@@ -672,9 +673,16 @@ function initPortalNav() {
     loadSection('tutorial');
   });
 
-  document.getElementById('portalLogout')?.addEventListener('click', () => {
+  document.getElementById('portalLogout')?.addEventListener('click', async () => {
     sessionStorage.removeItem(`portal_auth_${portalState.studentId}`);
     localStorage.removeItem(`portal_auth_${portalState.studentId}`);
+    
+    // Volta a usar o cliente padrão do sistema (limpa a injeção do portal)
+    db.setClient(null);
+    import('../utils/auth.js').then(({ setPortalClient }) => {
+      setPortalClient(null);
+    });
+    
     window.location.reload();
   });
 
@@ -720,26 +728,32 @@ async function loadSection(section) {
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
 
-  // Função auxiliar para buscar do Supabase focado no aluno atual e evitar limites de 1000 linhas, mesclando com o local storage offline e tratando deleções remotas
   const fetchForStudent = async (table) => {
-    let localItems = [];
-    try {
-      localItems = db._getLocal(table, tid) || [];
-    } catch (_) {}
+    let studentLocal = (db._getLocal(table, tid) || []).filter(item => {
+      if (table === 'exercises' || table === 'methods') return true;
+      if (table === 'students') return item.id === sid;
+      if (item.studentId === sid || item.student_id === sid) return true;
+      return false;
+    });
 
-    const studentLocal = (table === 'workouts' || table === 'exercises' || table === 'methods')
-      ? localItems
-      : localItems.filter(r => r && (r.studentId === sid || r.student_id === sid));
-
-    if (!db.supabase) {
-      return studentLocal;
-    }
+    if (!db.supabase) return studentLocal;
 
     try {
       let rows = [];
-      if (table === 'exercises' || table === 'methods') {
-        if (tid) {
-          const q1 = db.supabase.from(table).select('*').eq('trainer_id', tid);
+      let resolvedTid = tid;
+      if (!resolvedTid) {
+        const cachedStudent = (db._getLocal('students', null) || []).find(s => s.id === sid);
+        if (cachedStudent && (cachedStudent.trainerId || cachedStudent.trainer_id)) {
+          resolvedTid = cachedStudent.trainerId || cachedStudent.trainer_id;
+        }
+      }
+
+      if (table === 'students') {
+        const { data: d1 } = await db.supabase.from(table).select('*').eq('id', sid);
+        if (d1) rows = d1;
+      } else if (table === 'exercises' || table === 'methods') {
+        if (resolvedTid) {
+          const q1 = db.supabase.from(table).select('*').eq('trainer_id', resolvedTid);
           const q2 = db.supabase.from(table).select('*').eq('is_default', true);
           const [r1, r2] = await Promise.all([q1, q2]);
           const combined = [...(r1.data || []), ...(r2.data || [])];
@@ -749,34 +763,21 @@ async function loadSection(section) {
             seenIds.add(row.id);
             return true;
           });
-        }
-      } else if (table === 'workouts') {
-        if (tid) {
-          const { data: wd } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
-          rows = wd || [];
+        } else {
+          const { data: md } = await db.supabase.from(table).select('*').eq('is_default', true);
+          rows = md || [];
         }
       } else {
-        const q1 = db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
-        const { data: d1 } = await q1;
-        if (d1) rows = d1;
-
-        // Fallback for sessions
-        if (table === 'sessions' && tid) {
-          try {
-            const { data: d2 } = await db.supabase.from(table).select('*').eq('trainer_id', tid);
-            if (d2 && d2.length > 0) {
-              const seenIds = new Set(rows.map(r => r.id));
-              for (const r of d2) {
-                const parsed = r.data ? { ...r.data, id: r.id } : r;
-                const rSid = parsed.studentId || parsed.student_id;
-                if (rSid === sid && !seenIds.has(r.id)) {
-                  rows.push(r);
-                  seenIds.add(r.id);
-                }
-              }
-            }
-          } catch(_) {}
+        // Workouts, Sessions, Macrocycles, Assessments, Biofeedback, Schedules, Financial
+        // Todas essas tabelas possuem RLS restrito via get_active_student_id().
+        // Nunca usamos fallback por trainer_id no portal do aluno.
+        const { data, error } = await db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
+        
+        if (error) {
+          console.warn(`[Student Portal] Erro ao buscar ${table}:`, error);
         }
+        
+        rows = data || [];
       }
 
       const remote = rows.map(r => {
@@ -904,30 +905,9 @@ async function loadSection(section) {
     return w;
   });
 
-  // Filtrar treinos por studentId — com fallback por trainerId
-  // Garante que treinos apareçam mesmo que o studentId tenha sido salvo
-  // de forma levemente diferente (ex.: com ou sem trainerId no escopo)
-  let workouts = workoutsEnriched.filter(w => w.studentId === sid);
-  if (workouts.length === 0 && tid) {
-    // Fallback: buscar treinos do mesmo treinador que tenham este aluno
-    workouts = workoutsEnriched.filter(w =>
-      (w.trainerId === tid || w.trainer_id === tid) && w.studentId === sid
-    );
-  }
-  if (workouts.length === 0 && tid) {
-    // Fallback mais amplo: qualquer treino cujo trainerId bate (caso studentId esteja errado)
-    const byTrainer = workoutsEnriched.filter(w => w.trainerId === tid || w.trainer_id === tid);
-    // Tentar match parcial de studentId (primeiros 8 chars)
-    const sidShort = sid.substring(0, 8);
-    workouts = byTrainer.filter(w => w.studentId?.startsWith(sidShort));
-    if (workouts.length === 0) {
-      // Último recurso: pegar todos treinos do treinador filtrados
-      // somente se o aluno existe e é deste treinador
-      if (student && (student.trainerId === tid || student.trainer_id === tid)) {
-        workouts = byTrainer.filter(w => w.studentId === sid);
-      }
-    }
-  }
+  // Filtrar treinos pelo studentId (como o cliente do db.js agora
+  // envia o x-student-token, o RLS já isola os dados perfeitamente).
+  const workouts = workoutsEnriched.filter(w => w.studentId === sid);
 
   // Normalize sessions: unify field names from trainer live-tracker vs solo portal
   const sessions = sessionsRaw.map(s => {
@@ -4455,18 +4435,41 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   // Caloric card
   let caloricHtml = '';
   if (tmbRes && tdeeRes && metaRes) {
-    caloricHtml = `<div class="glass-card portal-caloric-card" style="margin-bottom:12px">
-      <div class="portal-card-label">Gasto Energetico Estimado &middot; ${tmbRes.formula}</div>
-      <div class="portal-caloric-grid">
-        <div class="portal-caloric-item"><div class="portal-caloric-val">${tmbRes.valor}</div><div class="portal-caloric-lbl">TMB kcal</div></div>
-        <div class="portal-caloric-item" style="color:var(--portal-primary)"><div class="portal-caloric-val">${tdeeRes.valor}</div><div class="portal-caloric-lbl">TDEE kcal</div></div>
-        <div class="portal-caloric-item" style="color:var(--portal-accent)"><div class="portal-caloric-val">${metaRes.kcal}</div><div class="portal-caloric-lbl">Meta kcal</div></div>
+    caloricHtml = `<div class="glass-card" style="margin-bottom:12px; border-left:3px solid var(--portal-primary)">
+      <div class="portal-card-label" style="margin-bottom:12px">
+        <span>Gasto Energético Estimado</span>
+        <span style="font-size:0.65rem;color:var(--portal-text-muted);font-weight:normal;float:right;margin-top:2px">${tmbRes.formula} &middot; Base: ${lastComp ? safeFormatDate(lastComp.date) : '—'}</span>
       </div>
-      ${macrosRes?`<div class="portal-macros-row" style="margin-top:8px">
-        <div style="color:#10b981">Proteina: <b>${macrosRes.proteina.g}g</b></div>
-        <div style="color:#f59e0b">Carb: <b>${macrosRes.carboidrato.g}g</b></div>
-        <div style="color:#8b5cf6">Gordura: <b>${macrosRes.gordura.g}g</b></div>
-      </div>`:''}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+        <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px">
+          <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;font-weight:700">TMB</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--portal-text-secondary);margin:4px 0">${tmbRes.valor} <span style="font-size:0.72rem;font-weight:600">kcal</span></div>
+          <div style="font-size:0.65rem;color:var(--portal-text-muted)">Basal</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px">
+          <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;font-weight:700">TDEE</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--portal-primary);margin:4px 0">${tdeeRes.valor} <span style="font-size:0.72rem;font-weight:600">kcal</span></div>
+          <div style="font-size:0.65rem;color:var(--portal-text-muted)">×${tdeeRes.fator} &middot; ~${Math.round(sessPerWeek*10)/10}×/sem</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px">
+          <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;font-weight:700">Meta (${student?.goal||'Manutenção'})</div>
+          <div style="font-size:1.3rem;font-weight:800;color:${obj.includes('emagr')?'var(--portal-warning)':obj.includes('hipert')?'var(--portal-success)':'var(--portal-accent)'};margin:4px 0">${metaRes.kcal} <span style="font-size:0.72rem;font-weight:600">kcal</span></div>
+          <div style="font-size:0.65rem;color:var(--portal-text-muted)">${metaRes.label}</div>
+        </div>
+      </div>
+      ${macrosRes ? `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${[['Proteína',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>`
+          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid ${c}">
+            <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:700">${n}</div>
+            <div style="font-size:1.3rem;font-weight:800;color:${c};margin:4px 0">${m.g}g</div>
+            <div style="font-size:0.7rem;color:var(--portal-text-muted)">${m.kcal}kcal &middot; ${m.pct}%</div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:12px;font-size:0.72rem;color:var(--portal-text-muted);line-height:1.4">
+        Proteína: <strong>${macrosRes.protPorKg}g/kg</strong> &middot; ISSN Position Stand (2018)<br>
+        Peso: ${lastComp.peso}kg${lastComp.massaMagra?` &middot; Massa magra: ${lastComp.massaMagra}kg`:``}
+      </div>` : ''}
     </div>`;
   }
 

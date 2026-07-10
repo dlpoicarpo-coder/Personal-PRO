@@ -64,6 +64,11 @@ class Database {
     // Use the singleton from auth.js
     this._currentUser = null;
     this._subscription = null;
+    this._customClient = null;
+  }
+
+  setClient(client) {
+    this._customClient = client;
   }
 
   async getSubscription() {
@@ -124,7 +129,7 @@ class Database {
   }
 
   get supabase() {
-    return getSupabase();
+    return this._customClient || getSupabase();
   }
 
   // Get current user id (trainer_id used in all records)
