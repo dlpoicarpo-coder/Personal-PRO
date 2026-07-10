@@ -223,10 +223,11 @@ export async function renderStudentPortal(rawParam) {
     const { setPortalClient } = await import('../utils/auth.js');
     
     const portalClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: { headers: { 'x-student-token': token } }
+      global: { headers: { 'x-student-token': token } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
     });
     setPortalClient(portalClient);
-    db.supabase = portalClient;
+    db.setClient(portalClient);
   }
 
   // Agora podemos buscar o student com segurança (RLS validará o token)
@@ -676,10 +677,11 @@ function initPortalNav() {
     sessionStorage.removeItem(`portal_auth_${portalState.studentId}`);
     localStorage.removeItem(`portal_auth_${portalState.studentId}`);
     
-    if (window.supabase) {
-      const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
-      db.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
+    // Volta a usar o cliente padrão do sistema (limpa a injeção do portal)
+    db.setClient(null);
+    import('../utils/auth.js').then(({ setPortalClient }) => {
+      setPortalClient(null);
+    });
     
     window.location.reload();
   });
