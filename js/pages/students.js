@@ -8,7 +8,11 @@ import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { getCurrentUser } from '../utils/auth.js';
 
-window.inviteStudent = async (studentId, email, name, phone, btn) => {
+window.inviteStudent = async (studentId, email, name, phone, btn, birthDate) => {
+  if (!birthDate || birthDate === 'undefined') {
+    alert('Informe a data de nascimento para gerar o convite — necessária para conformidade com a LGPD (art. 14).');
+    return;
+  }
   if (!confirm(`Deseja gerar um link de convite seguro para ${email}?`)) return;
   const originalText = btn.innerHTML;
   btn.innerHTML = 'Gerando...';
@@ -175,7 +179,7 @@ function renderStudentCards(students, trainerId = 'trainer') {
 
         <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px;flex-wrap:wrap">
           ${s.email ? `
-          <button class="btn btn-ghost btn-sm invite-student-btn" onclick="window.inviteStudent('${s.id}', '${s.email}', '${s.name.replace(/'/g, "\\'")}', '${s.phone || ''}', this)" title="${s.auth_user_id ? 'Reenviar Convite' : 'Convidar para o App'}" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text)">
+          <button class="btn btn-ghost btn-sm invite-student-btn" onclick="window.inviteStudent('${s.id}', '${s.email}', '${s.name.replace(/'/g, "\\'")}', '${s.phone || ''}', this, '${s.birthDate || ''}')" title="${s.auth_user_id ? 'Reenviar Convite' : 'Convidar para o App'}" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text)">
             🎟️ <span style="font-size:0.72rem">${s.auth_user_id ? 'Reenviar' : 'Convite'}</span>
           </button>
           ` : `
@@ -216,8 +220,15 @@ function studentFormHTML(student = {}) {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Data de Nascimento</label>
-          <input class="form-input" name="birthDate" type="date" value="${student.birthDate || ''}" />
+          <label class="form-label">Data de Nascimento *</label>
+          <input class="form-input" name="birthDate" type="date" value="${student.birthDate || ''}" required onchange="
+            const date = new Date(this.value);
+            if(isNaN(date.getTime())) return;
+            const age = Math.abs(new Date(Date.now() - date.getTime()).getUTCFullYear() - 1970);
+            const isMinor = age < 18;
+            document.getElementById('guardianSection').style.display = isMinor ? 'block' : 'none';
+            document.querySelectorAll('#guardianSection input').forEach(i => i.required = isMinor);
+          " />
         </div>
         <div class="form-group">
           <label class="form-label">Gênero</label>
@@ -227,6 +238,29 @@ function studentFormHTML(student = {}) {
             <option value="F" ${student.gender === 'F' ? 'selected' : ''}>Feminino</option>
             <option value="Outro" ${student.gender === 'Outro' ? 'selected' : ''}>Outro</option>
           </select>
+        </div>
+      </div>
+      <div id="guardianSection" style="display: ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'block' : 'none'}; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--warning);">
+        <h4 style="margin:0 0 10px; color: var(--warning)">Responsável Legal (Menor de Idade)</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nome do Responsável *</label>
+            <input class="form-input" name="guardianName" value="${student.guardian?.name || ''}" placeholder="Nome Completo" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
+          </div>
+          <div class="form-group">
+            <label class="form-label">CPF do Responsável *</label>
+            <input class="form-input" name="guardianCpf" value="${student.guardian?.cpf || ''}" placeholder="000.000.000-00" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">E-mail do Responsável *</label>
+            <input class="form-input" name="guardianEmail" type="email" value="${student.guardian?.email || ''}" placeholder="email@responsavel.com" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Parentesco *</label>
+            <input class="form-input" name="guardianRelationship" value="${student.guardian?.relationship || ''}" placeholder="Ex: Pai, Mãe" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
+          </div>
         </div>
       </div>
       <div class="form-row">
@@ -356,7 +390,7 @@ async function viewStudentHTML(student) {
         </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
-        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this)">🎟️ ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
+        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this, '${student.birthDate || ''}')">🎟️ ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
         <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">▶ Treino</a>
       </div>
@@ -503,6 +537,17 @@ export function initStudents(navigateFn) {
             data.code = code;
           }
           if (data.birthDate) data.age = Calc.calcularIdade(data.birthDate);
+          
+          if (data.age < 18) {
+            data.guardian = {
+              name: data.guardianName,
+              cpf: data.guardianCpf,
+              email: data.guardianEmail,
+              relationship: data.guardianRelationship
+            };
+          }
+          delete data.guardianName; delete data.guardianCpf; delete data.guardianEmail; delete data.guardianRelationship;
+          
           data.createdAt = new Date().toISOString();
           await db.add('students', data);
           notify.success(`${data.name} cadastrado!`);
@@ -567,6 +612,19 @@ export function initStudents(navigateFn) {
               const fd = new FormData(document.getElementById('studentForm'));
               const data = { ...s, ...Object.fromEntries(fd) };
               if (data.birthDate) data.age = Calc.calcularIdade(data.birthDate);
+              
+              if (data.age < 18) {
+                data.guardian = {
+                  name: data.guardianName,
+                  cpf: data.guardianCpf,
+                  email: data.guardianEmail,
+                  relationship: data.guardianRelationship
+                };
+              } else {
+                delete data.guardian;
+              }
+              delete data.guardianName; delete data.guardianCpf; delete data.guardianEmail; delete data.guardianRelationship;
+              
               await db.put('students', data);
               notify.success('Aluno atualizado!');
               closeModal();

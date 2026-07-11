@@ -344,6 +344,15 @@ export function initStudentPortal(rawParam) {
   setTimeout(() => requestNotificationPermission(), 5000);
   // Show interactive tutorial for first-time users (after PWA + notification prompts)
   setTimeout(() => showTutorialPopup(sid), 8000);
+  
+  // LGPD: Ratificação de consentimento ao completar 18 anos
+  if (portalState.student && portalState.student.birthDate) {
+    const age = Calc.calcularIdade(portalState.student.birthDate);
+    const isRatified = localStorage.getItem('lgpd_ratified_18_' + sid);
+    if (age >= 18 && portalState.student.guardian && !isRatified) {
+      setTimeout(() => showLgpdRatificationPopup(sid), 11000);
+    }
+  }
 }
 
 // ── TUTORIAL INTERATIVO (POPUP) ──────────────────────────────────
@@ -476,6 +485,73 @@ function showTutorialPopup(studentId) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeTutorial(); });
 }
 
+// ── LGPD: RATIFICAÇÃO 18 ANOS ──────────────────────────────────
+function showLgpdRatificationPopup(studentId) {
+  if (document.getElementById('lgpdRatificationPopup')) return;
+  const root = document.querySelector('.portal-root');
+  if (!root) return;
+  
+  const el = document.createElement('div');
+  el.id = 'lgpdRatificationPopup';
+  el.className = 'portal-pwa-popup visible';
+  el.style.zIndex = '10000';
+  
+  el.innerHTML = `
+    <div class="portal-pwa-popup-inner" style="border: 1px solid var(--warning)">
+      <div class="portal-pwa-icon">⚠️</div>
+      <div class="portal-pwa-text">
+        <div class="portal-pwa-title" style="color: var(--warning)">Aviso Legal Importante</div>
+        <div class="portal-pwa-sub" style="margin-bottom: 15px;">Você completou 18 anos. Para continuarmos personalizando seus treinos, confirme que autoriza o tratamento dos seus dados de saúde e aceita os Termos, conforme a LGPD.</div>
+      </div>
+      <div class="portal-pwa-actions" style="flex-direction: column; gap: 8px;">
+        <button id="lgpdRatifyBtn" class="btn btn-primary" style="width:100%; font-size:1rem; padding:12px;">Autorizar e Continuar</button>
+      </div>
+    </div>`;
+  
+  root.appendChild(el);
+  
+  document.getElementById('lgpdRatifyBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('lgpdRatifyBtn');
+    btn.disabled = true;
+    btn.innerHTML = 'Registrando...';
+    
+    try {
+      const { getSupabase } = await import('../utils/auth.js');
+      const supabase = getSupabase();
+      
+      if (supabase && supabase.auth) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Registra no legal_consents (permitido via RLS)
+          await supabase.from('legal_consents').insert([{
+            auth_user_id: user.id,
+            consented_by: 'self',
+            terms_version: '1.0',
+            ip_address: '0.0.0.0', // Cliente via client
+            user_agent: navigator.userAgent
+          }]);
+        }
+      }
+      
+      // Salva localmente
+      localStorage.setItem('lgpd_ratified_18_' + studentId, '1');
+      if (portalState.student && portalState.student.guardian) {
+        portalState.student.guardian.ratified = true;
+        // Tenta salvar local, não precisa forçar sync agora, já que o consentimento tá no backend
+        import('../db.js').then(m => m.default.put('students', portalState.student)).catch(()=>{});
+      }
+      
+      el.classList.remove('visible');
+      setTimeout(() => el.remove(), 300);
+      
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao registrar consentimento. Tente novamente.');
+      btn.disabled = false;
+      btn.innerHTML = 'Autorizar e Continuar';
+    }
+  });
+}
 
 
 // ── PORTAL SHELL ───────────────────────────────────────────────

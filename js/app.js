@@ -65,7 +65,23 @@ export async function navigateTo(path) {
     appContainer.className = '';
     import('./pages/reset-password.js').then(({ renderResetPassword, initResetPassword }) => {
       appContainer.innerHTML = renderResetPassword();
-      initResetPassword();
+      if(initResetPassword) initResetPassword();
+    });
+    return;
+  }
+
+  if (path === '/termos') {
+    appContainer.className = '';
+    import('./pages/termos.js').then(({ renderTermos }) => {
+      appContainer.innerHTML = renderTermos();
+    });
+    return;
+  }
+
+  if (path === '/privacidade') {
+    appContainer.className = '';
+    import('./pages/privacidade.js').then(({ renderPrivacidade }) => {
+      appContainer.innerHTML = renderPrivacidade();
     });
     return;
   }

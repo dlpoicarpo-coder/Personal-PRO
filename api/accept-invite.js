@@ -72,11 +72,28 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Convite inválido ou expirado' });
       }
 
+      const studentData = inviteData[0].students?.data || {};
+      let isMinor = false;
+      let guardianData = null;
+
+      if (studentData.birthDate) {
+        const bd = new Date(studentData.birthDate);
+        const ageDifMs = Date.now() - bd.getTime();
+        const ageDate = new Date(ageDifMs);
+        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+        if (age < 18) {
+          isMinor = true;
+          guardianData = studentData.guardian || null;
+        }
+      }
+
       return res.status(200).json({
         valid: true,
         email: inviteData[0].email,
         studentId: inviteData[0].student_id,
-        studentName: inviteData[0].students?.data?.name
+        studentName: studentData.name,
+        isMinor,
+        guardianData
       });
     } catch (err) {
       return res.status(500).json({ error: 'Server error' });
@@ -85,12 +102,20 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     // Processamento do convite (Aceite)
-    const { token, password } = req.body;
+    const { token, password, consentData } = req.body;
     if (!token || !password) return res.status(400).json({ error: 'Missing parameters' });
 
-    // 0. Validação de senha no servidor
+    // 0. Validações Iniciais (Senha e LGPD)
     if (password.length < 8) {
       return res.status(400).json({ error: 'A senha deve ter no mínimo 8 caracteres.' });
+    }
+    if (!consentData || !consentData.termsVersion) {
+      return res.status(400).json({ error: 'Consentimento obrigatório não informado.' });
+    }
+    if (consentData.isMinor) {
+      if (!consentData.guardianName || !consentData.guardianCpf || !consentData.guardianRelationship) {
+        return res.status(400).json({ error: 'Dados do responsável legal incompletos para menor de idade.' });
+      }
     }
 
     try {
@@ -256,7 +281,66 @@ export default async function handler(req, res) {
         });
       }
 
-      // 4. QUEIMAR O TOKEN ATOMICAMENTE (Confirmação final)
+      // 4. REGISTRAR OS CONSENTIMENTOS LGPD NA TABELA `legal_consents` (Ignorando RLS)
+      // Obrigatório. Falhar aqui aborta a queima do token, garantindo que não há vínculo final sem consentimento registrado.
+      const { termsVersion, isMinor, guardianName, guardianCpf, guardianRelationship } = consentData;
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      const consentedBy = isMinor ? 'guardian' : 'self';
+      
+      // Função auxiliar para gerar hash
+      const crypto = await import('crypto');
+      const emailHash = crypto.createHash('sha256').update(inviteEmail.toLowerCase()).digest('hex');
+
+      const insertConsents = [
+        {
+          auth_user_id: targetUid,
+          role: 'student',
+          consent_type: 'terms',
+          terms_version: termsVersion,
+          ip_address: ip,
+          user_agent: userAgent,
+          student_id: studentId,
+          consent_hash: emailHash,
+          consented_by: consentedBy,
+          guardian_name: isMinor ? guardianName : null,
+          guardian_cpf: isMinor ? guardianCpf : null,
+          guardian_relationship: isMinor ? guardianRelationship : null
+        },
+        {
+          auth_user_id: targetUid,
+          role: 'student',
+          consent_type: 'health_data',
+          terms_version: termsVersion,
+          ip_address: ip,
+          user_agent: userAgent,
+          student_id: studentId,
+          consent_hash: emailHash,
+          consented_by: consentedBy,
+          guardian_name: isMinor ? guardianName : null,
+          guardian_cpf: isMinor ? guardianCpf : null,
+          guardian_relationship: isMinor ? guardianRelationship : null
+        }
+      ];
+
+      const consentRes = await fetch(`${SUPABASE_URL}/rest/v1/legal_consents`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(insertConsents)
+      });
+
+      if (!consentRes.ok) {
+        const errTxt = await consentRes.text();
+        console.error('--- DIAGNÓSTICO ERRO DE CONSENTIMENTO ---');
+        console.error(errTxt);
+        console.error('-----------------------------------------');
+        return res.status(500).json({ error: 'Falha crítica ao registrar consentimento legal. Operação abortada e token preservado.' });
+      }
+
+      // 5. QUEIMAR O TOKEN ATOMICAMENTE (Confirmação final)
       const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/student_invites?token=eq.${token}&used=eq.false&expires_at=gt.now()`, {
         method: 'PATCH',
         headers: {

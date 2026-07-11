@@ -74,6 +74,12 @@ export function renderLogin() {
                 <label class="form-label">Confirmar senha *</label>
                 <input class="form-input" name="passwordConfirm" type="password" required placeholder="Repita a senha" autocomplete="new-password" />
               </div>
+              <div class="form-group" style="margin-top: 16px; display: flex; gap: 8px; align-items: flex-start;">
+                <input type="checkbox" id="termsCheckTrainer" required style="margin-top: 4px;" />
+                <label for="termsCheckTrainer" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; line-height: 1.4;">
+                  Li e aceito os <a href="#/termos" target="_blank" style="color: var(--primary); text-decoration: none;">Termos de Uso</a> e a <a href="#/privacidade" target="_blank" style="color: var(--primary); text-decoration: none;">Política de Privacidade</a>.
+                </label>
+              </div>
               <p id="signupError" class="text-sm mt-sm" style="color:var(--danger);display:none"></p>
               <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:16px" id="signupSubmitBtn">
                 Criar Conta
@@ -116,6 +122,10 @@ export function renderLogin() {
 
         <div class="login-footer">
           <p class="text-muted text-xs">© 2026 Personal PRO — Dados protegidos por Supabase Auth</p>
+          <div style="margin-top: 8px; font-size: 0.8rem;">
+            <a href="#/termos" target="_blank" style="color: var(--text-muted); text-decoration: none; margin-right: 12px;">Termos</a>
+            <a href="#/privacidade" target="_blank" style="color: var(--text-muted); text-decoration: none;">Privacidade</a>
+          </div>
         </div>
       </div>
     </div>
