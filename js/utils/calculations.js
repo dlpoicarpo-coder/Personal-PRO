@@ -5,7 +5,29 @@
 
 export const Calc = {
 
-  // ── DATAS ────────────────────────────────────────────────
+  // ── DATAS E PRAZOS ───────────────────────────────────────
+  getMacrocycleStatus(m, now = new Date()) {
+    if (m.status !== 'active' || !m.startDate || !m.totalWeeks) return { isCritical: false };
+    const startMs = new Date(m.startDate + 'T12:00:00').getTime();
+    const endMs = startMs + m.totalWeeks * 7 * 86400000;
+    const diffMs = now.getTime() - startMs;
+    
+    const daysLeft = Math.ceil((endMs - now.getTime()) / 86400000);
+    const currentWeek = Math.floor(diffMs / (7 * 86400000)) + 1;
+    const daysIntoWeek = Math.floor((diffMs % (7 * 86400000)) / 86400000);
+
+    const isEndingSoon = daysLeft <= 7;
+    const isChangingWeek = currentWeek > 1 && currentWeek <= m.totalWeeks && daysIntoWeek <= 2;
+    
+    return {
+      isCritical: isEndingSoon || isChangingWeek,
+      isEndingSoon,
+      isChangingWeek,
+      daysLeft,
+      currentWeek
+    };
+  },
+
   formatDate(dateStr) {
     if (!dateStr) return '—';
     const d = new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));

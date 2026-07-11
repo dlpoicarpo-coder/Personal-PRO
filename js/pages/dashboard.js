@@ -65,15 +65,17 @@ export async function renderDashboard() {
 
   // 3. Macrociclos Críticos
   const criticalMacros = macrocycles
-    .filter(m => m.status === 'active' && m.startDate && m.totalWeeks)
     .map(m => {
-      const endMs = new Date(m.startDate + 'T12:00:00').getTime() + m.totalWeeks * 7 * 86400000;
-      const daysLeft = Math.ceil((endMs - now.getTime()) / 86400000);
+      const status = Calc.getMacrocycleStatus(m, now);
       const st = students.find(s => s.id === m.studentId);
-      return { ...m, student: st, daysLeft };
+      return { ...m, student: st, status };
     })
-    .filter(m => m.daysLeft <= 7)
-    .sort((a, b) => a.daysLeft - b.daysLeft);
+    .filter(m => m.status.isCritical)
+    .sort((a, b) => {
+      if (a.status.isEndingSoon && !b.status.isEndingSoon) return -1;
+      if (!a.status.isEndingSoon && b.status.isEndingSoon) return 1;
+      return a.status.daysLeft - b.status.daysLeft;
+    });
 
   // 4. Radar de Ajustes (Lembretes)
   const adjustmentAlerts = [];
@@ -107,20 +109,14 @@ export async function renderDashboard() {
 
   // B. Gatilho de Macrociclo (Troca de Fase)
   macrocycles.forEach(m => {
-    if (m.status === 'active' && m.startDate) {
-      const startMs = new Date(m.startDate + 'T12:00:00').getTime();
-      const diffMs = now.getTime() - startMs;
-      const currentWeek = Math.floor(diffMs / (7 * 86400000)) + 1;
-      const daysIntoWeek = Math.floor((diffMs % (7 * 86400000)) / 86400000);
-      
-      if (currentWeek > 1 && currentWeek <= m.totalWeeks && daysIntoWeek <= 2) {
-        const st = students.find(x => x.id === m.studentId);
-        if (st) adjustmentAlerts.push({ 
-          type: 'macro_phase', 
-          student: st, 
-          text: `${st.name.split(' ')[0]} entrou na Semana ${currentWeek} do macrociclo. Avalie a necessidade de ajuste de cargas.` 
-        });
-      }
+    const status = Calc.getMacrocycleStatus(m, now);
+    if (status.isChangingWeek) {
+      const st = students.find(x => x.id === m.studentId);
+      if (st) adjustmentAlerts.push({ 
+        type: 'macro_phase', 
+        student: st, 
+        text: `${st.name.split(' ')[0]} entrou na Semana ${status.currentWeek} do macrociclo. Avalie a necessidade de ajuste de cargas.` 
+      });
     }
   });
 
@@ -236,15 +232,20 @@ export async function renderDashboard() {
         </div>
         <div class="flex flex-col gap-xs">
           ${criticalMacros.slice(0, 5).map(m => {
-            const color = m.daysLeft < 0 ? 'var(--danger)' : m.daysLeft === 0 ? 'var(--danger)' : 'var(--warning)';
-            const labelText = m.daysLeft < 0 ? `Expirou há ${Math.abs(m.daysLeft)}d` : m.daysLeft === 0 ? 'Termina hoje!' : `Termina em ${m.daysLeft}d`;
+            const stColor = m.status.daysLeft < 0 ? 'var(--danger)' : m.status.daysLeft === 0 ? 'var(--danger)' : 'var(--warning)';
+            let labelText = '';
+            if (m.status.isEndingSoon) {
+               labelText = m.status.daysLeft < 0 ? `Expirou há ${Math.abs(m.status.daysLeft)}d` : m.status.daysLeft === 0 ? 'Termina hoje!' : `Termina em ${m.status.daysLeft}d`;
+            } else if (m.status.isChangingWeek) {
+               labelText = `Semana ${m.status.currentWeek}`;
+            }
             return `
               <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
                 <div style="min-width: 0; flex: 1; margin-right: 8px;">
                   <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.student ? m.student.name.split(' ')[0] : 'Aluno'}</div>
                   <div class="text-muted text-xs" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${m.name} · ${m.totalWeeks}sem</div>
                 </div>
-                <span class="badge" style="background:${color}15; color:${color}; font-size: 0.68rem; padding: 2px 8px; white-space: nowrap;">${labelText}</span>
+                <span class="badge" style="background:${stColor}15; color:${stColor}; font-size: 0.68rem; padding: 2px 8px; white-space: nowrap;">${labelText}</span>
               </div>
             `;
           }).join('')}
