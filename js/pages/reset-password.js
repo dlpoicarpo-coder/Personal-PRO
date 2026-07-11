@@ -2,28 +2,34 @@ import { getSupabase } from '../utils/auth.js';
 
 export function renderResetPassword() {
   return `
-    <div class="auth-container">
-      <div class="auth-card fade-in">
-        <div class="auth-logo">Personal<strong>PRO</strong></div>
-        <h2 class="auth-title">Redefinir Senha</h2>
-        <p class="auth-subtitle">Digite sua nova senha abaixo.</p>
+    <div class="login-page">
+      <div class="login-card fade-in">
+        <div class="login-header">
+          <h1 class="login-title">Personal<strong class="logo-pro">PRO</strong></h1>
+          <p class="login-subtitle">Redefinir Senha</p>
+        </div>
         
-        <form id="resetPasswordForm" autocomplete="off">
-          <div class="form-group">
-            <label class="form-label">Nova Senha</label>
-            <input type="password" class="form-input" id="newPassword" required minlength="6" placeholder="Mínimo 6 caracteres" />
+        <div class="login-body">
+          <p style="text-align:center; color:var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">
+            Digite sua nova senha abaixo.
+          </p>
+          <form id="resetPasswordForm" autocomplete="off">
+            <div class="form-group">
+              <label class="form-label">Nova Senha</label>
+              <input type="password" class="form-input" id="newPassword" required minlength="8" placeholder="Mínimo 8 caracteres" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirmar Nova Senha</label>
+              <input type="password" class="form-input" id="confirmPassword" required minlength="8" placeholder="Mínimo 8 caracteres" />
+            </div>
+            <p id="resetError" style="color:var(--danger);font-size:0.85rem;display:none;margin-bottom:1rem"></p>
+            <p id="resetSuccess" style="color:var(--success);font-size:0.85rem;display:none;margin-bottom:1rem"></p>
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:16px" id="resetBtn">Salvar Nova Senha</button>
+          </form>
+          
+          <div class="text-center mt-md">
+            <a href="#/" style="color:var(--text-muted); text-decoration:none; font-size:0.85rem;">Voltar para o Início</a>
           </div>
-          <div class="form-group">
-            <label class="form-label">Confirmar Nova Senha</label>
-            <input type="password" class="form-input" id="confirmPassword" required minlength="6" placeholder="Mínimo 6 caracteres" />
-          </div>
-          <div id="resetError" style="color:var(--danger);font-size:0.85rem;display:none;margin-bottom:1rem"></div>
-          <div id="resetSuccess" style="color:var(--success);font-size:0.85rem;display:none;margin-bottom:1rem"></div>
-          <button type="submit" class="btn btn-primary" style="width:100%" id="resetBtn">Salvar Nova Senha</button>
-        </form>
-        
-        <div class="text-center mt-md">
-          <a href="#/" class="auth-link">Voltar para o Início</a>
         </div>
       </div>
     </div>
