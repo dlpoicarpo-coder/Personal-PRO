@@ -148,7 +148,7 @@ function renderStudentCards(students, trainerId = 'trainer') {
         <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">
           ${window.getModalityBadge ? window.getModalityBadge(s.modality) : ''}
           <span class="badge ${s.status === 'Ativo' ? 'badge-success' : 'badge-warning'}" style="font-size:0.6rem;opacity:0.8">${s.status}</span>
-          <span class="badge" style="font-size:0.6rem;background:transparent;border:1px solid var(--border-color)">${s.auth_user_id ? '🟢 Conta' : '⚪ Sem conta'}</span>
+          <span class="badge" style="font-size:0.6rem;background:transparent;border:1px solid var(--border-color)">${s.auth_user_id ? '✅ CONTA ATIVA' : '⚠️ SEM CONTA'}</span>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ function renderStudentCards(students, trainerId = 'trainer') {
         <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px;flex-wrap:wrap">
           ${s.email ? `
           <button class="btn btn-ghost btn-sm invite-student-btn" onclick="window.inviteStudent('${s.id}', '${s.email}', '${s.name.replace(/'/g, "\\'")}', '${s.phone || ''}', this)" title="${s.auth_user_id ? 'Reenviar Convite' : 'Convidar para o App'}" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text)">
-            ✉️ <span style="font-size:0.72rem">Convite</span>
+            🎟️ <span style="font-size:0.72rem">${s.auth_user_id ? 'Reenviar' : 'Convite'}</span>
           </button>
           ` : `
           <button class="btn btn-ghost btn-sm" disabled title="Sem e-mail p/ convite" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text-muted)">
@@ -360,7 +360,7 @@ async function viewStudentHTML(student) {
           <span class="badge ${student.status === 'Ativo' ? 'badge-success' : 'badge-warning'}">${student.status}</span>
           ${student.goal ? `<span class="badge badge-info">${student.goal}</span>` : ''}
           <span class="badge" style="background:transparent;border:1px solid var(--border-color)" id="authStatus_${student.id}">
-             ${student.auth_user_id ? '🟢 Conta Ativa' : '⚪ Sem conta'}
+             ${student.auth_user_id ? '✅ CONTA ATIVA' : '⚠️ SEM CONTA'}
           </span>
         </div>
       </div>

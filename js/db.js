@@ -202,6 +202,7 @@ class Database {
             itemData = { 
               ...r.data, 
               id: r.id,
+              auth_user_id: r.auth_user_id,
               updatedAt: r.data.updatedAt || r.updated_at,
               createdAt: r.data.createdAt || r.created_at
             };
@@ -402,6 +403,7 @@ class Database {
             itemData = { 
               ...r.data, 
               id: r.id,
+              auth_user_id: r.auth_user_id,
               updatedAt: r.data.updatedAt || r.updated_at,
               createdAt: r.data.createdAt || r.created_at
             };
@@ -585,6 +587,7 @@ class Database {
       const res = data.data && typeof data.data === 'object' ? { 
         ...data.data, 
         id: data.id,
+        auth_user_id: data.auth_user_id,
         updatedAt: data.data.updatedAt || data.updated_at,
         createdAt: data.data.createdAt || data.created_at
       } : {
@@ -626,7 +629,7 @@ class Database {
         .ilike('data->>email', email);
       if (!error && data && data.length > 0) {
         const r = data[0];
-        const res = r.data ? { ...r.data, id: r.id } : r;
+        const res = r.data ? { ...r.data, id: r.id, auth_user_id: r.auth_user_id } : r;
         res._synced = true;
         return fixObjectEncoding(res);
       }
@@ -713,6 +716,7 @@ class Database {
           itemData = {
             ...r.data, 
             id: r.id,
+            auth_user_id: r.auth_user_id,
             updatedAt: r.data.updatedAt || r.updated_at,
             createdAt: r.data.createdAt || r.created_at
           };
@@ -804,7 +808,7 @@ class Database {
       const res = all
         .filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; })
         .map(r => {
-          let itemData = r.data ? { ...r.data, id: r.id } : r;
+          let itemData = r.data ? { ...r.data, id: r.id, auth_user_id: r.auth_user_id } : r;
           itemData._synced = true;
           return itemData;
         })
