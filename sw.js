@@ -134,9 +134,9 @@ self.addEventListener('fetch', (e) => {
 
 // Push notification support
 self.addEventListener('push', (e) => {
-  const data = e.data ? e.data.json() : { title: 'Personal PRO', body: 'Nova notificação' };
+  const data = e.data ? e.data.json() : { title: 'Vetor', body: 'Nova notificação' };
   e.waitUntil(
-    self.registration.showNotification(data.title || 'Personal PRO', {
+    self.registration.showNotification(data.title || 'Vetor', {
       body: data.body || '',
       icon: '/assets/icon-portal-512.png',
       badge: '/assets/icon-portal-512.png',

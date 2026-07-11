@@ -1,6 +1,6 @@
 {
-  "name": "Personal PRO — Portal do Aluno",
-  "short_name": "Meu Treino",
+  "name": "Vetor — Portal do Aluno",
+  "short_name": "Vetor",
   "description": "Seu espaço pessoal de treino — check-in, histórico, biofeedback e progresso",
   "start_url": "/index.html#/portal/",
   "display": "standalone",

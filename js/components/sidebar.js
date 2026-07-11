@@ -28,9 +28,9 @@ export function renderSidebar(currentPath) {
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">
-          <div class="logo-text">
-            <span class="logo-title">Personal<strong class="logo-pro">PRO</strong></span>
-            <span class="logo-subtitle">Sistema de Treinamento</span>
+          <div class="vetor-logo">
+            <span class="vetor-name">Vetor</span>
+            <i class="vetor-diamond"></i>
           </div>
         </div>
         <div style="display:flex; gap: 4px;">

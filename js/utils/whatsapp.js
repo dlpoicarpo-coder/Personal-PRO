@@ -27,7 +27,7 @@ export function sendWhatsApp(phone, message) {
  * Generate training reminder message
  */
 export function reminderMsg(studentName, workoutName, date, time, formLink = '') {
-  let msg = `🏋️ *Personal PRO*\n\n`;
+  let msg = `🏋️ *Vetor*\n\n`;
   msg += `Olá ${studentName}! 👋\n\n`;
   msg += `📅 Lembrete de treino:\n`;
   msg += `• *${workoutName}*\n`;
@@ -43,19 +43,19 @@ export function reminderMsg(studentName, workoutName, date, time, formLink = '')
  * Generate pre-workout form message
  */
 export function preFormMsg(studentName, formLink) {
-  return `🏋️ *Personal PRO*\n\nOlá ${studentName}! 👋\n\n📝 Por favor preencha o formulário pré-treino (leva 30 segundos):\n${formLink}\n\nIsso nos ajuda a ajustar o treino de hoje. Obrigado! 🙏`;
+  return `🏋️ *Vetor*\n\nOlá ${studentName}! 👋\n\n📝 Por favor preencha o formulário pré-treino (leva 30 segundos):\n${formLink}\n\nIsso nos ajuda a ajustar o treino de hoje. Obrigado! 🙏`;
 }
 
 /**
  * Generate post-workout form message
  */
 export function postFormMsg(studentName, formLink) {
-  return `🏋️ *Personal PRO*\n\nParabéns pelo treino, ${studentName}! 🎉\n\n📝 Por favor avalie como foi o treino (PSE):\n${formLink}\n\nSeus dados ajudam no seu progresso! 📊💪`;
+  return `🏋️ *Vetor*\n\nParabéns pelo treino, ${studentName}! 🎉\n\n📝 Por favor avalie como foi o treino (PSE):\n${formLink}\n\nSeus dados ajudam no seu progresso! 📊💪`;
 }
 
 /**
  * Generate payment reminder message
  */
 export function paymentMsg(studentName, amount, dueDate) {
-  return `🏋️ *Personal PRO*\n\nOlá ${studentName}! 👋\n\n💰 Lembrete de pagamento:\n• Valor: R$ ${amount.toFixed(2)}\n• Vencimento: ${dueDate}\n\nQualquer dúvida estou à disposição. 🙏`;
+  return `🏋️ *Vetor*\n\nOlá ${studentName}! 👋\n\n💰 Lembrete de pagamento:\n• Valor: R$ ${amount.toFixed(2)}\n• Vencimento: ${dueDate}\n\nQualquer dúvida estou à disposição. 🙏`;
 }

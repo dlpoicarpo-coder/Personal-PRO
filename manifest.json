@@ -1,7 +1,7 @@
 {
-  "name": "Personal PRO — Trainer",
-  "short_name": "PRO Trainer",
-  "description": "Painel do Personal Trainer — Gestão de alunos, treinos, avaliações e biofeedback",
+  "name": "Vetor",
+  "short_name": "Vetor",
+  "description": "Painel Vetor — Gestão de alunos, treinos, avaliações e biofeedback",
   "start_url": "/index.html#/",
   "display": "standalone",
   "background_color": "#0a0e17",
