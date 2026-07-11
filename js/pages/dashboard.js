@@ -41,7 +41,13 @@ export async function renderDashboard() {
   const studentSessions = activeStudents.map(s => {
     const completed = sessions.filter(x => x.studentId === s.id && x.status === 'completed');
     const last = completed.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-    const daysSince = last ? Math.floor((Date.now() - new Date(last.date)) / 86400000) : null;
+    let daysSince = null;
+    if (last && last.date) {
+      const parsed = new Date(last.date);
+      if (!isNaN(parsed)) {
+        daysSince = Math.floor((Date.now() - parsed) / 86400000);
+      }
+    }
     return { ...s, lastSession: last, daysSince };
   });
   studentSessions.sort((a, b) => {
@@ -170,7 +176,11 @@ export async function renderDashboard() {
         <div class="flex flex-col gap-xs">
           ${studentSessions.slice(0, 5).map(s => {
             const dayColor = s.daysSince === null ? 'var(--text-muted)' : s.daysSince > 7 ? 'var(--danger)' : s.daysSince > 3 ? 'var(--warning)' : 'var(--success)';
-            const dayText = s.daysSince === null ? 'Sem treinos' : s.daysSince === 0 ? 'Hoje' : s.daysSince === 1 ? 'Ontem' : `${s.daysSince}d atrás`;
+            let dayText = 'Nunca treinou';
+            if (s.daysSince !== null && s.lastSession && s.lastSession.date) {
+               const parsedDate = new Date(s.lastSession.date);
+               dayText = parsedDate.toLocaleDateString('pt-BR') + (s.daysSince === 0 ? ' (Hoje)' : s.daysSince === 1 ? ' (Ontem)' : ` (${s.daysSince}d atrás)`);
+            }
             return `
               <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
                 <div class="flex items-center gap-sm" style="min-width: 0; flex: 1;">
@@ -179,7 +189,7 @@ export async function renderDashboard() {
                   </div>
                   <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${s.name.split(' ')[0]}</span>
                 </div>
-                <span class="badge" style="background:${dayColor}15; color:${dayColor}; font-size: 0.68rem; padding: 2px 8px;">${dayText}</span>
+                <span class="badge" style="background:${dayColor}15; color:${dayColor}; font-size: 0.68rem; padding: 2px 8px; max-width: 130px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${dayText}">${dayText}</span>
               </div>
             `;
           }).join('')}

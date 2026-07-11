@@ -107,7 +107,13 @@ export async function renderStudents() {
   const enriched = students.map(s => {
     const completed = sessions.filter(x => x.studentId === s.id && x.status === 'completed');
     const last = completed.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-    const daysSince = last ? Math.floor((Date.now() - new Date(last.date)) / 86400000) : null;
+    let daysSince = null;
+    if (last && last.date) {
+      const parsed = new Date(last.date);
+      if (!isNaN(parsed)) {
+        daysSince = Math.floor((Date.now() - parsed) / 86400000);
+      }
+    }
     return { ...s, _lastSession: last, _daysSince: daysSince, _totalSessions: completed.length };
   });
 
@@ -182,7 +188,7 @@ function renderStudentCards(students, trainerId = 'trainer') {
         <div style="padding:6px 8px;background:var(--bg-page);border-radius:6px">
           <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">Último treino</div>
           <div style="font-size:0.8rem;font-weight:600;margin-top:1px;color:${dayColor}">
-            ${s._daysSince === null ? '—' : s._daysSince === 0 ? 'Hoje' : `${s._daysSince}d atrás`}
+            ${s._daysSince === null ? '—' : s._daysSince === 0 ? 'Hoje' : s._daysSince === 1 ? 'Ontem' : `${s._daysSince}d atrás`}
           </div>
         </div>
         <div style="padding:6px 8px;background:var(--bg-page);border-radius:6px">
