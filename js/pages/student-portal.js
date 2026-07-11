@@ -681,7 +681,7 @@ async function loadSection(section) {
         }
       } else {
         // Workouts, Sessions, Macrocycles, Assessments, Biofeedback, Schedules, Financial
-        // Todas essas tabelas possuem RLS restrito via get_active_student_id().
+        // Todas essas tabelas possuem RLS restrito.
         // Nunca usamos fallback por trainer_id no portal do aluno.
         const { data, error } = await db.supabase.from(table).select('*').filter('data->>studentId', 'eq', sid);
         
@@ -817,8 +817,7 @@ async function loadSection(section) {
     return w;
   });
 
-  // Filtrar treinos pelo studentId (como o cliente do db.js agora
-  // envia o x-student-token, o RLS já isola os dados perfeitamente).
+  // Filtrar treinos pelo studentId (RLS já isola os dados nativamente).
   const workouts = workoutsEnriched.filter(w => w.studentId === sid);
 
   // Normalize sessions: unify field names from trainer live-tracker vs solo portal
