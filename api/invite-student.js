@@ -26,9 +26,9 @@ export default async function handler(req, res) {
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || SUPABASE_SERVICE_KEY;
+    const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !SUPABASE_KEY) {
       return res.status(500).json({ error: 'Missing Server Configuration' });
     }
 
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
-        'apikey': SUPABASE_ANON_KEY
+        'apikey': SUPABASE_KEY
       }
     });
 
