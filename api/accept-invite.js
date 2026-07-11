@@ -193,6 +193,7 @@ export default async function handler(req, res) {
       // SE CHEGAMOS AQUI: Todas as validações de segurança passaram. O token é válido e o e-mail está seguro para uso.
       
       // 3. CRIAR OU ATUALIZAR USUÁRIO NO AUTH E CRAVAR VÍNCULO
+      if (shouldCreate) {
         const createUserRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
           method: 'POST',
           headers: {
