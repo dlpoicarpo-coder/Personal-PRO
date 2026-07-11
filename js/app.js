@@ -60,6 +60,15 @@ export async function navigateTo(path) {
     initAnamneseForm();
     return;
   }
+
+  if (path.startsWith('/reset-password')) {
+    appContainer.className = '';
+    import('./pages/reset-password.js').then(({ renderResetPassword, initResetPassword }) => {
+      appContainer.innerHTML = renderResetPassword();
+      initResetPassword();
+    });
+    return;
+  }
   if (path.startsWith('access_token=') || path.startsWith('error=')) {
     if (path.includes('type=invite')) {
       setTimeout(() => window.location.hash = '/convite', 500);

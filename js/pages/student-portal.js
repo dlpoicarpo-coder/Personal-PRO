@@ -5920,9 +5920,9 @@ function initEmailLoginScreen() {
     successEl.style.display = 'none';
     forgotBtn.innerText = 'Enviando...';
     try {
-      const { resetPasswordForEmail } = await import('../utils/auth.js');
-      const res = await resetPasswordForEmail(email);
-      if (!res.success) throw new Error(res.error || 'Erro ao enviar recuperação.');
+      const { sendPasswordReset } = await import('../utils/auth.js');
+      const res = await sendPasswordReset(email);
+      if (res.error) throw new Error(res.error || 'Erro ao enviar recuperação.');
       successEl.textContent = 'Enviamos um link de recuperação para seu e-mail.';
       successEl.style.display = 'block';
     } catch (err) {
