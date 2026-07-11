@@ -57,8 +57,18 @@ export default async function handler(req, res) {
           'apikey': SUPABASE_SERVICE_KEY
         }
       });
+      
+      if (!inviteRes.ok) {
+        const errTxt = await inviteRes.text();
+        console.log('--- DIAGNÓSTICO GET ACCEPT-INVITE ---');
+        console.log('Status:', inviteRes.status);
+        console.log('Erro:', errTxt);
+        console.log('---------------------------------------');
+        return res.status(500).json({ error: 'Erro interno ao consultar convite' });
+      }
+
       const inviteData = await inviteRes.json();
-      if (!inviteData || inviteData.length === 0) {
+      if (!inviteData || !Array.isArray(inviteData) || inviteData.length === 0) {
         return res.status(404).json({ error: 'Convite inválido ou expirado' });
       }
 
@@ -92,8 +102,18 @@ export default async function handler(req, res) {
           'apikey': SUPABASE_SERVICE_KEY
         }
       });
+      
+      if (!tokenRes.ok) {
+        const errTxt = await tokenRes.text();
+        console.log('--- DIAGNÓSTICO POST ACCEPT-INVITE (Token) ---');
+        console.log('Status:', tokenRes.status);
+        console.log('Erro:', errTxt);
+        console.log('----------------------------------------------');
+        return res.status(500).json({ error: 'Erro interno ao validar convite' });
+      }
+
       const tokenData = await tokenRes.json();
-      if (!tokenData || tokenData.length === 0) {
+      if (!tokenData || !Array.isArray(tokenData) || tokenData.length === 0) {
         return res.status(400).json({ error: 'Convite inválido, já utilizado ou expirado.' });
       }
 
@@ -104,12 +124,22 @@ export default async function handler(req, res) {
       // 2. Aplicar TODAS as regras de segurança (5 a 9) ANTES de queimar o token
       
       // Buscar student original
-      const studentRes = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${studentId}&select=*`, {
+      const studentRes = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${studentId}&select=id,auth_user_id,data`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`, 'apikey': SUPABASE_SERVICE_KEY }
       });
+      
+      if (!studentRes.ok) {
+        const errTxt = await studentRes.text();
+        console.log('--- DIAGNÓSTICO POST ACCEPT-INVITE (Student) ---');
+        console.log('Status:', studentRes.status);
+        console.log('Erro:', errTxt);
+        console.log('------------------------------------------------');
+        return res.status(500).json({ error: 'Erro interno ao buscar aluno' });
+      }
+
       const studentData = await studentRes.json();
-      if (!studentData || studentData.length === 0) {
+      if (!studentData || !Array.isArray(studentData) || studentData.length === 0) {
         return res.status(404).json({ error: 'Aluno não encontrado.' });
       }
       const student = studentData[0];
