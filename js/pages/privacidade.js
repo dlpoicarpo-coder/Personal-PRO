@@ -2,9 +2,11 @@ export function renderPrivacidade() {
   return `
     <div class="login-page">
       <div class="login-card fade-in" style="max-width: 800px; padding: 40px; text-align: left; max-height: 90vh; overflow-y: auto;">
-        <div class="login-header" style="text-align: center;">
-          <h1 class="login-title">Personal<strong class="logo-pro">PRO</strong></h1>
-          <p class="login-subtitle">Política de Privacidade</p>
+        <div class="login-header" style="display:flex; justify-content:center; align-items:center; margin-bottom:20px; font-size:1.8rem;">
+          <div class="vetor-logo">
+            <span class="vetor-name">Vetor</span>
+            <i class="vetor-diamond"></i>
+          </div>
         </div>
         
         <div class="legal-content" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-top: 30px;">

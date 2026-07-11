@@ -4,9 +4,11 @@ export function renderResetPassword() {
   return `
     <div class="login-page">
       <div class="login-card fade-in">
-        <div class="login-header">
-          <h1 class="login-title">Personal<strong class="logo-pro">PRO</strong></h1>
-          <p class="login-subtitle">Redefinir Senha</p>
+        <div class="login-header" style="display:flex; justify-content:center; align-items:center; margin-bottom:20px; font-size:1.8rem;">
+          <div class="vetor-logo">
+            <span class="vetor-name">Vetor</span>
+            <i class="vetor-diamond"></i>
+          </div>
         </div>
         
         <div class="login-body">

@@ -309,9 +309,11 @@ export async function renderAnamneseForm() {
     <style>${ANAMNESE_CSS}</style>
     <div class="ana-page">
       <div class="ana-card">
-        <div class="ana-header">
-          <h2>Personal<strong>PRO</strong></h2>
-          <p>Formulário de Anamnese</p>
+        <div class="login-header" style="display:flex; justify-content:center; align-items:center; margin-bottom:20px; font-size:1.8rem;">
+          <div class="vetor-logo">
+            <span class="vetor-name">Vetor</span>
+            <i class="vetor-diamond"></i>
+          </div>
         </div>
         <div class="ana-body">
           <div class="ana-intro">

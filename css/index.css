@@ -1196,112 +1196,48 @@ h4 {
    ======================================== */
 [data-theme="light"] {
   color-scheme: light;
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
-  --bg-card: #ffffff;
+  
+  --bg:      #F5F7F9;
+  --panel:   #FFFFFF;
+  --line:    #E3E8ED;
+  --ink:     #152029;
+  --dim:     #5A6B78;
+  --faint:   #8395A2;
+  --acc:     #0E9E6E;
+  --acc-num: #0B8B60;
+  
+  --side:      #0D1520;
+  --side-ink:  #E8EDF1;
+  --side-dim:  #8DA0AD;
+  --side-faint:#6C7F8C;
+
+  /* Mapeando para as variáveis do sistema */
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--panel);
+  --bg-tertiary: var(--bg);
+  --bg-card: var(--panel);
   --bg-card-hover: rgba(0, 0, 0, 0.04);
   --bg-glass: rgba(255, 255, 255, 0.9);
-  --border-color: rgba(0, 0, 0, 0.08);
-  --border-active: rgba(16, 185, 129, 0.4);
+  --border-color: var(--line);
+  --border-active: var(--acc);
 
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --text-inverse: #ffffff;
+  --text-primary: var(--ink);
+  --text-secondary: var(--dim);
+  --text-muted: var(--faint);
+  --text-inverse: var(--panel);
 
-  --gradient-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
-  --gradient-card: linear-gradient(135deg, rgba(16, 185, 129, 0.03), rgba(6, 182, 212, 0.03));
+  --primary: var(--acc);
+  --primary-light: var(--acc-num);
+  --primary-glow: rgba(14, 158, 110, 0.1);
+
+  --gradient-bg: var(--bg);
+  --gradient-card: linear-gradient(135deg, rgba(14, 158, 110, 0.03), rgba(6, 182, 212, 0.03));
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.08);
+  --shadow-glow: 0 0 20px rgba(14, 158, 110, 0.08);
   --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] body {
-  background: var(--gradient-bg);
-}
-
-[data-theme="light"] .sidebar {
-  background: #ffffff;
-  border-right-color: rgba(0, 0, 0, 0.06);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
-}
-
-[data-theme="light"] .sidebar-link.active {
-  background: rgba(16, 185, 129, 0.08);
-}
-
-[data-theme="light"] .card {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.06);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-[data-theme="light"] .card:hover {
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .stat-card {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .form-input,
-[data-theme="light"] .form-select,
-[data-theme="light"] .form-textarea {
-  background: #f8fafc;
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #1e293b;
-}
-
-[data-theme="light"] .data-table td {
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-}
-[data-theme="light"] .data-table tr:hover td {
-  background: #f8fafc;
-}
-
-[data-theme="light"] .modal {
-  background: #ffffff;
-}
-
-[data-theme="light"] .toast {
-  background: #ffffff;
-}
-
-[data-theme="light"] .login-page,
-[data-theme="light"] .student-form-page {
-  background: #f1f5f9;
-}
-
-[data-theme="light"] .login-card,
-[data-theme="light"] .form-card {
-  background: #ffffff;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .login-header,
-[data-theme="light"] .form-card-header {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05));
-}
-
-[data-theme="light"] .btn-secondary {
-  background: #f8fafc;
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #1e293b;
-}
-
-[data-theme="light"] .set-row {
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
 }
 
 /* ========================================

@@ -6,7 +6,10 @@ export function renderInviteScreen() {
     <div class="portal-root" data-theme="dark">
       <div class="portal-pin-screen">
         <div class="portal-pin-card" style="max-width: 400px; width: 90%; padding: 30px 20px;">
-          <div class="portal-logo" style="margin-bottom: 20px">Personal<strong>PRO</strong></div>
+          <div class="vetor-logo" style="margin-bottom: 20px; justify-content: center; font-size: 1.5rem;">
+            <span class="vetor-name">Vetor</span>
+            <i class="vetor-diamond" style="width: 12px; height: 12px;"></i>
+          </div>
           
           <div id="inviteLoading" style="text-align:center">
             <div class="spinner" style="margin: 0 auto"></div>

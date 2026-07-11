@@ -27,13 +27,21 @@ export async function generateWorkoutPDF(student, workout, exercises) {
   });
 
   // Header gradient bar
-  doc.setFillColor(...COLORS.primary);
+  doc.setFillColor(...COLORS.dark);
   doc.rect(0, 0, W, 22, 'F');
 
   doc.setTextColor(...COLORS.white);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Personal PRO', 8, 9);
+  doc.text('Vetor', 8, 9);
+  
+  const textWidth = doc.getTextWidth('Vetor');
+  const cx = 8 + textWidth + 2.5;
+  const cy = 7.8;
+  const s = 1.8;
+  doc.setFillColor(...COLORS.primary);
+  doc.triangle(cx, cy - s, cx + s, cy, cx, cy + s, 'F');
+  doc.triangle(cx, cy - s, cx - s, cy, cx, cy + s, 'F');
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
@@ -198,11 +206,11 @@ export async function generateWorkoutPDF(student, workout, exercises) {
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFillColor(...COLORS.primary);
+    doc.setFillColor(...COLORS.dark);
     doc.rect(0, H - 7, W, 7, 'F');
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(6);
-    doc.text(`Personal PRO — Página ${i}/${pageCount}`, W / 2, H - 3, { align: 'center' });
+    doc.text(`Vetor - Página ${i}/${pageCount}`, W / 2, H - 3, { align: 'center' });
   }
 
   return doc;
@@ -237,7 +245,13 @@ export async function generateReportPDF(student, data) {
 
   doc.setTextColor(...COLORS.white);
   doc.setFontSize(10);
-  doc.text('Personal PRO', W / 2, 250, { align: 'center' });
+  doc.text('Vetor', W / 2, 250, { align: 'center' });
+  const cxE = (W / 2) + (doc.getTextWidth('Vetor') / 2) + 2.5;
+  const cyE = 248.8;
+  const sE = 1.8;
+  doc.setFillColor(...COLORS.primary);
+  doc.triangle(cxE, cyE - sE, cxE + sE, cyE, cxE, cyE + sE, 'F');
+  doc.triangle(cxE, cyE - sE, cxE - sE, cyE, cxE, cyE + sE, 'F');
 
   // Page 2 - Summary
   doc.addPage();
@@ -270,11 +284,11 @@ export async function generateReportPDF(student, data) {
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFillColor(...COLORS.primary);
+    doc.setFillColor(...COLORS.dark);
     doc.rect(0, 290, W, 7, 'F');
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(7);
-    doc.text(`Personal PRO — Página ${i}/${pageCount}`, W / 2, 295, { align: 'center' });
+    doc.text(`Vetor - Página ${i}/${pageCount}`, W / 2, 295, { align: 'center' });
   }
 
   return doc;

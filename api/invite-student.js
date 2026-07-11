@@ -148,19 +148,31 @@ export default async function handler(req, res) {
       const inviteLink = `${baseUrl}/#/convite?token=${token}`;
       
       const emailBody = {
-        from: `Personal PRO <${RESEND_FROM}>`,
+        from: `Vetor <${RESEND_FROM}>`,
         to: [inviteSentTo],
-        subject: 'Convite para acesso ao Personal PRO (Responsável Legal)',
+        subject: 'Convite para acesso ao Vetor (Responsável Legal)',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2>Olá, Responsável Legal!</h2>
-            <p>O treinador convidou seu menor para utilizar o aplicativo <strong>Personal PRO</strong>.</p>
-            <p>Para garantir a segurança e a conformidade com a LGPD, o acesso só será liberado mediante sua configuração e consentimento expresso.</p>
-            <p>Por favor, clique no link abaixo para revisar os termos, conceder as permissões legais obrigatórias e definir a senha de acesso da conta do aluno:</p>
-            <div style="margin: 30px 0;">
-              <a href="${inviteLink}" style="background-color: #f59e0b; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Configurar Acesso Seguro</a>
+            <div style="background: #0a0e17; padding: 24px; text-align: center; border-radius: 8px 8px 0 0;">
+              <div style="display: inline-block; text-align: center;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                  <tr>
+                    <td style="font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: -0.5px; padding-right: 8px;">Vetor</td>
+                    <td><div style="width: 12px; height: 12px; background: #10b981; transform: rotate(45deg); border-radius: 2px; margin-top: 4px;"></div></td>
+                  </tr>
+                </table>
+              </div>
             </div>
-            <p style="color: #666; font-size: 0.9em;">Este link é único e expira em 48 horas.</p>
+            <div style="background: #ffffff; padding: 30px 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+              <h2 style="color: #0a0e17; margin-top: 0;">Olá, Responsável Legal!</h2>
+              <p style="color: #333; line-height: 1.5;">O treinador convidou seu menor para utilizar o aplicativo <strong>Vetor</strong>.</p>
+              <p style="color: #333; line-height: 1.5;">Para garantir a segurança e a conformidade com a LGPD, o acesso só será liberado mediante sua configuração e consentimento expresso.</p>
+              <p style="color: #333; line-height: 1.5;">Por favor, clique no link abaixo para revisar os termos, conceder as permissões legais obrigatórias e definir a senha de acesso da conta do aluno:</p>
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="${inviteLink}" style="background-color: #10b981; color: #fff; padding: 14px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Configurar Acesso Seguro</a>
+              </div>
+              <p style="color: #666; font-size: 0.9em; text-align: center; margin-bottom: 0;">Este link é único e expira em 48 horas.</p>
+            </div>
           </div>
         `
       };

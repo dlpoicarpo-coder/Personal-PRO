@@ -5936,8 +5936,11 @@ function renderEmailLoginScreen(infoMessage = '') {
   return `
     <div class="portal-root" data-theme="dark">
       <div class="portal-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-        <div class="portal-brand" style="margin-bottom:40px;font-size:2rem;font-weight:800;letter-spacing:-0.5px;">
-          <span style="color:var(--portal-text)">Personal</span><span style="color:var(--portal-primary)">PRO</span>
+        <div class="portal-brand" style="display:flex;justify-content:center;margin-bottom:40px;font-size:2rem;">
+          <div class="vetor-logo">
+            <span class="vetor-name">Vetor</span>
+            <i class="vetor-diamond"></i>
+          </div>
         </div>
         
         <div class="portal-card" style="width:100%;max-width:380px;padding:36px 28px;border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);background:rgba(15,20,32,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
