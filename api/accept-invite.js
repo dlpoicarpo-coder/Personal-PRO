@@ -153,29 +153,37 @@ export default async function handler(req, res) {
       let targetUid = null;
       let shouldCreate = true;
 
-      // Buscar usuário por e-mail silenciosamente via link de recuperação (funciona se magic links estiverem desativados)
-      const generateRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
-        method: 'POST',
+      // Buscar usuário por e-mail via API de administração
+      const listUsersRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(inviteEmail)}`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ type: 'recovery', email: inviteEmail })
+          'apikey': SUPABASE_SERVICE_KEY
+        }
       });
       
-      const generateData = await generateRes.json();
-      if (!generateRes.ok && generateRes.status !== 404) {
-        console.log('--- DIAGNÓSTICO GENERATE_LINK (Recovery) ---');
-        console.log('Status:', generateRes.status);
-        console.log('Erro:', generateData);
-        console.log('------------------------------------------');
-      }
+      const listUsersData = await listUsersRes.json();
       
-      if (generateRes.ok && generateData.user) {
+      if (!listUsersRes.ok) {
+        console.log('--- DIAGNÓSTICO BUSCA USUÁRIO ---');
+        console.log('Status:', listUsersRes.status);
+        console.log('Erro:', listUsersData);
+        console.log('---------------------------------');
+        return res.status(500).json({ error: 'Falha ao verificar existência de usuário na autenticação.' });
+      }
+
+      // Tratar resposta da GoTrue e aplicar filtro defensivo (caso a API ignore o query param e retorne todos)
+      const rawUsers = listUsersData.users || (Array.isArray(listUsersData) ? listUsersData : []);
+      const usersList = rawUsers.filter(u => u.email && u.email.toLowerCase() === inviteEmail.toLowerCase());
+
+      console.log(`[accept-invite] Busca por email retornou ${usersList.length} resultados.`);
+
+      if (usersList.length > 0) {
         shouldCreate = false;
-        const existingUser = generateData.user;
+        const existingUser = usersList[0];
         targetUid = existingUser.id;
+        
+        console.log(`[accept-invite] Usuário encontrado: ${targetUid}`);
 
         // Regra 6: Verificar se é treinador
         if (existingUser.user_metadata?.trainer_name || existingUser.user_metadata?.cref) {
