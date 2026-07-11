@@ -209,7 +209,8 @@ export default async function handler(req, res) {
         });
         const createData = await createUserRes.json();
         if (!createUserRes.ok) {
-           return res.status(500).json({ error: 'Falha ao criar usuário', details: createData });
+           const errMsg = createData.message || createData.error_description || createData.msg || 'Erro desconhecido no Supabase Auth';
+           return res.status(400).json({ error: `Falha ao criar usuário: ${errMsg}`, details: createData });
         }
         targetUid = createData.id;
       } else {
