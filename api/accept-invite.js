@@ -153,7 +153,7 @@ export default async function handler(req, res) {
       let targetUid = null;
       let shouldCreate = true;
 
-      // Buscar usuário por e-mail silenciosamente via magiclink admin
+      // Buscar usuário por e-mail silenciosamente via link de recuperação (funciona se magic links estiverem desativados)
       const generateRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
         method: 'POST',
         headers: {
@@ -161,10 +161,16 @@ export default async function handler(req, res) {
           'apikey': SUPABASE_SERVICE_KEY,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ type: 'magiclink', email: inviteEmail })
+        body: JSON.stringify({ type: 'recovery', email: inviteEmail })
       });
       
       const generateData = await generateRes.json();
+      if (!generateRes.ok && generateRes.status !== 404) {
+        console.log('--- DIAGNÓSTICO GENERATE_LINK (Recovery) ---');
+        console.log('Status:', generateRes.status);
+        console.log('Erro:', generateData);
+        console.log('------------------------------------------');
+      }
       
       if (generateRes.ok && generateData.user) {
         shouldCreate = false;
