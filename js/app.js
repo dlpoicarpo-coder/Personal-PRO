@@ -131,6 +131,16 @@ export async function navigateTo(path) {
     return;
   }
 
+  // 2. Role Guard Check
+  const { getUserRole } = await import('./utils/role.js');
+  const role = await getUserRole();
+  if (role === 'student') {
+    // If the student reaches here, it means they tried to access a trainer route
+    // (since /portal returns early above). Redirect them forcibly.
+    window.location.hash = '/portal';
+    return;
+  }
+
   // Asynchronously seed templates once the trainer is authenticated
   import('./db.js').then(({ default: db }) => {
     db.seedTemplates().catch(console.error);

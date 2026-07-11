@@ -198,12 +198,15 @@ export async function renderStudentPortal(rawParam) {
   let studentData = null;
 
   const { getCurrentUser, setPortalClient, getSupabase } = await import('../utils/auth.js');
+  const { getUserRole } = await import('../utils/role.js');
+  
   const user = await getCurrentUser();
   const supabase = getSupabase();
-  let isTrainerAuth = false;
+  const role = await getUserRole();
+  let isTrainerAuth = (role === 'trainer');
 
   // 1. Tentar resolver por Sessão do Auth (Login Silencioso ou Explícito)
-  if (supabase && user) {
+  if (supabase && user && role === 'student') {
     // Tenta encontrar o vínculo do estudante para este usuário autenticado
     const { data, error } = await supabase
       .from('students')
@@ -226,10 +229,6 @@ export async function renderStudentPortal(rawParam) {
       setPortalClient(supabase);
       const db = (await import('../db.js')).default;
       db.setClient(supabase);
-    } else {
-      // Se a query retornou vazio, significa que o usuário não está na tabela students.
-      // Logo, assumimos que é o Treinador acessando o portal em modo "trainer view".
-      isTrainerAuth = true;
     }
   }
 
