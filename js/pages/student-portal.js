@@ -192,68 +192,106 @@ function createPortalChart(id, canvas, config) {
 
 // ── RENDER ENTRY ───────────────────────────────────────────────
 export async function renderStudentPortal(rawParam) {
-  if (!rawParam || rawParam === 'undefined') {
+  let studentId = null;
+  let trainerId = null;
+  let isEmailAuth = false;
+  let studentData = null;
+
+  const { getCurrentUser, setPortalClient } = await import('../utils/auth.js');
+  const trainerUser = await getCurrentUser();
+  const isTrainerAuth = !!trainerUser;
+
+  // 1. Tentar resolver por Sessão do Auth (Login Silencioso)
+  if (window.supabase && !isTrainerAuth) {
+    const { data: { session } } = await window.supabase.auth.getSession();
+    
+    if (session) {
+      // Usa RLS para puxar o próprio registro de estudante logado
+      const { data, error } = await window.supabase
+        .from('students')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (data && !error) {
+        studentId = data.id;
+        trainerId = data.trainer_id || data.trainerId;
+        studentData = data;
+        isEmailAuth = true;
+        // Atualiza a global config de portalClient usando o client padrão já autenticado
+        setPortalClient(window.supabase);
+        const db = (await import('../db.js')).default;
+        db.setClient(window.supabase);
+      }
+    }
+  }
+
+  // 2. Fallback para PIN/Legacy (rawParam ou local storage)
+  if (!studentId && rawParam && rawParam !== 'undefined') {
+    const [rawSid, query] = rawParam.split('?');
+    studentId = rawSid;
+    const params = new URLSearchParams(query || '');
+    trainerId = params.get('t') || '';
+  }
+
+  // 3. Se ainda não há studentId, mostrar Login com Email
+  if (!studentId) {
     return renderEmailLoginScreen();
   }
-  const [studentId, query] = rawParam.split('?');
-  const params = new URLSearchParams(query || '');
-  let trainerId = params.get('t') || '';
 
   portalState.studentId = studentId;
   portalState.trainerId = trainerId;
 
-  // PIN auth
-  const sessionKey = `portal_auth_${studentId}`;
-  const token = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
-  
-  // Trainer bypass
-  const { getCurrentUser } = await import('../utils/auth.js');
-  const trainerUser = await getCurrentUser();
-  const isTrainerAuth = !!trainerUser;
-  
-  const isAuth = !!token || isTrainerAuth;
+  // Se não foi email auth, precisamos verificar o PIN (ou bypass do trainer)
+  if (!isEmailAuth) {
+    const sessionKey = `portal_auth_${studentId}`;
+    const token = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
+    const isAuth = !!token || isTrainerAuth;
 
-  if (!isAuth) {
-    return renderPINScreen(null, studentId, trainerId);
+    if (!isAuth) {
+      return renderPINScreen(null, studentId, trainerId);
+    }
+
+    if (window.supabase && !isTrainerAuth) {
+      const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
+      const { setPortalClient } = await import('../utils/auth.js');
+      
+      const portalClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        global: { headers: { 'x-student-token': token } },
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+      setPortalClient(portalClient);
+      const db = (await import('../db.js')).default;
+      db.setClient(portalClient);
+    }
+
+    // Busca o aluno
+    const db = (await import('../db.js')).default;
+    studentData = await db.get('students', studentId).catch(() => null);
+    if (!studentData) {
+      // Token inválido/expirado
+      localStorage.removeItem(sessionKey);
+      sessionStorage.removeItem(sessionKey);
+      return renderPINScreen(null, studentId, trainerId);
+    }
+
+    if (studentData.trainerId || studentData.trainer_id) {
+      trainerId = studentData.trainerId || studentData.trainer_id;
+      portalState.trainerId = trainerId;
+    }
   }
 
-  if (window.supabase && !isTrainerAuth) {
-    // Importamos dinamicamente para evitar problemas de dependência circular ou sujeira global no início do arquivo
-    const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
-    const { setPortalClient } = await import('../utils/auth.js');
-    
-    const portalClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: { headers: { 'x-student-token': token } },
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-    });
-    setPortalClient(portalClient);
-    db.setClient(portalClient);
-  }
-
-  // Agora podemos buscar o student com segurança (RLS validará o token)
-  const student = await db.get('students', studentId).catch(() => null);
-  if (!student) {
-    // Token inválido/expirado
-    localStorage.removeItem(sessionKey);
-    sessionStorage.removeItem(sessionKey);
-    return renderPINScreen(null, studentId, trainerId);
-  }
-
-  // Atualiza trainerId se veio do banco
-  if (student.trainerId || student.trainer_id) {
-    trainerId = student.trainerId || student.trainer_id;
-    portalState.trainerId = trainerId;
-    db.studentPortalTrainerId = trainerId;
-  }
+  const db = (await import('../db.js')).default;
+  db.studentPortalTrainerId = trainerId;
 
   // PWA offline info
-  if (student.name) {
-    localStorage.setItem(`portal_name_${studentId}`, student.name);
+  if (studentData && studentData.name) {
+    localStorage.setItem(`portal_name_${studentId}`, studentData.name);
     localStorage.setItem(`portal_logged_student_id`, studentId);
   }
 
-  portalState.student = student;
-  return renderPortalShell(student);
+  portalState.student = studentData;
+  return renderPortalShell(studentData);
 }
 
 function startStudentAutoSync(sid, tid) {
@@ -283,17 +321,19 @@ function startStudentAutoSync(sid, tid) {
 }
 
 export function initStudentPortal(rawParam) {
-  if (!rawParam || rawParam === 'undefined') {
+  // Tela de Login com Email (Sem sessão / URL limpa)
+  if (document.getElementById('studentPortalLoginForm')) {
     initEmailLoginScreen();
     return;
   }
-  // PIN form
-  const pinForm = document.getElementById('portalPinForm');
-  if (pinForm) {
+
+  // PIN form (Legacy / Fallback com ID na URL)
+  if (document.getElementById('portalPinForm')) {
     initPINHandlers();
     return;
   }
-  // Portal nav
+  
+  // Portal nav (Aluno autenticado e autorizado)
   initPortalNav();
 
   // Start background auto sync for student
@@ -676,7 +716,14 @@ function initPortalNav() {
   document.getElementById('portalLogout')?.addEventListener('click', async () => {
     sessionStorage.removeItem(`portal_auth_${portalState.studentId}`);
     localStorage.removeItem(`portal_auth_${portalState.studentId}`);
+    localStorage.removeItem(`portal_logged_student_id`);
+
     
+    // Faz o logout do Supabase Auth se houver sessão
+    if (window.supabase && window.supabase.auth) {
+      await window.supabase.auth.signOut().catch(() => {});
+    }
+
     // Volta a usar o cliente padrão do sistema (limpa a injeção do portal)
     db.setClient(null);
     import('../utils/auth.js').then(({ setPortalClient }) => {
@@ -5942,17 +5989,36 @@ function initStudentTutorial() {
 function renderEmailLoginScreen() {
   return `
     <div class="portal-root" data-theme="dark">
-      <div class="portal-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:20px;text-align:center;">
-        <div class="portal-brand" style="margin-bottom:30px;font-size:1.8rem;font-weight:800;">
+      <div class="portal-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+        <div class="portal-brand" style="margin-bottom:40px;font-size:2rem;font-weight:800;letter-spacing:-0.5px;">
           <span style="color:var(--portal-text)">Personal</span><span style="color:var(--portal-primary)">PRO</span>
         </div>
-        <div class="portal-card" style="width:100%;max-width:360px;padding:32px 24px;border-radius:16px;box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37);border: 1px solid rgba(255,255,255,0.08);background: rgba(15,20,32,0.65);backdrop-filter: blur(12px);-webkit-backdrop-filter: blur(12px);">
-          <div style="font-size:3rem;margin-bottom:16px;">🔑</div>
-          <h2 style="margin-bottom:12px;font-size:1.25rem;font-weight:700;color:var(--portal-text);">Acesso Restrito</h2>
-          <p style="color:var(--portal-text-muted);font-size:0.9rem;line-height:1.6;margin-bottom:0;">
-            Para acessar o seu portal, por favor utilize o <strong>link de acesso direto</strong> enviado pelo seu treinador no WhatsApp.<br><br>
-            O link contém sua chave pessoal e permite acessar seus treinos, histórico e relatórios com segurança.
-          </p>
+        
+        <div class="portal-card" style="width:100%;max-width:380px;padding:36px 28px;border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);background:rgba(15,20,32,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
+          <div style="text-align:center;margin-bottom:28px;">
+            <h2 style="font-size:1.5rem;font-weight:700;color:var(--portal-text);margin-bottom:8px;">Acesse seu Treino</h2>
+            <p style="color:var(--portal-text-muted);font-size:0.95rem;">Faça login com seu e-mail e senha.</p>
+          </div>
+
+          <form id="studentPortalLoginForm" onsubmit="return false;">
+            <div style="margin-bottom:20px;">
+              <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--portal-text-muted);font-weight:600;text-align:left;">E-mail</label>
+              <input type="email" id="studentLoginEmail" required placeholder="seu@email.com" 
+                style="width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.2);color:var(--portal-text);font-size:1rem;outline:none;transition:all 0.2s;">
+            </div>
+            
+            <div style="margin-bottom:28px;">
+              <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--portal-text-muted);font-weight:600;text-align:left;">Senha</label>
+              <input type="password" id="studentLoginPassword" required placeholder="Sua senha" 
+                style="width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.2);color:var(--portal-text);font-size:1rem;outline:none;transition:all 0.2s;">
+            </div>
+
+            <div id="studentLoginError" style="display:none;color:#ef4444;font-size:0.85rem;margin-bottom:20px;text-align:center;background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;"></div>
+
+            <button type="submit" id="studentLoginBtn" class="portal-btn-primary" style="width:100%;padding:16px;font-size:1rem;font-weight:700;border-radius:12px;background:linear-gradient(135deg, var(--portal-primary), var(--portal-primary-hover));color:#fff;border:none;cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;">
+              Entrar no Portal
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -5960,7 +6026,48 @@ function renderEmailLoginScreen() {
 }
 
 function initEmailLoginScreen() {
-  // Bypassed: Student login is direct link only.
+  const form = document.getElementById('studentPortalLoginForm');
+  const emailInput = document.getElementById('studentLoginEmail');
+  const passInput = document.getElementById('studentLoginPassword');
+  const errorEl = document.getElementById('studentLoginError');
+  const btn = document.getElementById('studentLoginBtn');
+
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = emailInput.value.trim();
+    const password = passInput.value.trim();
+    if (!email || !password) return;
+
+    errorEl.style.display = 'none';
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="portal-spin-ring" style="width:20px;height:20px;border-width:2px;margin:0 auto;"></div>';
+
+    try {
+      if (!window.supabase) throw new Error('Serviço indisponível.');
+      
+      const { data, error } = await window.supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        throw new Error('E-mail ou senha incorretos.');
+      }
+
+      // Sucesso! Recarregar a página. Como há sessão, o renderStudentPortal assumirá.
+      window.location.reload();
+
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  });
 }
 
 function getYouTubeEmbedUrl(url) {
