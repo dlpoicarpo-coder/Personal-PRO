@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
     // 1. VALIDAÇÃO DE POSSE E AUTENTICAÇÃO (CRÍTICO)
     // Fazemos uma requisição à tabela de alunos USANDO O JWT DO TREINADOR.
-    const checkOwnershipRes = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${studentId}&select=id,auth_user_id,email`, {
+    const checkOwnershipRes = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${studentId}&select=id,auth_user_id,data`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
@@ -50,7 +50,11 @@ export default async function handler(req, res) {
       console.log('3. Status do Supabase:', checkOwnershipRes.status);
       console.log('4. Resposta do Supabase:', errorText);
       console.log('---------------------------');
-      return res.status(401).json({ error: 'Invalid JWT or unauthorized' });
+      
+      if (checkOwnershipRes.status === 401 || checkOwnershipRes.status === 403) {
+        return res.status(401).json({ error: 'Invalid JWT or unauthorized' });
+      }
+      return res.status(500).json({ error: 'Erro interno ao consultar banco de dados' });
     }
 
     const students = await checkOwnershipRes.json();
@@ -62,7 +66,7 @@ export default async function handler(req, res) {
     const inputEmail = email.trim().toLowerCase();
 
     // Regra 3: Validar que o email do convite bate com a ficha
-    if (!student.email || student.email.trim().toLowerCase() !== inputEmail) {
+    if (!student.data?.email || student.data.email.trim().toLowerCase() !== inputEmail) {
       return res.status(403).json({ error: 'O e-mail do convite não corresponde ao e-mail cadastrado na ficha do aluno.' });
     }
 

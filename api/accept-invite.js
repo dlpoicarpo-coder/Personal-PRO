@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     if (!token) return res.status(400).json({ error: 'Token missing' });
 
     try {
-      const inviteRes = await fetch(`${SUPABASE_URL}/rest/v1/student_invites?token=eq.${token}&select=*,students(name)&used=eq.false&expires_at=gt.now()`, {
+      const inviteRes = await fetch(`${SUPABASE_URL}/rest/v1/student_invites?token=eq.${token}&select=*,students(data)&used=eq.false&expires_at=gt.now()`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
         valid: true,
         email: inviteData[0].email,
         studentId: inviteData[0].student_id,
-        studentName: inviteData[0].students?.name
+        studentName: inviteData[0].students?.data?.name
       });
     } catch (err) {
       return res.status(500).json({ error: 'Server error' });
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
       const student = studentData[0];
 
       // Regra 7: Validar que e-mail não mudou na ficha no meio do caminho
-      if (student.email?.trim().toLowerCase() !== inviteEmail.trim().toLowerCase()) {
+      if (student.data?.email?.trim().toLowerCase() !== inviteEmail.trim().toLowerCase()) {
         return res.status(400).json({ error: 'O e-mail do aluno foi alterado na ficha pelo treinador. Solicite um novo link.' });
       }
 
