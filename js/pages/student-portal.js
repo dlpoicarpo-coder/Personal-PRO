@@ -198,36 +198,42 @@ export async function renderStudentPortal(rawParam) {
   let studentData = null;
 
   const { getCurrentUser, setPortalClient, getSupabase } = await import('../utils/auth.js');
-  const trainerUser = await getCurrentUser();
-  const isTrainerAuth = !!trainerUser;
+  const user = await getCurrentUser();
   const supabase = getSupabase();
+  let isTrainerAuth = false;
 
-  // 1. Tentar resolver por Sessão do Auth (Login Silencioso)
-  if (supabase && !isTrainerAuth) {
-    const { data: { session } } = await supabase.auth.getSession();
+  // 1. Tentar resolver por Sessão do Auth (Login Silencioso ou Explícito)
+  if (supabase && user) {
+    // Tenta encontrar o vínculo do estudante para este usuário autenticado
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('auth_user_id', user.id)
+      .limit(1)
+      .maybeSingle();
     
-    if (session) {
-      // Usa RLS para puxar o próprio registro de estudante logado
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .limit(1)
-        .single();
-      
-      if (data && !error) {
-        studentId = data.id;
-        trainerId = data.trainer_id || data.trainerId;
-        studentData = data;
-        isEmailAuth = true;
-        // Atualiza a global config de portalClient usando o client padrão já autenticado
-        setPortalClient(supabase);
-        const db = (await import('../db.js')).default;
-        db.setClient(supabase);
-      }
+    if (error) {
+      console.error('[Student Auth] Erro ao buscar aluno associado ao auth.uid():', error);
+    }
+
+    if (data) {
+      // O usuário logado é de fato um estudante!
+      studentId = data.id;
+      trainerId = data.trainer_id || data.trainerId;
+      studentData = data;
+      isEmailAuth = true;
+      // Atualiza a global config de portalClient usando o client padrão já autenticado
+      setPortalClient(supabase);
+      const db = (await import('../db.js')).default;
+      db.setClient(supabase);
+    } else {
+      // Se a query retornou vazio, significa que o usuário não está na tabela students.
+      // Logo, assumimos que é o Treinador acessando o portal em modo "trainer view".
+      isTrainerAuth = true;
     }
   }
 
-  // 2. Fallback para PIN/Legacy (rawParam ou local storage)
+  // 2. Fallback para Treinador acessando a view (usa a URL para obter o ID)
   if (!studentId && rawParam && rawParam !== 'undefined') {
     const [rawSid, query] = rawParam.split('?');
     studentId = rawSid;
