@@ -15,7 +15,8 @@ window.inviteStudent = async (studentId, email, name, phone, btn) => {
   btn.disabled = true;
 
   try {
-    const { supabase } = await import('../utils/auth.js');
+    const { getSupabase } = await import('../utils/auth.js');
+    const supabase = getSupabase();
     if (!supabase) throw new Error('Supabase cliente indisponível');
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
