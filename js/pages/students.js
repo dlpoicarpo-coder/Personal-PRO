@@ -3,7 +3,7 @@
 // Design limpo + SVG icons + dados úteis
 // ========================================
 import db from '../db.js';
-import * as Calc from '../utils/calculations.js';
+import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { getCurrentUser } from '../utils/auth.js';
