@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Missing Authorization header. JWT required.' });
     }
 
-    const { studentId, email } = req.body;
+    const { studentId, email, guardianEmail } = req.body;
     if (!studentId || !email) {
       return res.status(400).json({ error: 'Missing studentId or email' });
     }
@@ -70,6 +70,26 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'O e-mail do convite não corresponde ao e-mail cadastrado na ficha do aluno.' });
     }
 
+    // Regra LGPD: Verificar menor de idade
+    let isMinor = false;
+    if (student.data.birthDate) {
+      const bd = new Date(student.data.birthDate);
+      const ageDifMs = Date.now() - bd.getTime();
+      const ageDate = new Date(ageDifMs);
+      const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+      isMinor = age < 18;
+    }
+
+    if (isMinor) {
+      if (!guardianEmail) {
+        return res.status(400).json({ error: 'E-mail do responsável é obrigatório para gerar convite de menores de idade.' });
+      }
+      const guardianEmailTrimmed = guardianEmail.trim().toLowerCase();
+      if (!student.data.guardian?.email || student.data.guardian.email.trim().toLowerCase() !== guardianEmailTrimmed) {
+        return res.status(403).json({ error: 'O e-mail do responsável informado diverge do e-mail cadastrado na ficha do aluno.' });
+      }
+    }
+
     // 2. INVALIDAR TOKENS ANTERIORES PARA ESTE ALUNO (Service Role)
     await fetch(`${SUPABASE_URL}/rest/v1/student_invites?student_id=eq.${studentId}&used=eq.false`, {
       method: 'PATCH',
@@ -83,6 +103,7 @@ export default async function handler(req, res) {
 
     // 3. GERAR NOVO TOKEN SEGURO COM 48H DE VALIDADE (Service Role)
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    const inviteSentTo = isMinor ? guardianEmail.trim().toLowerCase() : inputEmail;
     
     const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/student_invites`, {
       method: 'POST',
@@ -96,7 +117,8 @@ export default async function handler(req, res) {
         student_id: studentId,
         email: inputEmail,
         expires_at: expiresAt,
-        used: false
+        used: false,
+        invite_sent_to: inviteSentTo
       })
     });
 
@@ -107,10 +129,82 @@ export default async function handler(req, res) {
 
     const token = insertData[0].token;
 
-    // Retorna o token para o frontend montar a URL do WhatsApp
+    // 4. SE MENOR, ENVIAR EMAIL VIA RESEND DIRETAMENTE (Não devolver o token)
+    if (isMinor) {
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      const RESEND_FROM = process.env.RESEND_FROM || 'onboarding@resend.dev';
+      
+      if (!RESEND_API_KEY) {
+        // Queimar o token recém gerado antes de abortar
+        await fetch(`${SUPABASE_URL}/rest/v1/student_invites?token=eq.${token}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`, 'apikey': SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ used: true })
+        });
+        return res.status(500).json({ error: 'Erro de configuração: Chave da API do Resend não configurada.' });
+      }
+
+      const baseUrl = req.headers.origin || 'https://personalpro.vercel.app';
+      const inviteLink = `${baseUrl}/#/convite?token=${token}`;
+      
+      const emailBody = {
+        from: `Personal PRO <${RESEND_FROM}>`,
+        to: [inviteSentTo],
+        subject: 'Convite para acesso ao Personal PRO (Responsável Legal)',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2>Olá, Responsável Legal!</h2>
+            <p>O treinador convidou seu menor para utilizar o aplicativo <strong>Personal PRO</strong>.</p>
+            <p>Para garantir a segurança e a conformidade com a LGPD, o acesso só será liberado mediante sua configuração e consentimento expresso.</p>
+            <p>Por favor, clique no link abaixo para revisar os termos, conceder as permissões legais obrigatórias e definir a senha de acesso da conta do aluno:</p>
+            <div style="margin: 30px 0;">
+              <a href="${inviteLink}" style="background-color: #f59e0b; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Configurar Acesso Seguro</a>
+            </div>
+            <p style="color: #666; font-size: 0.9em;">Este link é único e expira em 48 horas.</p>
+          </div>
+        `
+      };
+
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(emailBody)
+      });
+
+      if (!resendRes.ok) {
+        const resendErr = await resendRes.text();
+        console.error('--- ERRO RESEND ---');
+        console.error(resendRes.status, resendErr);
+        
+        // Excluir ou queimar o token, pois o envio falhou e seria um orfão inútil
+        await fetch(`${SUPABASE_URL}/rest/v1/student_invites?token=eq.${token}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`, 'apikey': SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ used: true })
+        });
+
+        return res.status(500).json({ error: 'Falha ao enviar convite ao responsável — verifique se o email é válido ou se o limite foi atingido.' });
+      }
+
+      console.log(`[invite-student] Convite enviado via e-mail (Resend) para ${inviteSentTo}`);
+
+      // Retorna sucesso SEM O TOKEN para segurança
+      return res.status(200).json({ 
+        success: true, 
+        viaEmail: true,
+        emailTo: inviteSentTo,
+        message: 'Convite enviado com segurança para o e-mail do responsável.' 
+      });
+    }
+
+    // Se adulto, retorna o token para o frontend montar a URL do WhatsApp
     return res.status(200).json({ 
       success: true, 
       token: token, 
+      viaEmail: false,
       message: 'Invite token generated successfully' 
     });
   } catch (error) {

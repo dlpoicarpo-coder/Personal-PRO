@@ -8,12 +8,20 @@ import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { getCurrentUser } from '../utils/auth.js';
 
-window.inviteStudent = async (studentId, email, name, phone, btn, birthDate) => {
+window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, guardianEmail) => {
   if (!birthDate || birthDate === 'undefined') {
     alert('Informe a data de nascimento para gerar o convite — necessária para conformidade com a LGPD (art. 14).');
     return;
   }
-  if (!confirm(`Deseja gerar um link de convite seguro para ${email}?`)) return;
+  
+  const isMinor = Calc.calcularIdade(birthDate) < 18;
+  if (isMinor && (!guardianEmail || guardianEmail === 'undefined' || guardianEmail.trim() === '')) {
+    alert('O e-mail do responsável é obrigatório para convidar alunos menores de idade.');
+    return;
+  }
+
+  const targetLabel = isMinor ? guardianEmail : email;
+  if (!confirm(`Deseja gerar um link de convite seguro para ${targetLabel}?`)) return;
   const originalText = btn.innerHTML;
   btn.innerHTML = 'Gerando...';
   btn.disabled = true;
@@ -32,13 +40,19 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate) => 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({ studentId, email })
+      body: JSON.stringify({ studentId, email, guardianEmail: isMinor ? guardianEmail : null })
     });
 
     const result = await res.json();
     
     if (!res.ok) {
       throw new Error(result.error || 'Erro desconhecido ao gerar convite');
+    }
+
+    if (result.viaEmail) {
+      alert(`Convite e Termos de Consentimento LGPD enviados com segurança para o e-mail do Responsável: ${result.emailTo}.\n\nAguardando o aceite do responsável para ativar a conta do aluno.`);
+      btn.innerHTML = '✅ Enviado p/ Email';
+      return;
     }
 
     notify.success('Link de convite gerado com sucesso!');
@@ -179,7 +193,7 @@ function renderStudentCards(students, trainerId = 'trainer') {
 
         <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px;flex-wrap:wrap">
           ${s.email ? `
-          <button class="btn btn-ghost btn-sm invite-student-btn" onclick="window.inviteStudent('${s.id}', '${s.email}', '${s.name.replace(/'/g, "\\'")}', '${s.phone || ''}', this, '${s.birthDate || ''}')" title="${s.auth_user_id ? 'Reenviar Convite' : 'Convidar para o App'}" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text)">
+          <button class="btn btn-ghost btn-sm invite-student-btn" onclick="window.inviteStudent('${s.id}', '${s.email}', '${s.name.replace(/'/g, "\\'")}', '${s.phone || ''}', this, '${s.birthDate || ''}', '${s.guardian?.email || ''}')" title="${s.auth_user_id ? 'Reenviar Convite' : 'Convidar para o App'}" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text)">
             🎟️ <span style="font-size:0.72rem">${s.auth_user_id ? 'Reenviar' : 'Convite'}</span>
           </button>
           ` : `
@@ -390,7 +404,7 @@ async function viewStudentHTML(student) {
         </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
-        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this, '${student.birthDate || ''}')">🎟️ ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
+        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this, '${student.birthDate || ''}', '${student.guardian?.email || ''}')">🚀 ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
         <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">▶ Treino</a>
       </div>
