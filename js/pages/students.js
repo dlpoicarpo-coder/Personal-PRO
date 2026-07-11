@@ -3,10 +3,71 @@
 // Design limpo + SVG icons + dados úteis
 // ========================================
 import db from '../db.js';
-import { Calc } from '../utils/calculations.js';
+import * as Calc from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { getCurrentUser } from '../utils/auth.js';
+
+window.inviteStudent = async (studentId, email, name, phone, btn) => {
+  if (!confirm(`Deseja gerar um link de convite seguro para ${email}?`)) return;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = 'Gerando...';
+  btn.disabled = true;
+
+  try {
+    const { supabase } = await import('../utils/auth.js');
+    if (!supabase) throw new Error('Supabase cliente indisponível');
+    
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) throw new Error('Treinador não autenticado. Faça login novamente.');
+
+    const res = await fetch('/api/invite-student', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ studentId, email })
+    });
+
+    const result = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(result.error || 'Erro desconhecido ao gerar convite');
+    }
+
+    notify.success('Link de convite gerado com sucesso!');
+    
+    // Atualizar badge instantaneamente no modal
+    const badge = document.getElementById(`authStatus_${studentId}`);
+    if (badge && badge.innerHTML.includes('Sem conta')) badge.innerHTML = '🟡 Convite Gerado';
+    
+    const link = `${window.location.origin}${window.location.pathname}#/convite?t=${result.token}`;
+    
+    let waBtn = '';
+    if (phone) {
+      const clean = phone.replace(/\D/g, '');
+      const num = clean.length <= 11 ? '55' + clean : clean;
+      const msg = `Olá ${name.split(' ')[0]}! Seu acesso ao portal Vetor: ${link}`;
+      const waHref = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+      waBtn = `<a href="${waHref}" target="_blank" class="btn btn-primary btn-sm" style="padding:4px 8px;background:#25d366;border-color:#25d366;color:white;text-decoration:none">💬 Enviar WhatsApp</a>`;
+    }
+
+    const container = document.getElementById(`inviteBox_${studentId}`);
+    if (container) {
+       container.innerHTML = `
+         <button class="btn btn-secondary btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${link}'); window.notify?.success ? window.notify.success('Link copiado!') : alert('Link copiado!')">📋 Copiar Link</button>
+         ${waBtn}
+       `;
+    }
+    
+  } catch (err) {
+    console.error(err);
+    notify.error('Falha ao gerar convite: ' + err.message);
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+};
 
 const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const ICON_DELETE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
@@ -111,8 +172,17 @@ function renderStudentCards(students, trainerId = 'trainer') {
         </div>
       </div>
 
-      <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm view-student" data-id="${s.id}" title="Ver perfil" style="flex:1;min-width:45px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px">
+        <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px;flex-wrap:wrap">
+          ${s.email ? `
+          <button class="btn btn-ghost btn-sm invite-student-btn" onclick="window.inviteStudent('${s.id}', '${s.email}', '${s.name.replace(/'/g, "\\'")}', '${s.phone || ''}', this)" title="${s.auth_user_id ? 'Reenviar Convite' : 'Convidar para o App'}" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text)">
+            ✉️ <span style="font-size:0.72rem">Convite</span>
+          </button>
+          ` : `
+          <button class="btn btn-ghost btn-sm" disabled title="Sem e-mail p/ convite" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text-muted)">
+            ✉️ <span style="font-size:0.72rem">Convite</span>
+          </button>
+          `}
+          <button class="btn btn-ghost btn-sm view-student" data-id="${s.id}" title="Ver perfil" style="flex:1;min-width:45px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px">
           ${ICON_EYE} <span style="font-size:0.72rem">Ver</span>
         </button>
         <button class="btn btn-ghost btn-sm edit-student" data-id="${s.id}" title="Editar" style="flex:1;min-width:45px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px">
@@ -396,20 +466,28 @@ async function viewStudentHTML(student) {
 export function initStudents(navigateFn) {
   // Add student
   const openAddModal = async () => {
-    if (window._isBillingPastDue) {
-      alert('Sua assinatura está vencida. Regularize seu plano para cadastrar novos alunos.');
-      window.location.hash = '/planos';
-      return;
-    }
-    const allStudents = await db.getAll('students');
-    const plan = window._currentPlan || 'Start';
-    let limit = 5;
-    if (plan === 'Pro') limit = 20;
-    if (plan === 'Studio') limit = 50;
-    if (allStudents.length >= limit) {
-      alert(`O limite de ${limit} alunos do plano ${plan} foi atingido. Faça upgrade para adicionar mais alunos.`);
-      window.location.hash = '/planos';
-      return;
+    // 1. Identificar Admin/Dono (Bypass de billing e limite de alunos)
+    const ADMIN_EMAILS = ['dlpolicarpo@outlook.com'];
+    const { getCurrentUser } = await import('../utils/auth.js');
+    const user = await getCurrentUser();
+    const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+
+    if (!isAdmin) {
+      if (window._isBillingPastDue) {
+        alert('Sua assinatura está vencida. Regularize seu plano para cadastrar novos alunos.');
+        window.location.hash = '/planos';
+        return;
+      }
+      const allStudents = await db.getAll('students');
+      const plan = window._currentPlan || 'Start';
+      let limit = 5;
+      if (plan === 'Pro') limit = 20;
+      if (plan === 'Studio') limit = 50;
+      if (allStudents.length >= limit) {
+        alert(`O limite de ${limit} alunos do plano ${plan} foi atingido. Faça upgrade para adicionar mais alunos.`);
+        window.location.hash = '/planos';
+        return;
+      }
     }
 
     openModal({
@@ -445,67 +523,6 @@ export function initStudents(navigateFn) {
       }
     ]
   });
-  };
-
-  window.inviteStudent = async (studentId, email, name, phone, btn) => {
-    if (!confirm(`Deseja gerar um link de convite seguro para ${email}?`)) return;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = 'Gerando...';
-    btn.disabled = true;
-
-    try {
-      const { supabase } = await import('../utils/auth.js');
-      if (!supabase) throw new Error('Supabase cliente indisponível');
-      
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) throw new Error('Treinador não autenticado. Faça login novamente.');
-
-      const res = await fetch('/api/invite-student', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ studentId, email })
-      });
-
-      const result = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(result.error || 'Erro desconhecido ao gerar convite');
-      }
-
-      notify.success('Link de convite gerado com sucesso!');
-      
-      // Atualizar badge instantaneamente no modal
-      const badge = document.getElementById(`authStatus_${studentId}`);
-      if (badge && badge.innerHTML.includes('Sem conta')) badge.innerHTML = '🟡 Convite Gerado';
-      
-      const link = `${window.location.origin}${window.location.pathname}#/convite?t=${result.token}`;
-      
-      let waBtn = '';
-      if (phone) {
-        const clean = phone.replace(/\\D/g, '');
-        const num = clean.length <= 11 ? '55' + clean : clean;
-        const msg = `Olá ${name.split(' ')[0]}! Seu acesso ao portal Vetor: ${link}`;
-        const waHref = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
-        waBtn = `<a href="${waHref}" target="_blank" class="btn btn-primary btn-sm" style="padding:4px 8px;background:#25d366;border-color:#25d366;color:white;text-decoration:none">💬 Enviar WhatsApp</a>`;
-      }
-
-      const container = document.getElementById(`inviteBox_${studentId}`);
-      if (container) {
-         container.innerHTML = `
-           <button class="btn btn-secondary btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${link}'); window.notify?.success ? window.notify.success('Link copiado!') : alert('Link copiado!')">📋 Copiar Link</button>
-           ${waBtn}
-         `;
-      }
-      
-    } catch (err) {
-      console.error(err);
-      notify.error('Falha ao gerar convite: ' + err.message);
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-    }
   };
 
   document.getElementById('addStudentBtn')?.addEventListener('click', openAddModal);
