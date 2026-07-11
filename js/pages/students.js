@@ -189,10 +189,6 @@ function renderStudentCards(students, trainerId = 'trainer') {
         <button class="btn btn-ghost btn-sm edit-student" data-id="${s.id}" title="Editar" style="flex:1;min-width:45px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px">
           ${ICON_EDIT} <span style="font-size:0.72rem">Editar</span>
         </button>
-        <a href="#/portal/${s.id}?t=${trainerId}" target="_blank" class="btn btn-ghost btn-sm" title="Portal do Aluno" style="flex:1;min-width:55px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--primary);text-decoration:none">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span style="font-size:0.72rem">Portal</span>
-        </a>
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-ghost btn-sm" title="WhatsApp" style="flex:1;min-width:40px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:#25d366;text-decoration:none">
           ${ICON_WA} <span style="font-size:0.72rem">WA</span>
         </a>` : ''}
@@ -314,11 +310,6 @@ function studentFormHTML(student = {}) {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">PIN do Portal (4 dígitos)</label>
-        <input class="form-input" name="portalPin" type="password" maxlength="4" pattern="[0-9]{4}" value="${student.portalPin || ''}" placeholder="Ex: 1234" />
-        <div class="form-hint">Padrão: 1234</div>
-      </div>
-      <div class="form-group">
         <label class="form-label">Observações</label>
         <textarea class="form-textarea" name="notes" rows="3" placeholder="Lesões, restrições, preferências...">${student.notes || ''}</textarea>
       </div>
@@ -365,10 +356,8 @@ async function viewStudentHTML(student) {
         </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
-        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this)">✉️ ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
+        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this)">🎟️ ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
-        <a href="#/portal/${student.id}?t=${trainerId}" target="_blank" class="btn btn-secondary btn-sm" style="color:var(--primary);border-color:var(--primary);padding:4px 8px">Portal</a>
-        <button class="btn btn-ghost btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${portalUrl}'); notify.success('Link do portal copiado!');">Copiar Link</button>
         <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">▶ Treino</a>
       </div>
     </div>
@@ -395,7 +384,6 @@ async function viewStudentHTML(student) {
       ${student.weeklyFrequency ? `<div class="text-sm"><span class="text-muted">Frequência:</span> ${student.weeklyFrequency}</div>` : ''}
       ${student.preferredTime ? `<div class="text-sm"><span class="text-muted">Horário:</span> ${student.preferredTime}</div>` : ''}
       ${student.paymentDue ? `<div class="text-sm"><span class="text-muted">Vencimento:</span> ${Calc.formatDate(student.paymentDue)}</div>` : ''}
-      ${student.portalPin ? `<div class="text-sm"><span class="text-muted">PIN Portal:</span> <code>${student.portalPin}</code></div>` : ''}
     </div>
     ${student.notes ? `<div class="mb-md"><span class="text-muted text-sm">Observações:</span><p class="text-sm" style="margin-top:4px">${student.notes}</p></div>` : ''}
 

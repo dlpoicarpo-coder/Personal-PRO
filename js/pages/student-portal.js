@@ -242,37 +242,27 @@ export async function renderStudentPortal(rawParam) {
   portalState.studentId = studentId;
   portalState.trainerId = trainerId;
 
-  // Se não foi email auth, precisamos verificar o PIN (ou bypass do trainer)
+  // Se não foi email auth
   if (!isEmailAuth) {
-    const sessionKey = `portal_auth_${studentId}`;
-    const token = sessionStorage.getItem(sessionKey) || localStorage.getItem(sessionKey);
-    const isAuth = !!token || isTrainerAuth;
-
-    if (!isAuth) {
-      return renderPINScreen(null, studentId, trainerId);
-    }
-
-    if (window.supabase && !isTrainerAuth) {
-      const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
-      const { setPortalClient } = await import('../utils/auth.js');
+    if (!isTrainerAuth) {
+      // Limpa possíveis tokens legados de PIN
+      const sessionKey = `portal_auth_${studentId}`;
+      sessionStorage.removeItem(sessionKey);
+      localStorage.removeItem(sessionKey);
       
-      const portalClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-        global: { headers: { 'x-student-token': token } },
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-      });
-      setPortalClient(portalClient);
-      const db = (await import('../db.js')).default;
-      db.setClient(portalClient);
+      // Limpa a URL legada para evitar confusão (se possível)
+      if (window.history.pushState) {
+        window.history.replaceState(null, '', window.location.pathname + '#/portal');
+      }
+
+      return renderEmailLoginScreen('O acesso agora é feito com seu e-mail e senha. Peça o convite ao seu treinador se ainda não tem conta.');
     }
 
-    // Busca o aluno
+    // Busca o aluno (trainer view)
     const db = (await import('../db.js')).default;
     studentData = await db.get('students', studentId).catch(() => null);
     if (!studentData) {
-      // Token inválido/expirado
-      localStorage.removeItem(sessionKey);
-      sessionStorage.removeItem(sessionKey);
-      return renderPINScreen(null, studentId, trainerId);
+      return renderEmailLoginScreen('Aluno não encontrado.');
     }
 
     if (studentData.trainerId || studentData.trainer_id) {
@@ -327,11 +317,7 @@ export function initStudentPortal(rawParam) {
     return;
   }
 
-  // PIN form (Legacy / Fallback com ID na URL)
-  if (document.getElementById('portalPinForm')) {
-    initPINHandlers();
-    return;
-  }
+
   
   // Portal nav (Aluno autenticado e autorizado)
   initPortalNav();
@@ -485,127 +471,6 @@ function showTutorialPopup(studentId) {
 }
 
 
-
-// ── PIN SCREEN ─────────────────────────────────────────────────
-function renderPINScreen(student, studentId, trainerId) {
-  return `
-    <div class="portal-root" data-sid="${studentId}" data-tid="${trainerId}" data-theme="${getPortalTheme()}">
-      <div class="portal-pin-screen">
-        <div class="portal-pin-card">
-          <div class="portal-logo">Personal<strong>PRO</strong></div>
-          <div class="portal-avatar-big" style="background:rgba(16,185,129,0.1);color:var(--portal-primary)">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-          </div>
-          <h2 class="portal-pin-name">Acesso ao Portal</h2>
-          <p class="portal-pin-sub">Digite seu PIN de segurança</p>
-
-          <form id="portalPinForm" autocomplete="off">
-            <div class="portal-pin-dots" id="pinDots">
-              <span class="pin-dot" id="dot0"></span>
-              <span class="pin-dot" id="dot1"></span>
-              <span class="pin-dot" id="dot2"></span>
-              <span class="pin-dot" id="dot3"></span>
-            </div>
-            <div id="pinError" class="portal-pin-error" style="display:none">PIN incorreto. Tente novamente.</div>
-            <div class="portal-keypad">
-              ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map((k) => `
-                <button type="button" class="keypad-btn ${k===''?'keypad-empty':''}" data-key="${k}">${k}</button>
-              `).join('')}
-            </div>
-            <label class="portal-remember-me">
-              <input type="checkbox" id="rememberLoginCheck" checked />
-              Lembrar login neste dispositivo
-            </label>
-          </form>
-
-          <div class="portal-pin-footer">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Acesso seguro por PIN
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function initPINHandlers() {
-  const root = document.querySelector('.portal-root');
-  const sid = root?.dataset.sid;
-  let pin = '';
-  let isLoading = false;
-
-  const verifyPin = async () => {
-    if (isLoading) return;
-    isLoading = true;
-    const errorEl = document.getElementById('pinError');
-    const dots = document.querySelectorAll('.pin-dot');
-    errorEl.style.display = 'none';
-
-    try {
-      if (!window.supabase) throw new Error('Serviço indisponível no momento.');
-      
-      const { SUPABASE_URL, SUPABASE_KEY } = await import('../utils/config.js');
-      const tempClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-      const { data, error } = await tempClient.rpc('verify_student_pin', {
-        p_student_id: sid,
-        p_pin: pin
-      });
-
-      if (error || !data || !data.success) {
-        throw new Error(error?.message || data?.error || 'PIN incorreto.');
-      }
-
-      const token = data.token;
-      const rememberMe = document.getElementById('rememberLoginCheck')?.checked;
-      
-      if (rememberMe) {
-        localStorage.setItem(`portal_auth_${sid}`, token);
-      } else {
-        localStorage.removeItem(`portal_auth_${sid}`);
-      }
-      sessionStorage.setItem(`portal_auth_${sid}`, token);
-
-      // Force reload to bypass any memory cache and re-render safely
-      window.location.reload();
-
-    } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.style.display = 'block';
-      dots.forEach(d => d.classList.add('pin-dot-error'));
-      
-      setTimeout(() => {
-        pin = '';
-        updateDots(pin);
-        dots.forEach(d => d.classList.remove('pin-dot-error', 'pin-dot-filled'));
-        isLoading = false;
-      }, 1500);
-    }
-  };
-
-  document.querySelectorAll('.keypad-btn:not(.keypad-empty)').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (isLoading) return;
-      const k = btn.dataset.key;
-      if (k === '⌫') {
-        pin = pin.slice(0, -1);
-      } else if (pin.length < 4) {
-        pin += k;
-      }
-      updateDots(pin);
-
-      if (pin.length === 4) {
-        verifyPin();
-      }
-    });
-  });
-}
-
-function updateDots(pin) {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById(`dot${i}`);
-    if (dot) dot.classList.toggle('pin-dot-filled', i < pin.length);
-  }
-}
 
 // ── PORTAL SHELL ───────────────────────────────────────────────
 function renderPortalShell(student) {
@@ -5986,7 +5851,7 @@ function initStudentTutorial() {
 }
 
 // ── EMAIL LOGIN SCREEN ────────────────────────────────────────
-function renderEmailLoginScreen() {
+function renderEmailLoginScreen(infoMessage = '') {
   return `
     <div class="portal-root" data-theme="dark">
       <div class="portal-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
@@ -5999,6 +5864,8 @@ function renderEmailLoginScreen() {
             <h2 style="font-size:1.5rem;font-weight:700;color:var(--portal-text);margin-bottom:8px;">Acesse seu Treino</h2>
             <p style="color:var(--portal-text-muted);font-size:0.95rem;">Faça login com seu e-mail e senha.</p>
           </div>
+          
+          ${infoMessage ? `<div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:12px;border-radius:12px;margin-bottom:24px;font-size:0.9rem;text-align:center;line-height:1.4;">${infoMessage}</div>` : ''}
 
           <form id="studentPortalLoginForm" onsubmit="return false;">
             <div style="margin-bottom:20px;">
@@ -6008,12 +5875,16 @@ function renderEmailLoginScreen() {
             </div>
             
             <div style="margin-bottom:28px;">
-              <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--portal-text-muted);font-weight:600;text-align:left;">Senha</label>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label style="font-size:0.85rem;color:var(--portal-text-muted);font-weight:600;">Senha</label>
+                <a href="#" id="studentForgotPassword" style="font-size:0.8rem;color:var(--portal-primary);text-decoration:none;">Esqueci minha senha</a>
+              </div>
               <input type="password" id="studentLoginPassword" required placeholder="Sua senha" 
                 style="width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.2);color:var(--portal-text);font-size:1rem;outline:none;transition:all 0.2s;">
             </div>
 
             <div id="studentLoginError" style="display:none;color:#ef4444;font-size:0.85rem;margin-bottom:20px;text-align:center;background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;"></div>
+            <div id="studentLoginSuccess" style="display:none;color:#10b981;font-size:0.85rem;margin-bottom:20px;text-align:center;background:rgba(16,185,129,0.1);padding:10px;border-radius:8px;"></div>
 
             <button type="submit" id="studentLoginBtn" class="portal-btn-primary" style="width:100%;padding:16px;font-size:1rem;font-weight:700;border-radius:12px;background:linear-gradient(135deg, var(--portal-primary), var(--portal-primary-hover));color:#fff;border:none;cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;">
               Entrar no Portal
@@ -6031,8 +5902,36 @@ function initEmailLoginScreen() {
   const passInput = document.getElementById('studentLoginPassword');
   const errorEl = document.getElementById('studentLoginError');
   const btn = document.getElementById('studentLoginBtn');
+  const successEl = document.getElementById('studentLoginSuccess');
+  const forgotBtn = document.getElementById('studentForgotPassword');
 
   if (!form) return;
+
+  forgotBtn?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = emailInput.value.trim();
+    if (!email) {
+      errorEl.textContent = 'Digite seu e-mail antes de solicitar recuperação de senha.';
+      errorEl.style.display = 'block';
+      successEl.style.display = 'none';
+      return;
+    }
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+    forgotBtn.innerText = 'Enviando...';
+    try {
+      const { resetPasswordForEmail } = await import('../utils/auth.js');
+      const res = await resetPasswordForEmail(email);
+      if (!res.success) throw new Error(res.error || 'Erro ao enviar recuperação.');
+      successEl.textContent = 'Enviamos um link de recuperação para seu e-mail.';
+      successEl.style.display = 'block';
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = 'block';
+    } finally {
+      forgotBtn.innerText = 'Esqueci minha senha';
+    }
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
