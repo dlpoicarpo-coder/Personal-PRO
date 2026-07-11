@@ -43,6 +43,13 @@ export default async function handler(req, res) {
     });
 
     if (!checkOwnershipRes.ok) {
+      const errorText = await checkOwnershipRes.text();
+      console.log('--- DIAGNÓSTICO DE AUTH ---');
+      console.log('1. Authorization Header chegou?', !!authHeader);
+      console.log('2. Começa com Bearer?', authHeader?.startsWith('Bearer '));
+      console.log('3. Status do Supabase:', checkOwnershipRes.status);
+      console.log('4. Resposta do Supabase:', errorText);
+      console.log('---------------------------');
       return res.status(401).json({ error: 'Invalid JWT or unauthorized' });
     }
 
