@@ -197,17 +197,18 @@ export async function renderStudentPortal(rawParam) {
   let isEmailAuth = false;
   let studentData = null;
 
-  const { getCurrentUser, setPortalClient } = await import('../utils/auth.js');
+  const { getCurrentUser, setPortalClient, getSupabase } = await import('../utils/auth.js');
   const trainerUser = await getCurrentUser();
   const isTrainerAuth = !!trainerUser;
+  const supabase = getSupabase();
 
   // 1. Tentar resolver por Sessão do Auth (Login Silencioso)
-  if (window.supabase && !isTrainerAuth) {
-    const { data: { session } } = await window.supabase.auth.getSession();
+  if (supabase && !isTrainerAuth) {
+    const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
       // Usa RLS para puxar o próprio registro de estudante logado
-      const { data, error } = await window.supabase
+      const { data, error } = await supabase
         .from('students')
         .select('*')
         .limit(1)
@@ -219,9 +220,9 @@ export async function renderStudentPortal(rawParam) {
         studentData = data;
         isEmailAuth = true;
         // Atualiza a global config de portalClient usando o client padrão já autenticado
-        setPortalClient(window.supabase);
+        setPortalClient(supabase);
         const db = (await import('../db.js')).default;
-        db.setClient(window.supabase);
+        db.setClient(supabase);
       }
     }
   }
@@ -585,15 +586,15 @@ function initPortalNav() {
 
     
     // Faz o logout do Supabase Auth se houver sessão
-    if (window.supabase && window.supabase.auth) {
-      await window.supabase.auth.signOut().catch(() => {});
+    const { getSupabase, setPortalClient } = await import('../utils/auth.js');
+    const supabase = getSupabase();
+    if (supabase && supabase.auth) {
+      await supabase.auth.signOut().catch(() => {});
     }
 
     // Volta a usar o cliente padrão do sistema (limpa a injeção do portal)
     db.setClient(null);
-    import('../utils/auth.js').then(({ setPortalClient }) => {
-      setPortalClient(null);
-    });
+    setPortalClient(null);
     
     window.location.reload();
   });
@@ -5945,9 +5946,13 @@ function initEmailLoginScreen() {
     btn.innerHTML = '<div class="portal-spin-ring" style="width:20px;height:20px;border-width:2px;margin:0 auto;"></div>';
 
     try {
-      if (!window.supabase) throw new Error('Serviço indisponível.');
+      const { getSupabase } = await import('../utils/auth.js');
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error('Erro de conexão: Cliente do sistema indisponível.');
+      }
       
-      const { data, error } = await window.supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password
       });
