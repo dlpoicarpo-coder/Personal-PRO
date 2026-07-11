@@ -67,6 +67,16 @@ export async function renderSettings() {
             </div>
             <p class="text-xs text-muted" style="margin-top:8px">Se desmarcados, os campos não aparecerão para o aluno durante o Live Tracker.</p>
           </div>
+          <div class="form-group" style="border:1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05); padding:12px; border-radius:8px; margin-top:16px;">
+            <label style="font-weight:600;display:block;margin-bottom:8px">Limiares de Decisão do Radar (PSE)</label>
+            <p class="text-xs text-muted mb-sm">Defina até qual PSE a sugestão será aplicada.</p>
+            <div class="grid-2 gap-sm" style="font-size:0.85rem">
+              <div><label>Aumentar Intensidade (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseIncreaseMax" value="${settings.pseIncreaseMax || 3}" /></div>
+              <div><label>Manter Carga (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseMaintainMax" value="${settings.pseMaintainMax || 6}" /></div>
+              <div><label>Reduzir Volume (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseReduceMax" value="${settings.pseReduceMax || 8}" /></div>
+              <div><label>Regenerativo (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseRegenMax" value="${settings.pseRegenMax || 10}" /></div>
+            </div>
+          </div>
           <div class="form-group" style="border:1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); padding:12px; border-radius:8px; margin-top:16px;">
             <label style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--primary)">
               💳 Chave PIX Padrão

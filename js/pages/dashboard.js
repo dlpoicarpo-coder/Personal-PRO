@@ -14,6 +14,7 @@ export async function renderDashboard() {
   const sessions = await db.getAll('sessions');
   const macrocycles = await db.getAll('macrocycles');
   const financial = await db.getAll('financial');
+  const settings = await db.get('settings', 'trainer') || {};
 
   const activeStudents = students.filter(s => s.status === 'Ativo');
   const now = new Date();
@@ -80,16 +81,25 @@ export async function renderDashboard() {
   // A. Gatilho de PSE
   const recentDays = 7;
   const recentMs = recentDays * 86400000;
+  
+  const pseIncreaseMax = parseInt(settings.pseIncreaseMax || 3, 10);
+  const pseMaintainMax = parseInt(settings.pseMaintainMax || 6, 10);
+  const pseReduceMax   = parseInt(settings.pseReduceMax || 8, 10);
+
   completedSessions.forEach(s => {
     if (now.getTime() - new Date(s.date).getTime() < recentMs) {
       if (s.postBiofeedback && s.postBiofeedback.pse) {
-        const pse = parseInt(s.postBiofeedback.pse);
-        if (pse > 9) {
-          const st = students.find(x => x.id === s.studentId);
-          if (st) adjustmentAlerts.push({ type: 'pse_high', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Reduzir volume ou carga.` });
-        } else if (pse < 5) {
-          const st = students.find(x => x.id === s.studentId);
-          if (st) adjustmentAlerts.push({ type: 'pse_low', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Aumentar intensidade.` });
+        const pse = parseInt(s.postBiofeedback.pse, 10);
+        const st = students.find(x => x.id === s.studentId);
+        if (st) {
+          if (pse <= pseIncreaseMax) {
+            adjustmentAlerts.push({ type: 'pse_low', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Aumentar intensidade.` });
+          } else if (pse > pseMaintainMax && pse <= pseReduceMax) {
+            adjustmentAlerts.push({ type: 'pse_high', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Reduzir volume ~20%.` });
+          } else if (pse > pseReduceMax) {
+            adjustmentAlerts.push({ type: 'pse_critical', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Sessão regenerativa + alerta ao trainer.` });
+          }
+          // Zona 4-6 (manter carga) não gera alerta no radar para não poluir
         }
       }
     }
