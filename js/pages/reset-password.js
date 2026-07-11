@@ -30,17 +30,53 @@ export function renderResetPassword() {
   `;
 }
 
-export function initResetPassword() {
+export async function initResetPassword() {
   const form = document.getElementById('resetPasswordForm');
   if (!form) return;
+
+  const errorEl = document.getElementById('resetError');
+  const successEl = document.getElementById('resetSuccess');
+  const btn = document.getElementById('resetBtn');
+
+  // Trava o form enquanto validamos a sessão
+  btn.disabled = true;
+  btn.textContent = 'Verificando link...';
+
+  const sb = getSupabase();
+  if (sb) {
+    let { data: { session } } = await sb.auth.getSession();
+    
+    // Tentar parse manual caso o Supabase não consiga ler devido ao hash routing
+    if (!session) {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.replace(/^#\/?/, '').replace('?', '&'));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      
+      if (accessToken && refreshToken) {
+        const res = await sb.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        session = res.data?.session;
+      }
+    }
+
+    if (!session) {
+      errorEl.textContent = 'Link expirado ou inválido — solicite novo link.';
+      errorEl.style.display = 'block';
+      btn.textContent = 'Link Inválido';
+      return;
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Salvar Nova Senha';
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
-    const errorEl = document.getElementById('resetError');
-    const successEl = document.getElementById('resetSuccess');
-    const btn = document.getElementById('resetBtn');
 
     errorEl.style.display = 'none';
     successEl.style.display = 'none';

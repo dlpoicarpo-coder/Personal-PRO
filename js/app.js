@@ -73,7 +73,12 @@ export async function navigateTo(path) {
     if (path.includes('type=invite')) {
       setTimeout(() => window.location.hash = '/convite', 500);
     } else if (path.includes('type=recovery')) {
-      setTimeout(() => window.location.hash = '/reset-password', 500);
+      appContainer.className = '';
+      import('./pages/reset-password.js').then(({ renderResetPassword, initResetPassword }) => {
+        appContainer.innerHTML = renderResetPassword();
+        initResetPassword();
+      });
+      return;
     } else {
       setTimeout(() => window.location.hash = '/', 500);
     }
