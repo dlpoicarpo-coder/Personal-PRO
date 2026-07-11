@@ -73,12 +73,17 @@ export async function renderFinancial() {
   });
   const totalPaid = paidThisMonth.reduce((t, r) => t + (r.amount||0), 0);
 
-  // PENDENTE: registros do mês selecionado ainda não pagos
-  const totalPend  = monthRecs.filter(r => r.status !== 'paid').reduce((t, r) => t + (r.amount||0), 0);
+  // PENDENTE: registros do mês selecionado ainda não pagos E não vencidos
+  const monthPendingRecs = monthRecs.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) >= now);
+  const totalPend = monthPendingRecs.reduce((t, r) => t + (r.amount||0), 0);
 
-  // VENCIDOS: pendentes com vencimento passado (qualquer mês)
-  const overdue    = records.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) < now);
-  const overdueAmt = overdue.reduce((t, r) => t + (r.amount||0), 0);
+  // VENCIDOS (MÊS): registros do mês selecionado vencidos
+  const monthOverdueRecs = monthRecs.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) < now);
+  const monthOverdueAmt = monthOverdueRecs.reduce((t, r) => t + (r.amount||0), 0);
+
+  // GLOBAIS (Para as abas e inadimplentes)
+  const globalPending = records.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) >= now);
+  const globalOverdue = records.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) < now);
 
   // Taxa de coleta
   const collRate = monthRecs.length > 0
@@ -96,7 +101,7 @@ export async function renderFinancial() {
   }
 
   // Inadimplentes
-  const defaulters = active.filter(s => overdue.some(r => r.studentId === s.id));
+  const defaulters = active.filter(s => globalOverdue.some(r => r.studentId === s.id));
 
   // Sessões do mês selecionado
   const monthSessions = sessions.filter(x => {
@@ -135,19 +140,19 @@ export async function renderFinancial() {
         <div class="stat-change">${monthLabel}</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
-        <div class="stat-label">RECEBIDO</div>
+        <div class="stat-label">RECEBIDO NO MÊS</div>
         <div class="stat-value" style="color:var(--success);font-size:1.2rem">${fmtBRL(totalPaid)}</div>
         <div class="stat-change positive">${collRate}% de taxa de coleta</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
-        <div class="stat-label">PENDENTE</div>
+        <div class="stat-label">PENDENTE NO MÊS</div>
         <div class="stat-value" style="color:var(--warning);font-size:1.2rem">${fmtBRL(totalPend)}</div>
-        <div class="stat-change">${monthRecs.filter(r=>r.status==='pending').length} cobrança(s)</div>
+        <div class="stat-change">${monthPendingRecs.length} cobrança(s)</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
-        <div class="stat-label">VENCIDO</div>
-        <div class="stat-value" style="color:var(--danger);font-size:1.2rem">${fmtBRL(overdueAmt)}</div>
-        <div class="stat-change">${overdue.length} registro(s)</div>
+        <div class="stat-label">VENCIDO NO MÊS</div>
+        <div class="stat-value" style="color:var(--danger);font-size:1.2rem">${fmtBRL(monthOverdueAmt)}</div>
+        <div class="stat-change">${monthOverdueRecs.length} registro(s)</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
         <div class="stat-label">INADIMPLENTES</div>
@@ -176,7 +181,7 @@ export async function renderFinancial() {
           ${defaulters.length>0?`<button class="btn btn-ghost btn-sm" id="chargeAllBtn" style="color:#25d366;font-size:0.78rem">${ICON_WA} Cobrar todos</button>`:''}
         </div>
         ${defaulters.length ? defaulters.map(s => {
-          const sOverdue = overdue.filter(r=>r.studentId===s.id);
+          const sOverdue = globalOverdue.filter(r=>r.studentId===s.id);
           const total = sOverdue.reduce((t,r)=>t+(r.amount||0),0);
           const oldest = sOverdue.sort((a,b)=>parseLocalDate(a.dueDate)-parseLocalDate(b.dueDate))[0];
           const days   = Math.floor((now-parseLocalDate(oldest.dueDate))/86400000);
@@ -201,8 +206,8 @@ export async function renderFinancial() {
     <div class="tabs" id="finTabs">
       <button class="tab active" data-filter="all">Todos (${records.length})</button>
       <button class="tab" data-filter="month">Mês Selecionado (${monthRecs.length})</button>
-      <button class="tab" data-filter="pending">Pendentes (${records.filter(r=>r.status==='pending').length})</button>
-      <button class="tab" data-filter="overdue">Vencidos (${overdue.length})</button>
+      <button class="tab" data-filter="pending" title="Todos os meses, ainda no prazo">Pendentes (${globalPending.length})</button>
+      <button class="tab" data-filter="overdue" title="Todos os meses, fora do prazo">Vencidos (${globalOverdue.length})</button>
       <button class="tab" data-filter="paid">Pagos (${records.filter(r=>r.status==='paid').length})</button>
     </div>
 
