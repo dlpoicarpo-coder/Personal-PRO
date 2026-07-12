@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Backup & Restore
+﻿// ========================================
+// VETOR â€” Backup & Restore
 // ========================================
 
 import db from '../db.js';
@@ -28,7 +28,7 @@ export async function importBackup(file) {
     reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (!data._version) throw new Error('Arquivo inválido');
+        if (!data._version) throw new Error('Arquivo invÃ¡lido');
         await db.importAll(data);
         notify.success('Backup importado com sucesso! Recarregando...');
         setTimeout(() => location.reload(), 1500);
@@ -60,3 +60,4 @@ export async function exportCSV(storeName) {
     notify.error('Erro: ' + e.message);
   }
 }
+

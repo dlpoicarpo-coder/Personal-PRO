@@ -1,24 +1,24 @@
-// ========================================
-// PERSONAL PRO — Periodization Models
+﻿// ========================================
+// VETOR â€” Periodization Models
 // ========================================
 
 export const PERIODIZATION_TYPES = [
   { id: 'linear', name: 'Linear', desc: 'Aumenta intensidade e diminui volume progressivamente' },
-  { id: 'undulating_daily', name: 'Ondulatória Diária (DUP)', desc: 'Varia estímulo a cada sessão: força, hipertrofia, resistência' },
-  { id: 'undulating_weekly', name: 'Ondulatória Semanal', desc: 'Varia foco a cada semana dentro do mesociclo' },
-  { id: 'block', name: 'Em Bloco', desc: 'Blocos focados: Acumulação → Intensificação → Pico' },
-  { id: 'custom', name: 'Personalizada', desc: 'Ajuste manual de fase, intensidade, volume e repetições' },
+  { id: 'undulating_daily', name: 'OndulatÃ³ria DiÃ¡ria (DUP)', desc: 'Varia estÃ­mulo a cada sessÃ£o: forÃ§a, hipertrofia, resistÃªncia' },
+  { id: 'undulating_weekly', name: 'OndulatÃ³ria Semanal', desc: 'Varia foco a cada semana dentro do mesociclo' },
+  { id: 'block', name: 'Em Bloco', desc: 'Blocos focados: AcumulaÃ§Ã£o â†’ IntensificaÃ§Ã£o â†’ Pico' },
+  { id: 'custom', name: 'Personalizada', desc: 'Ajuste manual de fase, intensidade, volume e repetiÃ§Ãµes' },
 ];
 
 export const MESOCYCLE_PHASES = [
-  { id: 'adaptacao', name: 'Adaptação', color: '#3b82f6', volumePct: 70, intensityPct: 50 },
+  { id: 'adaptacao', name: 'AdaptaÃ§Ã£o', color: '#3b82f6', volumePct: 70, intensityPct: 50 },
   { id: 'hipertrofia', name: 'Hipertrofia', color: '#10b981', volumePct: 85, intensityPct: 70 },
-  { id: 'forca', name: 'Força', color: '#f59e0b', volumePct: 60, intensityPct: 85 },
-  { id: 'potencia', name: 'Potência', color: '#ef4444', volumePct: 40, intensityPct: 95 },
-  { id: 'resistencia', name: 'Resistência Muscular', color: '#8b5cf6', volumePct: 90, intensityPct: 55 },
-  { id: 'deload', name: 'Deload / Recuperação', color: '#64748b', volumePct: 40, intensityPct: 40 },
+  { id: 'forca', name: 'ForÃ§a', color: '#f59e0b', volumePct: 60, intensityPct: 85 },
+  { id: 'potencia', name: 'PotÃªncia', color: '#ef4444', volumePct: 40, intensityPct: 95 },
+  { id: 'resistencia', name: 'ResistÃªncia Muscular', color: '#8b5cf6', volumePct: 90, intensityPct: 55 },
+  { id: 'deload', name: 'Deload / RecuperaÃ§Ã£o', color: '#64748b', volumePct: 40, intensityPct: 40 },
   { id: 'pico', name: 'Pico / Taper', color: '#ec4899', volumePct: 30, intensityPct: 100 },
-  { id: 'manutencao', name: 'Manutenção', color: '#06b6d4', volumePct: 65, intensityPct: 65 },
+  { id: 'manutencao', name: 'ManutenÃ§Ã£o', color: '#06b6d4', volumePct: 65, intensityPct: 65 },
 ];
 
 // Generate weekly plan based on periodization type
@@ -33,8 +33,8 @@ export function generateWeeklyPlan(type, totalWeeks, phases, deloadEvery = 4) {
         weeks.push({ week: i + 1, phase: 'deload', volumePct: 40, intensityPct: 40, repsRange: '12-15', setsMultiplier: 0.6, label: 'Deload' });
       } else {
         const progress = i / (totalWeeks - 1);
-        const vol = Math.round(90 - (progress * 40)); // 90% → 50%
-        const int = Math.round(50 + (progress * 45)); // 50% → 95%
+        const vol = Math.round(90 - (progress * 40)); // 90% â†’ 50%
+        const int = Math.round(50 + (progress * 45)); // 50% â†’ 95%
         const reps = progress < 0.33 ? '12-15' : progress < 0.66 ? '8-12' : '4-8';
         weeks.push({ week: i + 1, phase: 'progressao', volumePct: vol, intensityPct: int, repsRange: reps, setsMultiplier: 1, label: `Semana ${i + 1}` });
       }
@@ -42,9 +42,9 @@ export function generateWeeklyPlan(type, totalWeeks, phases, deloadEvery = 4) {
   } else if (type === 'undulating_weekly') {
     // Undulating weekly: alternates focus each week
     const patterns = [
-      { phase: 'resistencia', volumePct: 85, intensityPct: 55, repsRange: '12-15', label: 'Resistência' },
+      { phase: 'resistencia', volumePct: 85, intensityPct: 55, repsRange: '12-15', label: 'ResistÃªncia' },
       { phase: 'hipertrofia', volumePct: 80, intensityPct: 70, repsRange: '8-12', label: 'Hipertrofia' },
-      { phase: 'forca', volumePct: 60, intensityPct: 85, repsRange: '4-6', label: 'Força' },
+      { phase: 'forca', volumePct: 60, intensityPct: 85, repsRange: '4-6', label: 'ForÃ§a' },
     ];
     for (let i = 0; i < totalWeeks; i++) {
       const isDeload = deloadEvery > 0 && (i + 1) % deloadEvery === 0;
@@ -80,7 +80,7 @@ export function generateWeeklyPlan(type, totalWeeks, phases, deloadEvery = 4) {
     });
     // Fill remaining weeks
     while (weeks.length < totalWeeks) {
-      weeks.push({ week: weeks.length + 1, phase: 'manutencao', volumePct: 65, intensityPct: 65, repsRange: '8-12', setsMultiplier: 1, label: 'Manutenção' });
+      weeks.push({ week: weeks.length + 1, phase: 'manutencao', volumePct: 65, intensityPct: 65, repsRange: '8-12', setsMultiplier: 1, label: 'ManutenÃ§Ã£o' });
     }
   } else if (type === 'undulating_daily') {
     // DUP: each week has mixed sessions
@@ -101,8 +101,8 @@ export function generateWeeklyPlan(type, totalWeeks, phases, deloadEvery = 4) {
           week: i + 1, phase: 'dup', volumePct: 75, intensityPct: 70 + overload, repsRange: 'variado', setsMultiplier: 1, label: `DUP Sem. ${i + 1}`,
           sessions: [
             { focus: 'Hipertrofia', reps: '8-12', intensity: Math.min(100, 70 + overload) },
-            { focus: 'Força', reps: '4-6', intensity: Math.min(100, 85 + overload) },
-            { focus: 'Resistência', reps: '12-20', intensity: Math.min(100, 55 + overload) },
+            { focus: 'ForÃ§a', reps: '4-6', intensity: Math.min(100, 85 + overload) },
+            { focus: 'ResistÃªncia', reps: '12-20', intensity: Math.min(100, 55 + overload) },
           ]
         });
       }
@@ -121,3 +121,4 @@ export function weeklyVolume(baselineSets, weekPlan) {
 export function weeklyIntensity(rm1, weekPlan) {
   return Math.round(rm1 * (weekPlan.intensityPct / 100));
 }
+

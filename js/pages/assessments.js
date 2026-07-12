@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Assessments v3
+// VETOR - Assessments v3
 // Clean · Força+Submax unificados · Ficha por aluno
 // ========================================
 import db from '../db.js';
@@ -1812,13 +1812,13 @@ async function exportFichaPDF(sid) {
   @media print{body{padding:14px 18px}@page{margin:1.5cm}}</style>
   <script>window.onload=function(){setTimeout(function(){window.print()},500)}<\/script>
   </head><body>
-  <div class="h1">Personal PRO — Ficha de Avaliação</div>
+  <div class="h1">Vetor — Ficha de Avaliação</div>
   <div class="info">
     <div class="av">${ini(student?.name)}</div>
     <div>
       <div style="font-size:17px;font-weight:800">${student?.name||'—'}</div>
       <div style="color:#666">${student?.code||''} · ${age?age+' anos':'—'} · ${student?.goal||'—'}</div>
-      <div style="font-size:11px;color:#888;margin-top:3px">${sSess} sessões realizadas · Gerado em ${new Date().toLocaleDateString('pt-BR')} por ${settings?.trainerName||'Personal PRO'}</div>
+      <div style="font-size:11px;color:#888;margin-top:3px">${sSess} sessões realizadas · Gerado em ${new Date().toLocaleDateString('pt-BR')} por ${settings?.trainerName||'Personal Trainer'}</div>
     </div>
   </div>
   ${comp.length?`<h2>Composição Corporal</h2>
@@ -1826,7 +1826,7 @@ async function exportFichaPDF(sid) {
   <tbody>${comp.map((a,i)=>{const prev=comp[i-1];const dp=prev&&a.peso&&prev.peso?(a.peso-prev.peso):null;const imc=a.peso&&a.altura?Calc.imc(a.peso,a.altura):null;return`<tr><td>${Calc.formatDate(a.date)}</td><td><strong>${a.peso?a.peso+'kg':'—'}</strong></td><td>${imc?Calc.formatNum(imc):'—'}</td><td>${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':'—'}</td><td style="color:#10b981;font-weight:600">${a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'}</td><td>${a.cintura?a.cintura+'cm':'—'}</td><td style="color:${dp===null?'inherit':dp<0?'#10b981':'#ef4444'};font-weight:600">${dp===null?'—':(dp>0?'+':'')+Calc.formatNum(dp)+'kg'}</td></tr>`;}).join('')}</tbody></table>`:''}
   ${Object.keys(prs).length?`<h2>Records Pessoais — 1RM</h2><div class="prs">${Object.entries(prs).map(([ex,a])=>`<div class="pr"><div style="font-size:10px;color:#666">${ex}</div><div style="font-size:18px;font-weight:800;color:#10b981">${a.rm1}kg</div><div style="font-size:9px;color:#999">${Calc.formatDate(a.date)}${a.isPR?' · PR':''}</div></div>`).join('')}</div>`:''}
   ${sBf.length?`<h2>Biofeedback — Médias</h2><div class="bf">${[['Sono',avgBf('sleep')],['Disposição',avgBf('mood')],['Energia',avgBf('energy')],['Estresse',avgBf('stress')],['PSE',avgBf('pse')]].map(([l,v])=>`<div class="bfc"><div style="font-size:9px;color:#666;text-transform:uppercase">${l}</div><div style="font-size:16px;font-weight:800;color:#10b981">${v??'—'}</div></div>`).join('')}</div>`:''}
-  <div class="footer">Ficha gerada por ${settings?.trainerName||'Personal PRO'}${settings?.cref?' · CREF '+settings.cref:''} — ${new Date().toLocaleDateString('pt-BR')}</div>
+  <div class="footer">Ficha gerada por ${settings?.trainerName||'Personal Trainer'}${settings?.cref?' · CREF '+settings.cref:''} — ${new Date().toLocaleDateString('pt-BR')}</div>
   </body></html>`;
 
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});

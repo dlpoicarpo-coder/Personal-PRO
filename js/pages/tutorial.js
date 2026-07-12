@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Tutorial Page (Interactive)
+﻿// ========================================
+// VETOR â€” Tutorial Page (Interactive)
 // Guide for all system features
 // ========================================
 
@@ -8,12 +8,12 @@ const TUTORIAL_STEPS = [
     title: 'Configurar seu perfil de Personal Trainer',
     section: 'Primeiros Passos',
     steps: [
-      'Acesse Configurações no menu lateral',
-      'Preencha seu nome, CREF e outras informações profissionais',
-      'Defina o tema visual (claro ou escuro) da sua preferência',
-      'Salve as configurações — seu nome e CREF aparecerão automaticamente nos PDFs gerados',
+      'Acesse ConfiguraÃ§Ãµes no menu lateral',
+      'Preencha seu nome, CREF e outras informaÃ§Ãµes profissionais',
+      'Defina o tema visual (claro ou escuro) da sua preferÃªncia',
+      'Salve as configuraÃ§Ãµes â€” seu nome e CREF aparecerÃ£o automaticamente nos PDFs gerados',
     ],
-    tip: 'O CREF é exibido em todos os documentos PDF gerados pelo sistema, garantindo a identificação profissional.'
+    tip: 'O CREF Ã© exibido em todos os documentos PDF gerados pelo sistema, garantindo a identificaÃ§Ã£o profissional.'
   },
   {
     title: 'Cadastrar um novo aluno',
@@ -21,75 +21,75 @@ const TUTORIAL_STEPS = [
     steps: [
       'Acesse Alunos no menu lateral',
       'Clique em + Novo Aluno',
-      'Preencha nome, código, data de nascimento, gênero, contato e objetivo',
-      'Defina a Zona-Alvo de Treino e Frequência Semanal',
+      'Preencha nome, cÃ³digo, data de nascimento, gÃªnero, contato e objetivo',
+      'Defina a Zona-Alvo de Treino e FrequÃªncia Semanal',
       'Clique em Salvar',
     ],
-    tip: 'O código do aluno é usado na identificação em relatórios e PDFs. Ex: JOA-001.'
+    tip: 'O cÃ³digo do aluno Ã© usado na identificaÃ§Ã£o em relatÃ³rios e PDFs. Ex: JOA-001.'
   },
   {
     title: 'Criar uma ficha de treino',
-    section: 'Treinos e Periodização',
+    section: 'Treinos e PeriodizaÃ§Ã£o',
     steps: [
       'Acesse Treinos e clique em + Novo Treino',
-      'Selecione o aluno e dê um nome ao treino (ex: Treino A - Superior)',
-      'Adicione exercícios: nome, séries, repetições, carga, descanso e método',
-      'Use o campo Ciclo para organizar treinos por fase (ex: Ciclo 1 - Adaptação)',
-      'Salve e depois gere o PDF com o botão PDF na listagem',
+      'Selecione o aluno e dÃª um nome ao treino (ex: Treino A - Superior)',
+      'Adicione exercÃ­cios: nome, sÃ©ries, repetiÃ§Ãµes, carga, descanso e mÃ©todo',
+      'Use o campo Ciclo para organizar treinos por fase (ex: Ciclo 1 - AdaptaÃ§Ã£o)',
+      'Salve e depois gere o PDF com o botÃ£o PDF na listagem',
     ],
-    tip: 'O nome dos exercícios possui autocompletar baseado na biblioteca do sistema. Comece a digitar para ver sugestões.'
+    tip: 'O nome dos exercÃ­cios possui autocompletar baseado na biblioteca do sistema. Comece a digitar para ver sugestÃµes.'
   },
   {
-    title: 'Criar um macrociclo de periodização',
-    section: 'Treinos e Periodização',
+    title: 'Criar um macrociclo de periodizaÃ§Ã£o',
+    section: 'Treinos e PeriodizaÃ§Ã£o',
     steps: [
-      'Acesse Periodização e clique em + Novo Macrociclo',
+      'Acesse PeriodizaÃ§Ã£o e clique em + Novo Macrociclo',
       'Selecione o aluno e defina o nome do macrociclo',
-      'Escolha o modelo de periodização (linear, ondulatório, bloco)',
-      'Defina as semanas totais, data de início e frequência de deload',
+      'Escolha o modelo de periodizaÃ§Ã£o (linear, ondulatÃ³rio, bloco)',
+      'Defina as semanas totais, data de inÃ­cio e frequÃªncia de deload',
       'Opcionalmente, selecione um modelo de treino existente',
-      'Clique em Gerar Macrociclo — os treinos e sessões na agenda são criados automaticamente',
+      'Clique em Gerar Macrociclo â€” os treinos e sessÃµes na agenda sÃ£o criados automaticamente',
     ],
-    tip: 'Cada semana é colorida por intensidade: verde (leve) a vermelho (muito alta) e azul (deload).'
+    tip: 'Cada semana Ã© colorida por intensidade: verde (leve) a vermelho (muito alta) e azul (deload).'
   },
   {
-    title: 'Agendar sessões de treino',
+    title: 'Agendar sessÃµes de treino',
     section: 'Agenda e Treino ao Vivo',
     steps: [
       'Acesse Agenda e clique em + Agendar Treino',
       'Selecione o aluno e o treino desejado',
-      'Escolha dias da semana e o número de semanas para repetição',
-      'Defina horário e duração da sessão',
+      'Escolha dias da semana e o nÃºmero de semanas para repetiÃ§Ã£o',
+      'Defina horÃ¡rio e duraÃ§Ã£o da sessÃ£o',
       'Clique em Agendar',
     ],
-    tip: 'Use o filtro de aluno no topo da agenda para ver apenas as sessões de um aluno específico.'
+    tip: 'Use o filtro de aluno no topo da agenda para ver apenas as sessÃµes de um aluno especÃ­fico.'
   },
   {
     title: 'Iniciar um treino ao vivo',
     section: 'Agenda e Treino ao Vivo',
     steps: [
-      'Na agenda, clique em Iniciar na sessão desejada',
+      'Na agenda, clique em Iniciar na sessÃ£o desejada',
       'O sistema abre o Treino ao Vivo',
-      'Registre cada série com carga e repetições realizadas',
-      'Ao finalizar, preencha o pós-treino ou gere o link para o aluno',
+      'Registre cada sÃ©rie com carga e repetiÃ§Ãµes realizadas',
+      'Ao finalizar, preencha o pÃ³s-treino ou gere o link para o aluno',
     ],
-    tip: 'O link de pós-treino pode ser copiado e enviado via WhatsApp. Ao copiar, a sessão é finalizada automaticamente.'
+    tip: 'O link de pÃ³s-treino pode ser copiado e enviado via WhatsApp. Ao copiar, a sessÃ£o Ã© finalizada automaticamente.'
   },
   {
-    title: 'Avaliações e Zonas de FC',
-    section: 'Saúde e Métricas',
+    title: 'AvaliaÃ§Ãµes e Zonas de FC',
+    section: 'SaÃºde e MÃ©tricas',
     steps: [
-      'Acesse Avaliações e clique em + Nova Avaliação para composição corporal ou força',
+      'Acesse AvaliaÃ§Ãµes e clique em + Nova AvaliaÃ§Ã£o para composiÃ§Ã£o corporal ou forÃ§a',
       'Para Zonas de Treino, selecione o aluno, informe a FC de repouso e clique em Calcular Zonas',
     ],
-    tip: 'As zonas são calculadas pela fórmula de Karvonen e a FC Máxima por Tanaka.'
+    tip: 'As zonas sÃ£o calculadas pela fÃ³rmula de Karvonen e a FC MÃ¡xima por Tanaka.'
   },
   {
     title: 'Modelos e Financeiro',
     section: 'Biblioteca e Custos',
     steps: [
-      'Crie seus templates na aba Exercícios -> Meus Modelos para reaproveitamento rápido',
-      'Defina Mensalidade e Sessões Esperadas no cadastro do aluno para obter o Custo por Sessão exato na aba Financeiro',
+      'Crie seus templates na aba ExercÃ­cios -> Meus Modelos para reaproveitamento rÃ¡pido',
+      'Defina Mensalidade e SessÃµes Esperadas no cadastro do aluno para obter o Custo por SessÃ£o exato na aba Financeiro',
     ],
     tip: 'Isso ajuda a ter controle da rentabilidade de cada aluno por treino executado.'
   },
@@ -98,11 +98,11 @@ const TUTORIAL_STEPS = [
     section: 'Acesso e Check-in',
     steps: [
       'No cadastro do aluno, copie o Link do Portal',
-      'Envie o link para o aluno. Não requer senha e funciona como um app (PWA)',
-      'O aluno pode preencher o check-in pré-treino (Biofeedback) e checkout pós-treino',
-      'Todos os gráficos do portal atualizam em tempo real',
+      'Envie o link para o aluno. NÃ£o requer senha e funciona como um app (PWA)',
+      'O aluno pode preencher o check-in prÃ©-treino (Biofeedback) e checkout pÃ³s-treino',
+      'Todos os grÃ¡ficos do portal atualizam em tempo real',
     ],
-    tip: 'O aluno visualizará seus treinos, histórico, e gráficos de evolução completos no portal.'
+    tip: 'O aluno visualizarÃ¡ seus treinos, histÃ³rico, e grÃ¡ficos de evoluÃ§Ã£o completos no portal.'
   }
 ];
 
@@ -116,7 +116,7 @@ export function renderTutorial() {
       <div class="flex items-center gap-md">
         <div>
           <h3 style="margin:0">Bem-vindo ao Vetor</h3>
-          <p class="text-muted text-sm" style="margin:4px 0 0">Sistema completo de gestão para Personal Trainers. Use este guia interativo para dominar todas as funcionalidades.</p>
+          <p class="text-muted text-sm" style="margin:4px 0 0">Sistema completo de gestÃ£o para Personal Trainers. Use este guia interativo para dominar todas as funcionalidades.</p>
         </div>
       </div>
     </div>
@@ -170,7 +170,7 @@ export function initTutorial(navigateFn) {
           : `<div></div>`}
         
         ${currentStep < total - 1 
-          ? `<button class="btn btn-primary" id="tutNextBtn">Próximo Passo</button>` 
+          ? `<button class="btn btn-primary" id="tutNextBtn">PrÃ³ximo Passo</button>` 
           : `<button class="btn btn-success" id="tutFinishBtn">Finalizar Tutorial</button>`}
       </div>
     `;
@@ -190,10 +190,11 @@ export function initTutorial(navigateFn) {
     });
 
     document.getElementById('tutFinishBtn')?.addEventListener('click', () => {
-      alert("Tutorial concluído! Você já pode explorar todas as ferramentas.");
+      alert("Tutorial concluÃ­do! VocÃª jÃ¡ pode explorar todas as ferramentas.");
       if(navigateFn) navigateFn('dashboard');
     });
   }
 
   renderCurrentStep();
 }
+

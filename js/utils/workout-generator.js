@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Automatic Workout Generator
+﻿// ========================================
+// VETOR â€” Automatic Workout Generator
 // ========================================
 
 /**
@@ -34,11 +34,11 @@ export function generateWorkouts(config) {
 
       const workout = {
         studentId,
-        name: `${weekPlan.label} — ${splits[d].splitName || `Dia ${d + 1}`}`,
+        name: `${weekPlan.label} â€” ${splits[d].splitName || `Dia ${d + 1}`}`,
         week: w + 1,
         dayOfWeek: d,
         date: calculateDate(config.startDate, w, d),
-        cycle: `Semana ${w + 1} — ${weekPlan.label}`,
+        cycle: `Semana ${w + 1} â€” ${weekPlan.label}`,
         periodizationType: type,
         macrocycleId: config.macrocycleId || null,
         exercises: dayExercises.map(ex => {
@@ -78,26 +78,26 @@ function createSplit(exercises, days) {
   const groups = Object.keys(byGroup);
 
   const SPLIT_NAMES = {
-    2: [{ name: 'Superior', groups: ['Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps'] },
-    { name: 'Inferior', groups: ['Quadríceps', 'Posterior', 'Glúteos', 'Panturrilha', 'Abdômen'] }],
-    3: [{ name: 'Push (Empurrar)', groups: ['Peito', 'Ombros', 'Tríceps'] },
-    { name: 'Pull (Puxar)', groups: ['Costas', 'Bíceps', 'Antebraço'] },
-    { name: 'Legs (Pernas)', groups: ['Quadríceps', 'Posterior', 'Glúteos', 'Panturrilha', 'Abdômen'] }],
-    4: [{ name: 'Peito/Tríceps', groups: ['Peito', 'Tríceps'] },
-    { name: 'Costas/Bíceps', groups: ['Costas', 'Bíceps', 'Antebraço'] },
-    { name: 'Ombros/Abdômen', groups: ['Ombros', 'Abdômen', 'Core'] },
-    { name: 'Pernas', groups: ['Quadríceps', 'Posterior', 'Glúteos', 'Panturrilha'] }],
+    2: [{ name: 'Superior', groups: ['Peito', 'Costas', 'Ombros', 'BÃ­ceps', 'TrÃ­ceps'] },
+    { name: 'Inferior', groups: ['QuadrÃ­ceps', 'Posterior', 'GlÃºteos', 'Panturrilha', 'AbdÃ´men'] }],
+    3: [{ name: 'Push (Empurrar)', groups: ['Peito', 'Ombros', 'TrÃ­ceps'] },
+    { name: 'Pull (Puxar)', groups: ['Costas', 'BÃ­ceps', 'AntebraÃ§o'] },
+    { name: 'Legs (Pernas)', groups: ['QuadrÃ­ceps', 'Posterior', 'GlÃºteos', 'Panturrilha', 'AbdÃ´men'] }],
+    4: [{ name: 'Peito/TrÃ­ceps', groups: ['Peito', 'TrÃ­ceps'] },
+    { name: 'Costas/BÃ­ceps', groups: ['Costas', 'BÃ­ceps', 'AntebraÃ§o'] },
+    { name: 'Ombros/AbdÃ´men', groups: ['Ombros', 'AbdÃ´men', 'Core'] },
+    { name: 'Pernas', groups: ['QuadrÃ­ceps', 'Posterior', 'GlÃºteos', 'Panturrilha'] }],
     5: [{ name: 'Peito', groups: ['Peito'] },
     { name: 'Costas', groups: ['Costas'] },
-    { name: 'Ombros/Trapézio', groups: ['Ombros'] },
-    { name: 'Braços', groups: ['Bíceps', 'Tríceps', 'Antebraço'] },
-    { name: 'Pernas', groups: ['Quadríceps', 'Posterior', 'Glúteos', 'Panturrilha', 'Abdômen'] }],
+    { name: 'Ombros/TrapÃ©zio', groups: ['Ombros'] },
+    { name: 'BraÃ§os', groups: ['BÃ­ceps', 'TrÃ­ceps', 'AntebraÃ§o'] },
+    { name: 'Pernas', groups: ['QuadrÃ­ceps', 'Posterior', 'GlÃºteos', 'Panturrilha', 'AbdÃ´men'] }],
     6: [{ name: 'Peito', groups: ['Peito'] },
     { name: 'Costas', groups: ['Costas'] },
     { name: 'Ombros', groups: ['Ombros'] },
-    { name: 'Braços', groups: ['Bíceps', 'Tríceps'] },
-    { name: 'Quads/Glúteos', groups: ['Quadríceps', 'Glúteos'] },
-    { name: 'Post/Panturrilha', groups: ['Posterior', 'Panturrilha', 'Abdômen'] }],
+    { name: 'BraÃ§os', groups: ['BÃ­ceps', 'TrÃ­ceps'] },
+    { name: 'Quads/GlÃºteos', groups: ['QuadrÃ­ceps', 'GlÃºteos'] },
+    { name: 'Post/Panturrilha', groups: ['Posterior', 'Panturrilha', 'AbdÃ´men'] }],
   };
 
   const template = SPLIT_NAMES[days] || SPLIT_NAMES[3];
@@ -155,3 +155,4 @@ function calculateDate(startDate, weekIdx, dayIdx) {
   d.setDate(d.getDate() + (weekIdx * 7) + dayIdx);
   return d.toISOString().slice(0, 10);
 }
+

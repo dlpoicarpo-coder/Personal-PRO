@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Login Page (v3)
+// VETOR — Login Page (v3)
 // Supabase Auth: Email confirmation + multi-tenant
 // ========================================
 import { signIn, signUp, sendPasswordReset, getCurrentUser, getSupabase } from '../utils/auth.js';
@@ -124,7 +124,7 @@ export function renderLogin() {
         </div>
 
         <div class="login-footer">
-          <p class="text-muted text-xs">© 2026 Personal PRO — Dados protegidos por Supabase Auth</p>
+          <p class="text-muted text-xs">© 2026 Vetor — Dados protegidos por Supabase Auth</p>
           <div style="margin-top: 8px; font-size: 0.8rem;">
             <a href="#/termos" target="_blank" style="color: var(--text-muted); text-decoration: none; margin-right: 12px;">Termos</a>
             <a href="#/privacidade" target="_blank" style="color: var(--text-muted); text-decoration: none;">Privacidade</a>

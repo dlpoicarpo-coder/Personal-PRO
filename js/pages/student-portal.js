@@ -1,7 +1,7 @@
-// ========================================
-// PERSONAL PRO — Student Portal (PWA Mobile)
-// Portal do Aluno · Glass UI · PIN Auth
-// v2 — Check-in reminders, Series Colors,
+﻿// ========================================
+// VETOR â€” Student Portal (PWA Mobile)
+// Portal do Aluno Â· Glass UI Â· PIN Auth
+// v2 â€” Check-in reminders, Series Colors,
 //       Reports Feed, Solo Training, PWA Popup, Light Theme
 // ========================================
 import db from '../db.js';
@@ -14,7 +14,7 @@ const ICON_MOON   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="
 const ICON_ZAP    = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
 const ICON_BRAIN  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2zM14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"/></svg>`;
 
-// Helper para calcular e formatar a intensidade com a projeção em bpm (Fórmula Tanaka)
+// Helper para calcular e formatar a intensidade com a projeÃ§Ã£o em bpm (FÃ³rmula Tanaka)
 function formatLoadWithBpm(ex, student, format = 'full') {
   let loadStr = String(ex.load || '');
   if (!loadStr) return '';
@@ -46,7 +46,7 @@ const ICON_FEELING_4 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" heigh
 const ICON_FEELING_5 = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14a4 4 0 0 0 8 0Z"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`;
 
 
-// ── PWA Install prompt ─────────────────────────────────────────
+// â”€â”€ PWA Install prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let deferredPrompt = null;
 let pwaPopupShown = false;
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -55,7 +55,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   setTimeout(() => showPwaPopup(), 3000);
 });
 
-// Detectar iOS — Safari não dispara beforeinstallprompt
+// Detectar iOS â€” Safari nÃ£o dispara beforeinstallprompt
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isInStandaloneMode = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
@@ -79,7 +79,7 @@ function showPwaPopup(isIOSMode = false) {
     <div style="font-size:0.75rem;color:var(--portal-text-muted);line-height:1.6;margin-top:6px;text-align:left">
       No Safari: toque em
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-      Compartilhar → <strong>"Adicionar à Tela de Início"</strong>
+      Compartilhar â†’ <strong>"Adicionar Ã  Tela de InÃ­cio"</strong>
     </div>`;
 
   el.innerHTML = `
@@ -93,7 +93,7 @@ function showPwaPopup(isIOSMode = false) {
         ${isIOSMode
           ? `<button id="pwaInstallYes" class="portal-pwa-btn-yes">Entendi</button>`
           : `<button id="pwaInstallYes" class="portal-pwa-btn-yes">Instalar</button>`}
-        <button id="pwaInstallNo" class="portal-pwa-btn-no">Agora não</button>
+        <button id="pwaInstallNo" class="portal-pwa-btn-no">Agora nÃ£o</button>
       </div>
     </div>`;
   root.appendChild(el);
@@ -114,7 +114,7 @@ async function requestNotificationPermission() {
   if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
   const perm = await Notification.requestPermission();
   if (perm === 'granted') {
-    console.log('Notificações ativadas!');
+    console.log('NotificaÃ§Ãµes ativadas!');
   }
 }
 
@@ -141,7 +141,7 @@ function sendLocalNotification(title, body) {
   }
 }
 
-// ── THEME ──────────────────────────────────────────────────────
+// â”€â”€ THEME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getPortalTheme() {
   return localStorage.getItem('portal_theme') || 'dark';
 }
@@ -166,7 +166,7 @@ function getDaysDifference(targetDateStr) {
   return Math.round((targetStart - todayStart) / 86400000);
 }
 
-// ── STATE ──────────────────────────────────────────────────────
+// â”€â”€ STATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const portalState = {
   studentId: null,
   trainerId: null,
@@ -175,7 +175,7 @@ const portalState = {
   selectedReportMacroId: 'all',
 };
 
-// ── CHART REGISTRY (prevent 'Canvas already in use' errors) ────
+// â”€â”€ CHART REGISTRY (prevent 'Canvas already in use' errors) â”€â”€â”€â”€
 const _portalCharts = {};
 function destroyPortalChart(id) {
   if (_portalCharts[id]) {
@@ -190,7 +190,7 @@ function createPortalChart(id, canvas, config) {
   return chart;
 }
 
-// ── RENDER ENTRY ───────────────────────────────────────────────
+// â”€â”€ RENDER ENTRY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function renderStudentPortal(rawParam) {
   let studentId = null;
   let trainerId = null;
@@ -205,9 +205,9 @@ export async function renderStudentPortal(rawParam) {
   const role = await getUserRole();
   let isTrainerAuth = (role === 'trainer');
 
-  // 1. Tentar resolver por Sessão do Auth (Login Silencioso ou Explícito)
+  // 1. Tentar resolver por SessÃ£o do Auth (Login Silencioso ou ExplÃ­cito)
   if (supabase && user && role === 'student') {
-    // Tenta encontrar o vínculo do estudante para este usuário autenticado
+    // Tenta encontrar o vÃ­nculo do estudante para este usuÃ¡rio autenticado
     const { data, error } = await supabase
       .from('students')
       .select('*')
@@ -220,12 +220,12 @@ export async function renderStudentPortal(rawParam) {
     }
 
     if (data) {
-      // O usuário logado é de fato um estudante!
+      // O usuÃ¡rio logado Ã© de fato um estudante!
       studentId = data.id;
       trainerId = data.trainer_id || data.trainerId;
       studentData = data;
       isEmailAuth = true;
-      // Atualiza a global config de portalClient usando o client padrão já autenticado
+      // Atualiza a global config de portalClient usando o client padrÃ£o jÃ¡ autenticado
       setPortalClient(supabase);
       const db = (await import('../db.js')).default;
       db.setClient(supabase);
@@ -240,7 +240,7 @@ export async function renderStudentPortal(rawParam) {
     trainerId = params.get('t') || '';
   }
 
-  // 3. Se ainda não há studentId, mostrar Login com Email
+  // 3. Se ainda nÃ£o hÃ¡ studentId, mostrar Login com Email
   if (!studentId) {
     return renderEmailLoginScreen();
   }
@@ -248,27 +248,27 @@ export async function renderStudentPortal(rawParam) {
   portalState.studentId = studentId;
   portalState.trainerId = trainerId;
 
-  // Se não foi email auth
+  // Se nÃ£o foi email auth
   if (!isEmailAuth) {
     if (!isTrainerAuth) {
-      // Limpa possíveis tokens legados de PIN
+      // Limpa possÃ­veis tokens legados de PIN
       const sessionKey = `portal_auth_${studentId}`;
       sessionStorage.removeItem(sessionKey);
       localStorage.removeItem(sessionKey);
       
-      // Limpa a URL legada para evitar confusão (se possível)
+      // Limpa a URL legada para evitar confusÃ£o (se possÃ­vel)
       if (window.history.pushState) {
         window.history.replaceState(null, '', window.location.pathname + '#/portal');
       }
 
-      return renderEmailLoginScreen('O acesso agora é feito com seu e-mail e senha. Peça o convite ao seu treinador se ainda não tem conta.');
+      return renderEmailLoginScreen('O acesso agora Ã© feito com seu e-mail e senha. PeÃ§a o convite ao seu treinador se ainda nÃ£o tem conta.');
     }
 
     // Busca o aluno (trainer view)
     const db = (await import('../db.js')).default;
     studentData = await db.get('students', studentId).catch(() => null);
     if (!studentData) {
-      return renderEmailLoginScreen('Aluno não encontrado.');
+      return renderEmailLoginScreen('Aluno nÃ£o encontrado.');
     }
 
     if (studentData.trainerId || studentData.trainer_id) {
@@ -317,7 +317,7 @@ function startStudentAutoSync(sid, tid) {
 }
 
 export function initStudentPortal(rawParam) {
-  // Tela de Login com Email (Sem sessão / URL limpa)
+  // Tela de Login com Email (Sem sessÃ£o / URL limpa)
   if (document.getElementById('studentPortalLoginForm')) {
     initEmailLoginScreen();
     return;
@@ -345,7 +345,7 @@ export function initStudentPortal(rawParam) {
   // Show interactive tutorial for first-time users (after PWA + notification prompts)
   setTimeout(() => showTutorialPopup(sid), 8000);
   
-  // LGPD: Ratificação de consentimento ao completar 18 anos
+  // LGPD: RatificaÃ§Ã£o de consentimento ao completar 18 anos
   if (portalState.student && portalState.student.birthDate) {
     const age = Calc.calcularIdade(portalState.student.birthDate);
     const isRatified = localStorage.getItem('lgpd_ratified_18_' + sid);
@@ -355,45 +355,45 @@ export function initStudentPortal(rawParam) {
   }
 }
 
-// ── TUTORIAL INTERATIVO (POPUP) ──────────────────────────────────
+// â”€â”€ TUTORIAL INTERATIVO (POPUP) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showTutorialPopup(studentId) {
   const storageKey = `portal_tutorial_done_${studentId || 'guest'}`;
-  if (localStorage.getItem(storageKey)) return; // já viu
+  if (localStorage.getItem(storageKey)) return; // jÃ¡ viu
 
   const root = document.querySelector('.portal-root');
   if (!root) return;
-  if (document.getElementById('portalTutorialOverlay')) return; // já aberto
+  if (document.getElementById('portalTutorialOverlay')) return; // jÃ¡ aberto
 
   const slides = [
     {
       icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
       color: '#10b981',
       title: 'Bem-vindo ao seu Portal!',
-      text: 'Este é o seu espaço exclusivo de treino. Aqui você acompanha seus exercícios, registra como está se sentindo e vê sua evolução ao longo do tempo.',
+      text: 'Este Ã© o seu espaÃ§o exclusivo de treino. Aqui vocÃª acompanha seus exercÃ­cios, registra como estÃ¡ se sentindo e vÃª sua evoluÃ§Ã£o ao longo do tempo.',
     },
     {
       icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
       color: '#f59e0b',
       title: 'Check-in antes do treino',
-      text: 'Antes de treinar, acesse a aba Check-in. Avalie seu sono, estresse e disposição. Seu treinador verá isso em tempo real e pode adaptar o treino do dia!',
+      text: 'Antes de treinar, acesse a aba Check-in. Avalie seu sono, estresse e disposiÃ§Ã£o. Seu treinador verÃ¡ isso em tempo real e pode adaptar o treino do dia!',
     },
     {
       icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>`,
       color: '#6366f1',
       title: 'Como treinar pelo portal',
-      text: 'Na aba Treinar, selecione o treino sugerido ou escolha outro. Execute cada exercício e, ao terminar, clique em Concluir Treino para salvar sua sessão.',
+      text: 'Na aba Treinar, selecione o treino sugerido ou escolha outro. Execute cada exercÃ­cio e, ao terminar, clique em Concluir Treino para salvar sua sessÃ£o.',
     },
     {
       icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
       color: '#ec4899',
-      title: 'Acompanhe sua evolução',
-      text: 'Na aba Relatórios veja gráficos de volume, bem-estar e progressão de carga. Quanto mais você registrar, mais detalhada será a sua análise!',
+      title: 'Acompanhe sua evoluÃ§Ã£o',
+      text: 'Na aba RelatÃ³rios veja grÃ¡ficos de volume, bem-estar e progressÃ£o de carga. Quanto mais vocÃª registrar, mais detalhada serÃ¡ a sua anÃ¡lise!',
     },
     {
       icon: `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>`,
       color: '#06b6d4',
       title: 'Instale como aplicativo',
-      text: 'Adicione o portal à tela inicial do celular para acesso rápido sem precisar do link! No iPhone: Compartilhar → Adicionar à Tela Inicial. No Android: use o botão "App" no topo.',
+      text: 'Adicione o portal Ã  tela inicial do celular para acesso rÃ¡pido sem precisar do link! No iPhone: Compartilhar â†’ Adicionar Ã  Tela Inicial. No Android: use o botÃ£o "App" no topo.',
     },
   ];
 
@@ -429,21 +429,21 @@ function showTutorialPopup(studentId) {
     </style>
     <div id="portalTutorialBox">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;color:var(--portal-text-muted);text-transform:uppercase">Como usar · <span id="tutSlideNum">${currentSlide+1}/${slides.length}</span></span>
+        <span style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;color:var(--portal-text-muted);text-transform:uppercase">Como usar Â· <span id="tutSlideNum">${currentSlide+1}/${slides.length}</span></span>
         <button id="tutSkipBtn" style="background:none;border:none;color:var(--portal-text-muted);cursor:pointer;font-size:0.78rem;padding:4px 8px;border-radius:6px">Pular</button>
       </div>
       <div id="tutSlideContent">${renderSlide(currentSlide)}</div>
       <div style="text-align:center;margin:16px 0 20px" id="tutDots">${renderDots(currentSlide)}</div>
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
-        <button id="tutPrevBtn" style="flex:0 0 auto;background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--portal-text-muted);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:0.82rem;${currentSlide===0?'opacity:0.3;pointer-events:none':''}">←</button>
+        <button id="tutPrevBtn" style="flex:0 0 auto;background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--portal-text-muted);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:0.82rem;${currentSlide===0?'opacity:0.3;pointer-events:none':''}">â†</button>
         <button id="tutNextBtn" style="flex:1;padding:12px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:0.88rem;
           background:linear-gradient(135deg,${slides[currentSlide].color},${slides[currentSlide].color}cc);color:#fff;transition:opacity 0.2s">
-          ${currentSlide === slides.length-1 ? 'Começar!' : 'Próximo →'}
+          ${currentSlide === slides.length-1 ? 'ComeÃ§ar!' : 'PrÃ³ximo â†’'}
         </button>
       </div>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;justify-content:center">
         <input type="checkbox" id="tutNeverShow" style="accent-color:var(--portal-primary);width:14px;height:14px">
-        <span style="font-size:0.74rem;color:var(--portal-text-muted)">Não mostrar novamente</span>
+        <span style="font-size:0.74rem;color:var(--portal-text-muted)">NÃ£o mostrar novamente</span>
       </label>
     </div>
   `;
@@ -469,7 +469,7 @@ function showTutorialPopup(studentId) {
     const nextBtn = document.getElementById('tutNextBtn');
     if (prevBtn) { prevBtn.style.opacity = currentSlide===0?'0.3':'1'; prevBtn.style.pointerEvents = currentSlide===0?'none':'auto'; }
     if (nextBtn) {
-      nextBtn.textContent = currentSlide===slides.length-1 ? 'Começar!' : 'Próximo →';
+      nextBtn.textContent = currentSlide===slides.length-1 ? 'ComeÃ§ar!' : 'PrÃ³ximo â†’';
       nextBtn.style.background = `linear-gradient(135deg,${slides[currentSlide].color},${slides[currentSlide].color}cc)`;
     }
   };
@@ -485,7 +485,7 @@ function showTutorialPopup(studentId) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeTutorial(); });
 }
 
-// ── LGPD: RATIFICAÇÃO 18 ANOS ──────────────────────────────────
+// â”€â”€ LGPD: RATIFICAÃ‡ÃƒO 18 ANOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showLgpdRatificationPopup(studentId) {
   if (document.getElementById('lgpdRatificationPopup')) return;
   const root = document.querySelector('.portal-root');
@@ -498,10 +498,10 @@ function showLgpdRatificationPopup(studentId) {
   
   el.innerHTML = `
     <div class="portal-pwa-popup-inner" style="border: 1px solid var(--warning)">
-      <div class="portal-pwa-icon">⚠️</div>
+      <div class="portal-pwa-icon">âš ï¸</div>
       <div class="portal-pwa-text">
         <div class="portal-pwa-title" style="color: var(--warning)">Aviso Legal Importante</div>
-        <div class="portal-pwa-sub" style="margin-bottom: 15px;">Você completou 18 anos. Para continuarmos personalizando seus treinos, confirme que autoriza o tratamento dos seus dados de saúde e aceita os Termos, conforme a LGPD.</div>
+        <div class="portal-pwa-sub" style="margin-bottom: 15px;">VocÃª completou 18 anos. Para continuarmos personalizando seus treinos, confirme que autoriza o tratamento dos seus dados de saÃºde e aceita os Termos, conforme a LGPD.</div>
       </div>
       <div class="portal-pwa-actions" style="flex-direction: column; gap: 8px;">
         <button id="lgpdRatifyBtn" class="btn btn-primary" style="width:100%; font-size:1rem; padding:12px;">Autorizar e Continuar</button>
@@ -537,7 +537,7 @@ function showLgpdRatificationPopup(studentId) {
       localStorage.setItem('lgpd_ratified_18_' + studentId, '1');
       if (portalState.student && portalState.student.guardian) {
         portalState.student.guardian.ratified = true;
-        // Tenta salvar local, não precisa forçar sync agora, já que o consentimento tá no backend
+        // Tenta salvar local, nÃ£o precisa forÃ§ar sync agora, jÃ¡ que o consentimento tÃ¡ no backend
         import('../db.js').then(m => m.default.put('students', portalState.student)).catch(()=>{});
       }
       
@@ -554,7 +554,7 @@ function showLgpdRatificationPopup(studentId) {
 }
 
 
-// ── PORTAL SHELL ───────────────────────────────────────────────
+// â”€â”€ PORTAL SHELL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderPortalShell(student) {
   const sid = portalState.studentId;
   // Use cached name from localStorage so PWA shows name immediately
@@ -592,7 +592,7 @@ function renderPortalShell(student) {
       <nav class="portal-nav">
         <button class="portal-nav-btn active" data-section="home">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>Início</span>
+          <span>InÃ­cio</span>
         </button>
         <button class="portal-nav-btn" data-section="treinar">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
@@ -600,7 +600,7 @@ function renderPortalShell(student) {
         </button>
         <button class="portal-nav-btn" data-section="sessoes">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span>Sessões</span>
+          <span>SessÃµes</span>
         </button>
         <button class="portal-nav-btn" data-section="bio">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -608,25 +608,25 @@ function renderPortalShell(student) {
         </button>
         <button class="portal-nav-btn" data-section="avaliacoes">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          <span>Avaliações</span>
+          <span>AvaliaÃ§Ãµes</span>
         </button>
         <button class="portal-nav-btn" data-section="relatorios">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span>Relatórios</span>
+          <span>RelatÃ³rios</span>
         </button>
       </nav>
 
       <!-- PWA Install Popup -->
       <div id="pwaInstallPopup" class="portal-pwa-popup">
         <div class="portal-pwa-popup-inner">
-          <div class="portal-pwa-icon">📲</div>
+          <div class="portal-pwa-icon">ðŸ“²</div>
           <div class="portal-pwa-text">
             <div class="portal-pwa-title">Instalar Vetor</div>
-            <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
+            <div class="portal-pwa-sub">Adicione Ã  tela inicial para acesso rÃ¡pido sem abrir o navegador!</div>
           </div>
           <div class="portal-pwa-actions">
             <button id="pwaInstallYes" class="portal-pwa-btn-yes">Instalar</button>
-            <button id="pwaInstallNo" class="portal-pwa-btn-no">Agora não</button>
+            <button id="pwaInstallNo" class="portal-pwa-btn-no">Agora nÃ£o</button>
           </div>
         </div>
       </div>
@@ -666,14 +666,14 @@ function initPortalNav() {
     localStorage.removeItem(`portal_logged_student_id`);
 
     
-    // Faz o logout do Supabase Auth se houver sessão
+    // Faz o logout do Supabase Auth se houver sessÃ£o
     const { getSupabase, setPortalClient } = await import('../utils/auth.js');
     const supabase = getSupabase();
     if (supabase && supabase.auth) {
       await supabase.auth.signOut().catch(() => {});
     }
 
-    // Volta a usar o cliente padrão do sistema (limpa a injeção do portal)
+    // Volta a usar o cliente padrÃ£o do sistema (limpa a injeÃ§Ã£o do portal)
     db.setClient(null);
     setPortalClient(null);
     
@@ -899,7 +899,7 @@ async function loadSection(section) {
     return w;
   });
 
-  // Filtrar treinos pelo studentId (RLS já isola os dados nativamente).
+  // Filtrar treinos pelo studentId (RLS jÃ¡ isola os dados nativamente).
   const workouts = workoutsEnriched.filter(w => w.studentId === sid);
 
   // Normalize sessions: unify field names from trainer live-tracker vs solo portal
@@ -944,7 +944,7 @@ async function loadSection(section) {
   checkSessionReminders(schedules, sessions);
 }
 
-// ── SESSION REMINDERS ──────────────────────────────────────────
+// â”€â”€ SESSION REMINDERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function checkSessionReminders(schedules, sessions) {
   const _d = new Date();
   const now = _d.getTime();
@@ -954,7 +954,7 @@ function checkSessionReminders(schedules, sessions) {
   const todaySessions = schedules.filter(s => s.date === todayStr && s.status !== 'completed');
   if (todaySessions.length > 0) {
     const s = todaySessions[0];
-    showToast(`Você tem treino hoje${s.time ? ' às ' + s.time : ''}! Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
+    showToast(`VocÃª tem treino hoje${s.time ? ' Ã s ' + s.time : ''}! Lembre-se de fazer o check-in antes de treinar.`, 'info', 8000);
   }
 
   // 2. Checkout reminder: sessions without student checkout
@@ -968,12 +968,12 @@ function checkSessionReminders(schedules, sessions) {
   });
   if (needsCheckout.length > 0) {
     setTimeout(() => {
-      showToast(`Você tem ${needsCheckout.length} treino(s) sem checkout (feedback pós-treino). Complete para registrar seu progresso!`, 'warning', 10000);
+      showToast(`VocÃª tem ${needsCheckout.length} treino(s) sem checkout (feedback pÃ³s-treino). Complete para registrar seu progresso!`, 'warning', 10000);
     }, 2000);
   }
 }
 
-// ── MISSED WORKOUT DETECTION ────────────────────────────────────
+// â”€â”€ MISSED WORKOUT DETECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function checkAndMarkMissedWorkouts(sid, schedules, sessions) {
   if (!sid || !schedules || !sessions) return [];
   const _d = new Date();
@@ -991,7 +991,7 @@ async function checkAndMarkMissedWorkouts(sid, schedules, sessions) {
     if (sch.studentId !== sid) continue;
     if (sch.status === 'completed' || sch.status === 'missed') continue;
     if (sch.date >= todayStr) continue; // only past dates
-    // If no session completed on this date → mark as missed
+    // If no session completed on this date â†’ mark as missed
     if (!completedDates.has(sch.date)) {
       const updated = { ...sch, status: 'missed' };
       try {
@@ -1012,12 +1012,12 @@ function showToast(msg, type = 'info', duration = 5000) {
   const el = document.createElement('div');
   el.id = 'portalToast';
   el.className = `portal-toast portal-toast-${type}`;
-  el.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1.1rem;line-height:1">✕</button>`;
+  el.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1.1rem;line-height:1">âœ•</button>`;
   document.querySelector('.portal-content')?.prepend(el);
   setTimeout(() => el.remove(), duration);
 }
 
-// ── HOME ───────────────────────────────────────────────────────
+// â”€â”€ HOME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks) {
   const _d = new Date();
   const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
@@ -1033,7 +1033,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
   // Mensalidade
   let paymentDays = null, paymentColor = 'var(--portal-success)', paymentLabel = 'Em dia';
   
-  // Encontrar se há algum pagamento pendente ou vencido em finances
+  // Encontrar se hÃ¡ algum pagamento pendente ou vencido em finances
   const activePending = (finances || []).filter(f => f.status === 'pending');
   const overdueFinances = activePending.filter(f => getDaysDifference(f.dueDate) < 0);
   
@@ -1042,7 +1042,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     const diff = getDaysDifference(overdueFinances[0].dueDate);
     paymentDays = diff;
     paymentColor = 'var(--portal-danger)';
-    paymentLabel = `Venceu há ${Math.abs(diff)}d`;
+    paymentLabel = `Venceu hÃ¡ ${Math.abs(diff)}d`;
   } else if (activePending.length > 0) {
     activePending.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
     const diff = getDaysDifference(activePending[0].dueDate);
@@ -1056,7 +1056,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
       const diff = getDaysDifference(paymentDue);
       paymentDays = diff;
       paymentColor = diff < 0 ? 'var(--portal-danger)' : diff <= 5 ? 'var(--portal-warning)' : 'var(--portal-success)';
-      paymentLabel = diff < 0 ? `Venceu há ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
+      paymentLabel = diff < 0 ? `Venceu hÃ¡ ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoje!' : `Vence em ${diff}d`;
     } else {
       paymentLabel = 'Em dia';
       paymentColor = 'var(--portal-success)';
@@ -1071,7 +1071,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     currentMacro.endDate = endD.toISOString().slice(0, 10);
   }
 
-  // Macrociclo progress — based on session count within macro period
+  // Macrociclo progress â€” based on session count within macro period
   let macroProgress = 0;
   let macroSessionsCount = 0;
   if (currentMacro?.startDate && currentMacro?.endDate) {
@@ -1107,11 +1107,11 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     checkinBanner = checkedIn
       ? `<div class="portal-reminder portal-reminder-success">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Check-in do treino de hoje já realizado ✅
+          Check-in do treino de hoje jÃ¡ realizado âœ…
         </div>`
       : `<div class="portal-reminder portal-reminder-info" id="checkinBanner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Você tem treino hoje às ${todaySched.time || '—'}! <button onclick="document.querySelector('[data-section=bio]').click()" class="portal-reminder-btn">Fazer check-in</button>
+          VocÃª tem treino hoje Ã s ${todaySched.time || 'â€”'}! <button onclick="document.querySelector('[data-section=bio]').click()" class="portal-reminder-btn">Fazer check-in</button>
         </div>`;
   }
 
@@ -1143,20 +1143,20 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
       <!-- Greeting -->
       <div class="portal-greeting-card glass-card">
         <div class="portal-greeting-text">
-          <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]} 👋</div>
+          <div class="portal-greeting-hi">OlÃ¡, ${(student?.name||'').split(' ')[0]} ðŸ‘‹</div>
           <div class="portal-greeting-date">${now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' })}</div>
         </div>
-        ${lastSession ? `<div class="portal-last-session">Último treino: ${Math.abs(getDaysDifference(lastSession.date))}d atrás</div>` : ''}
+        ${lastSession ? `<div class="portal-last-session">Ãšltimo treino: ${Math.abs(getDaysDifference(lastSession.date))}d atrÃ¡s</div>` : ''}
       </div>
 
-      <!-- Stats rápidas -->
+      <!-- Stats rÃ¡pidas -->
       <div class="portal-stats-row">
         <div class="portal-stat-card glass-card">
           <div class="portal-stat-icon" style="color:var(--portal-primary)">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div class="portal-stat-val">${completedSessions.length}</div>
-          <div class="portal-stat-lbl">Sessões</div>
+          <div class="portal-stat-lbl">SessÃµes</div>
         </div>
         <div class="portal-stat-card glass-card" style="border-top:3px solid ${paymentColor}">
           <div class="portal-stat-icon" style="color:${paymentColor}">
@@ -1167,18 +1167,18 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         </div>
       </div>
 
-      <!-- Próxima sessão -->
+      <!-- PrÃ³xima sessÃ£o -->
       ${nextSchedule ? `
         <div class="glass-card portal-next-session">
           <div class="portal-card-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Próxima Sessão
+            PrÃ³xima SessÃ£o
           </div>
           <div class="portal-next-date">${new Date(nextSchedule.date+'T12:00').toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}</div>
-          <div class="portal-next-time">${nextSchedule.time || ''} ${nextSchedule.workoutName ? '· '+nextSchedule.workoutName : ''}</div>
+          <div class="portal-next-time">${nextSchedule.time || ''} ${nextSchedule.workoutName ? 'Â· '+nextSchedule.workoutName : ''}</div>
         </div>` : `
         <div class="glass-card portal-next-session" style="opacity:0.6">
-          <div class="portal-card-label">Próxima Sessão</div>
+          <div class="portal-card-label">PrÃ³xima SessÃ£o</div>
           <div class="portal-next-date">Nenhuma agendada</div>
         </div>`}
 
@@ -1198,13 +1198,13 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
                   : w.intensityPct >= 88 ? '#ef4444'
                   : w.intensityPct >= 78 ? '#f97316'
                   : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
-                // Tooltip com info de sub-sessões (DUP, Conjugada, Concorrente)
+                // Tooltip com info de sub-sessÃµes (DUP, Conjugada, Concorrente)
                 const dupInfo = w.dupSessions?.length
-                  ? w.dupSessions.map(ds => `${ds.label}: ${ds.intensityPct}% · RPE ${ds.rpe}`).join(' | ')
+                  ? w.dupSessions.map(ds => `${ds.label}: ${ds.intensityPct}% Â· RPE ${ds.rpe}`).join(' | ')
                   : null;
                 const tooltipText = dupInfo
-                  ? `Sem ${w.week}: ${w.label||w.phase} — ${dupInfo}`
-                  : `Sem ${w.week}: ${w.label||w.phase} — ${w.intensityPct}% Int · ${w.volumePct||'—'}% Vol`;
+                  ? `Sem ${w.week}: ${w.label||w.phase} â€” ${dupInfo}`
+                  : `Sem ${w.week}: ${w.label||w.phase} â€” ${w.intensityPct}% Int Â· ${w.volumePct||'â€”'}% Vol`;
                 const barHeight = Math.max(4, Math.round((w.intensityPct || 60) * 0.28));
                 return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; min-width:20px; border-bottom:3px solid ${intColor}" title="${tooltipText}">
                   <div class="week-num" style="font-size:0.6rem; font-weight:600; color:${intColor}">S${w.week}</div>
@@ -1213,11 +1213,11 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
               }).join('')}
             </div>
             <div class="flex gap-md mt-xs text-xs text-muted" style="flex-wrap:wrap; display:flex; gap:8px; margin-bottom:12px;">
-              <span style="color:#22c55e; font-size:0.65rem;">● Leve</span>
-              <span style="color:#eab308; font-size:0.65rem;">● Moderada</span>
-              <span style="color:#f97316; font-size:0.65rem;">● Alta</span>
-              <span style="color:#ef4444; font-size:0.65rem;">● Máxima</span>
-              <span style="color:#3b82f6; font-size:0.65rem;">● Deload</span>
+              <span style="color:#22c55e; font-size:0.65rem;">â— Leve</span>
+              <span style="color:#eab308; font-size:0.65rem;">â— Moderada</span>
+              <span style="color:#f97316; font-size:0.65rem;">â— Alta</span>
+              <span style="color:#ef4444; font-size:0.65rem;">â— MÃ¡xima</span>
+              <span style="color:#3b82f6; font-size:0.65rem;">â— Deload</span>
             </div>
           `;
         } else {
@@ -1239,13 +1239,13 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
             
             ${weekTimelineHtml}
 
-            <div class="portal-macro-pct" style="text-align:left; margin-top:6px;">${macroProgress}% concluído &middot; ${macroSessionsCount} sessões no ciclo</div>
+            <div class="portal-macro-pct" style="text-align:left; margin-top:6px;">${macroProgress}% concluÃ­do &middot; ${macroSessionsCount} sessÃµes no ciclo</div>
             ${currentMacro.endDate ? `<div class="text-xs" style="color:var(--portal-text-muted);margin-top:4px">Termina em: ${parseLocalDate(currentMacro.endDate).toLocaleDateString('pt-BR')}</div>` : ''}
           </div>
         `;
       })()}
 
-      <!-- Botão Mensagem -->
+      <!-- BotÃ£o Mensagem -->
       <button class="portal-btn-wa" id="portalMsgBtn">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Enviar mensagem ao Treinador
@@ -1256,7 +1256,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
 function initHomeSection(student, tid, sessions, biofeedbacks) {
   document.getElementById('portalMsgBtn')?.addEventListener('click', () => {
     const trainer = student?.trainerPhone || '';
-    const msg = encodeURIComponent(`Olá! Sou ${student?.name || 'seu aluno'}. Preciso falar com você.`);
+    const msg = encodeURIComponent(`OlÃ¡! Sou ${student?.name || 'seu aluno'}. Preciso falar com vocÃª.`);
     const phone = trainer.replace(/\D/g,'');
     const url = phone ? `https://wa.me/${phone.startsWith('55')?phone:'55'+phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
     window.open(url, '_blank');
@@ -1303,13 +1303,13 @@ function getWorkoutSVG(name) {
   `;
 }
 
-// ── TREINAR (Smart) ────────────────────────────────────────────────
+// â”€â”€ TREINAR (Smart) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderTreinar(workouts, schedules, sessions = []) {
   const running = sessions.find(s => s.status === 'running' && s.isSolo === true);
   
   const recoveryCard = running ? `
     <div id="soloRecoveryCard" class="glass-card" style="padding:24px 20px;text-align:center;margin-top:10px;border:1px solid rgba(99,102,241,0.25)">
-      <div style="font-size:2.2rem;margin-bottom:12px;animation: pulse 2s infinite">⚡</div>
+      <div style="font-size:2.2rem;margin-bottom:12px;animation: pulse 2s infinite">âš¡</div>
       <style>
         @keyframes pulse {
           0% { transform: scale(1); opacity: 0.8; }
@@ -1319,11 +1319,11 @@ function renderTreinar(workouts, schedules, sessions = []) {
       </style>
       <h3 style="font-size:1.15rem;margin-bottom:8px;font-weight:700;color:var(--portal-text)">Treino em Andamento</h3>
       <p style="font-size:0.85rem;color:var(--portal-text-muted);margin-bottom:24px;line-height:1.4">
-        Você tem uma sessão ativa de <strong>${running.workoutName || 'Treino Autônomo'}</strong> iniciada em ${new Date(running.startTime).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}.
+        VocÃª tem uma sessÃ£o ativa de <strong>${running.workoutName || 'Treino AutÃ´nomo'}</strong> iniciada em ${new Date(running.startTime).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}.
       </p>
       <div style="display:flex;flex-direction:column;gap:12px">
         <button class="portal-submit-btn" id="resumeSoloBtn" data-sid="${running.id}" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);margin:0;width:100%">
-          ▶ Continuar Treino
+          â–¶ Continuar Treino
         </button>
         <button class="portal-submit-btn" id="discardSoloBtn" data-sid="${running.id}" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.25);color:#ef4444;box-shadow:none;margin:0;width:100%">
           Descartar Treino e Iniciar Novo
@@ -1335,7 +1335,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
   const _d = new Date();
   const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
 
-  // Treinos perdidos (marcados como 'missed') com workout disponível
+  // Treinos perdidos (marcados como 'missed') com workout disponÃ­vel
   const missedScheds = schedules
     .filter(s => s.status === 'missed' && s.workoutId)
     .sort((a, b) => b.date.localeCompare(a.date)) // mais recente primeiro
@@ -1351,7 +1351,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
       </div>
       <div style="font-size:0.95rem;font-weight:700;color:var(--portal-text);margin-bottom:3px">${missedWorkout.name}</div>
       <div style="font-size:0.78rem;color:var(--portal-text-muted);margin-bottom:14px">
-        Previsto para ${new Date(missedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})} · ${(missedWorkout.exercises||[]).length} exercícios
+        Previsto para ${new Date(missedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})} Â· ${(missedWorkout.exercises||[]).length} exercÃ­cios
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="portal-submit-btn" id="startMissedBtn" data-wid="${missedWorkout.id}" data-schid="${missedSched.id}"
@@ -1378,14 +1378,14 @@ function renderTreinar(workouts, schedules, sessions = []) {
       <div class="portal-suggested-label">
         ${todaySched
           ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Treino de HOJE`
-          : `Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
-        ${suggestedSched.time ? ` · ${suggestedSched.time}` : ''}
+          : `PrÃ³ximo treino â€” ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
+        ${suggestedSched.time ? ` Â· ${suggestedSched.time}` : ''}
       </div>
       <div class="portal-suggested-name">${suggestedWorkout.name || 'Treino'}</div>
-      <div class="portal-suggested-meta">${(suggestedWorkout.exercises||[]).length} exercícios</div>
+      <div class="portal-suggested-meta">${(suggestedWorkout.exercises||[]).length} exercÃ­cios</div>
       <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
         <button class="portal-submit-btn" id="previewSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin:0;flex:1;min-width:130px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:0.82rem;padding:10px 14px">
-          Ver Exercícios
+          Ver ExercÃ­cios
         </button>
         <button class="portal-submit-btn" id="startSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin:0;flex:1;min-width:130px;font-size:0.82rem;padding:10px 14px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -1429,7 +1429,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
 
         <button id="soloStartBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 4px 16px rgba(99,102,241,0.3)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Iniciar Sessão
+          Iniciar SessÃ£o
         </button>
       </div>
 
@@ -1440,7 +1440,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
         <div class="portal-live-panel">
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveTotal">00:00</div>
-            <div class="portal-live-lbl">⏱ Total</div>
+            <div class="portal-live-lbl">â± Total</div>
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveWork" style="color:#10b981">00:00</div>
@@ -1448,9 +1448,9 @@ function renderTreinar(workouts, schedules, sessions = []) {
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveRest" style="color:#06b6d4">00:00</div>
-            <div class="portal-live-lbl">🙏 Descanso</div>
+            <div class="portal-live-lbl">ðŸ™ Descanso</div>
           </div>
-          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer">🔔</button>
+          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer">ðŸ””</button>
         </div>
 
         <!-- Rest timer overlay (hidden until set done) -->
@@ -1460,7 +1460,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
           <div class="portal-rest-bar-track"><div class="portal-rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
           <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
-            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar ⏸</button>
+            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar â¸</button>
             <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho </button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
@@ -1471,22 +1471,22 @@ function renderTreinar(workouts, schedules, sessions = []) {
 
         <!-- Session notes -->
         <div class="glass-card" style="margin-top:12px">
-          <div class="portal-card-label"> Anotações da Sessão</div>
-          <textarea class="portal-textarea" id="soloNotes" rows="3" placeholder="Como se sentiu hoje? Ex: Cansaço, rendimento, dores, feedbacks em geral..."></textarea>
+          <div class="portal-card-label"> AnotaÃ§Ãµes da SessÃ£o</div>
+          <textarea class="portal-textarea" id="soloNotes" rows="3" placeholder="Como se sentiu hoje? Ex: CansaÃ§o, rendimento, dores, feedbacks em geral..."></textarea>
           
           <div style="margin-top:12px">
-            <div class="portal-card-label" style="margin-bottom:6px">PSE Geral da Sessão (Percepção de Esforço)</div>
+            <div class="portal-card-label" style="margin-bottom:6px">PSE Geral da SessÃ£o (PercepÃ§Ã£o de EsforÃ§o)</div>
             <select id="soloPse" style="display:none">
               <option value="1">1 - Extremamente Leve</option>
               <option value="2">2 - Muito Leve</option>
               <option value="3">3 - Leve</option>
-              <option value="4">4 - Moderado (Confortável)</option>
+              <option value="4">4 - Moderado (ConfortÃ¡vel)</option>
               <option value="5" selected>5 - Algo Pesado</option>
               <option value="6">6 - Forte</option>
               <option value="7">7 - Muito Forte</option>
               <option value="8">8 - Muito Forte+</option>
-              <option value="9">9 - Extremamente Forte (Quase Máximo)</option>
-              <option value="10">10 - Esforço Máximo (Exaustão)</option>
+              <option value="9">9 - Extremamente Forte (Quase MÃ¡ximo)</option>
+              <option value="10">10 - EsforÃ§o MÃ¡ximo (ExaustÃ£o)</option>
             </select>
             <button type="button" id="soloPseBtn" class="portal-textarea" style="margin-top:4px;padding:12px;text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:rgba(255,255,255,0.05);color:var(--portal-text);border:1px solid var(--portal-border);border-radius:12px;width:100%;box-sizing:border-box;">
               <span id="soloPseBtnVal">5 - Algo Pesado</span>
@@ -1497,7 +1497,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
 
         <button id="soloFinishBtn" class="portal-submit-btn" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:8px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Finalizar & Salvar Sessão
+          Finalizar & Salvar SessÃ£o
         </button>
       </div>
     </div>`;
@@ -1518,7 +1518,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   const selInput = document.getElementById('soloWorkoutSel');
   const exBlock = document.getElementById('soloExercisesBlock');
 
-  // ── Missed Workout Card Handlers ──
+  // â”€â”€ Missed Workout Card Handlers â”€â”€
   document.getElementById('startMissedBtn')?.addEventListener('click', (e) => {
     const btn = e.currentTarget;
     const wid = btn.dataset.wid;
@@ -1623,7 +1623,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         const overlay = document.getElementById('restTimerOverlay');
         if (overlay) overlay.style.display = 'none';
         playBeep(1000, 0.25, 3);
-        sendLocalNotification("Descanso Concluído! 💪", "Hora de começar a próxima série!");
+        sendLocalNotification("Descanso ConcluÃ­do! ðŸ’ª", "Hora de comeÃ§ar a prÃ³xima sÃ©rie!");
         triggerAutoSave();
       } else {
         const cd = document.getElementById('restCountdown');
@@ -1695,7 +1695,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         extraBlock.querySelectorAll('.portal-live-ex-card').forEach((card, xIdx) => {
           const xei = card.id.replace('extracard_', '');
           const nameEl = card.querySelector(`#extraex_${xei}_name`);
-          const name = nameEl?.value || `Exercício Extra ${xIdx+1}`;
+          const name = nameEl?.value || `ExercÃ­cio Extra ${xIdx+1}`;
           const exNotes = card.querySelector(`#extraex_${xei}_notes`)?.value || '';
           const rows = card.querySelectorAll('.portal-solo-set-row');
           const baseExIdx = (w.exercises?.length || 0) + xIdx;
@@ -1724,7 +1724,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       Array.from(freeCards).forEach((card, ei) => {
         const nameInput = card.querySelector(`input[id^="fex_${ei}_name"]`);
         if (!nameInput) return;
-        const name = nameInput.value || `Exercício ${ei+1}`;
+        const name = nameInput.value || `ExercÃ­cio ${ei+1}`;
         const exNotes = document.getElementById(`fex_notes_${ei}`)?.value || '';
         
         let si = 0;
@@ -1771,7 +1771,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
     return {
       workoutId: wid || null,
-      workoutName: w?.name || 'Treino Autônomo',
+      workoutName: w?.name || 'Treino AutÃ´nomo',
       exercises: exercisesList,
       setLog,
       postBiofeedback: { pse, notes }
@@ -1987,8 +1987,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             '6': '6 - Forte',
             '7': '7 - Muito Forte',
             '8': '8 - Muito Forte +',
-            '9': '9 - Quase Máximo',
-            '10': '10 - Máximo (Falha)'
+            '9': '9 - Quase MÃ¡ximo',
+            '10': '10 - MÃ¡ximo (Falha)'
           };
           btnValEl.textContent = descMap[val] || val;
         }
@@ -2129,7 +2129,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
   document.getElementById('discardSoloBtn')?.addEventListener('click', async (e) => {
     const runningSid = e.currentTarget.dataset.sid;
-    if (confirm('Tem certeza de que deseja descartar este treino em andamento? O progresso não salvo será perdido.')) {
+    if (confirm('Tem certeza de que deseja descartar este treino em andamento? O progresso nÃ£o salvo serÃ¡ perdido.')) {
       try {
         await db.delete('sessions', runningSid, tid);
         await loadSection('treinar');
@@ -2157,8 +2157,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
           '6': '6 - Forte',
           '7': '7 - Muito Forte',
           '8': '8 - Muito Forte +',
-          '9': '9 - Quase Máximo',
-          '10': '10 - Máximo (Falha)'
+          '9': '9 - Quase MÃ¡ximo',
+          '10': '10 - MÃ¡ximo (Falha)'
         };
         btnValEl.textContent = descMap[val] || val;
       }
@@ -2195,7 +2195,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   // Sound toggle
   document.getElementById('soundToggleBtn')?.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
-    document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔔' : '🔕';
+    document.getElementById('soundToggleBtn').textContent = soundEnabled ? 'ðŸ””' : 'ðŸ”•';
   });
 
   // Rest timer
@@ -2210,7 +2210,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     
     const pauseToggle = document.getElementById('restPauseToggle');
     if (pauseToggle) {
-      pauseToggle.textContent = 'Pausar ⏸';
+      pauseToggle.textContent = 'Pausar â¸';
       pauseToggle.style.background = 'rgba(245,158,11,0.15)';
       pauseToggle.style.borderColor = 'rgba(245,158,11,0.3)';
       pauseToggle.style.color = '#f59e0b';
@@ -2242,7 +2242,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         isResting = false;
         activeRestingRowId = null;
         playBeep(1000, 0.25, 3);
-        sendLocalNotification("Descanso Concluído! 💪", "Hora de começar a próxima série!");
+        sendLocalNotification("Descanso ConcluÃ­do! ðŸ’ª", "Hora de comeÃ§ar a prÃ³xima sÃ©rie!");
       }
     }, 1000);
   }
@@ -2280,7 +2280,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         <option value="7">7 - M. Forte</option>
         <option value="8">8 - M. Forte+</option>
         <option value="9">9 - Extr. Forte</option>
-        <option value="10">10 - Máximo</option>
+        <option value="10">10 - MÃ¡ximo</option>
       </select>
       <button type="button" class="portal-solo-input portal-solo-pse portal-solo-pse-btn" id="fex_psebtn_${ei}_${si}">PSE</button>
       
@@ -2359,12 +2359,12 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     const btn = document.getElementById('restPauseToggle');
     if (btn) {
       if (isRestPaused) {
-        btn.textContent = 'Retomar ▶';
+        btn.textContent = 'Retomar â–¶';
         btn.style.background = 'rgba(16,185,129,0.15)';
         btn.style.borderColor = 'rgba(16,185,129,0.3)';
         btn.style.color = '#10b981';
       } else {
-        btn.textContent = 'Pausar ⏸';
+        btn.textContent = 'Pausar â¸';
         btn.style.background = 'rgba(245,158,11,0.15)';
         btn.style.borderColor = 'rgba(245,158,11,0.3)';
         btn.style.color = '#f59e0b';
@@ -2392,8 +2392,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       if (selInput) selInput.value = wid;
       const w = workouts.find(w => w.id === wid);
     if (w && w.exercises?.length) {
-        // Garantir groupId para métodos combinados (treinos salvos antes dessa feature)
-        const COMBO = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+        // Garantir groupId para mÃ©todos combinados (treinos salvos antes dessa feature)
+        const COMBO = new Set(['Bi-set','Super-sÃ©rie Agonista','Super-sÃ©rie Antagonista','Tri-set','SÃ©rie Gigante','PrÃ©-exaustÃ£o']);
         let gc = 0;
         for (let i = 0; i < w.exercises.length; i++) {
           if (!COMBO.has(w.exercises[i].method)) continue;
@@ -2406,7 +2406,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
           }
         }
         exBlock.innerHTML = `
-          <div class="portal-section-sub" style="margin-bottom:8px">Exercícios do Treino</div>
+          <div class="portal-section-sub" style="margin-bottom:8px">ExercÃ­cios do Treino</div>
           ${w.exercises.map((ex,i) => {
             const isCardio = isCardioExercise(ex);
             return `
@@ -2415,7 +2415,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                 <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
                 <div style="flex:1;min-width:0">
                   <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
-                  <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+formatLoadWithBpm(ex, portalState.student, 'short'):''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
+                  <div class="portal-ex-detail">${ex.sets||3}Ã—${ex.reps||'10-12'}${ex.load?' &middot; '+formatLoadWithBpm(ex, portalState.student, 'short'):''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
@@ -2450,8 +2450,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                 return `
                   <div class="portal-cardio-embedded" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06);box-sizing:border-box" onclick="event.stopPropagation()">
                     <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-                      <span>📊 Perfil do Ritmo (Cardio)</span>
-                      <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
+                      <span>ðŸ“Š Perfil do Ritmo (Cardio)</span>
+                      <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">DuraÃ§Ã£o: ${formatDurationText(totalSec)}</span>
                     </div>
                     <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
                       <canvas id="cardioEmbedChart_preview_${i}" style="width:100%;height:100%"></canvas>
@@ -2464,7 +2464,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                           <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.015);border-radius:6px;font-size:0.7rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
                             <div style="display:flex;flex-direction:column;text-align:left">
                               <span style="font-weight:700;color:var(--portal-text,#f1f5f9)">${seg.label}</span>
-                              <span style="font-size:0.65rem;color:#94a3b8">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
+                              <span style="font-size:0.65rem;color:#94a3b8">â± ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
                             </div>
                             <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
                               ${targetLabel}
@@ -2528,38 +2528,38 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             <div class="portal-ex-num">${ei+1}</div>
             <div style="flex:1;min-width:0">
               <div class="portal-ex-name">${ex.name}</div>
-              <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?` · ${formatLoadWithBpm(ex, portalState.student)}`:''}${ex.rest?` · ${ex.rest}s descanso`:''}</div>
+              <div class="portal-ex-detail">${ex.sets||3}Ã—${ex.reps||'10-12'}${ex.load?` Â· ${formatLoadWithBpm(ex, portalState.student)}`:''}${ex.rest?` Â· ${ex.rest}s descanso`:''}</div>
               ${ex.method?`<div class="portal-ex-method">${ex.method}</div>`:''}
               ${(() => {
                 const CARDIO = {
                   'Zona 1 (Z1)':{fc:'50-65'},
                   'Zona 2 (Z2)':{fc:'65-75'},
-                  'Zona 3 (Z3) — Zona Cinzenta':{fc:'75-87'},
-                  'Zona 4 (Z4) — Limiar':{fc:'85-92'},
-                  'Zona 5 (Z5) — VO2max':{fc:'90-100'},
+                  'Zona 3 (Z3) â€” Zona Cinzenta':{fc:'75-87'},
+                  'Zona 4 (Z4) â€” Limiar':{fc:'85-92'},
+                  'Zona 5 (Z5) â€” VO2max':{fc:'90-100'},
                   'Tabata':{fc:'90-100'},
                   'HIIT 1:2':{fc:'85-95'},
                   'HIIT 1:1':{fc:'85-95'},
                   'SIT (Sprint Interval Training)':{fc:'ALL-OUT'},
-                  'Série de Repetição (VO2max)':{fc:'90-100'},
+                  'SÃ©rie de RepetiÃ§Ã£o (VO2max)':{fc:'90-100'},
                   'Steady State Z2':{fc:'65-75'},
                   'Progressivo':{fc:'60-90'},
                 };
-                const COMBINED = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+                const COMBINED = new Set(['Bi-set','Super-sÃ©rie Agonista','Super-sÃ©rie Antagonista','Tri-set','SÃ©rie Gigante','PrÃ©-exaustÃ£o']);
                 const cm = CARDIO[ex.method];
                 const isCombo = COMBINED.has(ex.method);
                 const nextEx2 = w.exercises[ei + 1];
-                // Usar groupId se disponível, fallback para método consecutivo
+                // Usar groupId se disponÃ­vel, fallback para mÃ©todo consecutivo
                 const isLastOfGroup = !nextEx2
                   || (ex.groupId ? nextEx2.groupId !== ex.groupId : (!COMBINED.has(nextEx2.method) || nextEx2.method !== ex.method));
                 return [
-                  cm ? `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600"> ${cm.fc}% FC Máx</div>` : '',
-                  isCombo ? `<div style="font-size:0.62rem;font-weight:700;color:#f59e0b;margin-top:3px;padding:2px 6px;background:rgba(245,158,11,0.12);border-radius:6px;display:inline-block"> ${ex.method} · ${isLastOfGroup ? `${ex.rest||90}s descanso pós-par` : '→ próximo exercício'}</div>` : '',
+                  cm ? `<div style="font-size:0.62rem;color:var(--portal-accent,#06b6d4);margin-top:2px;font-weight:600"> ${cm.fc}% FC MÃ¡x</div>` : '',
+                  isCombo ? `<div style="font-size:0.62rem;font-weight:700;color:#f59e0b;margin-top:3px;padding:2px 6px;background:rgba(245,158,11,0.12);border-radius:6px;display:inline-block"> ${ex.method} Â· ${isLastOfGroup ? `${ex.rest||90}s descanso pÃ³s-par` : 'â†’ prÃ³ximo exercÃ­cio'}</div>` : '',
                 ].join('');
               })()}
               ${(ex.trainerNotes || ex.notes) ? `
                 <div style="margin-top:6px;padding:7px 10px;background:rgba(16,185,129,0.08);border-left:3px solid #10b981;border-radius:0 8px 8px 0">
-                  <div style="font-size:0.58rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px"> Orientações</div>
+                  <div style="font-size:0.58rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px"> OrientaÃ§Ãµes</div>
                   <div style="font-size:0.78rem;color:var(--portal-text-secondary,#cbd5e1);line-height:1.5">${ex.trainerNotes || ex.notes}</div>
                 </div>` : ''}
               ${(() => {
@@ -2594,8 +2594,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                 return `
                   <div class="portal-cardio-embedded" style="margin-top:10px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06)">
                     <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-                      <span>📊 Perfil do Ritmo (Cardio)</span>
-                      <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
+                      <span>ðŸ“Š Perfil do Ritmo (Cardio)</span>
+                      <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">DuraÃ§Ã£o: ${formatDurationText(totalSec)}</span>
                     </div>
                     <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
                       <canvas id="cardioEmbedChart_live_${ei}" style="width:100%;height:100%"></canvas>
@@ -2608,7 +2608,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                           <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.015);border-radius:6px;font-size:0.7rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
                             <div style="display:flex;flex-direction:column;text-align:left">
                               <span style="font-weight:700;color:var(--portal-text,#f1f5f9)">${seg.label}</span>
-                              <span style="font-size:0.6rem;color:#94a3b8">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
+                              <span style="font-size:0.6rem;color:#94a3b8">â± ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
                             </div>
                             <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
                               ${targetLabel}
@@ -2623,7 +2623,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             </div>
             ${(() => {
               const isCardio = isCardioExercise(ex);
-              const title = isCardio ? 'Ver Gráfico de Ritmo e Zonas' : 'Ver detalhes';
+              const title = isCardio ? 'Ver GrÃ¡fico de Ritmo e Zonas' : 'Ver detalhes';
               const iconSvg = isCardio
                 ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m18.7 8-5.1 5.2-2.8-2.7L7 14.3"/></svg>`
                 : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
@@ -2633,12 +2633,12 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                 </button>
               `;
             })()}
-            ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Vídeo</a>`:''}
+            ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="portal-ex-video"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>VÃ­deo</a>`:''}
           </div>
 
           ${ex.description||ex.notes?`<div class="portal-ex-desc">${ex.description||ex.notes}</div>`:''}
 
-          <!-- Sets container (suporta séries extras adicionadas dinamicamente) -->
+          <!-- Sets container (suporta sÃ©ries extras adicionadas dinamicamente) -->
           <div id="sets_container_${ei}">
             ${(() => {
               const isExCardio = isCardioExercise(ex);
@@ -2673,18 +2673,18 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                   } else {
                     if (ex.method) {
                       const SIMPLE_LABELS = {
-                        'Unilateral': (i) => i%2===0 ? `S${Math.floor(i/2)+1} — Lado D` : `S${Math.floor(i/2)+1} — Lado E`,
-                        'Bi-set': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
-                        'Super-série Agonista': (i) => i%2===0 ? `Ex A — S${Math.floor(i/2)+1}` : `Ex B — S${Math.floor(i/2)+1}`,
-                        'Super-série Antagonista': (i) => i%2===0 ? `Agonista S${Math.floor(i/2)+1}` : `Antagonista S${Math.floor(i/2)+1}`,
+                        'Unilateral': (i) => i%2===0 ? `S${Math.floor(i/2)+1} â€” Lado D` : `S${Math.floor(i/2)+1} â€” Lado E`,
+                        'Bi-set': (i) => i%2===0 ? `Ex A â€” S${Math.floor(i/2)+1}` : `Ex B â€” S${Math.floor(i/2)+1}`,
+                        'Super-sÃ©rie Agonista': (i) => i%2===0 ? `Ex A â€” S${Math.floor(i/2)+1}` : `Ex B â€” S${Math.floor(i/2)+1}`,
+                        'Super-sÃ©rie Antagonista': (i) => i%2===0 ? `Agonista S${Math.floor(i/2)+1}` : `Antagonista S${Math.floor(i/2)+1}`,
                       };
                       if (SIMPLE_LABELS[ex.method]) {
                         if (!ex._dynLabels) ex._dynLabels = {};
                         ex._dynLabels[si] = SIMPLE_LABELS[ex.method](si);
                       }
                     }
-                    if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
-                      const parts = ex.reps.split('→');
+                    if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('â†’')) {
+                      const parts = ex.reps.split('â†’');
                       repsVal = parseInt(parts[si] || ex.reps) || '';
                     } else {
                       repsVal = parseInt(ex.reps) || '';
@@ -2699,15 +2699,15 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                   if (hasProgLabel) {
                     const lbl = ex.seriesProgression?.[si]?.label || dynLabel || '';
                     if (isClusterMethod) {
-                      const cMatch = lbl.match(/(?:Cluster\s*|C)(\d+)\s*[—\-]\s*(.+)/i);
+                      const cMatch = lbl.match(/(?:Cluster\s*|C)(\d+)\s*[â€”\-]\s*(.+)/i);
                       if (cMatch) {
                         setNumLabel = `C${cMatch[1]}`;
                         const part = cMatch[2].toLowerCase();
-                        setSubLabel = part.includes('pausa') || part.startsWith('p') ? 'Pausa' : 'Série';
+                        setSubLabel = part.includes('pausa') || part.startsWith('p') ? 'Pausa' : 'SÃ©rie';
                       } else {
                         const numMatch = lbl.match(/\d+/);
                         setNumLabel = numMatch ? `C${numMatch[0]}` : `S${si+1}`;
-                        setSubLabel = lbl.toLowerCase().includes('pausa') ? 'Pausa' : 'Série';
+                        setSubLabel = lbl.toLowerCase().includes('pausa') ? 'Pausa' : 'SÃ©rie';
                       }
                     } else if (ex.method === 'Unilateral') {
                       const ladoD = lbl.toLowerCase().includes('lado d') || lbl.toLowerCase().includes('direito');
@@ -2721,7 +2721,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                       const blocoMatch = lbl.match(/^Bloco\s*(\d+)/i);
                       if (sMatch) {
                         setNumLabel = `S${sMatch[1]}`;
-                        const after = lbl.replace(/^S\d+\s*[—-]\s*/i,'').trim();
+                        const after = lbl.replace(/^S\d+\s*[â€”-]\s*/i,'').trim();
                         setSubLabel = after.length > 0 && after.length <= 8 ? after : after.split(' ')[0];
                       } else if (exMatch) {
                         setNumLabel = `Ex${exMatch[1]}`;
@@ -2767,29 +2767,29 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             })()}
           </div>
 
-          <!-- + Série -->
+          <!-- + SÃ©rie -->
           <button type="button" class="portal-add-set-btn" id="addset_${ei}" data-ei="${ei}" data-rest="${ex.rest||60}"
             style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Adicionar série
+            Adicionar sÃ©rie
           </button>
 
-          <!-- Observações do exercício -->
+          <!-- ObservaÃ§Ãµes do exercÃ­cio -->
           <div style="margin-top:8px">
-            <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
+            <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> ObservaÃ§Ãµes</div>
             <textarea class="portal-textarea" id="exnotes_${ei}" rows="2"
-              placeholder="Sensação na série, ajuste de técnica, dor, carga ideal..."
+              placeholder="SensaÃ§Ã£o na sÃ©rie, ajuste de tÃ©cnica, dor, carga ideal..."
               style="font-size:0.8rem;resize:none;background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);border-radius:8px;padding:8px 10px;color:var(--portal-text)"></textarea>
           </div>
         </div>
       `).join('');
 
-      // Botão flutuante "+ Exercício extra" ao fim da lista
+      // BotÃ£o flutuante "+ ExercÃ­cio extra" ao fim da lista
       exLogEl.insertAdjacentHTML('beforeend', `
         <button id="addExtraExBtn" type="button"
           style="width:100%;padding:10px;background:rgba(16,185,129,0.08);border:1px dashed rgba(16,185,129,0.3);border-radius:10px;color:#10b981;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Adicionar Exercício Extra
+          Adicionar ExercÃ­cio Extra
         </button>
         <div id="extraExercisesBlock"></div>
       `);
@@ -2799,7 +2799,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         <div id="soloFreeExercises"></div>
         <button id="soloAddExBtn" class="portal-expand-btn" style="border:1px dashed rgba(255,255,255,0.15);border-radius:10px;padding:10px;width:100%;justify-content:center;margin-bottom:8px;color:var(--portal-primary)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Adicionar exercício
+          Adicionar exercÃ­cio
         </button>`;
       let cnt = 0;
       document.getElementById('soloAddExBtn')?.addEventListener('click', () => {
@@ -2811,8 +2811,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         
         div.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
-            <input type="text" placeholder="Nome do exercício" class="portal-textarea" id="fex_${ei}_name" style="margin-bottom:0;flex:1;font-weight:600">
-            <button type="button" class="fex-remove-btn" style="background:rgba(239,68,68,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0" title="Remover exercício">&times;</button>
+            <input type="text" placeholder="Nome do exercÃ­cio" class="portal-textarea" id="fex_${ei}_name" style="margin-bottom:0;flex:1;font-weight:600">
+            <button type="button" class="fex-remove-btn" style="background:rgba(239,68,68,0.15);border:none;border-radius:50%;width:24px;height:24px;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0" title="Remover exercÃ­cio">&times;</button>
           </div>
           
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -2825,11 +2825,11 @@ function initTreinar(workouts, schedules, student, sessions = []) {
           
           <button type="button" class="portal-expand-btn add-free-set-btn" id="fex_addset_${ei}" style="background:rgba(99,102,241,0.1);color:#818cf8;border:1px dashed rgba(99,102,241,0.2);padding:8px;border-radius:6px;width:100%;font-size:0.8rem;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Adicionar série
+            Adicionar sÃ©rie
           </button>
           
           <div style="margin-top:8px">
-            <textarea class="portal-textarea" id="fex_notes_${ei}" rows="1" placeholder="Anotações deste exercício..." style="font-size:0.8rem"></textarea>
+            <textarea class="portal-textarea" id="fex_notes_${ei}" rows="1" placeholder="AnotaÃ§Ãµes deste exercÃ­cio..." style="font-size:0.8rem"></textarea>
           </div>
         `;
         
@@ -2851,7 +2851,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     }
 
     // Bind done buttons
-    const COMBINED_SET = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+    const COMBINED_SET = new Set(['Bi-set','Super-sÃ©rie Agonista','Super-sÃ©rie Antagonista','Tri-set','SÃ©rie Gigante','PrÃ©-exaustÃ£o']);
 
     exLogEl.querySelectorAll('.portal-solo-done-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2865,12 +2865,12 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             const ex = w?.exercises?.[ei];
             const isCombined = COMBINED_SET.has(ex?.method);
             const nextEx = w?.exercises?.[ei + 1];
-            // Usar groupId se disponível
+            // Usar groupId se disponÃ­vel
             const isLastOfGroup = !nextEx
               || (ex?.groupId ? nextEx?.groupId !== ex?.groupId : (!COMBINED_SET.has(nextEx?.method) || nextEx?.method !== ex?.method));
 
             let restSec = parseInt(btn.dataset.rest) || 60;
-            // Métodos combinados: descanso=0 se não é o último do grupo
+            // MÃ©todos combinados: descanso=0 se nÃ£o Ã© o Ãºltimo do grupo
             if (isCombined && !isLastOfGroup) restSec = 0;
 
             const overlay = document.getElementById('restTimerOverlay');
@@ -2878,7 +2878,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             activeRestingRowId = row.id;
 
             if (restSec === 0) {
-              // Avança visualmente para o próximo exercício sem descanso
+              // AvanÃ§a visualmente para o prÃ³ximo exercÃ­cio sem descanso
               const nextCard = document.getElementById(`excard_${ei + 1}`);
               if (nextCard) {
                 nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2942,7 +2942,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         });
       });
     });
-    // ── + SÉRIE EXTRA por exercício ──
+    // â”€â”€ + SÃ‰RIE EXTRA por exercÃ­cio â”€â”€
     exLogEl.querySelectorAll('.portal-add-set-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const ei = parseInt(btn.dataset.ei);
@@ -2950,7 +2950,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         const container = document.getElementById(`sets_container_${ei}`);
         if (!container) return;
         const existing = container.querySelectorAll('.portal-solo-set-row').length;
-        const si = existing; // próximo índice
+        const si = existing; // prÃ³ximo Ã­ndice
         const row = document.createElement('div');
         row.className = 'portal-solo-set-row';
         row.id = `setrow_${ei}_${si}`;
@@ -2994,7 +2994,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       });
     });
 
-    // ── + EXERCÍCIO EXTRA durante sessão ──
+    // â”€â”€ + EXERCÃCIO EXTRA durante sessÃ£o â”€â”€
     let extraExCount = 0;
     document.getElementById('addExtraExBtn')?.addEventListener('click', () => {
       const block = document.getElementById('extraExercisesBlock');
@@ -3006,27 +3006,27 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       card.id = `extracard_${xei}`;
       card.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <input type="text" placeholder="Nome do exercício" class="portal-textarea" id="extraex_${xei}_name"
+          <input type="text" placeholder="Nome do exercÃ­cio" class="portal-textarea" id="extraex_${xei}_name"
             style="margin-bottom:0;flex:1;font-weight:600;font-size:0.88rem;padding:8px 10px">
-          <button type="button" style="background:rgba(239,68,68,0.12);border:none;border-radius:50%;width:26px;height:26px;color:#ef4444;cursor:pointer;font-size:0.9rem;flex-shrink:0" onclick="this.closest('.portal-live-ex-card').remove()">×</button>
+          <button type="button" style="background:rgba(239,68,68,0.12);border:none;border-radius:50%;width:26px;height:26px;color:#ef4444;cursor:pointer;font-size:0.9rem;flex-shrink:0" onclick="this.closest('.portal-live-ex-card').remove()">Ã—</button>
         </div>
         <div id="extrasets_${xei}" style="display:flex;flex-direction:column;gap:5px"></div>
         <button type="button" class="extra-addset-btn" data-xei="${xei}" data-rest="60"
           style="width:100%;margin-top:6px;padding:7px;background:rgba(99,102,241,0.08);border:1px dashed rgba(99,102,241,0.25);border-radius:8px;color:#818cf8;font-size:0.75rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Adicionar série
+          Adicionar sÃ©rie
         </button>
         <div style="margin-top:8px">
-          <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> Observações</div>
+          <div style="font-size:0.65rem;font-weight:600;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px"> ObservaÃ§Ãµes</div>
           <textarea class="portal-textarea" id="extraex_${xei}_notes" rows="2"
-            placeholder="Sensação, carga ideal, observações técnicas..."
+            placeholder="SensaÃ§Ã£o, carga ideal, observaÃ§Ãµes tÃ©cnicas..."
             style="font-size:0.8rem;resize:none"></textarea>
         </div>
       `;
       block.appendChild(card);
       // Add first set automatically
       card.querySelector('.extra-addset-btn').click();
-      // Bind future + Série buttons
+      // Bind future + SÃ©rie buttons
       card.querySelector('.extra-addset-btn').addEventListener('click', () => {
         const setsBlock = document.getElementById(`extrasets_${xei}`);
         const si = setsBlock.querySelectorAll('.portal-solo-set-row').length;
@@ -3113,7 +3113,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       trainerId: tid,
       trainer_id: tid,
       workoutId: wid || null,
-      workoutName: w?.name || 'Treino Autônomo',
+      workoutName: w?.name || 'Treino AutÃ´nomo',
       date: localDate,
       status: 'running',
       isSolo: true,
@@ -3129,7 +3129,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       const saved = await db.put('sessions', runningSession);
       soloSessionId = saved.id;
     } catch (e) {
-      console.warn('Erro ao criar sessão ativa no DB:', e);
+      console.warn('Erro ao criar sessÃ£o ativa no DB:', e);
       soloSessionId = 'solo_' + Date.now();
     }
 
@@ -3183,7 +3183,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     };
 
     try {
-      // Tenta salvar — com retry em caso de falha transitória
+      // Tenta salvar â€” com retry em caso de falha transitÃ³ria
       let saved = false;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
@@ -3204,7 +3204,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
               sch.date === targetDate &&
               sch.status !== 'completed'
             );
-            // Marcar apenas o mais específico (por workoutId se existir, senão o primeiro do dia)
+            // Marcar apenas o mais especÃ­fico (por workoutId se existir, senÃ£o o primeiro do dia)
             const toMark = byWorkout.length > 0 ? [byWorkout[0]] : (byDate.length > 0 ? [byDate[0]] : []);
             for (const sch of toMark) {
               sch.status = 'completed';
@@ -3223,13 +3223,13 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       }
 
       if (!saved) {
-        // Salvar backup no localStorage para não perder dados
+        // Salvar backup no localStorage para nÃ£o perder dados
         const backupKey = `pp_session_backup_${sid}_${Date.now()}`;
         try { localStorage.setItem(backupKey, JSON.stringify(sessionData)); } catch(_) {}
         btn.disabled = false;
         btn.style.opacity = '';
         btn.style.pointerEvents = '';
-        btn.innerHTML = '! Erro ao salvar — Tentar novamente';
+        btn.innerHTML = '! Erro ao salvar â€” Tentar novamente';
         btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
         if (typeof showToast === 'function') {
           showToast('Erro ao salvar treino. Seus dados foram preservados. Tente novamente.', 'error', 8000);
@@ -3242,7 +3242,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       document.getElementById('soloActiveSession').innerHTML = `
         <div class="portal-success">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <div>Treino salvo! Duração: ${durationMin} min · ${totalSets} séries</div>
+          <div>Treino salvo! DuraÃ§Ã£o: ${durationMin} min Â· ${totalSets} sÃ©ries</div>
         </div>`;
 
       setTimeout(async () => {
@@ -3261,7 +3261,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       btn.disabled = false;
       btn.style.opacity = '';
       btn.style.pointerEvents = '';
-      btn.innerHTML = '! Erro — Tentar novamente';
+      btn.innerHTML = '! Erro â€” Tentar novamente';
       btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
     }
   });
@@ -3284,7 +3284,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   }
 }
 
-// ── SESSÕES ────────────────────────────────────────────────────
+// â”€â”€ SESSÃ•ES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function safeFormatDate(dStr, timeStr = '') {
   if (!dStr) return '';
   try {
@@ -3369,7 +3369,7 @@ function getCardioSegments(ex) {
       return loadNum;
     }
     const lbl = String(labelText).toLowerCase();
-    if (lbl.includes('z5') || lbl.includes('sprint') || lbl.includes('tiro') || lbl.includes('all-out') || lbl.includes('máximo') || lbl.includes('muito pesada') || lbl.includes('vo2max')) {
+    if (lbl.includes('z5') || lbl.includes('sprint') || lbl.includes('tiro') || lbl.includes('all-out') || lbl.includes('mÃ¡ximo') || lbl.includes('muito pesada') || lbl.includes('vo2max')) {
       return 95.0;
     }
     if (lbl.includes('z4') || lbl.includes('limiar') || lbl.includes('pesada')) {
@@ -3381,7 +3381,7 @@ function getCardioSegments(ex) {
     if (lbl.includes('z2') || lbl.includes('base') || lbl.includes('leve')) {
       return 70.0;
     }
-    if (lbl.includes('z1') || lbl.includes('aquecimento') || lbl.includes('desaquecimento') || lbl.includes('recuperação') || lbl.includes('cool down')) {
+    if (lbl.includes('z1') || lbl.includes('aquecimento') || lbl.includes('desaquecimento') || lbl.includes('recuperaÃ§Ã£o') || lbl.includes('cool down')) {
       return 57.5;
     }
     return 70.0;
@@ -3426,8 +3426,8 @@ function getCardioSegments(ex) {
     let cumulative = 0;
     ex.seriesProgression.forEach((sp, idx) => {
       const duration = parseDuration(sp.reps);
-      const intensity = parseIntensity(sp.load, sp.label || `Série ${idx+1}`);
-      const label = sp.label || `Série ${idx+1}`;
+      const intensity = parseIntensity(sp.load, sp.label || `SÃ©rie ${idx+1}`);
+      const label = sp.label || `SÃ©rie ${idx+1}`;
       segments.push({
         label,
         duration,
@@ -3449,7 +3449,7 @@ function getCardioSegments(ex) {
     for (let r = 1; r <= 8; r++) {
       segments.push({ label: `Sprint R${r} (Z5)`, duration: 20, intensity: 95.0, start: cumulative, end: cumulative + 20 });
       cumulative += 20;
-      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 10, intensity: 57.5, start: cumulative, end: cumulative + 10 });
+      segments.push({ label: `RecuperaÃ§Ã£o R${r} (Z1)`, duration: 10, intensity: 57.5, start: cumulative, end: cumulative + 10 });
       cumulative += 10;
     }
     segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
@@ -3457,9 +3457,9 @@ function getCardioSegments(ex) {
     segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
     cumulative = 300;
     for (let r = 1; r <= 10; r++) {
-      segments.push({ label: `Esforço R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
+      segments.push({ label: `EsforÃ§o R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
       cumulative += 30;
-      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 30, intensity: 57.5, start: cumulative, end: cumulative + 30 });
+      segments.push({ label: `RecuperaÃ§Ã£o R${r} (Z1)`, duration: 30, intensity: 57.5, start: cumulative, end: cumulative + 30 });
       cumulative += 30;
     }
     segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
@@ -3467,9 +3467,9 @@ function getCardioSegments(ex) {
     segments.push({ label: 'Aquecimento (Z1)', duration: 300, intensity: 57.5, start: 0, end: 300 });
     cumulative = 300;
     for (let r = 1; r <= 8; r++) {
-      segments.push({ label: `Esforço R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
+      segments.push({ label: `EsforÃ§o R${r} (Z4/Z5)`, duration: 30, intensity: 90.0, start: cumulative, end: cumulative + 30 });
       cumulative += 30;
-      segments.push({ label: `Recuperação R${r} (Z1)`, duration: 60, intensity: 57.5, start: cumulative, end: cumulative + 60 });
+      segments.push({ label: `RecuperaÃ§Ã£o R${r} (Z1)`, duration: 60, intensity: 57.5, start: cumulative, end: cumulative + 60 });
       cumulative += 60;
     }
     segments.push({ label: 'Desaquecimento (Z1)', duration: 300, intensity: 57.5, start: cumulative, end: cumulative + 300 });
@@ -3562,7 +3562,7 @@ function initCardioChart(segments, isTimeSpeed) {
             },
             label: (context) => {
               const val = context.parsed.y;
-              return isTimeSpeed ? `Carga: ${val}` : `Intensidade: ${val}% FC Máx`;
+              return isTimeSpeed ? `Carga: ${val}` : `Intensidade: ${val}% FC MÃ¡x`;
             }
           }
         }
@@ -3570,14 +3570,14 @@ function initCardioChart(segments, isTimeSpeed) {
       scales: {
         x: {
           type: 'linear',
-          title: { display: true, text: 'Duração (minutos)', color: '#94a3b8', font: { size: 9, weight: 'bold' } },
+          title: { display: true, text: 'DuraÃ§Ã£o (minutos)', color: '#94a3b8', font: { size: 9, weight: 'bold' } },
           ticks: { color: '#94a3b8', font: { size: 8 } },
           grid: { color: 'rgba(255,255,255,0.04)' }
         },
         y: {
           title: { 
             display: true, 
-            text: isTimeSpeed ? 'Velocidade / Carga' : '% FC Máx', 
+            text: isTimeSpeed ? 'Velocidade / Carga' : '% FC MÃ¡x', 
             color: '#94a3b8', 
             font: { size: 9, weight: 'bold' } 
           },
@@ -3630,8 +3630,8 @@ async function showExerciseModal(ex) {
       <div style="padding:0 20px 16px">
         <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:14px 16px;border:1px solid rgba(255,255,255,0.06);margin-bottom:12px">
           <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-            <span>📊 Perfil do Ritmo (Cardio/HIIT)</span>
-            <span style="font-size:0.68rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
+            <span>ðŸ“Š Perfil do Ritmo (Cardio/HIIT)</span>
+            <span style="font-size:0.68rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">DuraÃ§Ã£o: ${formatDurationText(totalSec)}</span>
           </div>
           <div style="position:relative;height:160px;width:100%;margin-bottom:14px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
             <canvas id="cardioIntervalChart" style="width:100%;height:100%"></canvas>
@@ -3644,7 +3644,7 @@ async function showExerciseModal(ex) {
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.015);border-radius:8px;font-size:0.75rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
                   <div style="display:flex;flex-direction:column">
                     <span style="font-weight:700;color:var(--portal-text,#f1f5f9)">${seg.label}</span>
-                    <span style="font-size:0.65rem;color:#94a3b8">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
+                    <span style="font-size:0.65rem;color:#94a3b8">â± ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
                   </div>
                   <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
                     ${targetLabel}
@@ -3667,7 +3667,7 @@ async function showExerciseModal(ex) {
         methodDesc = method.description;
       }
     } catch (e) {
-      console.warn('Erro ao buscar método para modal:', e);
+      console.warn('Erro ao buscar mÃ©todo para modal:', e);
     }
   }
 
@@ -3731,7 +3731,7 @@ async function showExerciseModal(ex) {
       <div style="display:flex;gap:8px;padding:0 20px 16px;overflow-x:auto">
         ${ex.sets ? `<div style="background:rgba(99,102,241,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
           <div style="font-size:1.1rem;font-weight:800;color:#818cf8">${ex.sets}</div>
-          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Séries</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">SÃ©ries</div>
         </div>` : ''}
         ${ex.reps ? `<div style="background:rgba(16,185,129,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
           <div style="font-size:1.1rem;font-weight:800;color:#10b981">${ex.reps}</div>
@@ -3766,21 +3766,21 @@ async function showExerciseModal(ex) {
             <div style="width:56px;height:56px;border-radius:50%;background:var(--portal-primary);display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 8px 20px var(--portal-primary-glow)">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="margin-left:4px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </div>
-            <span style="font-size:0.8rem;font-weight:700;color:var(--portal-text-secondary)">Carregar vídeo de execução</span>
+            <span style="font-size:0.8rem;font-weight:700;color:var(--portal-text-secondary)">Carregar vÃ­deo de execuÃ§Ã£o</span>
           </div>
         ` : ''}
 
         ${ex.videoUrl ? `
           <button id="portalExPlayVideoBtn" style="width:100%;padding:10px 16px;border-radius:10px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);color:#818cf8;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:8px;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.18)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Assistir vídeo de execução
+            Assistir vÃ­deo de execuÃ§Ã£o
           </button>
         ` : ''}
 
         ${!ex.videoUrl && !finalImageUrl ? `
           <div id="portalExMediaFallback" style="display:flex;height:120px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhuma mídia vinculada</span>
+            <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhuma mÃ­dia vinculada</span>
           </div>
         ` : ''}
       </div>
@@ -3791,13 +3791,13 @@ async function showExerciseModal(ex) {
         <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px;border-left:3px solid ${muscleColor}">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${muscleColor};margin-bottom:8px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${muscleColor}" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Técnica de Execução
+            TÃ©cnica de ExecuÃ§Ã£o
           </div>
           <p style="font-size:0.82rem;line-height:1.7;color:var(--portal-text-secondary,#94a3b8);margin:0">${ex.description||ex.notes||ex.technique}</p>
         </div>` : `
         <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:8px">Dicas de Execução</div>
-          <p style="font-size:0.82rem;line-height:1.7;color:#64748b;margin:0">Mantenha a postura correta durante todo o movimento. Controle a fase excêntrica (descida) em 2-3 segundos. Respire corretamente: expire no esforço, inspire no retorno.</p>
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:8px">Dicas de ExecuÃ§Ã£o</div>
+          <p style="font-size:0.82rem;line-height:1.7;color:#64748b;margin:0">Mantenha a postura correta durante todo o movimento. Controle a fase excÃªntrica (descida) em 2-3 segundos. Respire corretamente: expire no esforÃ§o, inspire no retorno.</p>
         </div>`}
 
         ${ex.method ? `
@@ -3885,14 +3885,14 @@ function renderSessoes(sessions, schedules) {
 
   return `
     <div class="portal-section">
-      <h2 class="portal-section-title">Sessões</h2>
+      <h2 class="portal-section-title">SessÃµes</h2>
 
       ${upcoming.length ? `
-        <div class="portal-section-sub">Próximas sessões</div>
+        <div class="portal-section-sub">PrÃ³ximas sessÃµes</div>
         ${upcoming.map(s => `
           <div class="glass-card portal-session-upcoming">
             <div class="portal-session-date">${safeFormatDate(s.date)}</div>
-            <div class="portal-session-time">${s.time || 'Horário a confirmar'}</div>
+            <div class="portal-session-time">${s.time || 'HorÃ¡rio a confirmar'}</div>
             <div class="portal-session-name">${s.workoutName || 'Treino'}</div>
           </div>
         `).join('')}
@@ -3912,8 +3912,8 @@ function renderSessoes(sessions, schedules) {
         `).join('')}
       ` : ''}
 
-      <div class="portal-section-sub" style="margin-top:20px">Histórico</div>
-      ${completed.length === 0 ? `<div class="portal-empty">Nenhuma sessão concluída ainda</div>` :
+      <div class="portal-section-sub" style="margin-top:20px">HistÃ³rico</div>
+      ${completed.length === 0 ? `<div class="portal-empty">Nenhuma sessÃ£o concluÃ­da ainda</div>` :
         completed.map(s => {
           const setLog = s.setLog || [];
           const vol = setLog.reduce((t,x) => t+(parseFloat(x.load)||0)*(parseFloat(x.reps)||0),0);
@@ -3924,7 +3924,7 @@ function renderSessoes(sessions, schedules) {
             <div class="portal-session-card glass-card${isSolo ? ' portal-session-solo' : ''}">
               <div class="portal-session-header">
                 <div>
-                  <div class="portal-session-name">${s.workoutName||'Treino'}${isSolo ? ' <span class="portal-solo-badge">autônomo</span>' : ''}</div>
+                  <div class="portal-session-name">${s.workoutName||'Treino'}${isSolo ? ' <span class="portal-solo-badge">autÃ´nomo</span>' : ''}</div>
                   <div class="portal-session-meta">${safeFormatDate(s.date)}</div>
                 </div>
                 <div class="portal-session-stats-sm">
@@ -3936,12 +3936,12 @@ function renderSessoes(sessions, schedules) {
               </div>
               <div class="portal-session-sets" id="sets_${s.id}" style="display:none">
                 ${(() => {
-                  if (!setLog.length) return '<div class="text-muted" style="font-size:0.75rem;padding:8px 0">Sem dados de série</div>';
+                  if (!setLog.length) return '<div class="text-muted" style="font-size:0.75rem;padding:8px 0">Sem dados de sÃ©rie</div>';
                   // Group sets by exerciseName
                   const groups = [];
                   const seen = {};
                   setLog.forEach(x => {
-                    const key = x.exerciseName || ('Exercício ' + ((x.exerciseIdx||0)+1));
+                    const key = x.exerciseName || ('ExercÃ­cio ' + ((x.exerciseIdx||0)+1));
                     if (!seen[key]) { seen[key] = groups.length; groups.push({ name: key, sets: [] }); }
                     groups[seen[key]].sets.push(x);
                   });
@@ -3965,7 +3965,7 @@ function renderSessoes(sessions, schedules) {
               </div>
               ${setLog.length?`<button class="portal-expand-btn session-expand" data-id="${s.id}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                Ver exercícios
+                Ver exercÃ­cios
               </button>`:''}
             </div>`;
         }).join('')}
@@ -3988,13 +3988,13 @@ function initSessoesSection() {
       const isOpen = div.style.display !== 'none';
       div.style.display = isOpen ? 'none' : 'block';
       btn.innerHTML = isOpen
-        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg> Ver séries`
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg> Ver sÃ©ries`
         : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> Fechar`;
     });
   });
 }
 
-// ── BIOFEEDBACK ────────────────────────────────────────────────
+// â”€â”€ BIOFEEDBACK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderBio(biofeedbacks, sid, tid) {
   const last7 = biofeedbacks.slice(0, 7);
   const student = portalState.student;
@@ -4007,18 +4007,18 @@ function renderBio(biofeedbacks, sid, tid) {
       <h2 class="portal-section-title">Check-in</h2>
 
       <div class="glass-card portal-bio-form-card">
-        <div class="portal-card-label">Biofeedback Pré-treino</div>
+        <div class="portal-card-label">Biofeedback PrÃ©-treino</div>
         <form id="portalBioForm">
           <div class="portal-bio-field">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_MOON} Qualidade do Sono</label>
             ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Recuperação (TQR)</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} RecuperaÃ§Ã£o (TQR)</label>
             ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FOOD} Alimentação nas últimas 24h</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FOOD} AlimentaÃ§Ã£o nas Ãºltimas 24h</label>
             ${renderInlineCardSelector('food', ALIMENTACAO_OPTIONS, 5)}
           </div>
           <div class="portal-bio-field">
@@ -4057,33 +4057,33 @@ function renderBio(biofeedbacks, sid, tid) {
             </div>
           </div>
           <div class="portal-bio-field">
-            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FIRE} Motivação para Treinar</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FIRE} MotivaÃ§Ã£o para Treinar</label>
             ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 8)}
           </div>
           
           ${isWomanUnder40 ? `
           <div class="portal-bio-field">
-            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual (Se aplicável)</label>
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual (Se aplicÃ¡vel)</label>
             <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
-              <option value="" selected>Não se aplica / Prefiro não informar</option>
-              <option value="Menstruacao">Menstruação</option>
-              <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
-              <option value="Ovulatoria">Fase Ovulatória</option>
-              <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
+              <option value="" selected>NÃ£o se aplica / Prefiro nÃ£o informar</option>
+              <option value="Menstruacao">MenstruaÃ§Ã£o</option>
+              <option value="Folicular">Fase Folicular (PÃ³s-menstruaÃ§Ã£o)</option>
+              <option value="Ovulatoria">Fase OvulatÃ³ria</option>
+              <option value="Lutea">Fase LÃºtea (PrÃ©-menstrual / TPM)</option>
             </select>
           </div>
           ` : ''}
 
           <div class="portal-bio-field">
             <label class="portal-bio-label">Notas</label>
-            <textarea name="notes" class="portal-textarea" rows="2" placeholder="Como está se sentindo hoje?"></textarea>
+            <textarea name="notes" class="portal-textarea" rows="2" placeholder="Como estÃ¡ se sentindo hoje?"></textarea>
           </div>
           <button type="submit" class="portal-submit-btn">Enviar Check-in</button>
         </form>
       </div>
 
       ${last7.length ? `
-        <div class="portal-section-sub" style="margin-top:20px">Histórico recente</div>
+        <div class="portal-section-sub" style="margin-top:20px">HistÃ³rico recente</div>
         ${last7.map(b => `
           <div class="glass-card portal-bio-history">
             <div class="portal-bio-date">${parseLocalDate(b.date).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}</div>
@@ -4212,47 +4212,47 @@ function renderAvaliacoes(assessments) {
 
   let html = `
     <div class="portal-section" id="portalAvaliacoesSection" style="padding-bottom: 80px;">
-      <h2 class="portal-section-title">Avaliações</h2>
+      <h2 class="portal-section-title">AvaliaÃ§Ãµes</h2>
       
-      <!-- COMPOSIÇÃO CORPORAL -->
+      <!-- COMPOSIÃ‡ÃƒO CORPORAL -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          ⚖️ Composição Corporal
+          âš–ï¸ ComposiÃ§Ã£o Corporal
         </div>
         ${compAss.length === 0 ? `
-          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliação de composição corporal registrada.</p>
+          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliaÃ§Ã£o de composiÃ§Ã£o corporal registrada.</p>
         ` : `
           <!-- Latest evaluation key numbers -->
           <div class="portal-stats-row" style="margin-top:12px;margin-bottom:12px;display:flex;gap:10px">
             <div class="portal-stat-card glass-card" style="flex:1;text-align:center;padding:10px 4px">
-              <div class="portal-stat-val" style="color:var(--portal-primary);font-size:1.15rem;font-weight:800">${compAss[0].peso || '—'} <span style="font-size:0.7rem;font-weight:400">kg</span></div>
+              <div class="portal-stat-val" style="color:var(--portal-primary);font-size:1.15rem;font-weight:800">${compAss[0].peso || 'â€”'} <span style="font-size:0.7rem;font-weight:400">kg</span></div>
               <div class="portal-stat-lbl" style="font-size:0.68rem">Peso Atual</div>
             </div>
             <div class="portal-stat-card glass-card" style="flex:1;text-align:center;padding:10px 4px">
-              <div class="portal-stat-val" style="color:var(--portal-warning);font-size:1.15rem;font-weight:800">${compAss[0].percentualGordura || '—'} <span style="font-size:0.7rem;font-weight:400">%</span></div>
+              <div class="portal-stat-val" style="color:var(--portal-warning);font-size:1.15rem;font-weight:800">${compAss[0].percentualGordura || 'â€”'} <span style="font-size:0.7rem;font-weight:400">%</span></div>
               <div class="portal-stat-lbl" style="font-size:0.68rem">% Gordura</div>
             </div>
             <div class="portal-stat-card glass-card" style="flex:1;text-align:center;padding:10px 4px">
-              <div class="portal-stat-val" style="color:var(--portal-success);font-size:1.15rem;font-weight:800">${compAss[0].massaMagra || '—'} <span style="font-size:0.7rem;font-weight:400">kg</span></div>
+              <div class="portal-stat-val" style="color:var(--portal-success);font-size:1.15rem;font-weight:800">${compAss[0].massaMagra || 'â€”'} <span style="font-size:0.7rem;font-weight:400">kg</span></div>
               <div class="portal-stat-lbl" style="font-size:0.68rem">Massa Magra</div>
             </div>
           </div>
 
           <!-- Circumferences and skins -->
           <div style="font-size:0.8rem;line-height:1.6;margin-top:12px">
-            <div style="font-weight:800;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;color:var(--portal-text)">Circunferências & Dobras Recentes</div>
+            <div style="font-weight:800;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;color:var(--portal-text)">CircunferÃªncias & Dobras Recentes</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
               <div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Cintura:</span> <strong>${compAss[0].cintura || '—'} cm</strong></div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Quadril:</span> <strong>${compAss[0].quadril || '—'} cm</strong></div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Coxa:</span> <strong>${compAss[0].coxa || '—'} cm</strong></div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Busto:</span> <strong>${compAss[0].busto || '—'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Cintura:</span> <strong>${compAss[0].cintura || 'â€”'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Quadril:</span> <strong>${compAss[0].quadril || 'â€”'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Coxa:</span> <strong>${compAss[0].coxa || 'â€”'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Busto:</span> <strong>${compAss[0].busto || 'â€”'} cm</strong></div>
               </div>
               <div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Braço:</span> <strong>${compAss[0].braco || '—'} cm</strong></div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Panturrilha:</span> <strong>${compAss[0].panturrilha || '—'} cm</strong></div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>D. Abdominal:</span> <strong>${compAss[0].dobraAbdominal || '—'} mm</strong></div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>D. Coxa:</span> <strong>${compAss[0].dobraCoxa || '—'} mm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>BraÃ§o:</span> <strong>${compAss[0].braco || 'â€”'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>Panturrilha:</span> <strong>${compAss[0].panturrilha || 'â€”'} cm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>D. Abdominal:</span> <strong>${compAss[0].dobraAbdominal || 'â€”'} mm</strong></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(255,255,255,0.03);padding:2px 0"><span>D. Coxa:</span> <strong>${compAss[0].dobraCoxa || 'â€”'} mm</strong></div>
               </div>
             </div>
           </div>
@@ -4260,7 +4260,7 @@ function renderAvaliacoes(assessments) {
           <!-- History table -->
           ${compAss.length >= 2 ? `
             <div style="margin-top:16px">
-              <div style="font-weight:800;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;color:var(--portal-text)">Evolução Histórica</div>
+              <div style="font-weight:800;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;color:var(--portal-text)">EvoluÃ§Ã£o HistÃ³rica</div>
               <div style="overflow-x:auto">
                 <table style="width:100%;font-size:0.75rem;border-collapse:collapse;text-align:left">
                   <thead>
@@ -4275,9 +4275,9 @@ function renderAvaliacoes(assessments) {
                     ${compAss.map(a => `
                       <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
                         <td style="padding:6px 4px;color:var(--portal-text-muted)">${safeFormatDate(a.date)}</td>
-                        <td style="padding:6px 4px;font-weight:600">${a.peso || '—'} kg</td>
-                        <td style="padding:6px 4px;color:var(--portal-warning);font-weight:600">${a.percentualGordura || '—'}%</td>
-                        <td style="padding:6px 4px;color:var(--portal-success);font-weight:600">${a.massaMagra || '—'} kg</td>
+                        <td style="padding:6px 4px;font-weight:600">${a.peso || 'â€”'} kg</td>
+                        <td style="padding:6px 4px;color:var(--portal-warning);font-weight:600">${a.percentualGordura || 'â€”'}%</td>
+                        <td style="padding:6px 4px;color:var(--portal-success);font-weight:600">${a.massaMagra || 'â€”'} kg</td>
                       </tr>
                     `).join('')}
                   </tbody>
@@ -4288,19 +4288,19 @@ function renderAvaliacoes(assessments) {
         `}
       </div>
 
-      <!-- FORÇA E 1RM -->
+      <!-- FORÃ‡A E 1RM -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-           Força (Carga Máxima Estimada - 1RM)
+           ForÃ§a (Carga MÃ¡xima Estimada - 1RM)
         </div>
         ${forcaAss.length === 0 ? `
-          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhum teste de força (1RM) registrado.</p>
+          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhum teste de forÃ§a (1RM) registrado.</p>
         ` : `
           <div style="overflow-x:auto;margin-top:10px">
             <table style="width:100%;font-size:0.75rem;border-collapse:collapse;text-align:left">
               <thead>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--portal-text-muted)">
-                  <th style="padding:6px 4px">Exercício</th>
+                  <th style="padding:6px 4px">ExercÃ­cio</th>
                   <th style="padding:6px 4px">1RM Est.</th>
                   <th style="padding:6px 4px">Teste Realizado</th>
                   <th style="padding:6px 4px">Data</th>
@@ -4309,9 +4309,9 @@ function renderAvaliacoes(assessments) {
               <tbody>
                 ${forcaAss.map(a => `
                   <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                    <td style="padding:8px 4px;font-weight:700;color:var(--portal-primary)">${a.exercise || '—'}</td>
-                    <td style="padding:8px 4px"><strong>${a.rm1 || '—'} kg</strong></td>
-                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${a.load || '—'}kg × ${a.reps || '—'} reps</td>
+                    <td style="padding:8px 4px;font-weight:700;color:var(--portal-primary)">${a.exercise || 'â€”'}</td>
+                    <td style="padding:8px 4px"><strong>${a.rm1 || 'â€”'} kg</strong></td>
+                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${a.load || 'â€”'}kg Ã— ${a.reps || 'â€”'} reps</td>
                     <td style="padding:8px 4px;color:var(--portal-text-muted)">${safeFormatDate(a.date)}</td>
                   </tr>
                 `).join('')}
@@ -4324,10 +4324,10 @@ function renderAvaliacoes(assessments) {
       <!-- CONCONI E CARDIO -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-           Capacidade Aeróbia (Conconi / Cardio)
+           Capacidade AerÃ³bia (Conconi / Cardio)
         </div>
         ${conconiAss.length === 0 ? `
-          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliação cardiorrespiratória registrada.</p>
+          <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliaÃ§Ã£o cardiorrespiratÃ³ria registrada.</p>
         ` : `
           <div style="overflow-x:auto;margin-top:10px">
             <table style="width:100%;font-size:0.75rem;border-collapse:collapse;text-align:left">
@@ -4335,8 +4335,8 @@ function renderAvaliacoes(assessments) {
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--portal-text-muted)">
                   <th style="padding:6px 4px">Modalidade</th>
                   <th style="padding:6px 4px">VMA</th>
-                  <th style="padding:6px 4px">VO2 Máx</th>
-                  <th style="padding:6px 4px">FC Máx</th>
+                  <th style="padding:6px 4px">VO2 MÃ¡x</th>
+                  <th style="padding:6px 4px">FC MÃ¡x</th>
                   <th style="padding:6px 4px">Data</th>
                 </tr>
               </thead>
@@ -4344,9 +4344,9 @@ function renderAvaliacoes(assessments) {
                 ${conconiAss.map(a => `
                   <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
                     <td style="padding:8px 4px;font-weight:700;color:var(--portal-warning)">${a.exercise || 'Cardio'}</td>
-                    <td style="padding:8px 4px"><strong>${a.vma || '—'} km/h</strong></td>
-                    <td style="padding:8px 4px"><strong>${a.vo2Max || '—'} ml/kg</strong></td>
-                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${a.hrMax || '—'} bpm</td>
+                    <td style="padding:8px 4px"><strong>${a.vma || 'â€”'} km/h</strong></td>
+                    <td style="padding:8px 4px"><strong>${a.vo2Max || 'â€”'} ml/kg</strong></td>
+                    <td style="padding:8px 4px;color:var(--portal-text-muted)">${a.hrMax || 'â€”'} bpm</td>
                     <td style="padding:8px 4px;color:var(--portal-text-muted)">${safeFormatDate(a.date)}</td>
                   </tr>
                 `).join('')}
@@ -4400,7 +4400,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   const metaRes = tdeeRes ? Calc.metaCalorica(tdeeRes.valor, obj) : null;
   const macrosRes = metaRes && lastComp?.peso ? Calc.macros(metaRes.kcal, lastComp.peso, obj) : null;
 
-  // Exercise load progression — full table (same as trainer reports)
+  // Exercise load progression â€” full table (same as trainer reports)
   const exMap = {};
   completed.forEach(s => {
     (s.setLog||[]).forEach(x => {
@@ -4430,8 +4430,8 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (tmbRes && tdeeRes && metaRes) {
     caloricHtml = `<div class="glass-card" style="margin-bottom:12px; border-left:3px solid var(--portal-primary)">
       <div class="portal-card-label" style="margin-bottom:12px">
-        <span>Gasto Energético Estimado</span>
-        <span style="font-size:0.65rem;color:var(--portal-text-muted);font-weight:normal;float:right;margin-top:2px">${tmbRes.formula} &middot; Base: ${lastComp ? safeFormatDate(lastComp.date) : '—'}</span>
+        <span>Gasto EnergÃ©tico Estimado</span>
+        <span style="font-size:0.65rem;color:var(--portal-text-muted);font-weight:normal;float:right;margin-top:2px">${tmbRes.formula} &middot; Base: ${lastComp ? safeFormatDate(lastComp.date) : 'â€”'}</span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
         <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px">
@@ -4442,17 +4442,17 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
         <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px">
           <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;font-weight:700">TDEE</div>
           <div style="font-size:1.3rem;font-weight:800;color:var(--portal-primary);margin:4px 0">${tdeeRes.valor} <span style="font-size:0.72rem;font-weight:600">kcal</span></div>
-          <div style="font-size:0.65rem;color:var(--portal-text-muted)">×${tdeeRes.fator} &middot; ~${Math.round(sessPerWeek*10)/10}×/sem</div>
+          <div style="font-size:0.65rem;color:var(--portal-text-muted)">Ã—${tdeeRes.fator} &middot; ~${Math.round(sessPerWeek*10)/10}Ã—/sem</div>
         </div>
         <div style="text-align:center;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px">
-          <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;font-weight:700">Meta (${student?.goal||'Manutenção'})</div>
+          <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;font-weight:700">Meta (${student?.goal||'ManutenÃ§Ã£o'})</div>
           <div style="font-size:1.3rem;font-weight:800;color:${obj.includes('emagr')?'var(--portal-warning)':obj.includes('hipert')?'var(--portal-success)':'var(--portal-accent)'};margin:4px 0">${metaRes.kcal} <span style="font-size:0.72rem;font-weight:600">kcal</span></div>
           <div style="font-size:0.65rem;color:var(--portal-text-muted)">${metaRes.label}</div>
         </div>
       </div>
       ${macrosRes ? `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${[['Proteína',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>`
+        ${[['ProteÃ­na',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>`
           <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid ${c}">
             <div style="font-size:0.7rem;color:var(--portal-text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:700">${n}</div>
             <div style="font-size:1.3rem;font-weight:800;color:${c};margin:4px 0">${m.g}g</div>
@@ -4460,7 +4460,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
           </div>`).join('')}
       </div>
       <div style="margin-top:12px;font-size:0.72rem;color:var(--portal-text-muted);line-height:1.4">
-        Proteína: <strong>${macrosRes.protPorKg}g/kg</strong> &middot; ISSN Position Stand (2018)<br>
+        ProteÃ­na: <strong>${macrosRes.protPorKg}g/kg</strong> &middot; ISSN Position Stand (2018)<br>
         Peso: ${lastComp.peso}kg${lastComp.massaMagra?` &middot; Massa magra: ${lastComp.massaMagra}kg`:``}
       </div>` : ''}
     </div>`;
@@ -4471,40 +4471,40 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   const sleepNum = parseFloat(avgSleep)||0;
   
   let parecerAluno = '';
-  if (pseNum > 8) parecerAluno += 'Você tem treinado com bastante intensidade ultimamente. ';
-  else if (pseNum > 6) parecerAluno += 'Você está mantendo um ótimo ritmo de treinos. ';
-  else parecerAluno += 'Seus treinos estão consistentes. ';
+  if (pseNum > 8) parecerAluno += 'VocÃª tem treinado com bastante intensidade ultimamente. ';
+  else if (pseNum > 6) parecerAluno += 'VocÃª estÃ¡ mantendo um Ã³timo ritmo de treinos. ';
+  else parecerAluno += 'Seus treinos estÃ£o consistentes. ';
 
-  if (sleepNum > 0 && sleepNum < 6) parecerAluno += 'Tente priorizar mais suas horas de sono para melhorar a recuperação muscular e ter mais energia. ';
-  else if (sleepNum >= 7) parecerAluno += 'Seu sono está excelente, o que é fundamental para seus resultados! ';
+  if (sleepNum > 0 && sleepNum < 6) parecerAluno += 'Tente priorizar mais suas horas de sono para melhorar a recuperaÃ§Ã£o muscular e ter mais energia. ';
+  else if (sleepNum >= 7) parecerAluno += 'Seu sono estÃ¡ excelente, o que Ã© fundamental para seus resultados! ';
 
-  if (completed.length > 0) parecerAluno += `Parabéns pela consistência! Você já completou ${completed.length} sessões. Continue firme e vamos juntos buscar seus objetivos.`;
-  else parecerAluno = 'Ainda não temos dados suficientes. Comece a registrar seus treinos para acompanhar sua evolução!';
+  if (completed.length > 0) parecerAluno += `ParabÃ©ns pela consistÃªncia! VocÃª jÃ¡ completou ${completed.length} sessÃµes. Continue firme e vamos juntos buscar seus objetivos.`;
+  else parecerAluno = 'Ainda nÃ£o temos dados suficientes. Comece a registrar seus treinos para acompanhar sua evoluÃ§Ã£o!';
 
   let parecerTecnico = '';
-  if (pseNum > 8) parecerTecnico += 'PSE média elevada (>8): possível fadiga acumulada. Recomenda-se reduzir o volume em 20-30% na próxima semana. ';
-  else if (pseNum > 6) parecerTecnico += 'PSE em nível adequado para progressão. O aluno está respondendo bem ao estímulo de treino. ';
+  if (pseNum > 8) parecerTecnico += 'PSE mÃ©dia elevada (>8): possÃ­vel fadiga acumulada. Recomenda-se reduzir o volume em 20-30% na prÃ³xima semana. ';
+  else if (pseNum > 6) parecerTecnico += 'PSE em nÃ­vel adequado para progressÃ£o. O aluno estÃ¡ respondendo bem ao estÃ­mulo de treino. ';
   else parecerTecnico += 'PSE baixa, o que indica margem segura para aumento progressivo de intensidade ou volume. ';
 
-  if (sleepNum > 0 && sleepNum < 6) parecerTecnico += 'Sono comprometido (<6h) — necessário orientar sobre higiene do sono e monitorar overreaching. ';
+  if (sleepNum > 0 && sleepNum < 6) parecerTecnico += 'Sono comprometido (<6h) â€” necessÃ¡rio orientar sobre higiene do sono e monitorar overreaching. ';
   if (totalVol > 20000) parecerTecnico += 'Carga de volume total acumulada bastante significativa.';
 
-  // Exercise progression — full table card
+  // Exercise progression â€” full table card
   const exHtml = topEx.length>0 ? `<div class="glass-card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <div class="portal-card-label" style="margin:0"> Progressão de Carga</div>
-      <span style="font-size:0.68rem;color:var(--portal-text-muted)">${topEx.length} exercícios</span>
+      <div class="portal-card-label" style="margin:0"> ProgressÃ£o de Carga</div>
+      <span style="font-size:0.68rem;color:var(--portal-text-muted)">${topEx.length} exercÃ­cios</span>
     </div>
-    <p style="font-size:0.68rem;color:var(--portal-text-muted);margin:4px 0 10px">Verde = progresso · Vermelho = regressão</p>
+    <p style="font-size:0.68rem;color:var(--portal-text-muted);margin:4px 0 10px">Verde = progresso Â· Vermelho = regressÃ£o</p>
     <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;font-size:0.72rem">
       <thead>
         <tr style="border-bottom:1px solid rgba(255,255,255,0.1)">
-          <th style="text-align:left;padding:4px 4px 6px;color:var(--portal-text-muted);font-weight:600">Exercício</th>
-          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">1ª</th>
+          <th style="text-align:left;padding:4px 4px 6px;color:var(--portal-text-muted);font-weight:600">ExercÃ­cio</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">1Âª</th>
           <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Atual</th>
-          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Máx</th>
-          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Δ</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">MÃ¡x</th>
+          <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Î”</th>
           <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">%</th>
           <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">Vol</th>
           <th style="text-align:center;padding:4px;color:var(--portal-text-muted);font-weight:600">S</th>
@@ -4513,7 +4513,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
       <tbody>
         ${topEx.map(ex=>{
           const col=ex.delta>0?'#10b981':ex.delta<0?'#ef4444':'#94a3b8';
-          const arrow=ex.delta>0?'↑':ex.delta<0?'↓':'=';
+          const arrow=ex.delta>0?'â†‘':ex.delta<0?'â†“':'=';
           const barW=Math.min(100,Math.abs(ex.pct));
           return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
             <td style="padding:5px 4px;font-weight:700;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ex.name}</td>
@@ -4543,11 +4543,11 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   const getBaseWorkoutName = name => {
     if (!name) return 'Treino Avulso';
     return name
-      .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
-      .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+      .replace(/\s*[\-â€”â€“]\s*Semana\s*\d+/i, '')
+      .replace(/\s*[\-â€”â€“]\s*Sem\s*\d+/i, '')
       .replace(/\s*Semana\s*\d+/i, '')
       .replace(/\s*Sem\s*\d+/i, '')
-      .replace(/\s*[\-—–]\s*$/g, '')
+      .replace(/\s*[\-â€”â€“]\s*$/g, '')
       .trim();
   };
 
@@ -4564,8 +4564,8 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (comparableBases.length > 0) {
     compareSessionsHtml = `
       <div class="glass-card" style="margin-bottom:12px">
-        <div class="portal-card-label"> Comparativo de Sessões Idênticas</div>
-        <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Compare a evolução de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
+        <div class="portal-card-label"> Comparativo de SessÃµes IdÃªnticas</div>
+        <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">Compare a evoluÃ§Ã£o de Volume total e PSE para o mesmo treino ao longo das semanas.</p>
         <select id="portalCompareWorkoutSel" class="portal-textarea" style="margin-bottom:12px;padding:8px">
           ${comparableBases.map((base, idx) => `<option value="${base}" ${idx===0?'selected':''}>${base}</option>`).join('')}
         </select>
@@ -4587,9 +4587,9 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (uniqueExercises.length > 0) {
     exerciseProgressionChartHtml = `
       <div class="glass-card" style="margin-bottom:12px">
-        <div class="portal-card-label">📊 Análise Multivariada por Exercício</div>
+        <div class="portal-card-label">ðŸ“Š AnÃ¡lise Multivariada por ExercÃ­cio</div>
         <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">
-          Compare a evolução da Carga (eixo esquerdo) vs PSE e RIR (eixo direito) ao longo do tempo.
+          Compare a evoluÃ§Ã£o da Carga (eixo esquerdo) vs PSE e RIR (eixo direito) ao longo do tempo.
         </p>
         <select id="portalExerciseAnalysisSel" class="portal-textarea" style="margin-bottom:12px;padding:8px;font-size:0.85rem">
           ${uniqueExercises.map((ex, idx) => `<option value="${ex}" ${idx===0?'selected':''}>${ex}</option>`).join('')}
@@ -4612,7 +4612,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
 
     <div style="display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; scroll-snap-type: x mandatory;">
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
-        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Sessões</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">SessÃµes</div>
         <div style="font-size:1.6rem; font-weight:800; color:var(--portal-primary)">${completed.length}</div>
       </div>
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
@@ -4620,21 +4620,21 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
         <div style="font-size:1.6rem; font-weight:800; color:#10b981">${(totalVol/1000).toFixed(1)}t</div>
       </div>
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
-        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Vol/Sessão</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Vol/SessÃ£o</div>
         <div style="font-size:1.6rem; font-weight:800; color:#6366f1">${avgVolPerSess.toLocaleString('pt-BR')}kg</div>
       </div>
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
-        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Duração</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">DuraÃ§Ã£o</div>
         <div style="font-size:1.6rem; font-weight:800; color:#f59e0b">${avgDurMin}min</div>
       </div>
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
-        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Treinos/Mês</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Treinos/MÃªs</div>
         <div style="font-size:1.6rem; font-weight:800; color:#06b6d4">${sessionsMonth}</div>
       </div>
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
-        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Gasto Calórico</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Gasto CalÃ³rico</div>
         <div style="font-size:1.6rem; font-weight:800; color:#ef4444">${avgKcal}</div>
-        <div style="font-size:0.75rem; color:var(--portal-text-muted); margin-top:2px;">kcal/sessão</div>
+        <div style="font-size:0.75rem; color:var(--portal-text-muted); margin-top:2px;">kcal/sessÃ£o</div>
       </div>
       <div class="glass-card" style="min-width:130px; text-align:center; padding:16px; margin:0; scroll-snap-align: start; border-radius: 20px;">
         <div style="font-size:0.75rem; color:var(--portal-text-muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; margin-bottom:4px;">Densidade</div>
@@ -4649,7 +4649,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
     </div>
 
     <div class="glass-card" style="margin-bottom:12px; border-left:3px solid var(--portal-accent)">
-      <div class="portal-card-label" style="margin-bottom:8px">Análise Técnica do Treinador</div>
+      <div class="portal-card-label" style="margin-bottom:8px">AnÃ¡lise TÃ©cnica do Treinador</div>
       <p style="font-size:0.8rem; color:var(--portal-text); line-height:1.6">${parecerTecnico}</p>
     </div>
 
@@ -4732,11 +4732,11 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
   const getBaseWorkoutName = name => {
     if (!name) return 'Treino Avulso';
     return name
-      .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
-      .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+      .replace(/\s*[\-â€”â€“]\s*Semana\s*\d+/i, '')
+      .replace(/\s*[\-â€”â€“]\s*Sem\s*\d+/i, '')
       .replace(/\s*Semana\s*\d+/i, '')
       .replace(/\s*Sem\s*\d+/i, '')
-      .replace(/\s*[\-—–]\s*$/g, '')
+      .replace(/\s*[\-â€”â€“]\s*$/g, '')
       .trim();
   };
 
@@ -4763,8 +4763,8 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         {label:'TQR',  data:bf.map(b=>b.tqr||null),   borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',  tension:0.3, fill:true, pointRadius:3},
         {label:'Estresse', data:bf.map(b=>b.stress||null), borderColor:'#f59e0b', borderDash:[5,3], tension:0.3, fill:false, pointRadius:3},
         {label:'Dor', data:bf.map(b=>b.pain||null), borderColor:'#ef4444', borderDash:[2,2], tension:0.3, fill:false, pointRadius:3},
-        {label:'Motivação', data:bf.map(b=>b.motivation||null), borderColor:'#3b82f6', tension:0.3, fill:false, pointRadius:3},
-        {label:'Alimentação', data:bf.map(b=>b.food||null), borderColor:'#f97316', tension:0.3, fill:false, pointRadius:3},
+        {label:'MotivaÃ§Ã£o', data:bf.map(b=>b.motivation||null), borderColor:'#3b82f6', tension:0.3, fill:false, pointRadius:3},
+        {label:'AlimentaÃ§Ã£o', data:bf.map(b=>b.food||null), borderColor:'#f97316', tension:0.3, fill:false, pointRadius:3},
       ]}, options:{...co, scales:{...co.scales, y:{...co.scales.y,min:0,max:10}}} });
     }
 
@@ -4786,7 +4786,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       ]}, options:{...co, plugins:{legend:{display:false}}} });
     }
 
-    // Weekly load (PSE × min)
+    // Weekly load (PSE Ã— min)
     const loadCtx = document.getElementById('portalLoadChart');
     if (loadCtx && completed.length>=1) {
       const wc={};
@@ -4990,7 +4990,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         exAnalysisSel.disabled = false;
         if (exAnalysisSel.parentElement) exAnalysisSel.parentElement.style.opacity = '1';
       } else {
-        exAnalysisSel.innerHTML = '<option value="">Sem exercícios registrados</option>';
+        exAnalysisSel.innerHTML = '<option value="">Sem exercÃ­cios registrados</option>';
         exAnalysisSel.disabled = true;
         if (exAnalysisSel.parentElement) exAnalysisSel.parentElement.style.opacity = '0.6';
       }
@@ -5042,7 +5042,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
           labels,
           datasets: [
             {
-              label: 'Carga Média (kg)',
+              label: 'Carga MÃ©dia (kg)',
               data: history.map(h => h.load),
               borderColor: '#6366f1',
               backgroundColor: 'rgba(99,102,241,0.05)',
@@ -5053,7 +5053,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
               borderWidth: 2
             },
             {
-              label: 'PSE Média',
+              label: 'PSE MÃ©dia',
               data: history.map(h => h.pse),
               borderColor: '#ef4444',
               tension: 0.3,
@@ -5063,7 +5063,7 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
               borderWidth: 1.5
             },
             {
-              label: 'RIR Média',
+              label: 'RIR MÃ©dia',
               data: history.map(h => h.rir),
               borderColor: '#10b981',
               tension: 0.3,
@@ -5169,69 +5169,69 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
   }
 }
 
-// ── PRE-DEFINED RATING OPTIONS FOR CHECK-IN AND CHECKOUT ──────
+// â”€â”€ PRE-DEFINED RATING OPTIONS FOR CHECK-IN AND CHECKOUT â”€â”€â”€â”€â”€â”€
 const SONO_OPTIONS = [
-  { value: '2', display: '1', label: '1 - Péssimo', desc: 'Insônia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '4', display: '2', label: '2 - Ruim', desc: 'Acordei várias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '2', display: '1', label: '1 - PÃ©ssimo', desc: 'InsÃ´nia / Noite em claro', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '4', display: '2', label: '2 - Ruim', desc: 'Acordei vÃ¡rias vezes / Agitado', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
   { value: '6', display: '3', label: '3 - Regular', desc: 'Dormi o suficiente, mas acordei cansado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '8', display: '4', label: '4 - Bom', desc: 'Sono contínuo e revigorante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '8', display: '4', label: '4 - Bom', desc: 'Sono contÃ­nuo e revigorante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   { value: '10', display: '5', label: '5 - Excelente', desc: 'Sono profundo e muito reparador', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
 ];
 
 const TQR_OPTIONS = [
-  { value: '0', label: '0 - Não recuperado', desc: 'Sensação de fadiga extrema nas articulações/músculos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '1', label: '1 - Muito mal recuperado', desc: 'Músculos extremamente doloridos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '2', label: '2 - Mal recuperado', desc: 'Dores musculares e indisposição física', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '3', label: '3 - Pouco recuperado', desc: 'Cansaço muscular residual perceptível', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '4', label: '4 - Abaixo da média', desc: 'Ainda me sinto um pouco pesado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '5', label: '5 - Recuperação parcial', desc: 'Pronto para treinar, mas sem carga máxima', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '6', label: '6 - Razoavelmente recuperado', desc: 'Bom estado de prontidão física', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '7', label: '7 - Bem recuperado', desc: 'Sensação de corpo leve e sem dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '8', label: '8 - Muito bem recuperado', desc: 'Energia alta e músculos totalmente prontos', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '9', label: '9 - Excelente recuperação', desc: 'Disposição física e mental no topo', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
-  { value: '10', label: '10 - Totalmente recuperado', desc: 'Estado físico ideal, sem nenhuma fadiga', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
+  { value: '0', label: '0 - NÃ£o recuperado', desc: 'SensaÃ§Ã£o de fadiga extrema nas articulaÃ§Ãµes/mÃºsculos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '1', label: '1 - Muito mal recuperado', desc: 'MÃºsculos extremamente doloridos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '2', label: '2 - Mal recuperado', desc: 'Dores musculares e indisposiÃ§Ã£o fÃ­sica', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '3', label: '3 - Pouco recuperado', desc: 'CansaÃ§o muscular residual perceptÃ­vel', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '4', label: '4 - Abaixo da mÃ©dia', desc: 'Ainda me sinto um pouco pesado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '5', label: '5 - RecuperaÃ§Ã£o parcial', desc: 'Pronto para treinar, mas sem carga mÃ¡xima', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Razoavelmente recuperado', desc: 'Bom estado de prontidÃ£o fÃ­sica', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '7', label: '7 - Bem recuperado', desc: 'SensaÃ§Ã£o de corpo leve e sem dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '8', label: '8 - Muito bem recuperado', desc: 'Energia alta e mÃºsculos totalmente prontos', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '9', label: '9 - Excelente recuperaÃ§Ã£o', desc: 'DisposiÃ§Ã£o fÃ­sica e mental no topo', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
+  { value: '10', label: '10 - Totalmente recuperado', desc: 'Estado fÃ­sico ideal, sem nenhuma fadiga', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
 ];
 
 const ALIMENTACAO_OPTIONS = [
-  { value: '5', label: '5 - Excelente', desc: 'Bati todas as metas nutricionais e hidratação', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '4', label: '4 - Boa', desc: 'Alimentação majoritariamente saudável / poucos furos', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '3', label: '3 - Regular', desc: 'Alimentação na média / algumas escapadas ou furos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '2', label: '2 - Ruim', desc: 'Pulei refeições ou comi alimentos pouco nutritivos', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '1', label: '1 - Péssima', desc: 'Fast food excessivo ou quase sem comer nada', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+  { value: '5', label: '5 - Excelente', desc: 'Bati todas as metas nutricionais e hidrataÃ§Ã£o', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '4', label: '4 - Boa', desc: 'AlimentaÃ§Ã£o majoritariamente saudÃ¡vel / poucos furos', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Regular', desc: 'AlimentaÃ§Ã£o na mÃ©dia / algumas escapadas ou furos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '2', label: '2 - Ruim', desc: 'Pulei refeiÃ§Ãµes ou comi alimentos pouco nutritivos', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '1', label: '1 - PÃ©ssima', desc: 'Fast food excessivo ou quase sem comer nada', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
 ];
 
 const ESTRESSE_OPTIONS = [
   { value: '1', label: '1 - Sem Estresse', desc: 'Mente totalmente calma, relaxamento profundo', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '2', label: '2 - Muito Relaxado', desc: 'Mente tranquila, sem estresse perceptível', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '3', label: '3 - Relaxado', desc: 'Pequenas preocupações normais, mas bem tranquilo', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '4', label: '4 - Tranquilo', desc: 'Pouco estresse na rotina diária', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '5', label: '5 - Sob Controle', desc: 'Estresse mínimo, rotina equilibrada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '2', label: '2 - Muito Relaxado', desc: 'Mente tranquila, sem estresse perceptÃ­vel', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Relaxado', desc: 'Pequenas preocupaÃ§Ãµes normais, mas bem tranquilo', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '4', label: '4 - Tranquilo', desc: 'Pouco estresse na rotina diÃ¡ria', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '5', label: '5 - Sob Controle', desc: 'Estresse mÃ­nimo, rotina equilibrada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
   { value: '6', label: '6 - Moderado', desc: 'Estresse sob controle, mas mente ativa e cansada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '7', label: '7 - Um Pouco Estressado', desc: 'Cansaço acumulando, momentos de desgaste', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '7', label: '7 - Um Pouco Estressado', desc: 'CansaÃ§o acumulando, momentos de desgaste', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
   { value: '8', label: '8 - Estressado', desc: 'Rotina de trabalho/estudos pesada e desgastante', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
-  { value: '9', label: '9 - Muito Estressado', desc: 'Alto estresse, cansaço constante e mente cheia', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '10', label: '10 - Extremamente Estressado', desc: 'Mente no limite, exaustão mental e ansiedade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+  { value: '9', label: '9 - Muito Estressado', desc: 'Alto estresse, cansaÃ§o constante e mente cheia', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', label: '10 - Extremamente Estressado', desc: 'Mente no limite, exaustÃ£o mental e ansiedade', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
 ];
 
 const DOR_OPTIONS = [
-  { value: '1', display: '1', label: '1 - Nenhuma Dor', desc: 'Músculos e articulações 100% livres de dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '3', display: '2', label: '2 - Leve', desc: 'Desconforto muscular leve residual pós-treino', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '5', display: '3', label: '3 - Moderada', desc: 'Dor suportável, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '7', display: '4', label: '4 - Forte', desc: 'Dificulta a execução de movimentos específicos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '10', display: '5', label: '5 - Intensa / Risco de lesão', desc: 'Dor severa, risco de lesão ou incapacidade física', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+  { value: '1', display: '1', label: '1 - Nenhuma Dor', desc: 'MÃºsculos e articulaÃ§Ãµes 100% livres de dores', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', display: '2', label: '2 - Leve', desc: 'Desconforto muscular leve residual pÃ³s-treino', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '5', display: '3', label: '3 - Moderada', desc: 'Dor suportÃ¡vel, mas incomoda em movimentos', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '7', display: '4', label: '4 - Forte', desc: 'Dificulta a execuÃ§Ã£o de movimentos especÃ­ficos', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', display: '5', label: '5 - Intensa / Risco de lesÃ£o', desc: 'Dor severa, risco de lesÃ£o ou incapacidade fÃ­sica', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
 ];
 
 const DOR_OPTIONS_0 = [
-  { value: '0', display: '0', label: '0 - Sem Dor', desc: 'Articulações e tendões 100% confortáveis', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '0', display: '0', label: '0 - Sem Dor', desc: 'ArticulaÃ§Ãµes e tendÃµes 100% confortÃ¡veis', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   ...DOR_OPTIONS
 ];
 
 const MOTIVACAO_OPTIONS = [
   { value: '2', display: '1', label: '1 - Muito Baixa', desc: 'Sem nenhuma vontade de treinar hoje', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '4', display: '2', label: '2 - Baixa', desc: 'Desanimado, vou treinar por pura obrigação', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
+  { value: '4', display: '2', label: '2 - Baixa', desc: 'Desanimado, vou treinar por pura obrigaÃ§Ã£o', color: '#fb923c', bg: 'rgba(251,146,60,0.1)' },
   { value: '6', display: '3', label: '3 - Moderada', desc: 'Foco mediano, treino mantido por disciplina', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
   { value: '8', display: '4', label: '4 - Alta', desc: 'Focado, animado e com boa energia mental', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '10', display: '5', label: '5 - Muito Alta', desc: 'Energia máxima, sedento por treinar pesado', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
+  { value: '10', display: '5', label: '5 - Muito Alta', desc: 'Energia mÃ¡xima, sedento por treinar pesado', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' }
 ];
 
 function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
@@ -5266,32 +5266,32 @@ function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
   `;
 }
 
-// ── CUSTOM SELECTION SYSTEM FOR PSE & RIR ─────────────────────
+// â”€â”€ CUSTOM SELECTION SYSTEM FOR PSE & RIR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PSE_OPTIONS = [
-  { value: '1', label: '1 - Extremamente Leve', desc: 'Esforço mínimo, respiração totalmente normal', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '2', label: '2 - Muito Leve', desc: 'Fácil de manter, conversa fluida sem pausas', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '3', label: '3 - Leve', desc: 'Esforço confortável, início de aquecimento corporal', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '4', label: '4 - Moderado', desc: 'Respiração acelerada mas controlada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '5', label: '5 - Um Pouco Forte', desc: 'Esforço nítido, começa a exigir foco mental', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '6', label: '6 - Forte', desc: 'Frequência cardíaca elevada, fala em frases curtas', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-  { value: '7', label: '7 - Muito Forte', desc: 'Esforço pesado, exige foco total na execução', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-  { value: '8', label: '8 - Muito Forte +', desc: 'Sensação de queimação muscular intensa', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-  { value: '9', label: '9 - Quase Máximo', desc: 'Extrema dificuldade, limite antes da falha', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '10', label: '10 - Máximo (Falha)', desc: 'Esforço total, impossível realizar mais uma repetição', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
+  { value: '1', label: '1 - Extremamente Leve', desc: 'EsforÃ§o mÃ­nimo, respiraÃ§Ã£o totalmente normal', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '2', label: '2 - Muito Leve', desc: 'FÃ¡cil de manter, conversa fluida sem pausas', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '3', label: '3 - Leve', desc: 'EsforÃ§o confortÃ¡vel, inÃ­cio de aquecimento corporal', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '4', label: '4 - Moderado', desc: 'RespiraÃ§Ã£o acelerada mas controlada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '5', label: '5 - Um Pouco Forte', desc: 'EsforÃ§o nÃ­tido, comeÃ§a a exigir foco mental', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '6', label: '6 - Forte', desc: 'FrequÃªncia cardÃ­aca elevada, fala em frases curtas', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '7', label: '7 - Muito Forte', desc: 'EsforÃ§o pesado, exige foco total na execuÃ§Ã£o', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '8', label: '8 - Muito Forte +', desc: 'SensaÃ§Ã£o de queimaÃ§Ã£o muscular intensa', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '9', label: '9 - Quase MÃ¡ximo', desc: 'Extrema dificuldade, limite antes da falha', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '10', label: '10 - MÃ¡ximo (Falha)', desc: 'EsforÃ§o total, impossÃ­vel realizar mais uma repetiÃ§Ã£o', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
 ];
 
 const RIR_OPTIONS = [
-  { value: '0', label: '0 RIR (Falha Muscular)', desc: 'Nenhuma repetição extra possível com técnica perfeita', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-  { value: '1', label: '1 RIR', desc: 'Conseguiria fazer apenas mais 1 repetição máxima', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-  { value: '2', label: '2 RIR', desc: 'Conseguiria fazer mais 2 repetições máximas', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '0', label: '0 RIR (Falha Muscular)', desc: 'Nenhuma repetiÃ§Ã£o extra possÃ­vel com tÃ©cnica perfeita', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '1', label: '1 RIR', desc: 'Conseguiria fazer apenas mais 1 repetiÃ§Ã£o mÃ¡xima', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '2', label: '2 RIR', desc: 'Conseguiria fazer mais 2 repetiÃ§Ãµes mÃ¡ximas', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
   { value: '3', label: '3 RIR', desc: 'Velocidade da barra reduzida, mas com controle', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '4', label: '4 RIR', desc: 'Esforço moderado, velocidade de barra preservada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
-  { value: '5', label: '5 RIR', desc: 'Reserva confortável, aquecimento pesado ou técnico', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '6', label: '6 RIR', desc: 'Carga leve, foco em velocidade/técnica', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '4', label: '4 RIR', desc: 'EsforÃ§o moderado, velocidade de barra preservada', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '5', label: '5 RIR', desc: 'Reserva confortÃ¡vel, aquecimento pesado ou tÃ©cnico', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '6', label: '6 RIR', desc: 'Carga leve, foco em velocidade/tÃ©cnica', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   { value: '7', label: '7 RIR', desc: 'Carga muito leve', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '8', label: '8 RIR', desc: 'Esforço insignificante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  { value: '8', label: '8 RIR', desc: 'EsforÃ§o insignificante', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   { value: '9', label: '9 RIR', desc: 'Praticamente sem carga', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-  { value: '10', label: '10+ RIR', desc: 'Esforço irrelevante, carga de recuperação', color: '#10b981', bg: 'rgba(16,185,129,0.1)' }
+  { value: '10', label: '10+ RIR', desc: 'EsforÃ§o irrelevante, carga de recuperaÃ§Ã£o', color: '#10b981', bg: 'rgba(16,185,129,0.1)' }
 ];
 
 function openCustomSelector(title, options, currentValue, onSelect) {
@@ -5497,17 +5497,17 @@ function updateRirButton(btn, val) {
   btn.style.borderColor = color;
 }
 
-// ── PORTAL INTEGRATED PREMIUM CHECKOUT MODAL ──────────────────
+// â”€â”€ PORTAL INTEGRATED PREMIUM CHECKOUT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.showPortalCheckoutById = async function(id) {
   try {
     const session = await db.get('sessions', id);
     if (!session) {
-      console.error('Sessão não encontrada para checkout: ' + id);
+      console.error('SessÃ£o nÃ£o encontrada para checkout: ' + id);
       return;
     }
     showPortalCheckoutModal(session);
   } catch (e) {
-    console.error('Erro ao buscar sessão no db:', e);
+    console.error('Erro ao buscar sessÃ£o no db:', e);
   }
 };
 
@@ -5533,7 +5533,7 @@ function showPortalCheckoutModal(session) {
     { id: 'lombar', label: 'Coluna Lombar' },
     { id: 'cervical', label: 'Coluna Cervical' },
     { id: 'quadril', label: 'Quadril' },
-    { id: 'tornozelo', label: 'Tornozelo/Pé' },
+    { id: 'tornozelo', label: 'Tornozelo/PÃ©' },
     { id: 'cotovelo', label: 'Cotovelo/Punho' }
   ];
 
@@ -5681,13 +5681,13 @@ function showPortalCheckoutModal(session) {
       <div style="overflow-y: auto; flex: 1; padding-right: 4px;" id="portalCheckoutForm">
         <!-- 1. PSE INLINE CARDS -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Intensidade do Esforço Percebido (PSE)</label>
+          <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Intensidade do EsforÃ§o Percebido (PSE)</label>
           ${renderInlineCardSelector('pse', PSE_OPTIONS, currentPse)}
         </div>
 
         <!-- 2. FEELING/SATISFACTION -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_SMILE} Sensação pós-treino (Recuperação/Humor)</label>
+          <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_SMILE} SensaÃ§Ã£o pÃ³s-treino (RecuperaÃ§Ã£o/Humor)</label>
           <div class="portal-feeling-row">
             <button class="portal-feeling-emoji-btn ${currentFeeling===1?'active':''}" data-val="1">
               <span>${ICON_FEELING_1}</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
@@ -5709,7 +5709,7 @@ function showPortalCheckoutModal(session) {
 
         <!-- 3. NOTES -->
         <div class="portal-checkout-field">
-          <label class="portal-checkout-label">Observações do Treino</label>
+          <label class="portal-checkout-label">ObservaÃ§Ãµes do Treino</label>
           <textarea id="chkModalNotes" class="portal-textarea" rows="2" placeholder="Ex: RIR em agachamento foi menor, me senti muito forte hoje...">${currentNotes}</textarea>
         </div>
 
@@ -5786,7 +5786,7 @@ function showPortalCheckoutModal(session) {
         try { localStorage.setItem(`pp_checkout_backup_${session.id}`, JSON.stringify({ session, postBiofeedback })); } catch(_) {}
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = '! Erro — Tentar novamente';
+          submitBtn.textContent = '! Erro â€” Tentar novamente';
           submitBtn.style.background = '#ef4444';
         }
         return;
@@ -5828,11 +5828,11 @@ function showPortalCheckoutModal(session) {
         await db.put('biofeedback', newBfData);
       } catch (bfErr) {
         console.error('Erro ao sincronizar biofeedback:', bfErr);
-        // Não bloquear o fluxo — o checkout da sessão já foi salvo
+        // NÃ£o bloquear o fluxo â€” o checkout da sessÃ£o jÃ¡ foi salvo
       }
     } catch (e) {
       console.error('Erro inesperado no checkout:', e);
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '! Erro — Tentar novamente'; submitBtn.style.background = '#ef4444'; }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '! Erro â€” Tentar novamente'; submitBtn.style.background = '#ef4444'; }
       return;
     }
 
@@ -5844,8 +5844,8 @@ function showPortalCheckoutModal(session) {
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
           <polyline points="22 4 12 14.01 9 11.01"/>
         </svg>
-        <div style="font-size:1.2rem; font-weight:800; color:var(--portal-text, #f1f5f9); margin-bottom:8px;">Checkout concluído!</div>
-        <p style="font-size:0.85rem; color:var(--portal-text-muted, #94a3b8); margin-bottom:0;">Obrigado por registrar seu esforço pós-treino.</p>
+        <div style="font-size:1.2rem; font-weight:800; color:var(--portal-text, #f1f5f9); margin-bottom:8px;">Checkout concluÃ­do!</div>
+        <p style="font-size:0.85rem; color:var(--portal-text-muted, #94a3b8); margin-bottom:0;">Obrigado por registrar seu esforÃ§o pÃ³s-treino.</p>
       </div>
     `;
 
@@ -5868,9 +5868,9 @@ function renderStudentTutorial() {
           Check-in (Biofeedback)
         </div>
         <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
-          Sempre que for treinar, acesse a aba <strong>Check-in</strong> antes de começar. 
-          Lá você avalia seu sono, estresse, e se tem alguma dor. 
-          Seu treinador verá isso em tempo real e pode adaptar o treino se você não estiver 100%!
+          Sempre que for treinar, acesse a aba <strong>Check-in</strong> antes de comeÃ§ar. 
+          LÃ¡ vocÃª avalia seu sono, estresse, e se tem alguma dor. 
+          Seu treinador verÃ¡ isso em tempo real e pode adaptar o treino se vocÃª nÃ£o estiver 100%!
         </p>
       </div>
 
@@ -5880,21 +5880,21 @@ function renderStudentTutorial() {
           Treinar e Checkout
         </div>
         <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
-          Na aba <strong>Treinar</strong>, escolha o treino do dia. Você verá a lista de exercícios.<br><br>
-          1. Concluiu uma série? Você pode marcá-la (opcional, ajuda você a se guiar).<br>
+          Na aba <strong>Treinar</strong>, escolha o treino do dia. VocÃª verÃ¡ a lista de exercÃ­cios.<br><br>
+          1. Concluiu uma sÃ©rie? VocÃª pode marcÃ¡-la (opcional, ajuda vocÃª a se guiar).<br>
           2. Terminou o treino todo? Clique em <strong>Concluir Treino (Checkout)</strong>.<br>
-          3. Informe o quão pesado foi (PSE 1-10) para atualizar seus gráficos e o do seu treinador.
+          3. Informe o quÃ£o pesado foi (PSE 1-10) para atualizar seus grÃ¡ficos e o do seu treinador.
         </p>
       </div>
 
       <div class="glass-card" style="margin-bottom:12px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:8px">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          Gráficos e Evolução
+          GrÃ¡ficos e EvoluÃ§Ã£o
         </div>
         <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
-          A aba <strong>Relatórios</strong> cruza os dados do seu Check-in com os seus Treinos concluídos. 
-          Acompanhe sua Evolução do Bem-Estar, Volume de Treino levantado, e a estimativa de Calorias gastas!
+          A aba <strong>RelatÃ³rios</strong> cruza os dados do seu Check-in com os seus Treinos concluÃ­dos. 
+          Acompanhe sua EvoluÃ§Ã£o do Bem-Estar, Volume de Treino levantado, e a estimativa de Calorias gastas!
         </p>
       </div>
 
@@ -5904,8 +5904,8 @@ function renderStudentTutorial() {
           Instalar como Aplicativo (PWA)
         </div>
         <p style="font-size:0.85rem;color:var(--portal-text-secondary);line-height:1.6;margin-top:8px">
-          Você não precisa acessar sempre pelo link do WhatsApp. Adicione este portal à tela inicial do seu celular! 
-          Basta clicar em <strong>Compartilhar &gt; Adicionar à Tela Inicial</strong> (no Safari/iPhone) ou usar o botão "App" no topo da tela (se disponível no Android).
+          VocÃª nÃ£o precisa acessar sempre pelo link do WhatsApp. Adicione este portal Ã  tela inicial do seu celular! 
+          Basta clicar em <strong>Compartilhar &gt; Adicionar Ã  Tela Inicial</strong> (no Safari/iPhone) ou usar o botÃ£o "App" no topo da tela (se disponÃ­vel no Android).
         </p>
       </div>
 
@@ -5920,7 +5920,7 @@ function renderStudentTutorial() {
 }
 
 function initStudentTutorial() {
-  // Tutorial section page — botão para reiniciar tutorial popup
+  // Tutorial section page â€” botÃ£o para reiniciar tutorial popup
   const restartBtn = document.getElementById('tutorialRestartBtn');
   if (restartBtn) {
     restartBtn.addEventListener('click', () => {
@@ -5931,7 +5931,7 @@ function initStudentTutorial() {
   }
 }
 
-// ── EMAIL LOGIN SCREEN ────────────────────────────────────────
+// â”€â”€ EMAIL LOGIN SCREEN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderEmailLoginScreen(infoMessage = '') {
   return `
     <div class="portal-root" data-theme="dark">
@@ -5946,7 +5946,7 @@ function renderEmailLoginScreen(infoMessage = '') {
         <div class="portal-card" style="width:100%;max-width:380px;padding:36px 28px;border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);background:rgba(15,20,32,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
           <div style="text-align:center;margin-bottom:28px;">
             <h2 style="font-size:1.5rem;font-weight:700;color:var(--portal-text);margin-bottom:8px;">Acesse seu Treino</h2>
-            <p style="color:var(--portal-text-muted);font-size:0.95rem;">Faça login com seu e-mail e senha.</p>
+            <p style="color:var(--portal-text-muted);font-size:0.95rem;">FaÃ§a login com seu e-mail e senha.</p>
           </div>
           
           ${infoMessage ? `<div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:12px;border-radius:12px;margin-bottom:24px;font-size:0.9rem;text-align:center;line-height:1.4;">${infoMessage}</div>` : ''}
@@ -5995,7 +5995,7 @@ function initEmailLoginScreen() {
     e.preventDefault();
     const email = emailInput.value.trim();
     if (!email) {
-      errorEl.textContent = 'Digite seu e-mail antes de solicitar recuperação de senha.';
+      errorEl.textContent = 'Digite seu e-mail antes de solicitar recuperaÃ§Ã£o de senha.';
       errorEl.style.display = 'block';
       successEl.style.display = 'none';
       return;
@@ -6006,8 +6006,8 @@ function initEmailLoginScreen() {
     try {
       const { sendPasswordReset } = await import('../utils/auth.js');
       const res = await sendPasswordReset(email);
-      if (res.error) throw new Error(res.error || 'Erro ao enviar recuperação.');
-      successEl.textContent = 'Enviamos um link de recuperação para seu e-mail.';
+      if (res.error) throw new Error(res.error || 'Erro ao enviar recuperaÃ§Ã£o.');
+      successEl.textContent = 'Enviamos um link de recuperaÃ§Ã£o para seu e-mail.';
       successEl.style.display = 'block';
     } catch (err) {
       errorEl.textContent = err.message;
@@ -6033,7 +6033,7 @@ function initEmailLoginScreen() {
       const { getSupabase } = await import('../utils/auth.js');
       const supabase = getSupabase();
       if (!supabase) {
-        throw new Error('Erro de conexão: Cliente do sistema indisponível.');
+        throw new Error('Erro de conexÃ£o: Cliente do sistema indisponÃ­vel.');
       }
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -6045,7 +6045,7 @@ function initEmailLoginScreen() {
         throw new Error('E-mail ou senha incorretos.');
       }
 
-      // Sucesso! Recarregar a página. Como há sessão, o renderStudentPortal assumirá.
+      // Sucesso! Recarregar a pÃ¡gina. Como hÃ¡ sessÃ£o, o renderStudentPortal assumirÃ¡.
       window.location.reload();
 
     } catch (err) {
@@ -6180,7 +6180,7 @@ function initEmbeddedCardioChart(canvasId, ex) {
               },
               label: (context) => {
                 const val = context.parsed.y;
-                return isTimeSpeed ? `Carga: ${val}` : `Intensidade: ${val}% FC Máx`;
+                return isTimeSpeed ? `Carga: ${val}` : `Intensidade: ${val}% FC MÃ¡x`;
               }
             }
           }
@@ -6202,3 +6202,4 @@ function initEmbeddedCardioChart(canvasId, ex) {
     });
   }, 100);
 }
+

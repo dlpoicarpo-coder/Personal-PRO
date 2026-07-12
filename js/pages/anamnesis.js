@@ -1,6 +1,6 @@
-// ========================================
-// PERSONAL PRO — Anamnesis Page (v2)
-// Design limpo · Link com trainerId · Visualização completa
+﻿// ========================================
+// VETOR â€” Anamnesis Page (v2)
+// Design limpo Â· Link com trainerId Â· VisualizaÃ§Ã£o completa
 // ========================================
 import db from '../db.js';
 import { notify } from '../components/toast.js';
@@ -16,39 +16,39 @@ export const ANAMNESIS_QUESTIONS = [
   { section: 'Dados Pessoais', fields: [
     { name: 'fullName',     label: 'Nome Completo',                           type: 'text',    required: true },
     { name: 'birthDate',    label: 'Data de Nascimento',                      type: 'date',    required: true },
-    { name: 'gender',       label: 'Gênero',                                  type: 'select',  options: ['Masculino','Feminino','Outro'] },
+    { name: 'gender',       label: 'GÃªnero',                                  type: 'select',  options: ['Masculino','Feminino','Outro'] },
     { name: 'phone',        label: 'Telefone / WhatsApp',                     type: 'tel' },
     { name: 'email',        label: 'E-mail',                                  type: 'email' },
-    { name: 'occupation',   label: 'Profissão / Ocupação',                    type: 'text' },
+    { name: 'occupation',   label: 'ProfissÃ£o / OcupaÃ§Ã£o',                    type: 'text' },
   ]},
-  { section: 'Histórico de Saúde', fields: [
-    { name: 'conditions',    label: 'Possui condição médica? (diabetes, hipertensão, etc.)', type: 'textarea' },
-    { name: 'medications',   label: 'Toma medicação regular?',                type: 'textarea' },
-    { name: 'surgeries',     label: 'Já fez cirurgia?',                       type: 'textarea' },
-    { name: 'injuries',      label: 'Lesões ou dores articulares/musculares?',type: 'textarea' },
-    { name: 'familyHistory', label: 'Histórico familiar de cardiopatias, AVC ou diabetes?', type: 'select', options: ['Sim','Não','Não sei'] },
-    { name: 'smoker',        label: 'Fumante?',                               type: 'select',  options: ['Não','Sim','Ex-fumante'] },
-    { name: 'alcohol',       label: 'Consome bebidas alcoólicas?',            type: 'select',  options: ['Não','Raramente','Moderadamente','Frequentemente'] },
+  { section: 'HistÃ³rico de SaÃºde', fields: [
+    { name: 'conditions',    label: 'Possui condiÃ§Ã£o mÃ©dica? (diabetes, hipertensÃ£o, etc.)', type: 'textarea' },
+    { name: 'medications',   label: 'Toma medicaÃ§Ã£o regular?',                type: 'textarea' },
+    { name: 'surgeries',     label: 'JÃ¡ fez cirurgia?',                       type: 'textarea' },
+    { name: 'injuries',      label: 'LesÃµes ou dores articulares/musculares?',type: 'textarea' },
+    { name: 'familyHistory', label: 'HistÃ³rico familiar de cardiopatias, AVC ou diabetes?', type: 'select', options: ['Sim','NÃ£o','NÃ£o sei'] },
+    { name: 'smoker',        label: 'Fumante?',                               type: 'select',  options: ['NÃ£o','Sim','Ex-fumante'] },
+    { name: 'alcohol',       label: 'Consome bebidas alcoÃ³licas?',            type: 'select',  options: ['NÃ£o','Raramente','Moderadamente','Frequentemente'] },
   ]},
-  { section: 'Atividade Física', fields: [
-    { name: 'currentActivity', label: 'Pratica exercícios atualmente?',        type: 'select', options: ['Sim, regularmente','Sim, esporadicamente','Não pratico'] },
-    { name: 'activityType',    label: 'Que tipo de exercício pratica / já praticou?', type: 'textarea' },
+  { section: 'Atividade FÃ­sica', fields: [
+    { name: 'currentActivity', label: 'Pratica exercÃ­cios atualmente?',        type: 'select', options: ['Sim, regularmente','Sim, esporadicamente','NÃ£o pratico'] },
+    { name: 'activityType',    label: 'Que tipo de exercÃ­cio pratica / jÃ¡ praticou?', type: 'textarea' },
     { name: 'frequency',       label: 'Quantas vezes por semana pode treinar?',type: 'select', options: ['2x','3x','4x','5x','6x'] },
-    { name: 'experience',      label: 'Experiência com musculação',            type: 'select', options: ['Nunca treinei','Iniciante (< 6 meses)','Intermediário (6m–2 anos)','Avançado (> 2 anos)'] },
-    { name: 'timeAvailable',   label: 'Tempo disponível por sessão',           type: 'select', options: ['30–45 min','45–60 min','60–75 min','75–90 min','> 90 min'] },
+    { name: 'experience',      label: 'ExperiÃªncia com musculaÃ§Ã£o',            type: 'select', options: ['Nunca treinei','Iniciante (< 6 meses)','IntermediÃ¡rio (6mâ€“2 anos)','AvanÃ§ado (> 2 anos)'] },
+    { name: 'timeAvailable',   label: 'Tempo disponÃ­vel por sessÃ£o',           type: 'select', options: ['30â€“45 min','45â€“60 min','60â€“75 min','75â€“90 min','> 90 min'] },
   ]},
   { section: 'Objetivos e Estilo de Vida', fields: [
-    { name: 'mainGoal',     label: 'Objetivo principal',                       type: 'select', options: ['Hipertrofia','Emagrecimento','Condicionamento','Saúde / Qualidade de Vida','Reabilitação','Performance Esportiva'] },
+    { name: 'mainGoal',     label: 'Objetivo principal',                       type: 'select', options: ['Hipertrofia','Emagrecimento','Condicionamento','SaÃºde / Qualidade de Vida','ReabilitaÃ§Ã£o','Performance Esportiva'] },
     { name: 'goalDetail',   label: 'Descreva seu objetivo com detalhes',       type: 'textarea' },
-    { name: 'sleepHours',   label: 'Horas de sono por noite (média)',          type: 'select', options: ['Menos de 5h','5–6h','6–7h','7–8h','Mais de 8h'] },
+    { name: 'sleepHours',   label: 'Horas de sono por noite (mÃ©dia)',          type: 'select', options: ['Menos de 5h','5â€“6h','6â€“7h','7â€“8h','Mais de 8h'] },
     { name: 'sleepQuality', label: 'Qualidade do sono',                        type: 'select', options: ['Ruim','Regular','Bom','Excelente'] },
-    { name: 'stressLevel',  label: 'Nível de estresse no dia a dia',           type: 'select', options: ['Baixo','Moderado','Alto','Muito alto'] },
-    { name: 'nutrition',    label: 'Como é sua alimentação?',                  type: 'select', options: ['Equilibrada','Razoável','Desregulada','Faço acompanhamento nutricional'] },
-    { name: 'hydration',    label: 'Consumo diário de água (litros)',          type: 'select', options: ['Menos de 1L','1–2L','2–3L','Mais de 3L'] },
+    { name: 'stressLevel',  label: 'NÃ­vel de estresse no dia a dia',           type: 'select', options: ['Baixo','Moderado','Alto','Muito alto'] },
+    { name: 'nutrition',    label: 'Como Ã© sua alimentaÃ§Ã£o?',                  type: 'select', options: ['Equilibrada','RazoÃ¡vel','Desregulada','FaÃ§o acompanhamento nutricional'] },
+    { name: 'hydration',    label: 'Consumo diÃ¡rio de Ã¡gua (litros)',          type: 'select', options: ['Menos de 1L','1â€“2L','2â€“3L','Mais de 3L'] },
   ]},
-  { section: 'Informações Adicionais', fields: [
+  { section: 'InformaÃ§Ãµes Adicionais', fields: [
     { name: 'additionalNotes',   label: 'Algo mais que gostaria de informar?', type: 'textarea' },
-    { name: 'preferredSchedule', label: 'Horário preferido de treino',         type: 'select', options: ['Manhã (5–9h)','Meio-dia (11–14h)','Tarde (14–18h)','Noite (18–22h)'] },
+    { name: 'preferredSchedule', label: 'HorÃ¡rio preferido de treino',         type: 'select', options: ['ManhÃ£ (5â€“9h)','Meio-dia (11â€“14h)','Tarde (14â€“18h)','Noite (18â€“22h)'] },
   ]},
 ];
 
@@ -65,7 +65,7 @@ export async function renderAnamnesis() {
     <div class="page-header">
       <div>
         <h1>Anamnese</h1>
-        <p class="subtitle">Formulário de pré-avaliação enviado ao aluno antes da primeira sessão</p>
+        <p class="subtitle">FormulÃ¡rio de prÃ©-avaliaÃ§Ã£o enviado ao aluno antes da primeira sessÃ£o</p>
       </div>
       <button class="btn btn-primary" id="genAnamneseLinkBtn">Gerar Link</button>
     </div>
@@ -76,8 +76,8 @@ export async function renderAnamnesis() {
         <div>
           <h4 style="margin:0 0 4px">Como funciona</h4>
           <p class="text-sm text-muted" style="line-height:1.6">
-            Clique em <strong>Gerar Link</strong> e envie ao possível aluno via WhatsApp ou e-mail.
-            Ele preenche 35 perguntas no próprio celular. Ao receber, clique em
+            Clique em <strong>Gerar Link</strong> e envie ao possÃ­vel aluno via WhatsApp ou e-mail.
+            Ele preenche 35 perguntas no prÃ³prio celular. Ao receber, clique em
             <strong>Cadastrar Aluno</strong> para converter automaticamente em cadastro completo.
           </p>
         </div>
@@ -105,26 +105,26 @@ export async function renderAnamnesis() {
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Formulários Recebidos</span>
+        <span class="card-title">FormulÃ¡rios Recebidos</span>
         <span class="text-xs text-muted">${submissions.length} registro(s)</span>
       </div>
       <div class="table-container">
         <table class="data-table">
-          <thead><tr><th>Aluno</th><th>Recebido</th><th>Objetivo</th><th>Experiência</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Aluno</th><th>Recebido</th><th>Objetivo</th><th>ExperiÃªncia</th><th>Status</th><th></th></tr></thead>
           <tbody>
             ${submissions.map(s => `<tr>
               <td>
                 <div class="flex items-center gap-sm">
                   <div class="avatar avatar-sm">${initials(s.fullName)}</div>
                   <div>
-                    <div style="font-weight:600;font-size:0.88rem">${s.fullName || '—'}</div>
+                    <div style="font-weight:600;font-size:0.88rem">${s.fullName || 'â€”'}</div>
                     ${s.phone ? `<div class="text-xs text-muted">${s.phone}</div>` : ''}
                   </div>
                 </div>
               </td>
-              <td style="font-size:0.82rem">${s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('pt-BR') : '—'}</td>
-              <td>${s.mainGoal ? `<span class="badge badge-info">${s.mainGoal}</span>` : '—'}</td>
-              <td style="font-size:0.82rem">${s.experience || '—'}</td>
+              <td style="font-size:0.82rem">${s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('pt-BR') : 'â€”'}</td>
+              <td>${s.mainGoal ? `<span class="badge badge-info">${s.mainGoal}</span>` : 'â€”'}</td>
+              <td style="font-size:0.82rem">${s.experience || 'â€”'}</td>
               <td>${s._converted ? `<span class="badge badge-success">Cadastrado</span>` : `<span class="badge badge-warning">Pendente</span>`}</td>
               <td>
                 <div style="display:flex;gap:4px">
@@ -140,9 +140,9 @@ export async function renderAnamnesis() {
       </div>
     </div>` : `
     <div class="empty-state">
-      <div class="empty-icon">—</div>
+      <div class="empty-icon">â€”</div>
       <h3>Nenhuma anamnese recebida ainda</h3>
-      <p>Gere um link e envie para seu próximo aluno</p>
+      <p>Gere um link e envie para seu prÃ³ximo aluno</p>
       <button class="btn btn-primary mt-sm" id="genAnamneseLinkBtnEmpty">Gerar Link de Anamnese</button>
     </div>`}
   `;
@@ -152,7 +152,7 @@ export function initAnamnesis(navigateFn) {
   const openLinkModal = async () => {
     const { getCurrentUser } = await import('../utils/auth.js');
     const user = await getCurrentUser();
-    if (!user) { notify.error('Você precisa estar logado'); return; }
+    if (!user) { notify.error('VocÃª precisa estar logado'); return; }
     const baseUrl = window.location.href.split('#')[0];
     const url = `${baseUrl}#/form/anamnese?trainer=${user.id}`;
     navigator.clipboard?.writeText(url);
@@ -164,9 +164,9 @@ export function initAnamnesis(navigateFn) {
         <p class="text-muted text-sm mb-md">Envie ao aluno. Ele preenche no celular e os dados chegam aqui automaticamente.</p>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
           <input class="form-input" value="${url}" readonly onclick="this.select()" style="flex:1;font-size:0.78rem" />
-          <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='✓'">Copiar</button>
+          <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${url}');this.textContent='âœ“'">Copiar</button>
         </div>
-        <a href="https://wa.me/?text=${encodeURIComponent('Olá! Antes da nossa primeira sessão, preencha sua anamnese: ' + url)}"
+        <a href="https://wa.me/?text=${encodeURIComponent('OlÃ¡! Antes da nossa primeira sessÃ£o, preencha sua anamnese: ' + url)}"
            target="_blank" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:6px;width:fit-content">
           ${ICON_WA} Enviar via WhatsApp
         </a>`,
@@ -185,7 +185,7 @@ export function initAnamnesis(navigateFn) {
         <div class="flex items-center gap-md mb-lg">
           <div class="avatar">${initials(s.fullName)}</div>
           <div>
-            <h3 style="margin:0">${s.fullName || '—'}</h3>
+            <h3 style="margin:0">${s.fullName || 'â€”'}</h3>
             <p class="text-muted text-xs">${s.submittedAt ? 'Recebido em ' + new Date(s.submittedAt).toLocaleDateString('pt-BR') : ''}</p>
           </div>
         </div>
@@ -202,7 +202,7 @@ export function initAnamnesis(navigateFn) {
             }).filter(Boolean).join('')}
           </div>`).join('')}`;
       openModal({
-        title: `Anamnese — ${s.fullName || 'Aluno'}`, size: 'lg', content: html,
+        title: `Anamnese â€” ${s.fullName || 'Aluno'}`, size: 'lg', content: html,
         actions: [{ label: 'Fechar', class: 'btn-primary', onClick: () => closeModal() }]
       });
     });
@@ -226,15 +226,15 @@ export function initAnamnesis(navigateFn) {
         preferredTime:   s.preferredSchedule || '',
         status:          'Ativo',
         notes: [
-          s.conditions  ? `Condições: ${s.conditions}`  : '',
-          s.medications ? `Medicações: ${s.medications}` : '',
-          s.injuries    ? `Lesões: ${s.injuries}`        : '',
-          `Experiência: ${s.experience || '-'}`,
+          s.conditions  ? `CondiÃ§Ãµes: ${s.conditions}`  : '',
+          s.medications ? `MedicaÃ§Ãµes: ${s.medications}` : '',
+          s.injuries    ? `LesÃµes: ${s.injuries}`        : '',
+          `ExperiÃªncia: ${s.experience || '-'}`,
           `Anamnese: ${new Date(s.submittedAt).toLocaleDateString('pt-BR')}`,
         ].filter(Boolean).join('. '),
       });
       await db.put('anamnesis', { ...s, _converted: true });
-      notify.success(`✓ ${s.fullName} cadastrado como aluno!`);
+      notify.success(`âœ“ ${s.fullName} cadastrado como aluno!`);
       navigateFn('/alunos');
     });
   });
@@ -243,7 +243,7 @@ export function initAnamnesis(navigateFn) {
     btn.addEventListener('click', async () => {
       if (window.confirm('Excluir esta anamnese?')) {
         await db.delete('anamnesis', btn.dataset.id);
-        notify.success('Excluída.'); navigateFn('/anamnese');
+        notify.success('ExcluÃ­da.'); navigateFn('/anamnese');
       }
     });
   });
@@ -317,7 +317,7 @@ export async function renderAnamneseForm() {
         </div>
         <div class="ana-body">
           <div class="ana-intro">
-            Preencha com atenção. Suas respostas ajudarão o treinador a criar o programa ideal para você.
+            Preencha com atenÃ§Ã£o. Suas respostas ajudarÃ£o o treinador a criar o programa ideal para vocÃª.
           </div>
           <form id="anamneseForm">
             ${ANAMNESIS_QUESTIONS.map(sec => `
@@ -347,7 +347,7 @@ export function initAnamneseForm() {
   const form = document.getElementById('anamneseForm');
   if (!form) return;
 
-  // ── 1. Restore saved draft ──────────────────────────────
+  // â”€â”€ 1. Restore saved draft â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
     const saved = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
     if (Object.keys(saved).length > 0) {
@@ -363,12 +363,12 @@ export function initAnamneseForm() {
       const banner = document.createElement('div');
       banner.id = 'anaDraftBanner';
       banner.style.cssText = 'background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:0.78rem;color:#10b981;display:flex;align-items:center;gap:8px;';
-      banner.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Rascunho restaurado — continue de onde parou!`;
+      banner.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Rascunho restaurado â€” continue de onde parou!`;
       form.insertBefore(banner, form.firstChild);
     }
   } catch(_) {}
 
-  // ── 2. Autosave on every field change ──────────────────
+  // â”€â”€ 2. Autosave on every field change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   form.addEventListener('input', () => {
     try {
       const fd = new FormData(form);
@@ -384,7 +384,7 @@ export function initAnamneseForm() {
     } catch(_) {}
   });
 
-  // ── 3. Block hash navigation while form has data ───────
+  // â”€â”€ 3. Block hash navigation while form has data â”€â”€â”€â”€â”€â”€â”€
   const guardHashChange = (e) => {
     try {
       const draft = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
@@ -408,7 +408,7 @@ export function initAnamneseForm() {
   };
   window.addEventListener('beforeunload', guardUnload);
 
-  // ── 4. Submit ───────────────────────────────────────────
+  // â”€â”€ 4. Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('anamneseSubmit');
@@ -446,7 +446,7 @@ export function initAnamneseForm() {
       if (!res.ok) {
         const errText = await res.text();
         if (errText.includes('23505') || errText.includes('unique_violation') || res.status === 409) {
-          // Fallback para PATCH se o registro já existir
+          // Fallback para PATCH se o registro jÃ¡ existir
           res = await fetch(`${ANA_SUPABASE_URL}/rest/v1/anamnesis?id=eq.${encodeURIComponent(data.id)}`, {
             method: 'PATCH',
             headers: {
@@ -478,7 +478,8 @@ export function initAnamneseForm() {
     } catch (err) {
       console.error('Anamnese submit error:', err);
       if (btn) { btn.disabled = false; btn.textContent = 'Enviar Anamnese'; }
-      alert('Erro ao enviar. Verifique sua conexão e tente novamente.');
+      alert('Erro ao enviar. Verifique sua conexÃ£o e tente novamente.');
     }
   });
 }
+

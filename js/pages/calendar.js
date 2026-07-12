@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Training Calendar Page (v3)
+// VETOR - Training Calendar Page (v3)
 // Student filter + weekday selection + auto-start
 // ========================================
 import db from '../db.js';
@@ -632,7 +632,7 @@ function autoSendWA(phone, msg, label, reminderKey) {
 
   // Notificação nativa do browser se permitida
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Personal PRO', {
+    new Notification('Vetor', {
       body: `${label} enviado via WhatsApp`,
       icon: '/icons/icon-192x192.png',
     });
@@ -677,7 +677,7 @@ function buildMsg10h(name, ev, preLink, trainerName) {
     : '';
   const treino = ev.workoutName || 'Treino';
   return [
-    `🏋️ *Personal PRO*`,
+    `🏋️ *Vetor*`,
     ``,
     `Bom dia, ${nome}! 👋`,
     ``,
@@ -691,7 +691,7 @@ function buildMsg10h(name, ev, preLink, trainerName) {
     ``,
     `Suas respostas ajudam a personalizar o treino de hoje. 💪`,
     ``,
-    trainerName ? `_Personal: ${trainerName}_` : `_Personal PRO_`,
+    trainerName ? `_Personal: ${trainerName}_` : `_Vetor_`,
   ].join('\n');
 }
 
@@ -701,7 +701,7 @@ function buildMsg30m(name, ev, preLink, trainerName) {
   const hora   = ev.time || '';
   const treino = ev.workoutName || 'Treino';
   return [
-    `🏋️ *Personal PRO*`,
+    `🏋️ *Vetor*`,
     ``,
     `${nome}, seu treino começa em *30 minutos*! ⏱️`,
     ``,
@@ -712,7 +712,7 @@ function buildMsg30m(name, ev, preLink, trainerName) {
     ``,
     `Até já! 💪`,
     ``,
-    trainerName ? `_Personal: ${trainerName}_` : `_Personal PRO_`,
+    trainerName ? `_Personal: ${trainerName}_` : `_Vetor_`,
   ].join('\n');
 }
 

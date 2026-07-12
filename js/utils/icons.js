@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — SVG Pictogram Icons
+﻿// ========================================
+// VETOR â€” SVG Pictogram Icons
 // Inspired by Rio 2016 Olympic pictograms
 // Fluid silhouettes with continuous lines
 // ========================================
@@ -31,3 +31,4 @@ export const ICONS = {
 
   students: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
 };
+

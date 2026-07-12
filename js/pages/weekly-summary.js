@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Biweekly Summary Page
+﻿// ========================================
+// VETOR â€” Biweekly Summary Page
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
@@ -68,24 +68,24 @@ export async function renderWeeklySummary() {
   return `
     <div class="page-header">
       <div>
-        <h1>Balanço Quinzenal</h1>
-        <p class="subtitle">Resumo estratégico de ${periodStart.toLocaleDateString('pt-BR')} a ${periodEnd.toLocaleDateString('pt-BR')}</p>
+        <h1>BalanÃ§o Quinzenal</h1>
+        <p class="subtitle">Resumo estratÃ©gico de ${periodStart.toLocaleDateString('pt-BR')} a ${periodEnd.toLocaleDateString('pt-BR')}</p>
       </div>
     </div>
     
     <div class="stats-grid mb-xl" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card">
-        <div class="stat-label">SESSÕES REALIZADAS</div>
+        <div class="stat-label">SESSÃ•ES REALIZADAS</div>
         <div class="stat-value" style="color:var(--primary)">${completed.length}</div>
-        <div class="text-xs text-muted mt-xs">nos últimos 15 dias</div>
+        <div class="text-xs text-muted mt-xs">nos Ãºltimos 15 dias</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">TAXA DE ADESÃO</div>
+        <div class="stat-label">TAXA DE ADESÃƒO</div>
         <div class="stat-value" style="color:${totalAdesao >= 80 ? 'var(--success)' : totalAdesao >= 50 ? 'var(--warning)' : 'var(--danger)'}">${totalAdesao}%</div>
         <div class="text-xs text-muted mt-xs">treinos feitos x marcados</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">COBRANÇAS DA QUINZENA</div>
+        <div class="stat-label">COBRANÃ‡AS DA QUINZENA</div>
         <div class="stat-value" style="color:var(--warning)">${wkFinance.length}</div>
         <div class="text-xs text-muted mt-xs">pendentes ou vencendo</div>
       </div>
@@ -101,10 +101,10 @@ export async function renderWeeklySummary() {
               <thead>
                 <tr>
                   <th style="padding:12px 16px">Aluno</th>
-                  <th style="text-align:center">Concluídas</th>
+                  <th style="text-align:center">ConcluÃ­das</th>
                   <th style="text-align:center">Faltas</th>
                   <th style="text-align:right">Volume (15d)</th>
-                  <th style="text-align:right">Gasto Calórico</th>
+                  <th style="text-align:right">Gasto CalÃ³rico</th>
                   <th style="text-align:right; padding-right:16px">Densidade</th>
                 </tr>
               </thead>
@@ -130,7 +130,7 @@ export async function renderWeeklySummary() {
       <div class="flex flex-col gap-lg">
         <div class="card">
           <div class="card-header"><span class="card-title" style="color:var(--warning)">Financeiro da Quinzena</span></div>
-          ${wkFinance.length === 0 ? '<p class="text-muted text-sm" style="padding:16px 0">Nenhuma cobrança pendente para este período.</p>' : ''}
+          ${wkFinance.length === 0 ? '<p class="text-muted text-sm" style="padding:16px 0">Nenhuma cobranÃ§a pendente para este perÃ­odo.</p>' : ''}
           <div class="flex flex-col gap-sm">
             ${wkFinance.map(f => {
               const st = students.find(s => s.id === f.studentId);
@@ -159,7 +159,7 @@ export async function renderWeeklySummary() {
                   <div style="font-weight:600">${s.name}</div>
                   <div class="text-xs text-muted">${Calc.calcularIdade(s.birthDate)} anos</div>
                 </div>
-                ${s.phone ? `<button class="btn btn-ghost btn-sm" onclick="window.open('https://wa.me/55${s.phone.replace(/\\D/g,'')}?text=Parabéns%20${encodeURIComponent(s.name.split(' ')[0])}!%20Feliz%20aniversário!','_blank')" style="color:#25d366">Parabéns</button>` : ''}
+                ${s.phone ? `<button class="btn btn-ghost btn-sm" onclick="window.open('https://wa.me/55${s.phone.replace(/\\D/g,'')}?text=ParabÃ©ns%20${encodeURIComponent(s.name.split(' ')[0])}!%20Feliz%20aniversÃ¡rio!','_blank')" style="color:#25d366">ParabÃ©ns</button>` : ''}
               </div>
             `}).join('')}
           </div>
@@ -171,5 +171,6 @@ export async function renderWeeklySummary() {
 }
 
 export function initWeeklySummary(navigateFn) {
-  // Inicializações se necessárias
+  // InicializaÃ§Ãµes se necessÃ¡rias
 }
+

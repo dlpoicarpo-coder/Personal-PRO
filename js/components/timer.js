@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Timer & Stopwatch Component
+﻿// ========================================
+// VETOR â€” Timer & Stopwatch Component
 // ========================================
 
 export class Timer {
@@ -131,3 +131,4 @@ export function formatTimeHMS(seconds) {
   if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
   return `${m}m ${String(s).padStart(2, '0')}s`;
 }
+

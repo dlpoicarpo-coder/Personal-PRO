@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Dashboard Page (v2)
+﻿// ========================================
+// VETOR â€” Dashboard Page (v2)
 // Clean SVG-based, no emoji
 // ========================================
 
@@ -69,7 +69,7 @@ export async function renderDashboard() {
     return { ...r, student: st, daysOverdue };
   }).sort((a, b) => b.daysOverdue - a.daysOverdue);
 
-  // 3. Macrociclos Críticos
+  // 3. Macrociclos CrÃ­ticos
   const criticalMacros = macrocycles
     .map(m => {
       const status = Calc.getMacrocycleStatus(m, now);
@@ -101,13 +101,13 @@ export async function renderDashboard() {
         const st = students.find(x => x.id === s.studentId);
         if (st) {
           if (pse <= pseIncreaseMax) {
-            adjustmentAlerts.push({ type: 'pse_low', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Aumentar intensidade.` });
+            adjustmentAlerts.push({ type: 'pse_low', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. SugestÃ£o: Aumentar intensidade.` });
           } else if (pse > pseMaintainMax && pse <= pseReduceMax) {
-            adjustmentAlerts.push({ type: 'pse_high', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Reduzir volume ~20%.` });
+            adjustmentAlerts.push({ type: 'pse_high', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. SugestÃ£o: Reduzir volume ~20%.` });
           } else if (pse > pseReduceMax) {
-            adjustmentAlerts.push({ type: 'pse_critical', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Sessão regenerativa + alerta ao trainer.` });
+            adjustmentAlerts.push({ type: 'pse_critical', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. SugestÃ£o: SessÃ£o regenerativa + alerta ao trainer.` });
           }
-          // Zona 4-6 (manter carga) não gera alerta no radar para não poluir
+          // Zona 4-6 (manter carga) nÃ£o gera alerta no radar para nÃ£o poluir
         }
       }
     }
@@ -131,7 +131,7 @@ export async function renderDashboard() {
     <div class="page-header">
       <div>
         <h1>Dashboard</h1>
-        <p class="subtitle">Visão geral do seu negócio</p>
+        <p class="subtitle">VisÃ£o geral do seu negÃ³cio</p>
       </div>
       <div class="flex gap-sm">
         <span class="text-muted text-sm">${now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
@@ -146,18 +146,18 @@ export async function renderDashboard() {
       </div>
       <div class="stat-card">
         <div class="stat-value text-gradient">${monthWorkouts.length}</div>
-        <div class="stat-label">Treinos no Mês</div>
+        <div class="stat-label">Treinos no MÃªs</div>
         <div class="stat-change positive">${new Date().toLocaleDateString('pt-BR', { month: 'long' })}</div>
       </div>
       <div class="stat-card">
         <div class="stat-value text-gradient">${monthSessions.length}</div>
-        <div class="stat-label">Sessões Realizadas</div>
-        <div class="stat-change">neste mês</div>
+        <div class="stat-label">SessÃµes Realizadas</div>
+        <div class="stat-change">neste mÃªs</div>
       </div>
       <div class="stat-card">
         <div class="stat-value text-gradient">${avgSleep}</div>
-        <div class="stat-label">Média de Sono</div>
-        <div class="stat-change">últimos check-ins</div>
+        <div class="stat-label">MÃ©dia de Sono</div>
+        <div class="stat-change">Ãºltimos check-ins</div>
       </div>
     </div>
 
@@ -179,7 +179,7 @@ export async function renderDashboard() {
             let dayText = 'Nunca treinou';
             if (s.daysSince !== null && s.lastSession && s.lastSession.date) {
                const parsedDate = new Date(s.lastSession.date);
-               dayText = parsedDate.toLocaleDateString('pt-BR') + (s.daysSince === 0 ? ' (Hoje)' : s.daysSince === 1 ? ' (Ontem)' : ` (${s.daysSince}d atrás)`);
+               dayText = parsedDate.toLocaleDateString('pt-BR') + (s.daysSince === 0 ? ' (Hoje)' : s.daysSince === 1 ? ' (Ontem)' : ` (${s.daysSince}d atrÃ¡s)`);
             }
             return `
               <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
@@ -214,7 +214,7 @@ export async function renderDashboard() {
               <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
                 <div style="min-width: 0; flex: 1; margin-right: 8px;">
                   <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${r.student ? r.student.name : 'Desconhecido'}">${r.student ? r.student.name.split(' ')[0] : 'Desconhecido'}</div>
-                  <div class="text-muted text-xs">${fmtAmt} · ${new Date(r.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+                  <div class="text-muted text-xs">${fmtAmt} Â· ${new Date(r.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
                 </div>
                 <div class="flex items-center gap-xs">
                   <span class="badge badge-danger" style="font-size: 0.68rem; padding: 2px 6px;">${r.daysOverdue}d</span>
@@ -231,12 +231,12 @@ export async function renderDashboard() {
         </div>
       </div>
 
-      <!-- Card 3: Macrociclos Críticos -->
+      <!-- Card 3: Macrociclos CrÃ­ticos -->
       <div class="card" style="padding: 16px;">
         <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
           <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Macrociclos Críticos
+            Macrociclos CrÃ­ticos
           </span>
           <a href="#/periodizacao" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver todos</a>
         </div>
@@ -245,7 +245,7 @@ export async function renderDashboard() {
             const stColor = m.status.daysLeft < 0 ? 'var(--danger)' : m.status.daysLeft === 0 ? 'var(--danger)' : 'var(--warning)';
             let labelText = '';
             if (m.status.isEndingSoon) {
-               labelText = m.status.daysLeft < 0 ? `Expirou há ${Math.abs(m.status.daysLeft)}d` : m.status.daysLeft === 0 ? 'Termina hoje!' : `Termina em ${m.status.daysLeft}d`;
+               labelText = m.status.daysLeft < 0 ? `Expirou hÃ¡ ${Math.abs(m.status.daysLeft)}d` : m.status.daysLeft === 0 ? 'Termina hoje!' : `Termina em ${m.status.daysLeft}d`;
             } else if (m.status.isChangingWeek) {
                labelText = `Semana ${m.status.currentWeek}`;
             }
@@ -253,13 +253,13 @@ export async function renderDashboard() {
               <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
                 <div style="min-width: 0; flex: 1; margin-right: 8px;">
                   <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.student ? m.student.name.split(' ')[0] : 'Aluno'}</div>
-                  <div class="text-muted text-xs" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${m.name} · ${m.totalWeeks}sem</div>
+                  <div class="text-muted text-xs" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${m.name} Â· ${m.totalWeeks}sem</div>
                 </div>
                 <span class="badge" style="background:${stColor}15; color:${stColor}; font-size: 0.68rem; padding: 2px 8px; white-space: nowrap;">${labelText}</span>
               </div>
             `;
           }).join('')}
-          ${criticalMacros.length === 0 ? '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum macrociclo crítico</p>' : ''}
+          ${criticalMacros.length === 0 ? '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum macrociclo crÃ­tico</p>' : ''}
         </div>
       </div>
 
@@ -280,7 +280,7 @@ export async function renderDashboard() {
               </div>
               <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 0.95rem; font-weight: 500;">${a.text}</div>
-                <div class="text-muted text-xs">${a.type.startsWith('pse') ? 'Feedback de Treino' : 'Avanço de Macrociclo'}</div>
+                <div class="text-muted text-xs">${a.type.startsWith('pse') ? 'Feedback de Treino' : 'AvanÃ§o de Macrociclo'}</div>
               </div>
               <a href="#/treinos" class="btn btn-ghost btn-sm" style="color: var(--primary);">Revisar</a>
             </div>
@@ -293,7 +293,7 @@ export async function renderDashboard() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Alunos Recentes</span>
-          <a href="#/alunos" class="btn btn-ghost btn-sm">Ver todos →</a>
+          <a href="#/alunos" class="btn btn-ghost btn-sm">Ver todos â†’</a>
         </div>
         ${activeStudents.length ? `
           <div class="student-list">
@@ -302,7 +302,7 @@ export async function renderDashboard() {
                 <div class="avatar">${s.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}</div>
                 <div style="flex:1">
                   <div style="font-weight: 600; font-size: 0.9rem;">${s.name}</div>
-                  <div class="text-muted text-xs">${s.code} · ${s.goal || 'Sem objetivo definido'}</div>
+                  <div class="text-muted text-xs">${s.code} Â· ${s.goal || 'Sem objetivo definido'}</div>
                 </div>
                 <span class="badge badge-success">Ativo</span>
               </div>
@@ -310,9 +310,9 @@ export async function renderDashboard() {
           </div>
         ` : `
           <div class="empty-state">
-            <div class="empty-icon" style="font-size:2rem">—</div>
+            <div class="empty-icon" style="font-size:2rem">â€”</div>
             <h3>Nenhum aluno cadastrado</h3>
-            <p>Adicione seu primeiro aluno para começar</p>
+            <p>Adicione seu primeiro aluno para comeÃ§ar</p>
             <a href="#/alunos" class="btn btn-primary">+ Novo Aluno</a>
           </div>
         `}
@@ -321,7 +321,7 @@ export async function renderDashboard() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Biofeedback Recente</span>
-          <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos →</a>
+          <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos â†’</a>
         </div>
         ${recentBf.length ? `
           <div>
@@ -346,9 +346,9 @@ export async function renderDashboard() {
           </div>
         ` : `
           <div class="empty-state">
-            <div class="empty-icon" style="font-size:2rem">—</div>
+            <div class="empty-icon" style="font-size:2rem">â€”</div>
             <h3>Sem registros</h3>
-            <p>Os check-ins de biofeedback aparecerão aqui</p>
+            <p>Os check-ins de biofeedback aparecerÃ£o aqui</p>
           </div>
         `}
       </div>
@@ -384,14 +384,14 @@ export async function initDashboardCharts() {
       const due    = Calc.formatDate(btn.dataset.due);
       
       // Get Pix Key
-      let pixKey = '[configure sua chave Pix em Configurações]';
+      let pixKey = '[configure sua chave Pix em ConfiguraÃ§Ãµes]';
       try {
         const s = await db.get('settings','trainer');
         if (s?.pixKey) pixKey = s.pixKey;
       } catch {}
 
       const fmtBRL = (v) => 'R$ ' + Number(v||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-      const msg = `Olá ${st.name.split(' ')[0]}! 👋\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* está pendente.\n\nChave Pix: ${pixKey}\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg = `OlÃ¡ ${st.name.split(' ')[0]}! ðŸ‘‹\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* estÃ¡ pendente.\n\nChave Pix: ${pixKey}\n\nQualquer dÃºvida estou Ã  disposiÃ§Ã£o! ðŸ’ª`;
       
       // Open WhatsApp
       const cleanPhone = st.phone.replace(/\D/g, '');
@@ -405,7 +405,7 @@ export async function initDashboardCharts() {
 
   const workouts = await db.getAll('workouts');
 
-  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'];
   const now = new Date();
   const weekData = new Array(7).fill(0);
 
@@ -480,3 +480,4 @@ export async function initDashboardCharts() {
     });
   }
 }
+

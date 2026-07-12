@@ -144,7 +144,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Erro de configuração: Chave da API do Resend não configurada.' });
       }
 
-      const baseUrl = req.headers.origin || 'https://personalpro.vercel.app';
+      const baseUrl = req.headers.origin || 'https://personal-pro-v3.vercel.app';
       const inviteLink = `${baseUrl}/#/convite?token=${token}`;
       
       const emailBody = {

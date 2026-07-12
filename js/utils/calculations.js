@@ -1,11 +1,11 @@
-// ========================================
-// PERSONAL PRO — Calculations Utility
-// Todas as fórmulas científicas do sistema
+﻿// ========================================
+// VETOR â€” Calculations Utility
+// Todas as fÃ³rmulas cientÃ­ficas do sistema
 // ========================================
 
 export const Calc = {
 
-  // ── DATAS E PRAZOS ───────────────────────────────────────
+  // â”€â”€ DATAS E PRAZOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   getMacrocycleStatus(m, now = new Date()) {
     if (m.status !== 'active' || !m.startDate || !m.totalWeeks) return { isCritical: false };
     const startMs = new Date(m.startDate + 'T12:00:00').getTime();
@@ -29,14 +29,14 @@ export const Calc = {
   },
 
   formatDate(dateStr) {
-    if (!dateStr) return '—';
+    if (!dateStr) return 'â€”';
     const d = new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));
-    if (isNaN(d.getTime())) return '—';
+    if (isNaN(d.getTime())) return 'â€”';
     return d.toLocaleDateString('pt-BR');
   },
 
   formatNum(n, decimals = 1) {
-    if (n == null || isNaN(n)) return '—';
+    if (n == null || isNaN(n)) return 'â€”';
     return Number(n).toFixed(decimals);
   },
 
@@ -50,7 +50,7 @@ export const Calc = {
     return idade;
   },
 
-  // ── COMPOSIÇÃO CORPORAL ──────────────────────────────────
+  // â”€â”€ COMPOSIÃ‡ÃƒO CORPORAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   imc(peso, altura) {
     if (!peso || !altura) return null;
     const altM = altura > 10 ? altura / 100 : altura;
@@ -79,21 +79,21 @@ export const Calc = {
     return Math.round(((4.95 / densidade) - 4.50) * 100 * 10) / 10;
   },
 
-  // ── CALORIAS — Gasto Energético ───────────────────────────
-  // Mifflin-St Jeor (1990) — mais precisa para pop. geral
+  // â”€â”€ CALORIAS â€” Gasto EnergÃ©tico â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Mifflin-St Jeor (1990) â€” mais precisa para pop. geral
   // Ref: Mifflin MD et al. Am J Clin Nutr. 1990;51(2):241-7.
   tmbMifflin(peso, altura, idade, sexo) {
     const base = (10 * peso) + (6.25 * altura) - (5 * idade);
     return Math.round(sexo === 'F' ? base - 161 : base + 5);
   },
 
-  // Katch-McArdle — usa massa magra, mais precisa quando há composição
+  // Katch-McArdle â€” usa massa magra, mais precisa quando hÃ¡ composiÃ§Ã£o
   // Ref: McArdle WD, Katch FI, Katch VL. Exercise Physiology. 2010.
   tmbKatch(massaMagra) {
     return Math.round(370 + (21.6 * massaMagra));
   },
 
-  // Melhor TMB disponível: Katch se tiver massa magra, senão Mifflin
+  // Melhor TMB disponÃ­vel: Katch se tiver massa magra, senÃ£o Mifflin
   tmb(peso, altura, idade, sexo, massaMagra) {
     if (massaMagra > 0) {
       return { valor: this.tmbKatch(massaMagra), formula: 'Katch-McArdle' };
@@ -106,36 +106,36 @@ export const Calc = {
 
   // Fator de atividade (Harris-Benedict)
   FATOR_ATIVIDADE: {
-    sedentario:  { label: 'Sedentário (sem exercício)',          fator: 1.2   },
-    leve:        { label: 'Levemente ativo (1-2×/sem)',          fator: 1.375 },
-    moderado:    { label: 'Moderadamente ativo (3-4×/sem)',      fator: 1.55  },
-    ativo:       { label: 'Muito ativo (5-6×/sem)',              fator: 1.725 },
-    muito_ativo: { label: 'Extremamente ativo (2×/dia)',         fator: 1.9   },
+    sedentario:  { label: 'SedentÃ¡rio (sem exercÃ­cio)',          fator: 1.2   },
+    leve:        { label: 'Levemente ativo (1-2Ã—/sem)',          fator: 1.375 },
+    moderado:    { label: 'Moderadamente ativo (3-4Ã—/sem)',      fator: 1.55  },
+    ativo:       { label: 'Muito ativo (5-6Ã—/sem)',              fator: 1.725 },
+    muito_ativo: { label: 'Extremamente ativo (2Ã—/dia)',         fator: 1.9   },
   },
 
-  // TDEE = TMB × Fator de Atividade
+  // TDEE = TMB Ã— Fator de Atividade
   tdee(tmbValor, nivelAtividade) {
     const fa = this.FATOR_ATIVIDADE[nivelAtividade] || this.FATOR_ATIVIDADE.moderado;
     return { valor: Math.round(tmbValor * fa.fator), fatorLabel: fa.label, fator: fa.fator };
   },
 
-  // Meta calórica por objetivo
+  // Meta calÃ³rica por objetivo
   // Ref: Helms ER et al. JISSN 2014; Barakat et al. JSCR 2020.
   metaCalorica(tdeeValor, objetivo) {
     const metas = {
-      emagrecimento:      { deficit: -500, label: 'Déficit moderado (-500 kcal/dia)' },
-      emagrecimento_leve: { deficit: -250, label: 'Déficit leve (-250 kcal/dia)'     },
-      manutencao:         { deficit:    0, label: 'Manutenção'                        },
-      hipertrofia_leve:   { deficit: +200, label: 'Superávit leve (+200 kcal/dia)'   },
-      hipertrofia:        { deficit: +350, label: 'Superávit moderado (+350 kcal/dia)'},
+      emagrecimento:      { deficit: -500, label: 'DÃ©ficit moderado (-500 kcal/dia)' },
+      emagrecimento_leve: { deficit: -250, label: 'DÃ©ficit leve (-250 kcal/dia)'     },
+      manutencao:         { deficit:    0, label: 'ManutenÃ§Ã£o'                        },
+      hipertrofia_leve:   { deficit: +200, label: 'SuperÃ¡vit leve (+200 kcal/dia)'   },
+      hipertrofia:        { deficit: +350, label: 'SuperÃ¡vit moderado (+350 kcal/dia)'},
     };
     const m = metas[objetivo] || metas.manutencao;
     return { kcal: tdeeValor + m.deficit, ...m };
   },
 
-  // Distribuição de macros
-  // Proteína: 1.6-2.2g/kg — ISSN Position Stand (Stokes et al. 2018)
-  // Gordura: 25-30% TDEE — DRI
+  // DistribuiÃ§Ã£o de macros
+  // ProteÃ­na: 1.6-2.2g/kg â€” ISSN Position Stand (Stokes et al. 2018)
+  // Gordura: 25-30% TDEE â€” DRI
   // Carboidrato: restante
   macros(kcalMeta, peso, objetivo) {
     const protPorKg = (objetivo === 'emagrecimento' || objetivo === 'emagrecimento_leve') ? 2.2 : 1.8;
@@ -154,7 +154,7 @@ export const Calc = {
     };
   },
 
-  // Calorias estimadas da atividade (MET × peso × tempo)
+  // Calorias estimadas da atividade (MET Ã— peso Ã— tempo)
   // Ref: Ainsworth BE et al. Compendium of Physical Activities. Med Sci Sports Exerc. 2011.
   caloriasAtividade(peso, minutos, tipo) {
     const MET = {
@@ -182,7 +182,7 @@ export const Calc = {
     return rcq < 0.80 ? { label: 'Baixo risco', color: 'success' } : rcq < 0.85 ? { label: 'Risco moderado', color: 'warning' } : { label: 'Alto risco', color: 'danger' };
   },
 
-  // ── MASSA MUSCULAR ESQUELÉTICA (Lee et al. 2000) ─────────
+  // â”€â”€ MASSA MUSCULAR ESQUELÃ‰TICA (Lee et al. 2000) â”€â”€â”€â”€â”€â”€â”€â”€â”€
   massaMuscularEsqueletica(peso, alturaCm, idade, sexo, raca = 0) {
     if (!peso || !alturaCm || !idade) return null;
     const altM = alturaCm / 100;
@@ -206,11 +206,11 @@ export const Calc = {
     return this.nowISO().slice(0, 10);
   },
 
-  // ── FORÇA / 1RM ──────────────────────────────────────────
-  // Epley (padrão)
+  // â”€â”€ FORÃ‡A / 1RM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Epley (padrÃ£o)
   rm1Estimado(carga, reps, formula = 'epley') {
     const l = parseFloat(carga);
-    // Limitamos as repetições a no máximo 15 para segurança e precisão do cálculo científico (Brzycki vai a zero/negativo com 37+)
+    // Limitamos as repetiÃ§Ãµes a no mÃ¡ximo 15 para seguranÃ§a e precisÃ£o do cÃ¡lculo cientÃ­fico (Brzycki vai a zero/negativo com 37+)
     const r = Math.min(Math.max(parseInt(reps) || 1, 1), 15);
     if (!l || !r) return null;
     if (r === 1) return l;
@@ -225,33 +225,33 @@ export const Calc = {
     return Math.round(rm1 * 2) / 2; // arredondar para 0.5kg
   },
 
-  // ── PROTOCOLO 1RM SUBMAX ─────────────────────────────────
-  // Protocolo progressivo de 3-5 séries submáximas para estimar 1RM
-  // Usado na ficha de avaliação de força
+  // â”€â”€ PROTOCOLO 1RM SUBMAX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Protocolo progressivo de 3-5 sÃ©ries submÃ¡ximas para estimar 1RM
+  // Usado na ficha de avaliaÃ§Ã£o de forÃ§a
   protocolo1RM: {
     steps: [
-      { set: 1, pct: 50, reps: '10-12', desc: 'Aquecimento leve — nunca falha' },
+      { set: 1, pct: 50, reps: '10-12', desc: 'Aquecimento leve â€” nunca falha' },
       { set: 2, pct: 65, reps: '6-8',   desc: 'Aquecimento moderado' },
-      { set: 3, pct: 80, reps: '3-5',   desc: 'Série pesada — esforço real' },
-      { set: 4, pct: 90, reps: '2-3',   desc: 'Série muito pesada' },
-      { set: 5, pct: 95, reps: '1-2',   desc: 'Próximo do máximo (opcional)' },
+      { set: 3, pct: 80, reps: '3-5',   desc: 'SÃ©rie pesada â€” esforÃ§o real' },
+      { set: 4, pct: 90, reps: '2-3',   desc: 'SÃ©rie muito pesada' },
+      { set: 5, pct: 95, reps: '1-2',   desc: 'PrÃ³ximo do mÃ¡ximo (opcional)' },
     ],
     instructions: [
-      'Escolha uma carga com a qual consiga realizar as repetições indicadas com boa técnica',
-      'Descanse 3-5 minutos entre cada série',
-      'Registre a carga e as repetições realizadas em cada série',
-      'O 1RM será estimado pela fórmula de Epley a partir da sua melhor relação carga × reps',
-      'Não é necessário chegar ao máximo absoluto — a estimativa é precisa a partir de 2-5 reps',
+      'Escolha uma carga com a qual consiga realizar as repetiÃ§Ãµes indicadas com boa tÃ©cnica',
+      'Descanse 3-5 minutos entre cada sÃ©rie',
+      'Registre a carga e as repetiÃ§Ãµes realizadas em cada sÃ©rie',
+      'O 1RM serÃ¡ estimado pela fÃ³rmula de Epley a partir da sua melhor relaÃ§Ã£o carga Ã— reps',
+      'NÃ£o Ã© necessÃ¡rio chegar ao mÃ¡ximo absoluto â€” a estimativa Ã© precisa a partir de 2-5 reps',
     ],
     safetyNotes: [
       'Nunca tente o 1RM verdadeiro sem spotter qualificado',
-      'O protocolo submax é suficiente para prescrição de treino',
-      'Recomendado para alunos com ≥ 3 meses de treino contínuo',
-      'Não realizar após treino intenso — descanso de 48h mínimo',
+      'O protocolo submax Ã© suficiente para prescriÃ§Ã£o de treino',
+      'Recomendado para alunos com â‰¥ 3 meses de treino contÃ­nuo',
+      'NÃ£o realizar apÃ³s treino intenso â€” descanso de 48h mÃ­nimo',
     ],
   },
 
-  // Calcular melhor estimativa de 1RM a partir de múltiplas séries
+  // Calcular melhor estimativa de 1RM a partir de mÃºltiplas sÃ©ries
   melhorEstimativa1RM(series) {
     // series = [{carga, reps, formula?}]
     if (!series?.length) return null;
@@ -263,7 +263,7 @@ export const Calc = {
     return estimativas[0] || null;
   },
 
-  // ── FREQUÊNCIA CARDÍACA ──────────────────────────────────
+  // â”€â”€ FREQUÃŠNCIA CARDÃACA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Tanaka: mais precisa que 220 - idade
   fcMax(idade) {
     return Math.round(208 - 0.7 * idade);
@@ -272,11 +272,11 @@ export const Calc = {
   zonasTreino(fcMax, fcRep) {
     const reserva = fcMax - fcRep;
     return [
-      { zona: 1, nome: 'Recuperação',        min: 50, max: 60, cor: '#94a3b8', objetivo: 'Recuperação ativa e aquecimento' },
-      { zona: 2, nome: 'Base Aeróbia',        min: 60, max: 70, cor: '#3b82f6', objetivo: 'Resistência básica e queima de gordura' },
-      { zona: 3, nome: 'Aeróbia',             min: 70, max: 80, cor: '#10b981', objetivo: 'Condicionamento aeróbio geral' },
-      { zona: 4, nome: 'Limiar Anaeróbio',    min: 80, max: 90, cor: '#f59e0b', objetivo: 'Tolerância ao lactato e performance' },
-      { zona: 5, nome: 'VO2 Máximo',          min: 90, max: 100,cor: '#ef4444', objetivo: 'Capacidade máxima — intervalados curtos' },
+      { zona: 1, nome: 'RecuperaÃ§Ã£o',        min: 50, max: 60, cor: '#94a3b8', objetivo: 'RecuperaÃ§Ã£o ativa e aquecimento' },
+      { zona: 2, nome: 'Base AerÃ³bia',        min: 60, max: 70, cor: '#3b82f6', objetivo: 'ResistÃªncia bÃ¡sica e queima de gordura' },
+      { zona: 3, nome: 'AerÃ³bia',             min: 70, max: 80, cor: '#10b981', objetivo: 'Condicionamento aerÃ³bio geral' },
+      { zona: 4, nome: 'Limiar AnaerÃ³bio',    min: 80, max: 90, cor: '#f59e0b', objetivo: 'TolerÃ¢ncia ao lactato e performance' },
+      { zona: 5, nome: 'VO2 MÃ¡ximo',          min: 90, max: 100,cor: '#ef4444', objetivo: 'Capacidade mÃ¡xima â€” intervalados curtos' },
     ].map(z => ({
       ...z,
       fcMin: Math.round(fcRep + reserva * (z.min / 100)),
@@ -284,15 +284,15 @@ export const Calc = {
     }));
   },
 
-  // ── VO2MAX ───────────────────────────────────────────────
+  // â”€â”€ VO2MAX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   vo2maxConconi(vma) {
-    // Estimativa: VO2max ≈ VMA × 3.5
+    // Estimativa: VO2max â‰ˆ VMA Ã— 3.5
     if (!vma) return null;
     return Math.round(vma * 3.5 * 10) / 10;
   },
 
   vo2maxCooper(distanciaMetros) {
-    // Teste de Cooper: distância percorrida em 12 min
+    // Teste de Cooper: distÃ¢ncia percorrida em 12 min
     if (!distanciaMetros) return null;
     return Math.round(((distanciaMetros - 504.9) / 44.73) * 10) / 10;
   },
@@ -302,14 +302,14 @@ export const Calc = {
     return Math.round((nivel * 0.5 + shuttle * 0.1 + 3.46) * 10) / 10;
   },
 
-  // ── CARGA DE TREINO ──────────────────────────────────────
+  // â”€â”€ CARGA DE TREINO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   cargaTreino(pse, duracaoMin) {
-    // Foster (1996): Carga = PSE × Duração (min)
+    // Foster (1996): Carga = PSE Ã— DuraÃ§Ã£o (min)
     if (!pse || !duracaoMin) return 0;
     return Math.round(pse * duracaoMin);
   },
 
-  // ── ACWR ─────────────────────────────────────────────────
+  // â”€â”€ ACWR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   acwr(cargaAguda, cargaCronica) {
     if (!cargaAguda || !cargaCronica || cargaCronica === 0) return 0;
     return Math.round((cargaAguda / cargaCronica) * 100) / 100;
@@ -318,9 +318,10 @@ export const Calc = {
   acwrClassificacao(acwr) {
     if (acwr === 0)    return { label: 'Sem dados',      color: 'info' };
     if (acwr < 0.8)    return { label: 'Destreino',      color: 'info' };
-    if (acwr <= 1.3)   return { label: 'Zona ótima',     color: 'success' };
-    if (acwr <= 1.5)   return { label: 'Atenção',        color: 'warning' };
-    return              { label: 'Risco de lesão',   color: 'danger' };
+    if (acwr <= 1.3)   return { label: 'Zona Ã³tima',     color: 'success' };
+    if (acwr <= 1.5)   return { label: 'AtenÃ§Ã£o',        color: 'warning' };
+    return              { label: 'Risco de lesÃ£o',   color: 'danger' };
   },
 
 };
+

@@ -1,6 +1,6 @@
-// ========================================
-// PERSONAL PRO — Financial Management (v2)
-// Dashboard · Gráficos · Inadimplência · WhatsApp · Metas
+﻿// ========================================
+// VETOR â€” Financial Management (v2)
+// Dashboard Â· GrÃ¡ficos Â· InadimplÃªncia Â· WhatsApp Â· Metas
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
@@ -13,18 +13,18 @@ const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="1
 const ICON_DEL = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
 const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 
-const PAYMENT_METHODS = ['Pix','Cartão de Crédito','Cartão de Débito','Dinheiro','Transferência','Boleto'];
+const PAYMENT_METHODS = ['Pix','CartÃ£o de CrÃ©dito','CartÃ£o de DÃ©bito','Dinheiro','TransferÃªncia','Boleto'];
 
 function fmtBRL(v) { return 'R$ ' + Number(v||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
 
-// Helper para evitar problemas de fuso horário com strings de data YYYY-MM-DD
+// Helper para evitar problemas de fuso horÃ¡rio com strings de data YYYY-MM-DD
 function parseLocalDate(dateStr) {
   if (!dateStr) return new Date();
   return new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));
 }
 
-// ── Estado do filtro de data (módulo) ──────────────────────────
-// Persistir estado do mês selecionado entre navegações
+// â”€â”€ Estado do filtro de data (mÃ³dulo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Persistir estado do mÃªs selecionado entre navegaÃ§Ãµes
 const _savedFin = (() => { try { return JSON.parse(sessionStorage.getItem('pp_finState') || '{}'); } catch { return {}; } })();
 const finState = {
   month: _savedFin.month ?? new Date().getMonth(),
@@ -45,7 +45,7 @@ export async function renderFinancial() {
   const selYear    = finState.year;
   const isCurrentMonth = selMonth === now.getMonth() && selYear === now.getFullYear();
 
-  // Label do mês selecionado
+  // Label do mÃªs selecionado
   const selDate = new Date(selYear, selMonth, 1);
   const monthLabel = selDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
@@ -63,21 +63,21 @@ export async function renderFinancial() {
     return d.getMonth() === selMonth && d.getFullYear() === selYear;
   };
 
-  // ESPERADO: todos com vencimento no mês selecionado
+  // ESPERADO: todos com vencimento no mÃªs selecionado
   const monthRecs   = records.filter(r => inSelMonth(r.dueDate));
   const totalExpect = monthRecs.reduce((t, r) => t + (r.amount||0), 0);
 
-  // RECEBIDO: pagos com vencimento (dueDate) no mês selecionado
+  // RECEBIDO: pagos com vencimento (dueDate) no mÃªs selecionado
   const paidThisMonth = records.filter(r => {
     return r.status === 'paid' && inSelMonth(r.dueDate);
   });
   const totalPaid = paidThisMonth.reduce((t, r) => t + (r.amount||0), 0);
 
-  // PENDENTE: registros do mês selecionado ainda não pagos E não vencidos
+  // PENDENTE: registros do mÃªs selecionado ainda nÃ£o pagos E nÃ£o vencidos
   const monthPendingRecs = monthRecs.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) >= now);
   const totalPend = monthPendingRecs.reduce((t, r) => t + (r.amount||0), 0);
 
-  // VENCIDOS (MÊS): registros do mês selecionado vencidos
+  // VENCIDOS (MÃŠS): registros do mÃªs selecionado vencidos
   const monthOverdueRecs = monthRecs.filter(r => r.status === 'pending' && parseLocalDate(r.dueDate) < now);
   const monthOverdueAmt = monthOverdueRecs.reduce((t, r) => t + (r.amount||0), 0);
 
@@ -90,7 +90,7 @@ export async function renderFinancial() {
     ? Math.round((monthRecs.filter(r=>r.status==='paid').length / monthRecs.length) * 100)
     : (paidThisMonth.length > 0 ? 100 : 0);
 
-  // Receita dos últimos 6 meses (sempre relativo ao mês atual — gráfico histórico)
+  // Receita dos Ãºltimos 6 meses (sempre relativo ao mÃªs atual â€” grÃ¡fico histÃ³rico)
   const monthlyData = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -103,33 +103,33 @@ export async function renderFinancial() {
   // Inadimplentes
   const defaulters = active.filter(s => globalOverdue.some(r => r.studentId === s.id));
 
-  // Sessões do mês selecionado
+  // SessÃµes do mÃªs selecionado
   const monthSessions = sessions.filter(x => {
     const d = parseLocalDate(x.date);
     return x.status==='completed' && d.getMonth()===selMonth && d.getFullYear()===selYear;
   });
 
-  // Registros para a tabela — filtra pelo mês selecionado se não for "Todos"
-  // Por padrão, mostrar todos os registros mas com data-month para filtro client-side
+  // Registros para a tabela â€” filtra pelo mÃªs selecionado se nÃ£o for "Todos"
+  // Por padrÃ£o, mostrar todos os registros mas com data-month para filtro client-side
   return `
     <div class="page-header">
-      <div><h1>Gestão Financeira</h1></div>
+      <div><h1>GestÃ£o Financeira</h1></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <button class="btn btn-secondary btn-sm" id="genMonthlyBtn">Gerar Mensalidades</button>
         <button class="btn btn-primary btn-sm" id="addFinancialBtn">+ Novo Registro</button>
       </div>
     </div>
 
-    <!-- Seletor de Mês -->
+    <!-- Seletor de MÃªs -->
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px">
-      <button id="finPrevMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="Mês anterior">◀</button>
+      <button id="finPrevMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="MÃªs anterior">â—€</button>
       <div style="text-align:center;min-width:180px">
         <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);text-transform:capitalize">${monthLabel}</div>
-        ${isCurrentMonth ? '<div style="font-size:0.7rem;color:var(--primary);font-weight:600">Mês Atual</div>'
-          : selDate > now ? '<div style="font-size:0.7rem;color:var(--accent);font-weight:600">Mês Futuro</div>'
-          : '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:500">Mês Passado</div>'}
+        ${isCurrentMonth ? '<div style="font-size:0.7rem;color:var(--primary);font-weight:600">MÃªs Atual</div>'
+          : selDate > now ? '<div style="font-size:0.7rem;color:var(--accent);font-weight:600">MÃªs Futuro</div>'
+          : '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:500">MÃªs Passado</div>'}
       </div>
-      <button id="finNextMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="Próximo mês">▶</button>
+      <button id="finNextMonth" class="btn btn-ghost btn-sm" style="font-size:1.1rem;padding:6px 14px" title="PrÃ³ximo mÃªs">â–¶</button>
     </div>
 
     <!-- Stats -->
@@ -140,17 +140,17 @@ export async function renderFinancial() {
         <div class="stat-change">${monthLabel}</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
-        <div class="stat-label">RECEBIDO NO MÊS</div>
+        <div class="stat-label">RECEBIDO NO MÃŠS</div>
         <div class="stat-value" style="color:var(--success);font-size:1.2rem">${fmtBRL(totalPaid)}</div>
         <div class="stat-change positive">${collRate}% de taxa de coleta</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
-        <div class="stat-label">PENDENTE NO MÊS</div>
+        <div class="stat-label">PENDENTE NO MÃŠS</div>
         <div class="stat-value" style="color:var(--warning);font-size:1.2rem">${fmtBRL(totalPend)}</div>
-        <div class="stat-change">${monthPendingRecs.length} cobrança(s)</div>
+        <div class="stat-change">${monthPendingRecs.length} cobranÃ§a(s)</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
-        <div class="stat-label">VENCIDO NO MÊS</div>
+        <div class="stat-label">VENCIDO NO MÃŠS</div>
         <div class="stat-value" style="color:var(--danger);font-size:1.2rem">${fmtBRL(monthOverdueAmt)}</div>
         <div class="stat-change">${monthOverdueRecs.length} registro(s)</div>
       </div>
@@ -162,13 +162,13 @@ export async function renderFinancial() {
     </div>
 
     <div class="grid-2 mb-lg">
-      <!-- Gráfico de receita -->
+      <!-- GrÃ¡fico de receita -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Receita — Últimos 6 Meses</span></div>
+        <div class="card-header"><span class="card-title">Receita â€” Ãšltimos 6 Meses</span></div>
         <div style="height:180px"><canvas id="revenueChart"></canvas></div>
         <div class="flex gap-md mt-sm" style="justify-content:center">
-          <span class="text-xs" style="color:#10b981">■ Recebido</span>
-          <span class="text-xs" style="color:rgba(16,185,129,0.25)">■ Esperado</span>
+          <span class="text-xs" style="color:#10b981">â–  Recebido</span>
+          <span class="text-xs" style="color:rgba(16,185,129,0.25)">â–  Esperado</span>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ export async function renderFinancial() {
       <div class="card">
         <div class="card-header">
           <span class="card-title" style="${defaulters.length>0?'color:var(--danger)':''}">
-            Inadimplência ${defaulters.length>0?`(${defaulters.length})`:'✓'}
+            InadimplÃªncia ${defaulters.length>0?`(${defaulters.length})`:'âœ“'}
           </span>
           ${defaulters.length>0?`<button class="btn btn-ghost btn-sm" id="chargeAllBtn" style="color:#25d366;font-size:0.78rem">${ICON_WA} Cobrar todos</button>`:''}
         </div>
@@ -190,13 +190,13 @@ export async function renderFinancial() {
             <div class="avatar avatar-sm">${s.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
             <div style="flex:1">
               <div style="font-weight:600;font-size:0.88rem">${s.name}</div>
-              <div class="text-xs" style="color:var(--danger)">${sOverdue.length} parcela(s) · ${days}d em atraso · ${fmtBRL(total)}</div>
+              <div class="text-xs" style="color:var(--danger)">${sOverdue.length} parcela(s) Â· ${days}d em atraso Â· ${fmtBRL(total)}</div>
             </div>
             ${s.phone ? `<button class="btn btn-ghost btn-sm wa-charge" data-student="${s.id}" data-amount="${total}" data-days="${days}" style="padding:4px 6px;color:#25d366">${ICON_WA}</button>` : ''}
           </div>`;
         }).join('') : `
         <div class="empty-state" style="padding:24px">
-          <div style="font-size:2rem">✓</div>
+          <div style="font-size:2rem">âœ“</div>
           <p class="text-muted text-sm">Todos os alunos em dia!</p>
         </div>`}
       </div>
@@ -205,7 +205,7 @@ export async function renderFinancial() {
     <!-- Tabs filtro -->
     <div class="tabs" id="finTabs">
       <button class="tab active" data-filter="all">Todos (${records.length})</button>
-      <button class="tab" data-filter="month">Mês Selecionado (${monthRecs.length})</button>
+      <button class="tab" data-filter="month">MÃªs Selecionado (${monthRecs.length})</button>
       <button class="tab" data-filter="pending" title="Todos os meses, ainda no prazo">Pendentes (${globalPending.length})</button>
       <button class="tab" data-filter="overdue" title="Todos os meses, fora do prazo">Vencidos (${globalOverdue.length})</button>
       <button class="tab" data-filter="paid">Pagos (${records.filter(r=>r.status==='paid').length})</button>
@@ -231,8 +231,8 @@ export async function renderFinancial() {
       <div class="table-container">
         <table class="data-table" id="finTable">
           <thead><tr>
-            <th>Aluno</th><th>Descrição</th><th>Valor</th><th>Vencimento</th>
-            <th>Pagamento</th><th>Método</th><th>Status</th><th></th>
+            <th>Aluno</th><th>DescriÃ§Ã£o</th><th>Valor</th><th>Vencimento</th>
+            <th>Pagamento</th><th>MÃ©todo</th><th>Status</th><th></th>
           </tr></thead>
           <tbody>
             ${records.map(r => {
@@ -276,18 +276,18 @@ export async function renderFinancial() {
         </table>
       </div>` : `
       <div class="empty-state" style="padding:40px">
-        <div class="empty-icon">—</div>
+        <div class="empty-icon">â€”</div>
         <h3>Nenhum registro financeiro</h3>
         <p>Clique em "Gerar Mensalidades" para criar automaticamente ou "+ Novo Registro" para adicionar manualmente</p>
       </div>`}
     </div>
 
-    <!-- Sessões do mês -->
+    <!-- SessÃµes do mÃªs -->
     <div class="card mt-lg">
-      <div class="card-header"><span class="card-title">Sessões Realizadas — ${monthLabel}</span></div>
+      <div class="card-header"><span class="card-title">SessÃµes Realizadas â€” ${monthLabel}</span></div>
       <div class="table-container">
         <table class="data-table">
-          <thead><tr><th>Aluno</th><th>Realizadas</th><th>Esperadas</th><th>Progresso</th><th title="Mensalidade ÷ sessões esperadas">Custo/sessão</th><th title="Custo por sessão × sessões realizadas">Valor proporcional</th></tr></thead>
+          <thead><tr><th>Aluno</th><th>Realizadas</th><th>Esperadas</th><th>Progresso</th><th title="Mensalidade Ã· sessÃµes esperadas">Custo/sessÃ£o</th><th title="Custo por sessÃ£o Ã— sessÃµes realizadas">Valor proporcional</th></tr></thead>
           <tbody>${active.map(s => {
             const ms = monthSessions.filter(x=>x.studentId===s.id).length;
             const exp = parseInt(s.expectedSessions) || 12;
@@ -319,14 +319,14 @@ export async function renderFinancial() {
         </table>
       </div>
       <p class="text-xs text-muted mt-sm" style="padding:0 4px">
-        * <strong>Custo/sessão</strong> = mensalidade ÷ sessões esperadas no mês · <strong>Valor proporcional</strong> = custo/sessão × sessões realizadas
+        * <strong>Custo/sessÃ£o</strong> = mensalidade Ã· sessÃµes esperadas no mÃªs Â· <strong>Valor proporcional</strong> = custo/sessÃ£o Ã— sessÃµes realizadas
       </p>
     </div>
   `;
 }
 
 export function initFinancial(navigateFn) {
-  // ── Navegação de mês ──────────────────────────────────────────
+  // â”€â”€ NavegaÃ§Ã£o de mÃªs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   document.getElementById('finPrevMonth')?.addEventListener('click', () => {
     finState.month--;
     if (finState.month < 0) { finState.month = 11; finState.year--; }
@@ -340,14 +340,14 @@ export function initFinancial(navigateFn) {
     navigateFn('/financeiro');
   });
 
-  // Função helper para pegar a chave Pix das configurações
+  // FunÃ§Ã£o helper para pegar a chave Pix das configuraÃ§Ãµes
   async function getPixKey() {
     try {
       const s = await db.get('settings','trainer');
-      return s?.pixKey || '[configure sua chave Pix em Configurações]';
-    } catch { return '[configure sua chave Pix em Configurações]'; }
+      return s?.pixKey || '[configure sua chave Pix em ConfiguraÃ§Ãµes]';
+    } catch { return '[configure sua chave Pix em ConfiguraÃ§Ãµes]'; }
   }
-  // Gráfico de receita
+  // GrÃ¡fico de receita
   setTimeout(() => {
     const canvas = document.getElementById('revenueChart');
     if (canvas && typeof Chart !== 'undefined') {
@@ -367,7 +367,7 @@ export function initFinancial(navigateFn) {
           paid.push(records
             .filter(r => r.status === 'paid' && inMonth(r.dueDate))
             .reduce((t, r) => t + (r.amount||0), 0));
-          // Esperado: todos com vencimento neste mês
+          // Esperado: todos com vencimento neste mÃªs
           expected.push(records
             .filter(r => inMonth(r.dueDate))
             .reduce((t, r) => t + (r.amount||0), 0));
@@ -394,7 +394,7 @@ export function initFinancial(navigateFn) {
     }
   }, 200);
 
-  // ── Estado ativo dos filtros ──
+  // â”€â”€ Estado ativo dos filtros â”€â”€
   let activeTabFilter = 'all';
   let activeSearch    = '';
   let activeStudent   = '';
@@ -422,7 +422,7 @@ export function initFinancial(navigateFn) {
     });
   });
 
-  // Busca — preserva filtro de tab
+  // Busca â€” preserva filtro de tab
   document.getElementById('finSearch')?.addEventListener('input', e => {
     activeSearch = e.target.value.toLowerCase().trim();
     applyFinFilters();
@@ -434,14 +434,14 @@ export function initFinancial(navigateFn) {
     applyFinFilters();
   });
 
-  // WhatsApp cobrança individual
+  // WhatsApp cobranÃ§a individual
   document.querySelectorAll('.wa-remind').forEach(btn => {
     btn.addEventListener('click', async () => {
       const st = await db.get('students', btn.dataset.student);
       if (!st?.phone) return;
       const amount = parseFloat(btn.dataset.amount)||0;
       const due    = Calc.formatDate(btn.dataset.due);
-      const msg = `Olá ${st.name.split(' ')[0]}! 👋\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* está pendente.\n\nChave Pix: ${await getPixKey()}\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg = `OlÃ¡ ${st.name.split(' ')[0]}! ðŸ‘‹\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* estÃ¡ pendente.\n\nChave Pix: ${await getPixKey()}\n\nQualquer dÃºvida estou Ã  disposiÃ§Ã£o! ðŸ’ª`;
       sendWhatsApp(st.phone, msg);
     });
   });
@@ -460,22 +460,22 @@ export function initFinancial(navigateFn) {
       if (!st?.phone) continue;
       const total = recs.reduce((t,r)=>t+(r.amount||0),0);
       const days  = Math.floor((now-parseLocalDate(recs[0].dueDate))/86400000);
-      const msg   = `Olá ${st.name.split(' ')[0]}! 👋\n\nIdentificamos *${recs.length} parcela(s)* em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: ${await getPixKey()}\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg   = `OlÃ¡ ${st.name.split(' ')[0]}! ðŸ‘‹\n\nIdentificamos *${recs.length} parcela(s)* em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: ${await getPixKey()}\n\nQualquer dÃºvida estou Ã  disposiÃ§Ã£o! ðŸ’ª`;
       sendWhatsApp(st.phone, msg);
       count++;
       await new Promise(r=>setTimeout(r,500));
     }
-    notify.success(`Cobrança enviada para ${count} aluno(s)!`);
+    notify.success(`CobranÃ§a enviada para ${count} aluno(s)!`);
   });
 
-  // WhatsApp cobrança por aluno
+  // WhatsApp cobranÃ§a por aluno
   document.querySelectorAll('.wa-charge').forEach(btn => {
     btn.addEventListener('click', async () => {
       const st = await db.get('students', btn.dataset.student);
       if (!st?.phone) return;
       const total = parseFloat(btn.dataset.amount)||0;
       const days  = parseInt(btn.dataset.days)||0;
-      const msg   = `Olá ${st.name.split(' ')[0]}! 👋\n\nIdentificamos parcelas em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: ${await getPixKey()}\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg   = `OlÃ¡ ${st.name.split(' ')[0]}! ðŸ‘‹\n\nIdentificamos parcelas em aberto no valor de *${fmtBRL(total)}* (${days} dias em atraso).\n\nChave Pix: ${await getPixKey()}\n\nQualquer dÃºvida estou Ã  disposiÃ§Ã£o! ðŸ’ª`;
       sendWhatsApp(st.phone, msg);
     });
   });
@@ -493,14 +493,14 @@ export function initFinancial(navigateFn) {
           <input class="form-input" id="paidDateInput" type="date" value="${new Date().toISOString().slice(0,10)}" />
         </div>
         <div class="form-group">
-          <label class="form-label">Método utilizado</label>
+          <label class="form-label">MÃ©todo utilizado</label>
           <select class="form-select" id="paidMethodInput">
             ${PAYMENT_METHODS.map(m=>`<option ${r.paymentMethod===m?'selected':''}>${m}</option>`).join('')}
           </select>
         </div>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-          { label: '✓ Confirmar Pagamento', class: 'btn-primary', onClick: async () => {
+          { label: 'âœ“ Confirmar Pagamento', class: 'btn-primary', onClick: async () => {
             r.status      = 'paid';
             r.paidDate    = document.getElementById('paidDateInput')?.value || new Date().toISOString().slice(0,10);
             r.paymentMethod = document.getElementById('paidMethodInput')?.value || r.paymentMethod;
@@ -545,7 +545,7 @@ export function initFinancial(navigateFn) {
     btn.addEventListener('click', async () => {
       if (window.confirm('Excluir este registro financeiro?')) {
         await db.delete('financial', btn.dataset.id);
-        notify.success('Registro excluído.');
+        notify.success('Registro excluÃ­do.');
         navigateFn('/financeiro');
       }
     });
@@ -558,14 +558,14 @@ export function initFinancial(navigateFn) {
       title: 'Gerar Mensalidades', size: 'lg',
       preventBackdropClose: true,
       content: `<form id="genMonthForm">
-        <p class="text-muted text-sm mb-md">Gera registros de cobrança automaticamente para todos os alunos selecionados.</p>
+        <p class="text-muted text-sm mb-md">Gera registros de cobranÃ§a automaticamente para todos os alunos selecionados.</p>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Mês Inicial</label>
+          <div class="form-group"><label class="form-label">MÃªs Inicial</label>
             <input class="form-input" name="startMonth" type="month" value="${new Date().toISOString().slice(0,7)}" />
           </div>
           <div class="form-group"><label class="form-label">Quantos meses</label>
             <select class="form-select" name="months">
-              <option value="1">1 mês</option>
+              <option value="1">1 mÃªs</option>
               <option value="3">3 meses</option>
               <option value="6" selected>6 meses</option>
               <option value="12">12 meses</option>
@@ -576,12 +576,12 @@ export function initFinancial(navigateFn) {
           <div class="form-group"><label class="form-label">Dia de Vencimento</label>
             <input class="form-input" name="dueDay" type="number" min="1" max="28" value="5" />
           </div>
-          <div class="form-group"><label class="form-label">Valor Padrão (R$) *</label>
+          <div class="form-group"><label class="form-label">Valor PadrÃ£o (R$) *</label>
             <input class="form-input" name="defaultAmount" type="number" step="0.01" placeholder="Usa o cadastro do aluno" />
             <div class="form-hint">Deixe vazio para usar o valor cadastrado de cada aluno</div>
           </div>
         </div>
-        <div class="form-group"><label class="form-label">Forma de Pagamento Padrão</label>
+        <div class="form-group"><label class="form-label">Forma de Pagamento PadrÃ£o</label>
           <select class="form-select" name="paymentMethod">
             ${PAYMENT_METHODS.map(m=>`<option>${m}</option>`).join('')}
           </select>
@@ -688,7 +688,7 @@ function finFormHTML(students, r = {}) {
         </select>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Descrição</label>
+    <div class="form-group"><label class="form-label">DescriÃ§Ã£o</label>
       <input class="form-input" name="description" value="${r.description||''}" placeholder="Ex: Mensalidade Maio/2026" />
     </div>
     <div class="form-row">
@@ -702,8 +702,9 @@ function finFormHTML(students, r = {}) {
         <input class="form-input" name="paidDate" type="date" value="${r.paidDate||''}" />
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Observações</label>
+    <div class="form-group"><label class="form-label">ObservaÃ§Ãµes</label>
       <input class="form-input" name="notes" value="${r.notes||''}" placeholder="Notas adicionais..." />
     </div>
   </form>`;
 }
+

@@ -1,5 +1,5 @@
 // ========================================
-// PERSONAL PRO — Database (v3)
+// VETOR — Database (v3)
 // Supabase Auth + Multi-Tenant Isolation
 // All records scoped to trainer_id (user.id)
 // ========================================

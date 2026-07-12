@@ -1,6 +1,6 @@
-// ========================================
-// PERSONAL PRO — Periodization Page (v5)
-// Design limpo + templates com exercícios + fluxo correto
+﻿// ========================================
+// VETOR â€” Periodization Page (v5)
+// Design limpo + templates com exercÃ­cios + fluxo correto
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
@@ -16,9 +16,9 @@ function isCardioExercise(name, method) {
   const cardioKeywords = [
     'esteira', 'caminha', 'corrida', 'correr', 'sprint', 'tiro',
     'bike', 'bicicleta', 'pedal', 'spinning', 'ciclismo',
-    'escada', 'agilidade', 'coordenac', 'coordenaç',
-    'natação', 'natacao', 'remo', 'ergômetro', 'ergometro',
-    'cardio', 'endurance', 'aerobico', 'aeróbico', 'hiit', 'tabata',
+    'escada', 'agilidade', 'coordenac', 'coordenaÃ§',
+    'nataÃ§Ã£o', 'natacao', 'remo', 'ergÃ´metro', 'ergometro',
+    'cardio', 'endurance', 'aerobico', 'aerÃ³bico', 'hiit', 'tabata',
     'pulando corda', 'pular corda', 'jump'
   ];
   return cardioKeywords.some(k => nameLower.includes(k)) || methodLower.includes('cardio') || methodLower.includes('polarizado');
@@ -31,9 +31,9 @@ function adaptTemplate(t) {
     name:      t.name,
     days:      t.daysPerWeek || (t.workouts || []).length,
     desc:      t.description || '',
-    category:  t.category || 'Musculação',
+    category:  t.category || 'MusculaÃ§Ã£o',
     perioModel:t.perioModel || null,
-    // Todas as sessões disponíveis (para o seletor de protocolo)
+    // Todas as sessÃµes disponÃ­veis (para o seletor de protocolo)
     allSessions: (t.workouts || []).map(w => ({
       name:      w.name,
       exercises: (w.exercises || []).map(e => ({
@@ -47,7 +47,7 @@ function adaptTemplate(t) {
         sciNote:   e.sciNote || '',
       })),
     })),
-    // sessions = primeira sessão (default, pode ser alterado pelo usuário no modal)
+    // sessions = primeira sessÃ£o (default, pode ser alterado pelo usuÃ¡rio no modal)
     sessions: [(t.workouts || [])[0]].filter(Boolean).map(w => ({
       name:      w.name,
       exercises: (w.exercises || []).map(e => ({
@@ -61,7 +61,7 @@ function adaptTemplate(t) {
 
 const BUILT_IN_WORKOUT_TEMPLATES = BUILT_IN_TEMPLATES.map(adaptTemplate);
 
-// ── GERADOR DE SEMANAS INTERNO ─────────────────────────────
+// â”€â”€ GERADOR DE SEMANAS INTERNO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
   const weeks = [];
 
@@ -76,59 +76,59 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
     const progress = (w - 1) / Math.max(totalWeeks - 1, 1);
 
     if (modelType === 'undulating') {
-      // DUP: alterna Força / Hipertrofia / Metabólico a cada semana com leve progressão
+      // DUP: alterna ForÃ§a / Hipertrofia / MetabÃ³lico a cada semana com leve progressÃ£o
       const cycle = (w - 1) % 3;
       const progressBonus = Math.round(progress * 10);
-      if (cycle === 0) weeks.push({ week: w, phase: 'Força', label: `Semana ${w} — Força`, intensityPct: 82 + progressBonus, volumePct: 55, repsRange: '4-6' });
-      else if (cycle === 1) weeks.push({ week: w, phase: 'Hipertrofia', label: `Semana ${w} — Hipertrofia`, intensityPct: 70 + Math.round(progressBonus * 0.7), volumePct: 80, repsRange: '8-12' });
-      else weeks.push({ week: w, phase: 'Metabólico', label: `Semana ${w} — Metabólico`, intensityPct: 58 + Math.round(progressBonus * 0.5), volumePct: 95, repsRange: '15-20' });
+      if (cycle === 0) weeks.push({ week: w, phase: 'ForÃ§a', label: `Semana ${w} â€” ForÃ§a`, intensityPct: 82 + progressBonus, volumePct: 55, repsRange: '4-6' });
+      else if (cycle === 1) weeks.push({ week: w, phase: 'Hipertrofia', label: `Semana ${w} â€” Hipertrofia`, intensityPct: 70 + Math.round(progressBonus * 0.7), volumePct: 80, repsRange: '8-12' });
+      else weeks.push({ week: w, phase: 'MetabÃ³lico', label: `Semana ${w} â€” MetabÃ³lico`, intensityPct: 58 + Math.round(progressBonus * 0.5), volumePct: 95, repsRange: '15-20' });
 
     } else if (modelType === 'block') {
-      // Blocos: Acumulação → Intensificação → Realização
+      // Blocos: AcumulaÃ§Ã£o â†’ IntensificaÃ§Ã£o â†’ RealizaÃ§Ã£o
       const third = Math.ceil(totalWeeks / 3);
-      if (w <= third) weeks.push({ week: w, phase: 'Acumulação', label: `Semana ${w} — Acumulação`, intensityPct: 60 + Math.round((w / third) * 8), volumePct: 90, repsRange: '12-15' });
-      else if (w <= third * 2) weeks.push({ week: w, phase: 'Intensificação', label: `Semana ${w} — Intensificação`, intensityPct: 75 + Math.round(((w - third) / third) * 10), volumePct: 65, repsRange: '5-8' });
-      else weeks.push({ week: w, phase: 'Realização', label: `Semana ${w} — Realização`, intensityPct: 88 + Math.round(((w - third * 2) / third) * 7), volumePct: 40, repsRange: '2-4' });
+      if (w <= third) weeks.push({ week: w, phase: 'AcumulaÃ§Ã£o', label: `Semana ${w} â€” AcumulaÃ§Ã£o`, intensityPct: 60 + Math.round((w / third) * 8), volumePct: 90, repsRange: '12-15' });
+      else if (w <= third * 2) weeks.push({ week: w, phase: 'IntensificaÃ§Ã£o', label: `Semana ${w} â€” IntensificaÃ§Ã£o`, intensityPct: 75 + Math.round(((w - third) / third) * 10), volumePct: 65, repsRange: '5-8' });
+      else weeks.push({ week: w, phase: 'RealizaÃ§Ã£o', label: `Semana ${w} â€” RealizaÃ§Ã£o`, intensityPct: 88 + Math.round(((w - third * 2) / third) * 7), volumePct: 40, repsRange: '2-4' });
 
     } else if (modelType === 'conjugate') {
-      // Conjugada: alterna Esforço Máximo / Esforço Dinâmico
+      // Conjugada: alterna EsforÃ§o MÃ¡ximo / EsforÃ§o DinÃ¢mico
       const isME = w % 2 !== 0;
-      weeks.push({ week: w, phase: isME ? 'Esforço Máximo' : 'Esforço Dinâmico', label: `Semana ${w} — ${isME ? 'ME' : 'DE'}`, intensityPct: isME ? 92 + Math.round(progress * 3) : 55, volumePct: isME ? 40 : 70, repsRange: isME ? '1-3' : '3-5' });
+      weeks.push({ week: w, phase: isME ? 'EsforÃ§o MÃ¡ximo' : 'EsforÃ§o DinÃ¢mico', label: `Semana ${w} â€” ${isME ? 'ME' : 'DE'}`, intensityPct: isME ? 92 + Math.round(progress * 3) : 55, volumePct: isME ? 40 : 70, repsRange: isME ? '1-3' : '3-5' });
 
     } else if (modelType === 'concurrent') {
-      // Concorrente: alterna Força / Metabólico
+      // Concorrente: alterna ForÃ§a / MetabÃ³lico
       const isStrength = w % 2 !== 0;
-      weeks.push({ week: w, phase: isStrength ? 'Força' : 'Metabólico', label: `Semana ${w}`, intensityPct: isStrength ? 68 + Math.round(progress * 12) : 58, volumePct: isStrength ? 70 : 90, repsRange: isStrength ? '8-12' : '15-20' });
+      weeks.push({ week: w, phase: isStrength ? 'ForÃ§a' : 'MetabÃ³lico', label: `Semana ${w}`, intensityPct: isStrength ? 68 + Math.round(progress * 12) : 58, volumePct: isStrength ? 70 : 90, repsRange: isStrength ? '8-12' : '15-20' });
 
     } else if (modelType === 'polarized') {
       // Polarizado: 80% Z1/Z2 + 20% Z4/Z5
       const isHighInt = w % 5 === 0;
-      weeks.push({ week: w, phase: isHighInt ? 'Alta Intensidade (Z4/Z5)' : 'Base Aeróbica (Z1/Z2)', label: `Semana ${w}`, intensityPct: isHighInt ? 88 : 55, volumePct: isHighInt ? 50 : 90, repsRange: isHighInt ? '4-6×4min' : '45-90min' });
+      weeks.push({ week: w, phase: isHighInt ? 'Alta Intensidade (Z4/Z5)' : 'Base AerÃ³bica (Z1/Z2)', label: `Semana ${w}`, intensityPct: isHighInt ? 88 : 55, volumePct: isHighInt ? 50 : 90, repsRange: isHighInt ? '4-6Ã—4min' : '45-90min' });
 
     } else if (modelType === 'hiit') {
-      // HIIT: progressão de intervalos semana a semana
-      const intervals = Math.round(4 + progress * 4); // 4 → 8
-      const workInt   = Math.round(20 + progress * 40); // 20s → 60s
+      // HIIT: progressÃ£o de intervalos semana a semana
+      const intervals = Math.round(4 + progress * 4); // 4 â†’ 8
+      const workInt   = Math.round(20 + progress * 40); // 20s â†’ 60s
       const phase     = progress < 0.33 ? 'Base HIIT' : progress < 0.66 ? 'Desenvolvimento' : 'Pico HIIT';
-      weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: Math.round(75 + progress * 20), volumePct: Math.round(60 + progress * 20), repsRange: `${intervals}×${workInt}s` });
+      weeks.push({ week: w, phase, label: `Semana ${w} â€” ${phase}`, intensityPct: Math.round(75 + progress * 20), volumePct: Math.round(60 + progress * 20), repsRange: `${intervals}Ã—${workInt}s` });
 
     } else if (modelType === 'sit') {
-      // SIT: sprints all-out, recuperação diminui
-      const sprints = Math.round(4 + progress * 2); // 4 → 6
-      const rest    = Math.round(240 - progress * 60); // 4min → 3min
-      const phase   = progress < 0.4 ? 'Introdução SIT' : 'SIT Completo';
-      weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: 100, volumePct: Math.round(50 + progress * 20), repsRange: `${sprints}×30s / ${Math.round(rest/60)}min` });
+      // SIT: sprints all-out, recuperaÃ§Ã£o diminui
+      const sprints = Math.round(4 + progress * 2); // 4 â†’ 6
+      const rest    = Math.round(240 - progress * 60); // 4min â†’ 3min
+      const phase   = progress < 0.4 ? 'IntroduÃ§Ã£o SIT' : 'SIT Completo';
+      weeks.push({ week: w, phase, label: `Semana ${w} â€” ${phase}`, intensityPct: 100, volumePct: Math.round(50 + progress * 20), repsRange: `${sprints}Ã—30s / ${Math.round(rest/60)}min` });
 
     } else if (modelType === 'lvhiit') {
-      // LV-HIIT: progressão de intervalos (Gillen 2016)
-      const intervals = Math.round(3 + progress * 7); // 3 → 10
-      weeks.push({ week: w, phase: progress < 0.4 ? 'Adaptação' : 'LV-HIIT', label: `Semana ${w}`, intensityPct: Math.round(80 + progress * 12), volumePct: Math.round(55 + progress * 20), repsRange: `${intervals}×60s/75s` });
+      // LV-HIIT: progressÃ£o de intervalos (Gillen 2016)
+      const intervals = Math.round(3 + progress * 7); // 3 â†’ 10
+      weeks.push({ week: w, phase: progress < 0.4 ? 'AdaptaÃ§Ã£o' : 'LV-HIIT', label: `Semana ${w}`, intensityPct: Math.round(80 + progress * 12), volumePct: Math.round(55 + progress * 20), repsRange: `${intervals}Ã—60s/75s` });
 
     } else if (modelType === 'zone2') {
-      // Base Aeróbica Zona 2 — progressão de duração
-      const dur = Math.round(30 + progress * 60); // 30 → 90min
+      // Base AerÃ³bica Zona 2 â€” progressÃ£o de duraÃ§Ã£o
+      const dur = Math.round(30 + progress * 60); // 30 â†’ 90min
       const sessions = progress < 0.4 ? 3 : progress < 0.7 ? 4 : 5;
-      weeks.push({ week: w, phase: 'Base Aeróbica (Z2)', label: `Semana ${w} — Z2`, intensityPct: 65, volumePct: Math.round(60 + progress * 30), repsRange: `${sessions}×${dur}min` });
+      weeks.push({ week: w, phase: 'Base AerÃ³bica (Z2)', label: `Semana ${w} â€” Z2`, intensityPct: 65, volumePct: Math.round(60 + progress * 30), repsRange: `${sessions}Ã—${dur}min` });
 
     } else if (modelType === 'pyramidal') {
       // Pyramidal: 75%Z2 + 20%Z3 + 5%Z4
@@ -136,10 +136,10 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
       weeks.push({ week: w, phase, label: `Semana ${w}`, intensityPct: Math.round(65 + progress * 15), volumePct: Math.round(65 + progress * 20), repsRange: '75%Z2+20%Z3+5%Z4' });
 
     } else if (modelType === 'threshold') {
-      // Threshold — progressão no tempo de tempo run
-      const thMin = Math.round(20 + progress * 40); // 20 → 60min
+      // Threshold â€” progressÃ£o no tempo de tempo run
+      const thMin = Math.round(20 + progress * 40); // 20 â†’ 60min
       const phase = progress < 0.3 ? 'Tempo Runs' : progress < 0.7 ? 'Threshold Intervals' : 'Threshold Pico';
-      weeks.push({ week: w, phase, label: `Semana ${w} — ${phase}`, intensityPct: Math.round(75 + progress * 10), volumePct: Math.round(70 + progress * 15), repsRange: `${thMin}min limiar` });
+      weeks.push({ week: w, phase, label: `Semana ${w} â€” ${phase}`, intensityPct: Math.round(75 + progress * 10), volumePct: Math.round(70 + progress * 15), repsRange: `${thMin}min limiar` });
 
     } else {
       // Modelos lineares e outros
@@ -155,12 +155,12 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
       const volumePct    = Math.round(m.volStart + (m.volEnd - m.volStart) * progress);
       const repsRange    = intensityPct >= 88 ? '2-4' : intensityPct >= 78 ? '4-6' :
                            intensityPct >= 68 ? '6-10' : intensityPct >= 58 ? '10-12' : '12-15';
-      // Fase por modelo — não pela intensidade genérica
+      // Fase por modelo â€” nÃ£o pela intensidade genÃ©rica
       const CARDIO_MODELS = ['lsd','fartlek'];
       const phase = CARDIO_MODELS.includes(modelType)
-        ? (progress < 0.33 ? 'Base Aeróbica' : progress < 0.66 ? 'Desenvolvimento' : 'Pico')
-        : (intensityPct >= 85 ? 'Pico' : intensityPct >= 75 ? 'Força' :
-           intensityPct >= 65 ? 'Hipertrofia' : 'Adaptação');
+        ? (progress < 0.33 ? 'Base AerÃ³bica' : progress < 0.66 ? 'Desenvolvimento' : 'Pico')
+        : (intensityPct >= 85 ? 'Pico' : intensityPct >= 75 ? 'ForÃ§a' :
+           intensityPct >= 65 ? 'Hipertrofia' : 'AdaptaÃ§Ã£o');
       weeks.push({ week: w, phase, label: `Semana ${w}`, intensityPct, volumePct, repsRange });
     }
   }
@@ -169,7 +169,7 @@ function generateInternalWeeklyPlan(modelType, totalWeeks, deloadEvery) {
 
 const TRAINING_DAYS = [
   { id: 0, label: 'Dom' }, { id: 1, label: 'Seg' }, { id: 2, label: 'Ter' },
-  { id: 3, label: 'Qua' }, { id: 4, label: 'Qui' }, { id: 5, label: 'Sex' }, { id: 6, label: 'Sáb' },
+  { id: 3, label: 'Qua' }, { id: 4, label: 'Qui' }, { id: 5, label: 'Sex' }, { id: 6, label: 'SÃ¡b' },
 ];
 
 const HOURS = [
@@ -193,7 +193,7 @@ const HOURS = [
   '22:00',
 ];
 
-// ── TEMPLATES PADRÃO COM EXERCÍCIOS ──────────────────────────
+// â”€â”€ TEMPLATES PADRÃƒO COM EXERCÃCIOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function renderPeriodization() {
   const students = await db.getAll('students');
@@ -203,7 +203,7 @@ export async function renderPeriodization() {
 
   return `
     <div class="page-header">
-      <div><h1>Periodização</h1><p class="subtitle">Planejamento científico de macrociclos</p></div>
+      <div><h1>PeriodizaÃ§Ã£o</h1><p class="subtitle">Planejamento cientÃ­fico de macrociclos</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
         <select class="form-select" id="perioStudentFilter" style="min-width:180px">
           <option value="">Todos os alunos</option>
@@ -223,7 +223,7 @@ export async function renderPeriodization() {
       <div class="stat-card" style="text-align:center;padding:12px">
         <div class="stat-label">FINALIZADOS</div>
         <div class="stat-value" style="color:var(--accent)">${macros.filter(m=>m.status!=='active').length}</div>
-        <div class="stat-change">ciclos concluídos</div>
+        <div class="stat-change">ciclos concluÃ­dos</div>
       </div>
       <div class="stat-card" style="text-align:center;padding:12px">
         <div class="stat-label">TREINOS GERADOS</div>
@@ -235,9 +235,9 @@ export async function renderPeriodization() {
     <div id="periodizationContent">
       ${macros.length ? macros.map(m => renderMacroCard(m, students)).join('') : `
         <div class="empty-state">
-          <div class="empty-icon">—</div>
+          <div class="empty-icon">â€”</div>
           <h3>Nenhum macrociclo criado</h3>
-          <p>Crie um planejamento de periodização para seus alunos</p>
+          <p>Crie um planejamento de periodizaÃ§Ã£o para seus alunos</p>
           <button class="btn btn-primary mt-sm" id="addMacroBtnEmpty">+ Criar Primeiro Macrociclo</button>
         </div>`}
     </div>
@@ -258,7 +258,7 @@ function renderMacroCard(m, students) {
   const isActive = m.status === 'active';
   const pct = Math.round((currentWeek / m.totalWeeks) * 100);
   const currentWeekData = (m.weeks || [])[currentWeek - 1];
-  const currentPhase = currentWeekData?.phase || '—';
+  const currentPhase = currentWeekData?.phase || 'â€”';
   const currentIntensity = currentWeekData?.intensityPct || 0;
   const intensityColor = currentIntensity >= 85 ? '#ef4444' : currentIntensity >= 75 ? '#f97316' : currentIntensity >= 65 ? '#eab308' : currentIntensity > 0 ? '#22c55e' : 'var(--text-muted)';
 
@@ -269,14 +269,14 @@ function renderMacroCard(m, students) {
           <div class="avatar">${st ? st.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px">
-              ${st ? st.name : '?'} — ${m.name}
+              ${st ? st.name : '?'} â€” ${m.name}
               ${st && window.getModalityBadge ? window.getModalityBadge(st.modality) : ''}
             </div>
             <div class="text-xs text-muted">
-              ${m.totalWeeks} semanas · ${modelDef.label || m.type}
-              · Início: ${Calc.formatDate(m.startDate)}
-              ${m.workoutModelName ? ` · ${m.workoutModelName}` : ''}
-              ${m.trainingDays?.length ? ` · ${m.trainingDays.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d]).join(', ')}` : ''}
+              ${m.totalWeeks} semanas Â· ${modelDef.label || m.type}
+              Â· InÃ­cio: ${Calc.formatDate(m.startDate)}
+              ${m.workoutModelName ? ` Â· ${m.workoutModelName}` : ''}
+              ${m.trainingDays?.length ? ` Â· ${m.trainingDays.map(d => ['Dom','Seg','Ter','Qua','Qui','Sex','SÃ¡b'][d]).join(', ')}` : ''}
             </div>
           </div>
         </div>
@@ -303,7 +303,7 @@ function renderMacroCard(m, students) {
         </div>
         <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
           <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Intensidade</div>
-          <div style="font-size:1.4rem;font-weight:800;color:${intensityColor}">${currentIntensity || '—'}${currentIntensity ? '%' : ''}</div>
+          <div style="font-size:1.4rem;font-weight:800;color:${intensityColor}">${currentIntensity || 'â€”'}${currentIntensity ? '%' : ''}</div>
         </div>
         <div style="text-align:center;padding:8px;background:var(--bg-page);border-radius:8px">
           <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">Progresso</div>
@@ -314,7 +314,7 @@ function renderMacroCard(m, students) {
         <div style="height:100%;width:${pct}%;background:var(--primary);border-radius:3px;transition:width 0.5s"></div>
       </div>` : ''}
 
-      <!-- Gráfico de barras semanal -->
+      <!-- GrÃ¡fico de barras semanal -->
       <div style="overflow-x:auto">
         <div style="display:flex;gap:3px;min-width:max-content;padding-bottom:4px;align-items:flex-end">
           ${(m.weeks || []).map((w, i) => {
@@ -329,22 +329,22 @@ function renderMacroCard(m, students) {
                 background:${color}${isCurrent ? '' : '22'};
                 border:1px solid ${color};border-radius:3px;
                 ${isCurrent ? `box-shadow:0 0 0 2px ${color},0 0 8px ${color}44;` : ''}"></div>
-              <div style="font-size:0.48rem;color:${color};font-weight:${isCurrent ? 700 : 400}">${isCurrent ? '▼' : ''}S${w.week}</div>
+              <div style="font-size:0.48rem;color:${color};font-weight:${isCurrent ? 700 : 400}">${isCurrent ? 'â–¼' : ''}S${w.week}</div>
             </div>`;
           }).join('')}
         </div>
       </div>
 
       <div class="flex gap-md mt-xs" style="flex-wrap:wrap">
-        <span class="text-xs" style="color:#22c55e">— Leve</span>
-        <span class="text-xs" style="color:#eab308">— Moderada</span>
-        <span class="text-xs" style="color:#f97316">— Alta</span>
-        <span class="text-xs" style="color:#ef4444">— Muito Alta</span>
-        <span class="text-xs" style="color:#3b82f6">— Deload</span>
+        <span class="text-xs" style="color:#22c55e">â€” Leve</span>
+        <span class="text-xs" style="color:#eab308">â€” Moderada</span>
+        <span class="text-xs" style="color:#f97316">â€” Alta</span>
+        <span class="text-xs" style="color:#ef4444">â€” Muito Alta</span>
+        <span class="text-xs" style="color:#3b82f6">â€” Deload</span>
         ${m.generatedWorkouts ? `<span class="text-xs" style="color:var(--success);margin-left:auto">${m.generatedWorkouts} treinos gerados</span>` : ''}
       </div>
 
-      <!-- Tabela semanal colapsável -->
+      <!-- Tabela semanal colapsÃ¡vel -->
       <details style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:10px">
         <summary style="cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-muted);list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -353,12 +353,12 @@ function renderMacroCard(m, students) {
         ${m.weekDetails ? `
         <div style="overflow-x:auto;margin-top:10px">
           <table class="data-table" style="font-size:0.76rem">
-            <thead><tr><th>Sem</th><th>Fase</th><th>Séries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>Exercícios A</th><th>Exercícios B</th></tr></thead>
+            <thead><tr><th>Sem</th><th>Fase</th><th>SÃ©ries</th><th>Reps</th><th>%1RM</th><th>RPE</th><th>ExercÃ­cios A</th><th>ExercÃ­cios B</th></tr></thead>
             <tbody>${m.weekDetails.map(wd => {
               const isCur = wd.week === currentWeek && isActive;
               const c = wd.phase === 'Deload' ? '#3b82f6' : (wd.intensity||0) >= 85 ? '#ef4444' : (wd.intensity||0) >= 75 ? '#f97316' : (wd.intensity||0) >= 65 ? '#eab308' : '#22c55e';
               return `<tr style="${isCur ? `background:${c}11;font-weight:600;` : ''}">
-                <td><strong style="color:${c}">S${wd.week}${isCur ? ' ←' : ''}</strong></td>
+                <td><strong style="color:${c}">S${wd.week}${isCur ? ' â†' : ''}</strong></td>
                 <td style="color:${c}">${wd.phase}</td>
                 <td>${wd.sets}</td>
                 <td>${wd.reps}</td>
@@ -369,10 +369,10 @@ function renderMacroCard(m, students) {
               </tr>`;
             }).join('')}</tbody>
           </table>
-        </div>` : '<p class="text-xs text-muted mt-sm">Detalhamento não disponível</p>'}
+        </div>` : '<p class="text-xs text-muted mt-sm">Detalhamento nÃ£o disponÃ­vel</p>'}
       </details>
 
-      <!-- Gráfico de linha Chart.js -->
+      <!-- GrÃ¡fico de linha Chart.js -->
       <div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:12px">
         <canvas id="macroChart_${m.id}" height="100"></canvas>
       </div>
@@ -433,16 +433,16 @@ const macroId = btn.dataset.id;
 }
 
 const PHASE_DEFAULT_PARAMS = {
-  'Adaptação':      { intensityPct: 55, volumePct: 80, repsRange: '12-15' },
+  'AdaptaÃ§Ã£o':      { intensityPct: 55, volumePct: 80, repsRange: '12-15' },
   'Hipertrofia':    { intensityPct: 75, volumePct: 85, repsRange: '8-12' },
-  'Força':          { intensityPct: 85, volumePct: 50, repsRange: '4-6' },
-  'Resistência':    { intensityPct: 60, volumePct: 90, repsRange: '15-20' },
+  'ForÃ§a':          { intensityPct: 85, volumePct: 50, repsRange: '4-6' },
+  'ResistÃªncia':    { intensityPct: 60, volumePct: 90, repsRange: '15-20' },
   'Ganho':          { intensityPct: 78, volumePct: 80, repsRange: '8-10' },
-  'Manutenção':     { intensityPct: 70, volumePct: 50, repsRange: '8-12' },
+  'ManutenÃ§Ã£o':     { intensityPct: 70, volumePct: 50, repsRange: '8-12' },
   'Regenerativo':   { intensityPct: 45, volumePct: 35, repsRange: '12-15' },
   'Choque':         { intensityPct: 90, volumePct: 95, repsRange: '4-6' },
-  'Estabilização':  { intensityPct: 70, volumePct: 65, repsRange: '10-12' },
-  'Transição':      { intensityPct: 40, volumePct: 30, repsRange: '12-15' },
+  'EstabilizaÃ§Ã£o':  { intensityPct: 70, volumePct: 65, repsRange: '10-12' },
+  'TransiÃ§Ã£o':      { intensityPct: 40, volumePct: 30, repsRange: '12-15' },
   'Deload':         { intensityPct: 50, volumePct: 45, repsRange: '10-12' }
 };
 
@@ -454,7 +454,7 @@ function getPhaseSvg(phase, color = 'currentColor') {
   if (p.includes('hipertrofia') || p.includes('ganho')) {
     return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 13.5c-1-1.5-1-3.5 0-5s2.5-2 4-1.5 2.5 2.5 2 4.5l-6 2zM15 15.5c.5-1.5 2-2.5 3.5-2.5s2.5 1.5 2.5 3-1 2.5-2.5 2.5-3.5-1-3.5-3zM9 12h5m-2-2v4"/></svg>`;
   }
-  if (p.includes('força') || p.includes('choque')) {
+  if (p.includes('forÃ§a') || p.includes('choque')) {
     return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="8" y1="8" x2="8" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/></svg>`;
   }
   if (p.includes('resist') || p.includes('estabiliz') || p.includes('manuten')) {
@@ -481,11 +481,11 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
   const getBaseWorkoutName = name => {
     if (!name) return 'Treino Avulso';
     return name
-      .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
-      .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
+      .replace(/\s*[\-â€”â€“]\s*Semana\s*\d+/i, '')
+      .replace(/\s*[\-â€”â€“]\s*Sem\s*\d+/i, '')
       .replace(/\s*Semana\s*\d+/i, '')
       .replace(/\s*Sem\s*\d+/i, '')
-      .replace(/\s*[\-—–]\s*$/g, '')
+      .replace(/\s*[\-â€”â€“]\s*$/g, '')
       .trim();
   };
 
@@ -525,7 +525,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
 
   const tplByCategory = {};
   BUILT_IN_TEMPLATES.forEach(t => {
-    const cat = t.category || 'Musculação';
+    const cat = t.category || 'MusculaÃ§Ã£o';
     if (!tplByCategory[cat]) tplByCategory[cat] = [];
     tplByCategory[cat].push(t);
   });
@@ -552,15 +552,15 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
             ${isCardio ? `<span style="font-size:0.55rem;background:rgba(6,182,212,0.12);color:var(--accent);padding:1px 5px;border-radius:8px;font-weight:600;flex-shrink:0">Cardio</span>` : ''}
           </div>
           <div style="font-size:0.64rem;color:var(--text-muted);display:flex;gap:6px;margin-top:1px;flex-wrap:wrap">
-            <span style="color:${catColor}">${(t.sessions || t.workouts || []).length} sessão(ões)</span>
-            <span>·</span><span>${exCount} ex.</span>
-            ${t.days || t.daysPerWeek ? `<span>·</span><span>${t.days || t.daysPerWeek}×/sem</span>` : ''}
+            <span style="color:${catColor}">${(t.sessions || t.workouts || []).length} sessÃ£o(Ãµes)</span>
+            <span>Â·</span><span>${exCount} ex.</span>
+            ${t.days || t.daysPerWeek ? `<span>Â·</span><span>${t.days || t.daysPerWeek}Ã—/sem</span>` : ''}
           </div>
         </div>
       </label>`;
   }
 
-  const CAT_ORDER = ['Hipertrofia','Força','Resistência','Potência','Cardio Endurance','Cardio / Endurance'];
+  const CAT_ORDER = ['Hipertrofia','ForÃ§a','ResistÃªncia','PotÃªncia','Cardio Endurance','Cardio / Endurance'];
   const builtInHTML = CAT_ORDER
     .filter(cat => tplByCategory[cat]?.length)
     .map(cat => `
@@ -575,7 +575,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
     ? `<div style="display:flex;flex-direction:column;gap:6px">${customCycles.map(c => {
         const totalEx = (c.workouts || []).reduce((a, w) => a + (w.exercises || []).length, 0);
         const sessions = c.workouts || [];
-        const goalColor = c.goal?.toLowerCase().includes('força') ? 'var(--warning)'
+        const goalColor = c.goal?.toLowerCase().includes('forÃ§a') ? 'var(--warning)'
           : c.goal?.toLowerCase().includes('cardio') || c.goal?.toLowerCase().includes('emagrec') ? 'var(--accent)'
           : 'var(--primary)';
         return `
@@ -597,14 +597,14 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
             <div style="display:flex;gap:10px;align-items:center">
               <span style="font-size:0.67rem;color:var(--text-muted)">${sessions.length} treino${sessions.length !== 1 ? 's' : ''}</span>
               <span style="width:3px;height:3px;border-radius:50%;background:var(--text-muted);flex-shrink:0"></span>
-              <span style="font-size:0.67rem;color:var(--text-muted)">${totalEx} exercícios</span>
+              <span style="font-size:0.67rem;color:var(--text-muted)">${totalEx} exercÃ­cios</span>
             </div>
           </div>
         </label>`;
       }).join('')}</div>`
     : `<div style="padding:14px;border:1px dashed var(--border-color);border-radius:var(--radius-md);text-align:center">
         <p class="text-xs text-muted" style="margin:0 0 4px">Nenhum modelo criado ainda.</p>
-        <a href="#/exercicios" style="font-size:0.72rem;color:var(--primary);text-decoration:none">Ir para Exercícios → Meus Modelos</a>
+        <a href="#/exercicios" style="font-size:0.72rem;color:var(--primary);text-decoration:none">Ir para ExercÃ­cios â†’ Meus Modelos</a>
       </div>`;
 
   openModal({
@@ -625,11 +625,11 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               padding:12px 14px;border:2px dashed var(--primary);
               border-radius:var(--radius-md);cursor:pointer;margin-bottom:16px;
               transition:border-color 0.15s,background 0.15s;background:var(--bg-card)">
-              <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">✨ Criar Periodização Personalizada (Do Zero)</div>
-              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">Selecione para montar sua própria periodização escolhendo os exercícios um a um.</div>
+              <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">âœ¨ Criar PeriodizaÃ§Ã£o Personalizada (Do Zero)</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">Selecione para montar sua prÃ³pria periodizaÃ§Ã£o escolhendo os exercÃ­cios um a um.</div>
             </div>
 
-            <p class="text-xs text-muted mb-sm">Templates padrão do sistema</p>
+            <p class="text-xs text-muted mb-sm">Templates padrÃ£o do sistema</p>
             <div style="display:flex;flex-direction:column;gap:0;margin-bottom:16px;max-height:280px;overflow-y:auto;padding-right:2px" id="builtInTpls">${builtInHTML}</div>
 
             <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:4px">
@@ -639,20 +639,20 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
           </div>
 
           <div id="customBuilderList" style="${macroToEdit ? 'display:block;' : 'display:none;'}">
-            ${macroToEdit ? '' : '<button type="button" class="btn btn-ghost btn-sm mb-sm" id="cancelCustomBuilderBtn" style="font-size:0.75rem;padding:4px">← Escolher Template Pronto</button>'}
+            ${macroToEdit ? '' : '<button type="button" class="btn btn-ghost btn-sm mb-sm" id="cancelCustomBuilderBtn" style="font-size:0.75rem;padding:4px">â† Escolher Template Pronto</button>'}
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
               <span style="display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px"></span>
-              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Exercícios da Periodização</span>
+              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">ExercÃ­cios da PeriodizaÃ§Ã£o</span>
             </div>
             <div id="customPeriodizationBuilder" style="max-height:450px;overflow-y:auto;padding-right:4px"></div>
           </div>
         </div>
 
-        <!-- Coluna Direita: Parâmetros -->
+        <!-- Coluna Direita: ParÃ¢metros -->
         <div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
             <span style="display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px"></span>
-            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">Configuração Geral</span>
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">ConfiguraÃ§Ã£o Geral</span>
           </div>
 
           <form id="macroForm">
@@ -673,37 +673,37 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
               <div class="form-group" style="margin:0">
-                <label class="form-label">Modelo de periodização *</label>
+                <label class="form-label">Modelo de periodizaÃ§Ã£o *</label>
                 <div class="custom-select-container" id="perioModelSelectContainer">
                   <select class="form-select" name="type" style="display:none">
-                    <optgroup label="── Musculação ──">
-                      <option value="linear">Linear — Volume↓ Intensidade↑</option>
-                      <option value="reverse_linear">Linear Reversa — RML</option>
-                      <option value="undulating">Ondulatória (DUP) — Oscilações</option>
-                      <option value="block">Em Blocos — Estágios</option>
-                      <option value="conjugate">Conjugada — ME/DE</option>
-                      <option value="concurrent">Concorrente — Múltiplos</option>
+                    <optgroup label="â”€â”€ MusculaÃ§Ã£o â”€â”€">
+                      <option value="linear">Linear â€” Volumeâ†“ Intensidadeâ†‘</option>
+                      <option value="reverse_linear">Linear Reversa â€” RML</option>
+                      <option value="undulating">OndulatÃ³ria (DUP) â€” OscilaÃ§Ãµes</option>
+                      <option value="block">Em Blocos â€” EstÃ¡gios</option>
+                      <option value="conjugate">Conjugada â€” ME/DE</option>
+                      <option value="concurrent">Concorrente â€” MÃºltiplos</option>
                     </optgroup>
-                    <optgroup label="── Cardio / Endurance ──">
+                    <optgroup label="â”€â”€ Cardio / Endurance â”€â”€">
                       <option value="polarized">Polarizado</option>
                       <option value="hiit">HIIT</option>
                       <option value="lsd">LSD</option>
-                      <option value="threshold">Limiar Anaeróbio</option>
+                      <option value="threshold">Limiar AnaerÃ³bio</option>
                       <option value="fartlek">Fartlek</option>
                     </optgroup>
-                    <optgroup label="── Personalizado ──">
-                      <option value="manual">Periodização Personalizada (Ajuste Manual)</option>
+                    <optgroup label="â”€â”€ Personalizado â”€â”€">
+                      <option value="manual">PeriodizaÃ§Ã£o Personalizada (Ajuste Manual)</option>
                     </optgroup>
                   </select>
                   <div class="custom-select-trigger" id="customPerioTrigger">
                     <div style="display:flex; align-items:center; gap:10px" id="customPerioVal"></div>
-                    <span class="arrow">▼</span>
+                    <span class="arrow">â–¼</span>
                   </div>
                   <div class="custom-select-dropdown" id="customPerioDropdown"></div>
                 </div>
               </div>
               <div class="form-group" style="margin:0">
-                <label class="form-label">Data de início *</label>
+                <label class="form-label">Data de inÃ­cio *</label>
                 <input class="form-input" name="startDate" type="date" value="${macroToEdit ? macroToEdit.startDate : new Date().toISOString().slice(0,10)}" required />
               </div>
             </div>
@@ -718,13 +718,13 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
                 <input class="form-input" name="deloadEvery" type="number" min="0" max="8" value="${macroToEdit ? macroToEdit.deloadEvery : 4}" style="padding:4px 6px" />
               </div>
               <div class="form-group" style="margin:0">
-                <label class="form-label" style="font-size:0.68rem">Horário</label>
+                <label class="form-label" style="font-size:0.68rem">HorÃ¡rio</label>
                 <select class="form-select" name="trainingTime" style="padding:4px 6px">
                   ${HOURS.map(h => `<option value="${h}" ${(macroToEdit ? macroToEdit.trainingTime === h : h === '07:00') ? 'selected' : ''}>${h}</option>`).join('')}
                 </select>
               </div>
               <div class="form-group" style="margin:0">
-                <label class="form-label" style="font-size:0.68rem">Sessão dur.</label>
+                <label class="form-label" style="font-size:0.68rem">SessÃ£o dur.</label>
                 <select class="form-select" name="sessionDuration" style="padding:4px 6px">
                   <option value="45" ${macroToEdit?.sessionDuration === 45 ? 'selected' : ''}>45 min</option>
                   <option value="60" ${macroToEdit ? macroToEdit.sessionDuration === 60 || !macroToEdit.sessionDuration : true ? 'selected' : ''}>60 min</option>
@@ -751,7 +751,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
           <div id="tplPreview" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color)">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
               <span style="display:inline-block;width:3px;height:16px;background:var(--accent);border-radius:2px"></span>
-              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">1RM estimado por exercício</span>
+              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted)">1RM estimado por exercÃ­cio</span>
             </div>
             <div id="tplExerciseLoads" style="max-height:160px;overflow-y:auto"></div>
           </div>
@@ -772,7 +772,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
     actions: [
       { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
       {
-        label: macroToEdit ? 'Salvar Alterações' : 'Gerar Macrociclo',
+        label: macroToEdit ? 'Salvar AlteraÃ§Ãµes' : 'Gerar Macrociclo',
         class: 'btn-primary',
         onClick: async () => {
           const fd = new FormData(document.getElementById('macroForm'));
@@ -829,13 +829,13 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
           }
 
           if (sessions.length === 0 || sessions.every(s => s.exercises.length === 0)) {
-            notify.error('Configure pelo menos um exercício.');
+            notify.error('Configure pelo menos um exercÃ­cio.');
             return;
           }
 
           const weeks = [];
           const weekRows = document.querySelectorAll('#weeklyPlanGrid .week-row');
-          const dayLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+          const dayLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','SÃ¡b'];
 
           if (weekRows.length === 0) {
             const typeVal = document.querySelector('#macroForm [name="type"]')?.value || 'linear';
@@ -852,17 +852,17 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
                 if (typeVal === 'undulating' && !isWeekDeload) {
                   const cycle = di % 3;
                   if (cycle === 0) {
-                    dayPhase = 'Força'; dayInt = 85; dayVol = 50; dayReps = '4-6';
+                    dayPhase = 'ForÃ§a'; dayInt = 85; dayVol = 50; dayReps = '4-6';
                   } else if (cycle === 1) {
                     dayPhase = 'Hipertrofia'; dayInt = 75; dayVol = 85; dayReps = '8-12';
                   } else {
-                    dayPhase = 'Resistência'; dayInt = 60; dayVol = 90; dayReps = '15-20';
+                    dayPhase = 'ResistÃªncia'; dayInt = 60; dayVol = 90; dayReps = '15-20';
                   }
                 }
                 return {
                   day: dayNum,
                   phase: dayPhase.toLowerCase() === 'deload' ? 'deload' : dayPhase,
-                  label: `${dayLabels[dayNum] || 'Treino'} — ${dayPhase}`,
+                  label: `${dayLabels[dayNum] || 'Treino'} â€” ${dayPhase}`,
                   intensityPct: dayInt,
                   volumePct: dayVol,
                   repsRange: dayReps
@@ -884,7 +884,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
                 weekMap[weekNum] = {
                   week: weekNum,
                   phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
-                  label: `Microciclo ${weekNum} — ${phase}`,
+                  label: `Microciclo ${weekNum} â€” ${phase}`,
                   intensityPct,
                   volumePct,
                   repsRange,
@@ -895,7 +895,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               weekMap[weekNum].days.push({
                 day: dayNum,
                 phase: phase.toLowerCase() === 'deload' ? 'deload' : phase,
-                label: `${dayName} — ${phase}`,
+                label: `${dayName} â€” ${phase}`,
                 intensityPct,
                 volumePct,
                 repsRange
@@ -956,7 +956,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
 
           for (let w = 0; w < d.totalWeeks; w++) {
             const weekPlan = d.weeks[w] || {
-              week: w + 1, phase: 'Hipertrofia', label: `Semana ${w+1} — Hipertrofia`,
+              week: w + 1, phase: 'Hipertrofia', label: `Semana ${w+1} â€” Hipertrofia`,
               intensityPct: 65 + Math.round((w / d.totalWeeks) * 25),
               volumePct: 70, repsRange: '10-12'
             };
@@ -1036,7 +1036,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
                       reps: s.reps,
                       load: sLoad,
                       rest: sRest,
-                      label: s.label || `Série ${si + 1}`
+                      label: s.label || `SÃ©rie ${si + 1}`
                     };
                   });
 
@@ -1047,7 +1047,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
                     oneRM,
                     week: w + 1,
                     sets: seriesProgression.length,
-                    reps: seriesProgression.map(s => s.reps).join('→'),
+                    reps: seriesProgression.map(s => s.reps).join('â†’'),
                     rest: seriesProgression[0]?.rest || ex.rest || 60,
                     seriesProgression
                   };
@@ -1059,7 +1059,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               const savedWorkout = await db.add('workouts', {
                 studentId: d.studentId,
                 macrocycleId: savedMacroId,
-                name: `${session.name} — Sem ${w+1}`,
+                name: `${session.name} â€” Sem ${w+1}`,
                 date: dateStr,
                 exercises: wkExercises,
                 phase: dayPlan.label || dayPlan.phase,
@@ -1112,7 +1112,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
             console.warn('Erro no sync final:', err);
           }
 
-          notify.success(macroToEdit ? 'Macrociclo atualizado!' : `Macrociclo gerado — ${generatedCount} treinos criados`);
+          notify.success(macroToEdit ? 'Macrociclo atualizado!' : `Macrociclo gerado â€” ${generatedCount} treinos criados`);
           closeModal();
           navigateFn('/periodizacao');
         }
@@ -1127,15 +1127,15 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
     preview.style.display = '';
 
     const BODYWEIGHT_KEYWORDS = [
-      'prancha','flexão','flexao','burpee','barra fixa','pull-up','pull up','dip','afundo',
+      'prancha','flexÃ£o','flexao','burpee','barra fixa','pull-up','pull up','dip','afundo',
       'superman','bird dog','russian twist','abdominal','crunch','mountain climber',
-      'jumping jack','polichinelo','ponte','elevação de pelve','elevacao de pelve',
-      'agachamento com salto','agachamento bulgaro','agachamento búlgaro',
-      'salto','box jump','pliométrico','pliometrico','arremesso','medicine ball',
+      'jumping jack','polichinelo','ponte','elevaÃ§Ã£o de pelve','elevacao de pelve',
+      'agachamento com salto','agachamento bulgaro','agachamento bÃºlgaro',
+      'salto','box jump','pliomÃ©trico','pliometrico','arremesso','medicine ball',
       'mergulho','paralelas','calistenia','corporal','aquecimento','desaquecimento',
-      'recuperação ativa','tiro','sprint','fartlek','cardio','endurance','corrida',
-      'step up','esteira','bike','ciclismo','natação','remo ergômetro',
-      'hiit genérico','hiit generico','exercício cardio','exercicio cardio'
+      'recuperaÃ§Ã£o ativa','tiro','sprint','fartlek','cardio','endurance','corrida',
+      'step up','esteira','bike','ciclismo','nataÃ§Ã£o','remo ergÃ´metro',
+      'hiit genÃ©rico','hiit generico','exercÃ­cio cardio','exercicio cardio'
     ];
     const TIMED_PATTERN = /^\d+s$/i;
 
@@ -1148,7 +1148,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
 
         if (isCardioExercise(ex.name, ex.method)) {
           const cardioMeta = METHOD_CARDIO_META?.[ex.method] || {};
-          const fcRange = cardioMeta.fcPct ? `${cardioMeta.fcPct[0]}-${cardioMeta.fcPct[1]}% FC Máx` : '65-80% FC Máx';
+          const fcRange = cardioMeta.fcPct ? `${cardioMeta.fcPct[0]}-${cardioMeta.fcPct[1]}% FC MÃ¡x` : '65-80% FC MÃ¡x';
           const durRange = cardioMeta.durationMin ? `${cardioMeta.durationMin[0]}-${cardioMeta.durationMin[1]} min` : '';
           const currentBpm = exerciseLoads[ex.name] || 180;
           html += `
@@ -1156,11 +1156,11 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               <div style="flex:1">
                 <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
                 <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">
-                  ${ex.method ? `<span style="font-weight:600">${ex.method}</span> · ` : ''}${fcRange}${durRange ? ` · ${durRange}` : ''}
+                  ${ex.method ? `<span style="font-weight:600">${ex.method}</span> Â· ` : ''}${fcRange}${durRange ? ` Â· ${durRange}` : ''}
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
-                <span style="font-size:0.68rem;color:var(--text-muted)">FC Máx</span>
+                <span style="font-size:0.68rem;color:var(--text-muted)">FC MÃ¡x</span>
                 <input class="form-input load-input" data-ex-key="${ex.name}" data-type="cardio"
                   type="number" min="100" max="220" value="${currentBpm}"
                   style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem;border-color:var(--accent)40" />
@@ -1181,7 +1181,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
             <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
               <div style="flex:1">
                 <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
-                <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">Isométrico · ${ex.sets} séries × ${ex.reps}</div>
+                <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">IsomÃ©trico Â· ${ex.sets} sÃ©ries Ã— ${ex.reps}</div>
               </div>
               <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
                 <input class="form-input load-input" data-ex-key="${ex.name}" data-type="time"
@@ -1199,7 +1199,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
             <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
               <div style="flex:1">
                 <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
-                <div style="font-size:0.68rem;color:var(--success);margin-top:1px">Peso corporal · ${ex.sets} séries × ${ex.reps} reps</div>
+                <div style="font-size:0.68rem;color:var(--success);margin-top:1px">Peso corporal Â· ${ex.sets} sÃ©ries Ã— ${ex.reps} reps</div>
               </div>
               <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
                 <input class="form-input load-input" data-ex-key="${ex.name}" data-type="bodyweight"
@@ -1227,8 +1227,8 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               <div style="flex:1">
                 <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
                 <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px">
-                  ${ex.sets} séries × ${ex.reps} · ${ex.rest}s descanso
-                  ${isFromAssessment ? ` <span style="color:#22c55e;font-weight:600">📊 1RM Avaliado (${match.rm1}kg)</span>` : ''}
+                  ${ex.sets} sÃ©ries Ã— ${ex.reps} Â· ${ex.rest}s descanso
+                  ${isFromAssessment ? ` <span style="color:#22c55e;font-weight:600">ðŸ“Š 1RM Avaliado (${match.rm1}kg)</span>` : ''}
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
@@ -1259,30 +1259,30 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
   setTimeout(() => {
     const optionsData = [
       {
-        group: 'Musculação',
+        group: 'MusculaÃ§Ã£o',
         options: [
-          { value: 'linear', label: 'Linear Clássica', desc: 'Volume↓ Intensidade↑', icon: getPhaseSvg('Hipertrofia', '#3b82f6') },
-          { value: 'reverse_linear', label: 'Linear Reversa', desc: 'RML / Resistência', icon: getPhaseSvg('Resistência', '#8b5cf6') },
-          { value: 'undulating', label: 'Ondulatória (DUP)', desc: 'Oscilações diárias', icon: getPhaseSvg('Estabilização', '#f59e0b') },
-          { value: 'block', label: 'Em Blocos (MST)', desc: 'Estágios acumulativos', icon: getPhaseSvg('Força', '#ef4444') },
-          { value: 'conjugate', label: 'Conjugada', desc: 'Esforço Máximo + Dinâmico', icon: getPhaseSvg('Choque', '#ec4899') },
-          { value: 'concurrent', label: 'Concorrente', desc: 'Força + Metabólico', icon: getPhaseSvg('Resistência', '#10b981') }
+          { value: 'linear', label: 'Linear ClÃ¡ssica', desc: 'Volumeâ†“ Intensidadeâ†‘', icon: getPhaseSvg('Hipertrofia', '#3b82f6') },
+          { value: 'reverse_linear', label: 'Linear Reversa', desc: 'RML / ResistÃªncia', icon: getPhaseSvg('ResistÃªncia', '#8b5cf6') },
+          { value: 'undulating', label: 'OndulatÃ³ria (DUP)', desc: 'OscilaÃ§Ãµes diÃ¡rias', icon: getPhaseSvg('EstabilizaÃ§Ã£o', '#f59e0b') },
+          { value: 'block', label: 'Em Blocos (MST)', desc: 'EstÃ¡gios acumulativos', icon: getPhaseSvg('ForÃ§a', '#ef4444') },
+          { value: 'conjugate', label: 'Conjugada', desc: 'EsforÃ§o MÃ¡ximo + DinÃ¢mico', icon: getPhaseSvg('Choque', '#ec4899') },
+          { value: 'concurrent', label: 'Concorrente', desc: 'ForÃ§a + MetabÃ³lico', icon: getPhaseSvg('ResistÃªncia', '#10b981') }
         ]
       },
       {
         group: 'Cardio / Endurance',
         options: [
-          { value: 'polarized', label: 'Polarizado', desc: '80% Z1/Z2 + 20% Z4/Z5', icon: getPhaseSvg('Transição', '#06b6d4') },
+          { value: 'polarized', label: 'Polarizado', desc: '80% Z1/Z2 + 20% Z4/Z5', icon: getPhaseSvg('TransiÃ§Ã£o', '#06b6d4') },
           { value: 'hiit', label: 'HIIT', desc: 'Alta Intensidade', icon: getPhaseSvg('Choque', '#f97316') },
-          { value: 'lsd', label: 'LSD', desc: 'Baixa Intensidade', icon: getPhaseSvg('Adaptação', '#22c55e') },
-          { value: 'threshold', label: 'Limiar Anaeróbio', desc: 'Lactato', icon: getPhaseSvg('Força', '#ef4444') },
-          { value: 'fartlek', label: 'Fartlek', desc: 'Ritmos livres', icon: getPhaseSvg('Resistência', '#06b6d4') }
+          { value: 'lsd', label: 'LSD', desc: 'Baixa Intensidade', icon: getPhaseSvg('AdaptaÃ§Ã£o', '#22c55e') },
+          { value: 'threshold', label: 'Limiar AnaerÃ³bio', desc: 'Lactato', icon: getPhaseSvg('ForÃ§a', '#ef4444') },
+          { value: 'fartlek', label: 'Fartlek', desc: 'Ritmos livres', icon: getPhaseSvg('ResistÃªncia', '#06b6d4') }
         ]
       },
       {
         group: 'Personalizado',
         options: [
-          { value: 'manual', label: 'Personalizado', desc: 'Ajuste Manual', icon: getPhaseSvg('Transição', '#94a3b8') }
+          { value: 'manual', label: 'Personalizado', desc: 'Ajuste Manual', icon: getPhaseSvg('TransiÃ§Ã£o', '#94a3b8') }
         ]
       }
     ];
@@ -1387,19 +1387,19 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
 
       const checkedDays = Array.from(document.querySelectorAll('#macroForm [name="trainingDays"]:checked')).map(el => parseInt(el.value));
       const activeDays = checkedDays.length > 0 ? checkedDays : [1, 3, 5];
-      const dayLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      const dayLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','SÃ¡b'];
 
       const PHASE_META = {
-        'Adaptação':      { color: '#22c55e', bg: 'rgba(34,197,94,0.08)', rpe: '5-6' },
+        'AdaptaÃ§Ã£o':      { color: '#22c55e', bg: 'rgba(34,197,94,0.08)', rpe: '5-6' },
         'Hipertrofia':    { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', rpe: '7-8' },
-        'Força':          { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', rpe: '8-9' },
-        'Resistência':    { color: '#06b6d4', bg: 'rgba(6,182,212,0.08)', rpe: '6-7' },
+        'ForÃ§a':          { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', rpe: '8-9' },
+        'ResistÃªncia':    { color: '#06b6d4', bg: 'rgba(6,182,212,0.08)', rpe: '6-7' },
         'Ganho':          { color: '#f97316', bg: 'rgba(249,115,22,0.08)', rpe: '7-9' },
-        'Manutenção':     { color: '#eab308', bg: 'rgba(234,179,8,0.08)', rpe: '6-7' },
+        'ManutenÃ§Ã£o':     { color: '#eab308', bg: 'rgba(234,179,8,0.08)', rpe: '6-7' },
         'Regenerativo':   { color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', rpe: '3-4' },
         'Choque':         { color: '#b91c1c', bg: 'rgba(185,28,28,0.08)', rpe: '9-10' },
-        'Estabilização':  { color: '#10b981', bg: 'rgba(16,185,129,0.08)', rpe: '6-8' },
-        'Transição':      { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', rpe: '4-5' },
+        'EstabilizaÃ§Ã£o':  { color: '#10b981', bg: 'rgba(16,185,129,0.08)', rpe: '6-8' },
+        'TransiÃ§Ã£o':      { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', rpe: '4-5' },
         'Deload':         { color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', rpe: '4-5' }
       };
 
@@ -1413,7 +1413,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
         return '#22c55e';
       };
 
-      const phases = ['Adaptação','Hipertrofia','Força','Resistência','Ganho','Manutenção','Regenerativo','Choque','Estabilização','Transição','Deload'];
+      const phases = ['AdaptaÃ§Ã£o','Hipertrofia','ForÃ§a','ResistÃªncia','Ganho','ManutenÃ§Ã£o','Regenerativo','Choque','EstabilizaÃ§Ã£o','TransiÃ§Ã£o','Deload'];
 
       let html = `
         <table class="data-table" style="font-size:0.8rem; margin:0; border:none; width:100%; border-collapse:separate; border-spacing:0 2px">
@@ -1442,11 +1442,11 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
           if (type === 'undulating' && !isWeekDeload && !macroToEdit) {
             const cycle = di % 3;
             if (cycle === 0) {
-              dayPhase = 'Força'; dayInt = 85; dayVol = 50; dayReps = '4-6';
+              dayPhase = 'ForÃ§a'; dayInt = 85; dayVol = 50; dayReps = '4-6';
             } else if (cycle === 1) {
               dayPhase = 'Hipertrofia'; dayInt = 75; dayVol = 85; dayReps = '8-12';
             } else {
-              dayPhase = 'Resistência'; dayInt = 60; dayVol = 90; dayReps = '15-20';
+              dayPhase = 'ResistÃªncia'; dayInt = 60; dayVol = 90; dayReps = '15-20';
             }
           }
 
@@ -1532,7 +1532,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
     const updateCustomBuilder = async () => {
       if (selectedTemplate?.id === 'custom_builder') {
         const checkedDays = Array.from(document.querySelectorAll('#macroForm [name="trainingDays"]:checked')).map(el => parseInt(el.value));
-        const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','SÃ¡b'];
         
         let html = '';
         const currentSessions = selectedTemplate.sessions || [];
@@ -1556,25 +1556,25 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               <div class="tpl-exercises" data-wi="${idx}">
                 ${sess.exercises.map((ex, ei) => `
                   <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-ei="${ei}" style="flex-wrap:wrap">
-                    <input class="form-input" name="wk_${idx}_ex_${ei}" list="tplExList" value="${ex.name}" placeholder="Exercício" style="flex:2;min-width:130px;font-size:0.8rem;padding:4px" required />
-                    <input class="form-input" name="wk_${idx}_sets_${ei}" type="number" value="${ex.sets || 3}" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Séries" />
+                    <input class="form-input" name="wk_${idx}_ex_${ei}" list="tplExList" value="${ex.name}" placeholder="ExercÃ­cio" style="flex:2;min-width:130px;font-size:0.8rem;padding:4px" required />
+                    <input class="form-input" name="wk_${idx}_sets_${ei}" type="number" value="${ex.sets || 3}" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="SÃ©ries" />
                     <input class="form-input" name="wk_${idx}_reps_${ei}" value="${ex.reps || '12'}" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="Reps" />
                     <input class="form-input" name="wk_${idx}_rest_${ei}" value="${ex.rest || '60'}" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
                     <select class="form-select" name="wk_${idx}_method_${ei}" style="width:150px;font-size:0.75rem;padding:4px">
-                      <option value="">— Método —</option>
+                      <option value="">â€” MÃ©todo â€”</option>
                       ${allMet.map(m=>`<option value="${m.name}" ${ex.method === m.name ? 'selected' : ''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
                     </select>
                     <input class="form-input load-input" name="wk_${idx}_1rm_${ei}" type="number" step="0.5" value="${exerciseLoads[ex.name] || 60}" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM Estimado (kg)" />
-                    <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
+                    <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">âœ•</button>
                   </div>
                 `).join('')}
               </div>
-              <button type="button" class="btn btn-ghost btn-sm add-tpl-ex mt-xs" data-wi="${idx}" style="font-size:0.75rem;padding:2px 6px">+ Exercício</button>
+              <button type="button" class="btn btn-ghost btn-sm add-tpl-ex mt-xs" data-wi="${idx}" style="font-size:0.75rem;padding:2px 6px">+ ExercÃ­cio</button>
             </div>`;
         });
 
         if (checkedDays.length === 0) {
-          html = `<div style="padding:20px;text-align:center;color:var(--text-muted)">Selecione pelo menos um dia de treino na coluna de Configuração à direita.</div>`;
+          html = `<div style="padding:20px;text-align:center;color:var(--text-muted)">Selecione pelo menos um dia de treino na coluna de ConfiguraÃ§Ã£o Ã  direita.</div>`;
         }
 
         customBuilderContainer.innerHTML = html;
@@ -1587,16 +1587,16 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
             const ei = cnt.querySelectorAll('.tpl-ex-row').length;
             cnt.insertAdjacentHTML('beforeend', `
               <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-ei="${ei}" style="flex-wrap:wrap">
-                <input class="form-input" name="wk_${wi}_ex_${ei}" list="tplExList" placeholder="Exercício" style="flex:2;min-width:130px;font-size:0.8rem;padding:4px" required />
-                <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="3" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Séries" />
+                <input class="form-input" name="wk_${wi}_ex_${ei}" list="tplExList" placeholder="ExercÃ­cio" style="flex:2;min-width:130px;font-size:0.8rem;padding:4px" required />
+                <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="3" min="1" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="SÃ©ries" />
                 <input class="form-input" name="wk_${wi}_reps_${ei}" value="12" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="Reps" />
                 <input class="form-input" name="wk_${wi}_rest_${ei}" value="60" style="width:40px;text-align:center;font-size:0.8rem;padding:4px" title="Descanso" />
                 <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem;padding:4px">
-                  <option value="">— Método —</option>
+                  <option value="">â€” MÃ©todo â€”</option>
                   ${allMet.map(m=>`<option value="${m.name}" data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
                 </select>
                 <input class="form-input load-input" name="wk_${wi}_1rm_${ei}" type="number" step="0.5" value="60" style="width:50px;text-align:center;font-size:0.8rem;padding:4px" title="1RM (kg)" />
-                <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">✕</button>
+                <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:2px 4px">âœ•</button>
               </div>
             `);
             const lastRow = cnt.lastElementChild;
@@ -1615,7 +1615,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
       }
     };
 
-    // ── TEMPLATE CARD SELECTION ──────────────────────────────────────────────
+    // â”€â”€ TEMPLATE CARD SELECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Helper to highlight selected card
     const selectCard = (card) => {
       document.querySelectorAll('.periodo-tpl-card').forEach(c => {
@@ -1649,7 +1649,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
       updateCustomBuilder();
     });
 
-    // Cancel custom builder → go back to template list
+    // Cancel custom builder â†’ go back to template list
     document.getElementById('cancelCustomBuilderBtn')?.addEventListener('click', () => {
       selectedTemplate = null;
       document.getElementById('customBuilderList').style.display = 'none';
@@ -1674,7 +1674,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
         selectCard(card);
         const tplId = card.dataset.tplId;
 
-        // ── Custom cycle (from Exercises → My Models) ──
+        // â”€â”€ Custom cycle (from Exercises â†’ My Models) â”€â”€
         if (tplId?.startsWith('cycle_')) {
           const cycleId = tplId.replace('cycle_', '');
           db.get('cycles', cycleId).then(cycle => {
@@ -1701,7 +1701,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
           return;
         }
 
-        // ── Built-in template ──
+        // â”€â”€ Built-in template â”€â”€
         const tpl = BUILT_IN_TEMPLATES.find(t => t.id === tplId);
         if (!tpl) return;
         selectedTemplate = tpl;
@@ -1732,7 +1732,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
           loadsEl.innerHTML = `
             <div style="padding:10px 12px;background:rgba(6,182,212,0.07);border-radius:8px;border-left:3px solid var(--accent);margin-bottom:10px">
               <div style="font-size:0.78rem;color:var(--accent);font-weight:600;margin-bottom:3px">Template Cardio / Endurance</div>
-              <div class="text-xs text-muted">Sessões baseadas em tempo e zonas de FC/VO₂max. Sem entradas de carga.</div>
+              <div class="text-xs text-muted">SessÃµes baseadas em tempo e zonas de FC/VOâ‚‚max. Sem entradas de carga.</div>
             </div>
             ${hasMultiSess ? `
             <div class="form-group">
@@ -1759,7 +1759,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
         }
       });
     });
-    // ── END TEMPLATE CARD SELECTION ──────────────────────────────────────────
+    // â”€â”€ END TEMPLATE CARD SELECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     // Bind trainingDays checkboxes changes to update the builder dynamically
     document.querySelectorAll('#builderDaysSelector input[name="trainingDays"]').forEach(checkbox => {
@@ -1789,15 +1789,15 @@ async function renderLoadInputs(exercises) {
   preview.style.display = '';
 
   const BODYWEIGHT_KEYWORDS = [
-    'prancha','flexão','flexao','burpee','barra fixa','pull-up','pull up','dip','afundo',
+    'prancha','flexÃ£o','flexao','burpee','barra fixa','pull-up','pull up','dip','afundo',
     'superman','bird dog','russian twist','abdominal','crunch','mountain climber',
-    'jumping jack','polichinelo','ponte','elevação de pelve','elevacao de pelve',
-    'agachamento com salto','agachamento bulgaro','agachamento búlgaro',
-    'salto','box jump','pliométrico','pliometrico','arremesso','medicine ball',
+    'jumping jack','polichinelo','ponte','elevaÃ§Ã£o de pelve','elevacao de pelve',
+    'agachamento com salto','agachamento bulgaro','agachamento bÃºlgaro',
+    'salto','box jump','pliomÃ©trico','pliometrico','arremesso','medicine ball',
     'mergulho','paralelas','calistenia','corporal','aquecimento','desaquecimento',
-    'recuperação ativa','tiro','sprint','fartlek','cardio','endurance','corrida',
-    'step up','esteira','bike','ciclismo','natação','remo ergômetro',
-    'hiit genérico','hiit generico','exercício cardio','exercicio cardio'
+    'recuperaÃ§Ã£o ativa','tiro','sprint','fartlek','cardio','endurance','corrida',
+    'step up','esteira','bike','ciclismo','nataÃ§Ã£o','remo ergÃ´metro',
+    'hiit genÃ©rico','hiit generico','exercÃ­cio cardio','exercicio cardio'
   ];
   const TIMED_PATTERN = /^\d+s$/i;
 
@@ -1809,7 +1809,7 @@ async function renderLoadInputs(exercises) {
       const allAssessments = await db.getAll('assessments');
       forceAssessments = allAssessments.filter(a => a.studentId === studentId && a.type === 'forca');
     } catch (e) {
-      console.warn('Erro ao carregar avaliações do aluno para 1RM:', e);
+      console.warn('Erro ao carregar avaliaÃ§Ãµes do aluno para 1RM:', e);
     }
   }
 
@@ -1817,23 +1817,23 @@ async function renderLoadInputs(exercises) {
   for (const ex of exercises) {
     const nameLower = ex.name.toLowerCase();
 
-    // ── Cardio check first ──
+    // â”€â”€ Cardio check first â”€â”€
     if (isCardioExercise(ex.name, ex.method)) {
       const cardioMeta = METHOD_CARDIO_META?.[ex.method] || {};
-      const fcRange = cardioMeta.fcPct ? `${cardioMeta.fcPct[0]}-${cardioMeta.fcPct[1]}% FC Máx` : '65-80% FC Máx';
+      const fcRange = cardioMeta.fcPct ? `${cardioMeta.fcPct[0]}-${cardioMeta.fcPct[1]}% FC MÃ¡x` : '65-80% FC MÃ¡x';
       const durRange = cardioMeta.durationMin ? `${cardioMeta.durationMin[0]}-${cardioMeta.durationMin[1]} min` : '';
       html += `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
           <div style="flex:1">
             <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
             <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">
-              ${ex.method ? `<span style="font-weight:600">${ex.method}</span> · ` : ''}${fcRange}${durRange ? ` · ${durRange}` : ''}
-              ${cardioMeta.rpe ? ` · RPE ${cardioMeta.rpe}` : ''}
+              ${ex.method ? `<span style="font-weight:600">${ex.method}</span> Â· ` : ''}${fcRange}${durRange ? ` Â· ${durRange}` : ''}
+              ${cardioMeta.rpe ? ` Â· RPE ${cardioMeta.rpe}` : ''}
             </div>
             ${cardioMeta.note ? `<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;font-style:italic">${cardioMeta.note}</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
-            <span style="font-size:0.68rem;color:var(--text-muted)">FC Máx</span>
+            <span style="font-size:0.68rem;color:var(--text-muted)">FC MÃ¡x</span>
             <input class="form-input load-input" data-ex-key="${ex.name}" data-type="cardio"
               type="number" min="100" max="220" value="180"
               style="width:68px;text-align:center;padding:4px 8px;font-size:0.82rem;border-color:var(--accent)40" />
@@ -1858,7 +1858,7 @@ async function renderLoadInputs(exercises) {
         <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
           <div style="flex:1">
             <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
-            <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">Isométrico · ${ex.sets} séries × ${ex.reps}</div>
+            <div style="font-size:0.68rem;color:var(--accent);margin-top:1px">IsomÃ©trico Â· ${ex.sets} sÃ©ries Ã— ${ex.reps}</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
             <input class="form-input load-input" data-ex-key="${ex.name}" data-type="time"
@@ -1875,7 +1875,7 @@ async function renderLoadInputs(exercises) {
         <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-color)">
           <div style="flex:1">
             <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
-            <div style="font-size:0.68rem;color:var(--success);margin-top:1px">Peso corporal · ${ex.sets} séries × ${ex.reps} reps</div>
+            <div style="font-size:0.68rem;color:var(--success);margin-top:1px">Peso corporal Â· ${ex.sets} sÃ©ries Ã— ${ex.reps} reps</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
             <input class="form-input load-input" data-ex-key="${ex.name}" data-type="bodyweight"
@@ -1902,8 +1902,8 @@ async function renderLoadInputs(exercises) {
           <div style="flex:1">
             <div style="font-size:0.82rem;font-weight:500;color:var(--text-primary)">${ex.name}</div>
             <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px">
-              ${ex.sets} séries × ${ex.reps} · ${ex.rest}s descanso
-              ${isFromAssessment ? ` <span style="color:#22c55e;font-weight:600">📊 1RM Avaliado (${match.rm1}kg)</span>` : ''}
+              ${ex.sets} sÃ©ries Ã— ${ex.reps} Â· ${ex.rest}s descanso
+              ${isFromAssessment ? ` <span style="color:#22c55e;font-weight:600">ðŸ“Š 1RM Avaliado (${match.rm1}kg)</span>` : ''}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:12px">
@@ -1986,7 +1986,7 @@ function bindPeriodoMethodAutoFill(row) {
       if (match) restEl.value = match[1];
     }
 
-    // ── Verificar progressão ──
+    // â”€â”€ Verificar progressÃ£o â”€â”€
     const progression = METHOD_PROGRESSIONS[methodName];
     if (!progression) {
       const desc = opt?.dataset.desc;
@@ -1994,13 +1994,13 @@ function bindPeriodoMethodAutoFill(row) {
         const tip = document.createElement('div');
         tip.className = 'method-tip';
         tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;width:100%;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
-        tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
+        tip.innerHTML = `<strong>${methodName}</strong> â€” ${desc}`;
         row.appendChild(tip);
       }
       return;
     }
 
-    // ── Método com progressão: gerar painel de sub-séries ──
+    // â”€â”€ MÃ©todo com progressÃ£o: gerar painel de sub-sÃ©ries â”€â”€
     if (setsEl) setsEl.value = progression.series.length;
 
     const base1RMEl = row.querySelector('input[name*="_1rm_"]');
@@ -2026,8 +2026,8 @@ function bindPeriodoMethodAutoFill(row) {
 
     const seriesLegend = `
       <div style="display:grid;grid-template-columns:80px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
-        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">SÃ©rie</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">DescriÃ§Ã£o</div>
         <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga %</div>
         <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
         <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
@@ -2089,3 +2089,4 @@ function bindPeriodoMethodAutoFill(row) {
     }
   });
 }
+

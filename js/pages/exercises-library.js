@@ -1,6 +1,6 @@
-// ========================================
-// PERSONAL PRO — Exercises Library (v2)
-// Busca avançada · LoadType · Métodos · Cardio · Meus Modelos
+﻿// ========================================
+// VETOR â€” Exercises Library (v2)
+// Busca avanÃ§ada Â· LoadType Â· MÃ©todos Â· Cardio Â· Meus Modelos
 // ========================================
 import db from '../db.js';
 import { openModal, closeModal } from '../components/modal.js';
@@ -9,9 +9,9 @@ import { BUILT_IN_TEMPLATES, getTemplatesByCategory } from '../utils/workout-tem
 import { METHOD_PROGRESSIONS } from './workouts.js';
 import { isAdmin } from '../utils/roles.js';
 
-// ── Proteção admin/personal ───────────────────────────────────
-// is_default=true  → somente admin edita/exclui
-// personal trainer → só visualiza os itens padrão
+// â”€â”€ ProteÃ§Ã£o admin/personal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// is_default=true  â†’ somente admin edita/exclui
+// personal trainer â†’ sÃ³ visualiza os itens padrÃ£o
 
 function canEdit(item, adminMode)   { return item.is_default ? adminMode : true; }
 function canDelete(item, adminMode) { return item.is_default ? adminMode : true; }
@@ -22,11 +22,11 @@ function defaultBadge(adminMode) {
 
 
 const MUSCLE_GROUPS = [
-  'Peito','Costas','Ombros','Bíceps','Tríceps','Antebraço',
-  'Quadríceps','Posterior','Glúteos','Panturrilha','Abdômen','Core',
+  'Peito','Costas','Ombros','BÃ­ceps','TrÃ­ceps','AntebraÃ§o',
+  'QuadrÃ­ceps','Posterior','GlÃºteos','Panturrilha','AbdÃ´men','Core',
   'Cardio','Corpo Inteiro','Mobilidade',
 ];
-const CATEGORIES  = ['Musculação','Funcional','Calistenia','Cardio','Mobilidade','Aquecimento','Reabilitação'];
+const CATEGORIES  = ['MusculaÃ§Ã£o','Funcional','Calistenia','Cardio','Mobilidade','Aquecimento','ReabilitaÃ§Ã£o'];
 const LOAD_LABELS = { weight: 'Peso (kg)', bodyweight: 'Peso Corporal', time: 'Tempo/Int.' };
 const LOAD_COLORS = { weight: 'var(--accent)', bodyweight: 'var(--success)', time: 'var(--warning)' };
 
@@ -45,7 +45,7 @@ export async function renderExercisesLibrary() {
   const customTpls     = customTplsRaw.filter(c => c.isTemplate);
   const builtInGrouped = getTemplatesByCategory();
 
-  // Agrupar exercícios por grupo muscular
+  // Agrupar exercÃ­cios por grupo muscular
   const grouped = {};
   exercises.forEach(ex => {
     const g = ex.muscleGroup || 'Outros';
@@ -60,7 +60,7 @@ export async function renderExercisesLibrary() {
     time:       exercises.filter(e => e.loadType === 'time').length,
   };
 
-  // Agrupar métodos por categoria
+  // Agrupar mÃ©todos por categoria
   const methodsByCat = {};
   methods.forEach(m => {
     const c = m.category || 'Geral';
@@ -72,24 +72,24 @@ export async function renderExercisesLibrary() {
     <div class="page-header">
       <div>
         <h1>Biblioteca</h1>
-        <p class="subtitle">${exercises.length} exercícios · ${methods.length} métodos · ${customTpls.length} modelos personalizados</p>
+        <p class="subtitle">${exercises.length} exercÃ­cios Â· ${methods.length} mÃ©todos Â· ${customTpls.length} modelos personalizados</p>
       </div>
     </div>
 
     <div class="tabs" id="libTabs">
-      <button class="tab active" data-tab="exercises">Exercícios (${exercises.length})</button>
-      <button class="tab" data-tab="methods">Métodos (${methods.length})</button>
+      <button class="tab active" data-tab="exercises">ExercÃ­cios (${exercises.length})</button>
+      <button class="tab" data-tab="methods">MÃ©todos (${methods.length})</button>
       <button class="tab" data-tab="templates">Modelos Prontos</button>
       <button class="tab" data-tab="custom">Meus Modelos (${customTpls.length})</button>
     </div>
 
-    <!-- ── EXERCÍCIOS ── -->
+    <!-- â”€â”€ EXERCÃCIOS â”€â”€ -->
     <div id="tabExercises" class="lib-tab-content">
       <div class="card mb-md">
         <div class="flex gap-sm items-center" style="flex-wrap:wrap">
           <div style="position:relative;flex:1;min-width:180px">
             <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-muted)" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="form-input" id="exSearch" placeholder="Buscar exercício..." style="padding-left:32px" />
+            <input class="form-input" id="exSearch" placeholder="Buscar exercÃ­cio..." style="padding-left:32px" />
           </div>
           <select class="form-select" id="exFilterGroup" style="width:auto">
             <option value="">Todos os grupos</option>
@@ -106,7 +106,7 @@ export async function renderExercisesLibrary() {
             ${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}
           </select>
           ${adminMode ? `<button class="btn btn-secondary btn-sm" id="dedupBtn">Limpar Duplicados</button>` : ''}
-          <button class="btn btn-primary btn-sm" id="addExerciseBtn">+ Novo Exercício</button>
+          <button class="btn btn-primary btn-sm" id="addExerciseBtn">+ Novo ExercÃ­cio</button>
         </div>
         <div class="flex gap-sm mt-sm" style="flex-wrap:wrap;align-items:center">
           ${Object.entries(LOAD_LABELS).map(([k,l])=>`
@@ -137,10 +137,10 @@ export async function renderExercisesLibrary() {
                         <span style="font-size:0.63rem;color:${LOAD_COLORS[lt]};font-weight:600">${LOAD_LABELS[lt]}</span>
                         ${ex.defaultReps?`<span style="font-size:0.63rem;color:var(--text-muted)">${ex.defaultReps}</span>`:''}
                       </div>
-                      ${ex.description?`<div style="font-size:0.67rem;color:var(--text-muted);margin-top:3px;line-height:1.3">${ex.description.slice(0,75)}${ex.description.length>75?'…':''}</div>`:''}
+                      ${ex.description?`<div style="font-size:0.67rem;color:var(--text-muted);margin-top:3px;line-height:1.3">${ex.description.slice(0,75)}${ex.description.length>75?'â€¦':''}</div>`:''}
                     </div>
                     <div style="display:flex;gap:2px;flex-shrink:0">
-                      ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:3px 5px;color:var(--danger)" title="Ver vídeo">${ICON_PLAY}</a>`:''}
+                      ${ex.videoUrl?`<a href="${ex.videoUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:3px 5px;color:var(--danger)" title="Ver vÃ­deo">${ICON_PLAY}</a>`:''}
                       ${ex.imageUrl?`<a href="${ex.imageUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:3px 5px;color:var(--success)" title="Ver imagem">${ICON_IMG}</a>`:''}
                       <button class="btn btn-ghost btn-sm edit-exercise" data-id="${ex.id}" style="padding:3px 5px;color:var(--text-muted)" ${!canEdit(ex,adminMode)?'style="display:none"':''}>${canEdit(ex,adminMode) ? ICON_EDIT : ''}</button>
                       <button class="btn btn-ghost btn-sm delete-exercise" data-id="${ex.id}" style="padding:3px 5px;color:var(--danger)" ${!canDelete(ex,adminMode)?'style="display:none"':''}>${canDelete(ex,adminMode) ? ICON_DEL : ''}</button>
@@ -154,15 +154,15 @@ export async function renderExercisesLibrary() {
       </div>
     </div>
 
-    <!-- ── MÉTODOS ── -->
+    <!-- â”€â”€ MÃ‰TODOS â”€â”€ -->
     <div id="tabMethods" class="lib-tab-content" style="display:none">
       <div class="card mb-md">
         <div class="flex gap-sm items-center">
           <div style="position:relative;flex:1">
             <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-muted)" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="form-input" id="methodSearch" placeholder="Buscar método de treinamento..." style="padding-left:32px" />
+            <input class="form-input" id="methodSearch" placeholder="Buscar mÃ©todo de treinamento..." style="padding-left:32px" />
           </div>
-          <button class="btn btn-primary btn-sm" id="addMethodBtn">+ Novo Método</button>
+          <button class="btn btn-primary btn-sm" id="addMethodBtn">+ Novo MÃ©todo</button>
         </div>
       </div>
       ${Object.entries(methodsByCat).sort(([a],[b])=>a.localeCompare(b)).map(([cat, ms])=>`
@@ -193,7 +193,7 @@ export async function renderExercisesLibrary() {
                 </div>
                 <div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.45;margin-bottom:7px">${m.description||''}</div>
                 <div style="display:flex;gap:12px;flex-wrap:wrap">
-                  ${m.sets?`<span style="font-size:0.68rem"><span style="color:var(--text-muted)">Séries:</span> <strong>${m.sets}</strong></span>`:''}
+                  ${m.sets?`<span style="font-size:0.68rem"><span style="color:var(--text-muted)">SÃ©ries:</span> <strong>${m.sets}</strong></span>`:''}
                   ${m.repsHint?`<span style="font-size:0.68rem"><span style="color:var(--text-muted)">Reps:</span> <strong>${m.repsHint}</strong></span>`:''}
                   ${m.restHint?`<span style="font-size:0.68rem"><span style="color:var(--text-muted)">Descanso:</span> <strong>${m.restHint}</strong></span>`:''}
                 </div>
@@ -203,11 +203,11 @@ export async function renderExercisesLibrary() {
       `).join('')}
     </div>
 
-    <!-- ── MODELOS PRONTOS ── -->
+    <!-- â”€â”€ MODELOS PRONTOS â”€â”€ -->
     <div id="tabTemplates" class="lib-tab-content" style="display:none">
       <div class="flex items-center justify-between mb-md">
-        <p class="text-muted text-sm">Modelos científicos prontos para aplicar diretamente a qualquer aluno.</p>
-        ${adminMode ? `<span class="badge" style="background:rgba(239,68,68,0.12);color:var(--danger)">Modo Admin — edição liberada</span>` : `<span class="badge" style="background:rgba(99,102,241,0.12);color:#6366f1">Somente leitura — apenas admin edita</span>`}
+        <p class="text-muted text-sm">Modelos cientÃ­ficos prontos para aplicar diretamente a qualquer aluno.</p>
+        ${adminMode ? `<span class="badge" style="background:rgba(239,68,68,0.12);color:var(--danger)">Modo Admin â€” ediÃ§Ã£o liberada</span>` : `<span class="badge" style="background:rgba(99,102,241,0.12);color:#6366f1">Somente leitura â€” apenas admin edita</span>`}
       </div>
       ${Object.entries(builtInGrouped).map(([cat, tpls])=>`
         <div class="mb-lg">
@@ -244,10 +244,10 @@ export async function renderExercisesLibrary() {
       `).join('')}
     </div>
 
-    <!-- ── MEUS MODELOS ── -->
+    <!-- â”€â”€ MEUS MODELOS â”€â”€ -->
     <div id="tabCustom" class="lib-tab-content" style="display:none">
       <div class="flex items-center justify-between mb-md">
-        <p class="text-muted text-sm">Modelos reutilizáveis criados por você.</p>
+        <p class="text-muted text-sm">Modelos reutilizÃ¡veis criados por vocÃª.</p>
         <button class="btn btn-primary btn-sm" id="addCustomTplBtn">+ Novo Modelo</button>
       </div>
       ${customTpls.length ? `
@@ -276,9 +276,9 @@ export async function renderExercisesLibrary() {
             </div>`).join('')}
         </div>` : `
         <div class="empty-state">
-          <div class="empty-icon">—</div>
+          <div class="empty-icon">â€”</div>
           <h3>Nenhum modelo personalizado</h3>
-          <p>Crie modelos de treino reutilizáveis para seus alunos</p>
+          <p>Crie modelos de treino reutilizÃ¡veis para seus alunos</p>
           <button class="btn btn-primary mt-sm" id="addCustomTplBtnEmpty">+ Criar Primeiro Modelo</button>
         </div>`}
     </div>
@@ -310,22 +310,22 @@ function exerciseFormHTML(ex = {}) {
           <option value="time"       ${ex.loadType==='time'?'selected':''}>Tempo / Intensidade</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Reps/Tempo padrão</label>
+      <div class="form-group"><label class="form-label">Reps/Tempo padrÃ£o</label>
         <input class="form-input" name="defaultReps" value="${ex.defaultReps||''}" placeholder="Ex: 12 ou 30s" />
       </div>
     </div>
     <div class="form-group"><label class="form-label">Equipamento</label>
-      <input class="form-input" name="equipment" value="${ex.equipment||''}" placeholder="Ex: Barra, Halteres, Máquina" />
+      <input class="form-input" name="equipment" value="${ex.equipment||''}" placeholder="Ex: Barra, Halteres, MÃ¡quina" />
     </div>
-    <div class="form-group"><label class="form-label">Descrição / Execução</label>
+    <div class="form-group"><label class="form-label">DescriÃ§Ã£o / ExecuÃ§Ã£o</label>
       <textarea class="form-textarea" name="description" rows="2">${ex.description||''}</textarea>
     </div>
-    <div class="form-group"><label class="form-label">Link do Vídeo (YouTube)</label>
+    <div class="form-group"><label class="form-label">Link do VÃ­deo (YouTube)</label>
       <input class="form-input" name="videoUrl" value="${ex.videoUrl||''}" placeholder="https://youtube.com/watch?v=..." />
     </div>
     <div class="form-group"><label class="form-label">Imagem de Capa (Foto)</label>
       <div style="display:flex;gap:10px;align-items:center">
-        <input class="form-input" id="exFormImageUrl" name="imageUrl" value="${ex.imageUrl||''}" placeholder="https://... ou faça upload" style="flex:1" />
+        <input class="form-input" id="exFormImageUrl" name="imageUrl" value="${ex.imageUrl||''}" placeholder="https://... ou faÃ§a upload" style="flex:1" />
         <label class="btn btn-outline" style="margin:0;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 12px;height:38px;box-sizing:border-box;flex-shrink:0">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Upload
@@ -334,7 +334,7 @@ function exerciseFormHTML(ex = {}) {
       </div>
       <div id="exFormImagePreviewContainer" style="display:${ex.imageUrl?'block':'none'};margin-top:10px;position:relative;width:100px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
         <img id="exFormImagePreview" src="${ex.imageUrl||''}" style="width:100%;height:100%;object-fit:cover" />
-        <button type="button" id="exFormRemoveImage" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px">×</button>
+        <button type="button" id="exFormRemoveImage" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px">Ã—</button>
       </div>
     </div>
   </form>`;
@@ -369,7 +369,7 @@ function setupImageUploadListener() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      notify.error('Por favor, selecione um arquivo de imagem válido.');
+      notify.error('Por favor, selecione um arquivo de imagem vÃ¡lido.');
       return;
     }
 
@@ -377,7 +377,7 @@ function setupImageUploadListener() {
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Redimensionar para tamanho razoável (ex: max 600px de largura/altura)
+        // Redimensionar para tamanho razoÃ¡vel (ex: max 600px de largura/altura)
         const maxW = 600;
         const maxH = 400;
         let w = img.width;
@@ -458,7 +458,7 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
-  // Filtros exercícios
+  // Filtros exercÃ­cios
   const filter = () => {
     const q  = document.getElementById('exSearch')?.value.toLowerCase()||'';
     const g  = document.getElementById('exFilterGroup')?.value||'';
@@ -488,39 +488,39 @@ export function initExercisesLibrary(navigateFn) {
   // Apply filters on load
   filter();
 
-  // Busca métodos
+  // Busca mÃ©todos
   document.getElementById('methodSearch')?.addEventListener('input', e => {
     const q = e.target.value.toLowerCase();
     document.querySelectorAll('.method-item').forEach(el => { el.style.display = el.dataset.name.includes(q)?'':'none'; });
   });
 
-  // Adicionar método
+  // Adicionar mÃ©todo
   document.getElementById('addMethodBtn')?.addEventListener('click', () => {
     openModal({
-      title: '+ Novo Método de Treinamento', size: 'md',
+      title: '+ Novo MÃ©todo de Treinamento', size: 'md',
       preventBackdropClose: true,
       content: `<form id="methodForm">
         <div class="form-row">
           <div class="form-group"><label class="form-label">Nome *</label>
-            <input class="form-input" name="name" required placeholder="Ex: Cluster Avançado" />
+            <input class="form-input" name="name" required placeholder="Ex: Cluster AvanÃ§ado" />
           </div>
           <div class="form-group"><label class="form-label">Categoria</label>
             <select class="form-select" name="category">
-              <option>Hipertrofia</option><option>Força</option><option>Cardio</option>
-              <option>Resistência</option><option>Funcional</option><option>Geral</option>
+              <option>Hipertrofia</option><option>ForÃ§a</option><option>Cardio</option>
+              <option>ResistÃªncia</option><option>Funcional</option><option>Geral</option>
             </select>
           </div>
         </div>
-        <div class="form-group"><label class="form-label">Descrição / Como executar *</label>
+        <div class="form-group"><label class="form-label">DescriÃ§Ã£o / Como executar *</label>
           <textarea class="form-textarea" name="description" rows="3" required
-            placeholder="Explique como o método funciona e quando usar..."></textarea>
+            placeholder="Explique como o mÃ©todo funciona e quando usar..."></textarea>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Séries recomendadas</label>
+          <div class="form-group"><label class="form-label">SÃ©ries recomendadas</label>
             <input class="form-input" name="sets" placeholder="Ex: 3-4 ou 7" />
           </div>
           <div class="form-group"><label class="form-label">Reps / Tempo recomendado</label>
-            <input class="form-input" name="repsHint" placeholder="Ex: 8-12 ou 20s esforço" />
+            <input class="form-input" name="repsHint" placeholder="Ex: 8-12 ou 20s esforÃ§o" />
           </div>
           <div class="form-group"><label class="form-label">Descanso recomendado</label>
             <input class="form-input" name="restHint" placeholder="Ex: 90-120s" />
@@ -529,12 +529,12 @@ export function initExercisesLibrary(navigateFn) {
       </form>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-        { label: 'Salvar Método', class: 'btn-primary', onClick: async () => {
+        { label: 'Salvar MÃ©todo', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('methodForm'));
           const d  = Object.fromEntries(fd);
-          if (!d.name || !d.description) { notify.error('Nome e descrição são obrigatórios'); return; }
+          if (!d.name || !d.description) { notify.error('Nome e descriÃ§Ã£o sÃ£o obrigatÃ³rios'); return; }
           await db.add('methods', d);
-          notify.success('Método criado!');
+          notify.success('MÃ©todo criado!');
           closeModal();
           navigateFn('/exercicios');
         }}
@@ -544,7 +544,7 @@ export function initExercisesLibrary(navigateFn) {
 
   const openAddEx = () => {
     openModal({
-      title: '+ Novo Exercício', size: 'md',
+      title: '+ Novo ExercÃ­cio', size: 'md',
       preventBackdropClose: true,
       content: exerciseFormHTML(),
       actions: [
@@ -552,15 +552,15 @@ export function initExercisesLibrary(navigateFn) {
         { label: 'Salvar', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('exForm'));
           const d = Object.fromEntries(fd);
-          if (!d.name) { notify.error('Nome obrigatório'); return; }
+          if (!d.name) { notify.error('Nome obrigatÃ³rio'); return; }
           const allEx = await db.getAll('exercises');
           const cleanName = d.name.toLowerCase().trim();
           if (allEx.some(ex => ex.name.toLowerCase().trim() === cleanName)) {
-            notify.error('Já existe um exercício com este nome nesta biblioteca.');
+            notify.error('JÃ¡ existe um exercÃ­cio com este nome nesta biblioteca.');
             return;
           }
           await db.add('exercises', d);
-          notify.success('Exercício criado!');
+          notify.success('ExercÃ­cio criado!');
           closeModal(); navigateFn('/exercicios');
         }}
       ]
@@ -570,7 +570,7 @@ export function initExercisesLibrary(navigateFn) {
   document.getElementById('addExerciseBtn')?.addEventListener('click', openAddEx);
 
   document.getElementById('dedupBtn')?.addEventListener('click', async () => {
-    if (!window.confirm('Isto removerá exercícios com nomes idênticos mantendo apenas um. Continuar?')) return;
+    if (!window.confirm('Isto removerÃ¡ exercÃ­cios com nomes idÃªnticos mantendo apenas um. Continuar?')) return;
     const allEx = await db.getAll('exercises');
     const seen = new Set();
     let count = 0;
@@ -584,23 +584,23 @@ export function initExercisesLibrary(navigateFn) {
       }
     }
     if (count > 0) {
-      notify.success(`${count} exercícios duplicados removidos!`);
+      notify.success(`${count} exercÃ­cios duplicados removidos!`);
       navigateFn('/exercicios');
     } else {
-      notify.success('Nenhum exercício duplicado encontrado.');
+      notify.success('Nenhum exercÃ­cio duplicado encontrado.');
     }
   });
 
-  // Editar exercício
+  // Editar exercÃ­cio
   document.querySelectorAll('.edit-exercise').forEach(btn => {
     btn.addEventListener('click', async () => {
       const ex = await db.get('exercises', btn.dataset.id);
       if (!ex) return;
       const _adminMode = await isAdmin();
-      if (ex.is_default && !_adminMode) { notify.warning('Apenas admins podem editar exercícios padrão.'); return; }
+      if (ex.is_default && !_adminMode) { notify.warning('Apenas admins podem editar exercÃ­cios padrÃ£o.'); return; }
       if (!ex) return;
       openModal({
-        title: 'Editar Exercício', size: 'md',
+        title: 'Editar ExercÃ­cio', size: 'md',
         preventBackdropClose: true,
         content: exerciseFormHTML(ex),
         actions: [
@@ -608,11 +608,11 @@ export function initExercisesLibrary(navigateFn) {
           { label: 'Salvar', class: 'btn-primary', onClick: async () => {
             const fd = new FormData(document.getElementById('exForm'));
             const d = Object.fromEntries(fd);
-            if (!d.name) { notify.error('Nome obrigatório'); return; }
+            if (!d.name) { notify.error('Nome obrigatÃ³rio'); return; }
             const allEx = await db.getAll('exercises');
             const cleanName = d.name.toLowerCase().trim();
             if (allEx.some(otherEx => otherEx.id !== ex.id && otherEx.name.toLowerCase().trim() === cleanName)) {
-              notify.error('Já existe outro exercício com este nome nesta biblioteca.');
+              notify.error('JÃ¡ existe outro exercÃ­cio com este nome nesta biblioteca.');
               return;
             }
             await db.put('exercises', { ...ex, ...d, media_customized: true });
@@ -624,31 +624,31 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
-  // Excluir exercício
+  // Excluir exercÃ­cio
   document.querySelectorAll('.delete-exercise').forEach(btn => {
     btn.addEventListener('click', async () => {
       const ex = await db.get('exercises', btn.dataset.id);
       if (!ex) return;
       const _adminMode = await isAdmin();
-      if (ex.is_default && !_adminMode) { notify.warning('Apenas admins podem excluir exercícios padrão.'); return; }
-      if (!window.confirm('Excluir ' + ex.name + '?' + (ex.is_default ? ' Este exercício é PADRÃO — sumirá para todos.' : ''))) return;
+      if (ex.is_default && !_adminMode) { notify.warning('Apenas admins podem excluir exercÃ­cios padrÃ£o.'); return; }
+      if (!window.confirm('Excluir ' + ex.name + '?' + (ex.is_default ? ' Este exercÃ­cio Ã© PADRÃƒO â€” sumirÃ¡ para todos.' : ''))) return;
       await db.delete('exercises', btn.dataset.id);
-      notify.success('Excluído.'); navigateFn('/exercicios');
-      notify.success('Excluído.'); navigateFn('/exercicios');
+      notify.success('ExcluÃ­do.'); navigateFn('/exercicios');
+      notify.success('ExcluÃ­do.'); navigateFn('/exercicios');
     });
   });
 
 
-  // Excluir método — com verificação admin
+  // Excluir mÃ©todo â€” com verificaÃ§Ã£o admin
   document.querySelectorAll('.delete-method').forEach(btn => {
     btn.addEventListener('click', async () => {
       const m = await db.get('methods', btn.dataset.id);
       if (!m) return;
       const _am = await isAdmin();
-      if (m.is_default && !_am) { notify.warning('Apenas admins podem excluir métodos padrão.'); return; }
-      if (!window.confirm(`Excluir método "${m.name}"?`)) return;
+      if (m.is_default && !_am) { notify.warning('Apenas admins podem excluir mÃ©todos padrÃ£o.'); return; }
+      if (!window.confirm(`Excluir mÃ©todo "${m.name}"?`)) return;
       await db.delete('methods', btn.dataset.id);
-      notify.success('Método excluído.'); navigateFn('/exercicios');
+      notify.success('MÃ©todo excluÃ­do.'); navigateFn('/exercicios');
     });
   });
 
@@ -667,7 +667,7 @@ export function initExercisesLibrary(navigateFn) {
             <div style="margin-bottom:16px">
               <h4 style="margin-bottom:8px;color:var(--primary)">${w.name}</h4>
               <table class="data-table" style="font-size:0.8rem">
-                <thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Desc.</th><th>Método</th></tr></thead>
+                <thead><tr><th>ExercÃ­cio</th><th>SÃ©ries</th><th>Reps</th><th>Desc.</th><th>MÃ©todo</th></tr></thead>
                 <tbody>${(w.exercises||[]).map(e=>`<tr><td>${e.name}</td><td>${e.sets||3}</td><td>${e.reps||'12'}</td><td>${e.rest||'60'}s</td><td>${e.method||'-'}</td></tr>`).join('')}</tbody>
               </table>
             </div>`).join('')}`,
@@ -701,7 +701,7 @@ export function initExercisesLibrary(navigateFn) {
     btn.addEventListener('click', async () => {
       if (!window.confirm('Excluir este modelo?')) return;
       await db.delete('cycles', btn.dataset.id);
-      notify.success('Modelo excluído.'); navigateFn('/exercicios');
+      notify.success('Modelo excluÃ­do.'); navigateFn('/exercicios');
     });
   });
 
@@ -720,7 +720,7 @@ export function initExercisesLibrary(navigateFn) {
               <h4 style="margin-bottom:8px;color:var(--primary)">${w.name}</h4>
               <div class="table-container">
                 <table class="data-table" style="font-size:0.8rem">
-                  <thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Desc.</th><th>Método</th></tr></thead>
+                  <thead><tr><th>ExercÃ­cio</th><th>SÃ©ries</th><th>Reps</th><th>Desc.</th><th>MÃ©todo</th></tr></thead>
                   <tbody>${(w.exercises||[]).map(e=>`<tr><td>${e.name}</td><td>${e.sets||3}</td><td>${e.reps||'12'}</td><td>${e.rest||'60'}s</td><td>${e.method||'-'}</td></tr>`).join('')}</tbody>
                 </table>
               </div>
@@ -756,13 +756,13 @@ export function initExercisesLibrary(navigateFn) {
             </div>
             <div class="form-group"><label class="form-label">Objetivo</label>
               <select class="form-select" name="goal">
-                ${['Hipertrofia','Força','Emagrecimento','Condicionamento','Resistência','Performance','Reabilitação','Funcional']
+                ${['Hipertrofia','ForÃ§a','Emagrecimento','Condicionamento','ResistÃªncia','Performance','ReabilitaÃ§Ã£o','Funcional']
                   .map(g => `<option ${tpl.goal===g?'selected':''}>${g}</option>`).join('')}
               </select>
             </div>
           </div>
-          <div class="form-group"><label class="form-label">Descrição</label>
-            <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem é indicado, observações...">${tpl.description||''}</textarea>
+          <div class="form-group"><label class="form-label">DescriÃ§Ã£o</label>
+            <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem Ã© indicado, observaÃ§Ãµes...">${tpl.description||''}</textarea>
           </div>
           <div id="tplWorkoutsEdit">
             ${workoutsHTML}
@@ -771,10 +771,10 @@ export function initExercisesLibrary(navigateFn) {
         </form>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-          { label: 'Salvar Alterações', class: 'btn-primary', onClick: async () => {
+          { label: 'Salvar AlteraÃ§Ãµes', class: 'btn-primary', onClick: async () => {
             const fd = new FormData(document.getElementById('editCustomTplForm'));
             const name = fd.get('name');
-            if (!name) { notify.error('Nome obrigatório'); return; }
+            if (!name) { notify.error('Nome obrigatÃ³rio'); return; }
             const workouts = [];
             document.querySelectorAll('#tplWorkoutsEdit .tpl-workout').forEach(wkEl => {
               const wi = wkEl.dataset.wi;
@@ -840,7 +840,7 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
-  // Editar modelo padrão (criar cópia personalizada)
+  // Editar modelo padrÃ£o (criar cÃ³pia personalizada)
   document.querySelectorAll('.edit-builtin-tpl').forEach(btn => {
     btn.addEventListener('click', async () => {
       const tplId = btn.dataset.tpl;
@@ -855,22 +855,22 @@ export function initExercisesLibrary(navigateFn) {
         : buildTplWorkoutHTML(0, allMet, null, allEx);
 
       openModal({
-        title: 'Editar Modelo Padrão (Criar Cópia)', size: 'xl',
+        title: 'Editar Modelo PadrÃ£o (Criar CÃ³pia)', size: 'xl',
         preventBackdropClose: true,
         content: `<form id="editBuiltinTplForm">
           <div class="form-row">
             <div class="form-group"><label class="form-label">Nome do Modelo *</label>
-              <input class="form-input" name="name" value="${tpl.name} (Cópia)" required placeholder="Ex: Full Body 3x/sem Hipertrofia" />
+              <input class="form-input" name="name" value="${tpl.name} (CÃ³pia)" required placeholder="Ex: Full Body 3x/sem Hipertrofia" />
             </div>
             <div class="form-group"><label class="form-label">Objetivo</label>
               <select class="form-select" name="goal">
-                ${['Hipertrofia','Força','Emagrecimento','Condicionamento','Resistência','Performance','Reabilitação','Funcional']
+                ${['Hipertrofia','ForÃ§a','Emagrecimento','Condicionamento','ResistÃªncia','Performance','ReabilitaÃ§Ã£o','Funcional']
                   .map(g => `<option ${tpl.goal===g?'selected':''}>${g}</option>`).join('')}
               </select>
             </div>
           </div>
-          <div class="form-group"><label class="form-label">Descrição</label>
-            <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem é indicado, observações...">${tpl.description||''}</textarea>
+          <div class="form-group"><label class="form-label">DescriÃ§Ã£o</label>
+            <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem Ã© indicado, observaÃ§Ãµes...">${tpl.description||''}</textarea>
           </div>
           <div id="tplWorkoutsEdit">
             ${workoutsHTML}
@@ -882,7 +882,7 @@ export function initExercisesLibrary(navigateFn) {
           { label: 'Salvar como meu Modelo', class: 'btn-primary', onClick: async () => {
             const fd = new FormData(document.getElementById('editBuiltinTplForm'));
             const name = fd.get('name');
-            if (!name) { notify.error('Nome obrigatório'); return; }
+            if (!name) { notify.error('Nome obrigatÃ³rio'); return; }
             const workouts = [];
             document.querySelectorAll('#tplWorkoutsEdit .tpl-workout').forEach(wkEl => {
               const wi = wkEl.dataset.wi;
@@ -933,7 +933,7 @@ export function initExercisesLibrary(navigateFn) {
               if (exercises.length) workouts.push({ name: wn, exercises });
             });
             await db.add('cycles', { name, goal: fd.get('goal'), description: fd.get('description'), isTemplate: true, workouts, daysPerWeek: workouts.length });
-            notify.success('Cópia do modelo salva em Meus Modelos!'); closeModal(); navigateFn('/exercicios');
+            notify.success('CÃ³pia do modelo salva em Meus Modelos!'); closeModal(); navigateFn('/exercicios');
           }}
         ]
       });
@@ -994,14 +994,14 @@ export function initExercisesLibrary(navigateFn) {
           </div>
           <div class="form-group"><label class="form-label">Objetivo</label>
             <select class="form-select" name="goal">
-              <option>Hipertrofia</option><option>Força</option><option>Emagrecimento</option>
-              <option>Condicionamento</option><option>Resistência</option><option>Performance</option>
-              <option>Reabilitação</option><option>Funcional</option>
+              <option>Hipertrofia</option><option>ForÃ§a</option><option>Emagrecimento</option>
+              <option>Condicionamento</option><option>ResistÃªncia</option><option>Performance</option>
+              <option>ReabilitaÃ§Ã£o</option><option>Funcional</option>
             </select>
           </div>
         </div>
-        <div class="form-group"><label class="form-label">Descrição</label>
-          <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem é indicado, observações..."></textarea>
+        <div class="form-group"><label class="form-label">DescriÃ§Ã£o</label>
+          <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem Ã© indicado, observaÃ§Ãµes..."></textarea>
         </div>
         <div id="tplWorkouts">
           ${buildTplWorkoutHTML(0, allMet, null, allEx)}
@@ -1013,7 +1013,7 @@ export function initExercisesLibrary(navigateFn) {
         { label: 'Salvar Modelo', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('customTplForm'));
           const name = fd.get('name');
-          if (!name) { notify.error('Nome obrigatório'); return; }
+          if (!name) { notify.error('Nome obrigatÃ³rio'); return; }
           const workouts = [];
           document.querySelectorAll('.tpl-workout').forEach(wkEl => {
             const wi = wkEl.dataset.wi;
@@ -1091,23 +1091,23 @@ function getTplExRowFieldsHTML(wi, ei, loadType, ex = null) {
 
   if (loadType === 'time') {
     return `
-      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" placeholder="Séries" />
-      <input class="form-input" name="wk_${wi}_duration_${ei}" value="${durationVal}" style="width:70px;text-align:center;font-size:0.82rem" title="Duração" placeholder="Duração" />
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="SÃ©ries" placeholder="SÃ©ries" />
+      <input class="form-input" name="wk_${wi}_duration_${ei}" value="${durationVal}" style="width:70px;text-align:center;font-size:0.82rem" title="DuraÃ§Ã£o" placeholder="DuraÃ§Ã£o" />
       <input class="form-input" name="wk_${wi}_speed_${ei}" value="${speedVal}" style="width:80px;text-align:center;font-size:0.82rem" title="Velocidade/Watts" placeholder="Vel/Watts" />
       <input class="form-input" name="wk_${wi}_fc_${ei}" value="${fcVal}" style="width:65px;text-align:center;font-size:0.82rem" title="FC Alvo" placeholder="FC Alvo" />
       <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
     `;
   } else if (loadType === 'bodyweight') {
     return `
-      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" placeholder="Séries" />
-      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Repetições" placeholder="Reps" />
-      <input class="form-input" name="wk_${wi}_load_${ei}" value="" style="width:60px;text-align:center;font-size:0.82rem" title="Sem Carga" placeholder="—" disabled />
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="SÃ©ries" placeholder="SÃ©ries" />
+      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="RepetiÃ§Ãµes" placeholder="Reps" />
+      <input class="form-input" name="wk_${wi}_load_${ei}" value="" style="width:60px;text-align:center;font-size:0.82rem" title="Sem Carga" placeholder="â€”" disabled />
       <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
     `;
   } else { // weight
     return `
-      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" placeholder="Séries" />
-      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Repetições" placeholder="Reps" />
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="SÃ©ries" placeholder="SÃ©ries" />
+      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal}" style="width:60px;text-align:center;font-size:0.82rem" title="RepetiÃ§Ãµes" placeholder="Reps" />
       <input class="form-input" name="wk_${wi}_load_${ei}" value="${loadVal}" style="width:60px;text-align:center;font-size:0.82rem" title="Carga (kg)" placeholder="kg" />
       <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
     `;
@@ -1138,13 +1138,13 @@ function buildTplWorkoutHTML(wi, allMethods = [], wk = null, allEx = []) {
   return `
     <div class="card mb-md tpl-workout" data-wi="${wi}" style="border:1px solid var(--border-active)">
       <div class="card-header">
-        <input class="form-input" name="wk_name_${wi}" value="${nameVal}" placeholder="Nome do Treino (ex: Treino A — Peito/Tríceps)" style="font-weight:600;flex:1" />
+        <input class="form-input" name="wk_name_${wi}" value="${nameVal}" placeholder="Nome do Treino (ex: Treino A â€” Peito/TrÃ­ceps)" style="font-weight:600;flex:1" />
         <button type="button" class="btn btn-ghost btn-sm rm-tpl-workout" style="color:var(--danger);margin-left:8px;white-space:nowrap">Remover</button>
       </div>
       <div class="tpl-exercises" data-wi="${wi}">
         ${exercisesHTML}
       </div>
-      <button type="button" class="btn btn-ghost btn-sm add-tpl-ex mt-xs" data-wi="${wi}">+ Exercício</button>
+      <button type="button" class="btn btn-ghost btn-sm add-tpl-ex mt-xs" data-wi="${wi}">+ ExercÃ­cio</button>
     </div>`;
 }
 
@@ -1154,7 +1154,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
   const foundEx = allEx.find(e => e.name === nameVal);
   const loadType = ex ? (ex.loadType || foundEx?.loadType || 'weight') : 'weight';
 
-  // Agrupar exercícios por tipo de carga
+  // Agrupar exercÃ­cios por tipo de carga
   const bodyweightExs = allEx.filter(e => e.loadType === 'bodyweight').sort((a,b)=>a.name.localeCompare(b.name));
   const weightExs = allEx.filter(e => !e.loadType || e.loadType === 'weight').sort((a,b)=>a.name.localeCompare(b.name));
   const timeExs = allEx.filter(e => e.loadType === 'time').sort((a,b)=>a.name.localeCompare(b.name));
@@ -1165,7 +1165,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
     extraOption = `<option value="${nameVal}" selected>${nameVal}</option>`;
   }
 
-  // Agrupar métodos
+  // Agrupar mÃ©todos
   const musculoMet = allMethods.filter(m => m.category !== 'Cardio');
   const cardioMet = allMethods.filter(m => m.category === 'Cardio');
 
@@ -1174,15 +1174,15 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
   return `
     <div class="flex items-center gap-xs mb-xs tpl-ex-row" data-wi="${wi}" data-ei="${ei}" style="flex-wrap:wrap">
       <select class="form-select tpl-ex-select" name="wk_${wi}_ex_${ei}" style="flex:2;min-width:150px;font-size:0.82rem">
-        <option value="">— Exercício —</option>
+        <option value="">â€” ExercÃ­cio â€”</option>
         ${extraOption}
-        <optgroup label="── Peso Corporal ──">
+        <optgroup label="â”€â”€ Peso Corporal â”€â”€">
           ${bodyweightExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="bodyweight">${e.name}</option>`).join('')}
         </optgroup>
-        <optgroup label="── Peso (kg) ──">
+        <optgroup label="â”€â”€ Peso (kg) â”€â”€">
           ${weightExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="weight">${e.name}</option>`).join('')}
         </optgroup>
-        <optgroup label="── Tempo / Intensidade ──">
+        <optgroup label="â”€â”€ Tempo / Intensidade â”€â”€">
           ${timeExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="time">${e.name}</option>`).join('')}
         </optgroup>
       </select>
@@ -1192,7 +1192,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
       </div>
 
       <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem">
-        <option value="">— Método —</option>
+        <option value="">â€” MÃ©todo â€”</option>
         ${(() => {
           const groups = {};
           allMethods.forEach(m => {
@@ -1200,7 +1200,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
             if (!groups[cat]) groups[cat] = [];
             groups[cat].push(m);
           });
-          const ORDER = ['Hipertrofia','Força','Geral','Cardio','Resistência','Potência'];
+          const ORDER = ['Hipertrofia','ForÃ§a','Geral','Cardio','ResistÃªncia','PotÃªncia'];
           const sorted = [...ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !ORDER.includes(c))];
           return sorted.map(cat => `
             <optgroup label="${cat}">
@@ -1208,7 +1208,7 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
             </optgroup>`).join('');
         })()}
       </select>
-      <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">✕</button>
+      <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">âœ•</button>
     </div>`;
 }
 
@@ -1257,11 +1257,11 @@ async function showApplyTemplateModal(tpl, navigateFn) {
       <div class="form-group"><label class="form-label">Nome do Ciclo</label>
         <input class="form-input" name="cycle" value="${tpl.name}" />
       </div>
-      <div class="form-group"><label class="form-label">Data de Início</label>
+      <div class="form-group"><label class="form-label">Data de InÃ­cio</label>
         <input class="form-input" name="date" type="date" value="${new Date().toISOString().slice(0,10)}" />
       </div>
       <div style="padding:10px;background:var(--bg-page);border-radius:8px;font-size:0.82rem;color:var(--text-muted)">
-        ${(tpl.workouts||[]).length} treino(s) serão criados para o aluno.
+        ${(tpl.workouts||[]).length} treino(s) serÃ£o criados para o aluno.
       </div>
     </form>`,
     actions: [
@@ -1313,7 +1313,7 @@ function bindMethodAutoFill(row) {
       if (match) restEl.value = match[1];
     }
 
-    // ── Verificar se o método tem progressão definida ────────
+    // â”€â”€ Verificar se o mÃ©todo tem progressÃ£o definida â”€â”€â”€â”€â”€â”€â”€â”€
     const progression = METHOD_PROGRESSIONS[methodName];
     if (!progression) {
       const desc = opt?.dataset.desc;
@@ -1321,16 +1321,16 @@ function bindMethodAutoFill(row) {
         const tip = document.createElement('div');
         tip.className = 'method-tip';
         tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;width:100%;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
-        tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
+        tip.innerHTML = `<strong>${methodName}</strong> â€” ${desc}`;
         row.appendChild(tip);
       }
       return;
     }
 
-    // Atualizar contador de séries
+    // Atualizar contador de sÃ©ries
     if (setsEl) setsEl.value = progression.series.length;
 
-    // Criar painel de visualização das sub-séries do método
+    // Criar painel de visualizaÃ§Ã£o das sub-sÃ©ries do mÃ©todo
     const panel = document.createElement('div');
     panel.className = 'method-series-panel';
     panel.style.cssText = 'width:100%;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:8px 10px';
@@ -1343,7 +1343,7 @@ function bindMethodAutoFill(row) {
 
     const seriesLegend = `
       <div style="display:grid;grid-template-columns:100px 72px 72px;gap:6px;margin-bottom:4px;border-bottom:1px solid rgba(148,163,184,0.1);padding-bottom:2px">
-        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
+        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">SÃ©rie</div>
         <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Intensidade</div>
         <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
       </div>`;
@@ -1361,3 +1361,4 @@ function bindMethodAutoFill(row) {
     row.appendChild(panel);
   });
 }
+

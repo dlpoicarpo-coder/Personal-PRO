@@ -1,11 +1,11 @@
-// ========================================
-// PERSONAL PRO — Notifications Manager (v1)
-// Notificações de treino para aluno + resposta do biofeedback
+﻿// ========================================
+// VETOR â€” Notifications Manager (v1)
+// NotificaÃ§Ãµes de treino para aluno + resposta do biofeedback
 // ========================================
 import db from '../db.js';
 import { notify } from '../components/toast.js';
 
-// ── PERMISSÃO DO NAVEGADOR ──────────────────────────────────
+// â”€â”€ PERMISSÃƒO DO NAVEGADOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function requestNotificationPermission() {
   if (!('Notification' in window)) return false;
   if (Notification.permission === 'granted') return true;
@@ -25,7 +25,7 @@ function sendBrowserNotification(title, body, icon = null) {
   } catch (e) { console.warn('Browser notification error:', e); }
 }
 
-// ── NOTIFICAÇÃO DE TREINO AGENDADO ──────────────────────────
+// â”€â”€ NOTIFICAÃ‡ÃƒO DE TREINO AGENDADO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function sendWorkoutReminder(student, schedule, trainerPhone = '') {
   const time = schedule.time || '';
   const name = student?.name || 'Aluno';
@@ -33,25 +33,25 @@ export function sendWorkoutReminder(student, schedule, trainerPhone = '') {
 
   // Browser notification (para o personal)
   sendBrowserNotification(
-    `Lembrete — ${name}`,
-    `Treino às ${time}: ${workout}`
+    `Lembrete â€” ${name}`,
+    `Treino Ã s ${time}: ${workout}`
   );
 
   // WhatsApp para o aluno
   const phone = student?.phone?.replace(/\D/g, '') || '';
   if (!phone) return null;
 
-  const msg = `Olá, ${name}! 👋\n\nLembrete do seu treino de hoje às *${time}*:\n📋 ${workout}\n\nBom treino! 💪\n\n_Vetor_`;
+  const msg = `OlÃ¡, ${name}! ðŸ‘‹\n\nLembrete do seu treino de hoje Ã s *${time}*:\nðŸ“‹ ${workout}\n\nBom treino! ðŸ’ª\n\n_Vetor_`;
   const wa = `https://wa.me/${phone.startsWith('55') ? phone : '55' + phone}?text=${encodeURIComponent(msg)}`;
   return wa;
 }
 
-// ── NOTIFICAÇÃO DE RESPOSTA DO ALUNO ────────────────────────
+// â”€â”€ NOTIFICAÃ‡ÃƒO DE RESPOSTA DO ALUNO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function checkAndNotifyNewResponses() {
   try {
-    // "since" para badge = últimas 24h (sempre mostra respostas recentes)
+    // "since" para badge = Ãºltimas 24h (sempre mostra respostas recentes)
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    // "since" para toast = última vez que checou (evita repetir toast)
+    // "since" para toast = Ãºltima vez que checou (evita repetir toast)
     const lastCheck = localStorage.getItem('pp_last_notif_check');
     const sinceToast = lastCheck
       ? new Date(lastCheck)
@@ -66,31 +66,31 @@ export async function checkAndNotifyNewResponses() {
     const _d = new Date();
     const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
 
-    // ── Treinos de hoje ──────────────────────────────────────
+    // â”€â”€ Treinos de hoje â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const todaySchedules = schedules.filter(s =>
       s.status === 'scheduled' && (s.date||'').slice(0,10) === todayStr
     );
 
-    // Mostrar treinos de hoje no badge SEMPRE (não bloquear por dia)
+    // Mostrar treinos de hoje no badge SEMPRE (nÃ£o bloquear por dia)
     if (todaySchedules.length > 0) {
-      // Toast só uma vez por sessão (não por dia — usar sessionStorage)
+      // Toast sÃ³ uma vez por sessÃ£o (nÃ£o por dia â€” usar sessionStorage)
       if (!sessionStorage.getItem('pp_today_notif_shown')) {
         todaySchedules.forEach(s => {
           const st = students.find(x => x.id === s.studentId);
-          notify.info(`📅 Treino hoje: ${st?.name || 'Aluno'} às ${s.time || '—'}`);
+          notify.info(`ðŸ“… Treino hoje: ${st?.name || 'Aluno'} Ã s ${s.time || 'â€”'}`);
         });
         sessionStorage.setItem('pp_today_notif_shown', '1');
       }
     }
 
-    // ── Biofeedback novo de todos os alunos ─────────────────
+    // â”€â”€ Biofeedback novo de todos os alunos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const activeStudents = students.filter(s => s.status === 'Ativo');
     const allBfArrays    = await Promise.all(
       activeStudents.map(s => db.getAllForStudent('biofeedback', s.id).catch(() => []))
     );
     const allBf = allBfArrays.flat();
 
-    // Respostas de pré novas (badge = 24h, toast = desde último check)
+    // Respostas de prÃ© novas (badge = 24h, toast = desde Ãºltimo check)
     const newPre = allBf.filter(b =>
       b.formType === 'pre' &&
       new Date(b.submittedAt || b.date) > since24h
@@ -100,7 +100,7 @@ export async function checkAndNotifyNewResponses() {
       new Date(b.submittedAt || b.date) > sinceToast
     );
 
-    // Respostas de pós novas
+    // Respostas de pÃ³s novas
     const newPost = allBf.filter(b =>
       (b.formType === 'post' || b.formType === 'complete') &&
       new Date(b.submittedAt || b.completedAt || b.date) > since24h
@@ -110,7 +110,7 @@ export async function checkAndNotifyNewResponses() {
       new Date(b.submittedAt || b.completedAt || b.date) > sinceToast
     );
 
-    // Sessões com pós preenchido
+    // SessÃµes com pÃ³s preenchido
     const newPostSessions = sessions.filter(s =>
       s.postBiofeedback?.pse &&
       s.postBiofeedback.submittedAt &&
@@ -122,7 +122,7 @@ export async function checkAndNotifyNewResponses() {
       new Date(s.postBiofeedback.submittedAt) > sinceToast
     );
 
-    // ── Macrociclos encerrando em ≤7 dias ───────────────────
+    // â”€â”€ Macrociclos encerrando em â‰¤7 dias â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const macroAlerts = macros
       .filter(m => m.status === 'active' && m.startDate && m.totalWeeks)
       .filter(m => {
@@ -131,7 +131,7 @@ export async function checkAndNotifyNewResponses() {
         return days >= 0 && days <= 7;
       });
 
-    // ── Reavaliações pendentes (>30 dias) ───────────────────
+    // â”€â”€ ReavaliaÃ§Ãµes pendentes (>30 dias) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const allStudents   = await db.getAll('students');
     const allAssessments= await db.getAll('assessments');
     const reassessAlerts = allStudents
@@ -148,27 +148,27 @@ export async function checkAndNotifyNewResponses() {
       .filter(s => s.daysSince > 30)
       .sort((a,b) => b.daysSince-a.daysSince);
 
-    // Badge = treinos hoje + respostas + macrociclos + reavaliações críticas (>60d)
+    // Badge = treinos hoje + respostas + macrociclos + reavaliaÃ§Ãµes crÃ­ticas (>60d)
     const criticalReassess = reassessAlerts.filter(s => s.daysSince > 60);
     const total = todaySchedules.length + newPre.length + newPost.length
                 + newPostSessions.length + macroAlerts.length + criticalReassess.length;
     updateNotificationBadge(total);
 
-    // ── Toasts para respostas novas (só desde último check) ──
+    // â”€â”€ Toasts para respostas novas (sÃ³ desde Ãºltimo check) â”€â”€
     if (newPreToast.length > 0) {
       const st = students.find(s => s.id === newPreToast[0].studentId);
-      notify.info(`📋 ${st?.name || 'Aluno'} preencheu o pré-treino`);
+      notify.info(`ðŸ“‹ ${st?.name || 'Aluno'} preencheu o prÃ©-treino`);
     }
     if (newPostToast.length + newPostSessionsToast.length > 0) {
       const sid = newPostToast[0]?.studentId || newPostSessionsToast[0]?.studentId;
       const st  = students.find(s => s.id === sid);
-      notify.success(`✅ ${st?.name || 'Aluno'} preencheu o pós-treino`);
+      notify.success(`âœ… ${st?.name || 'Aluno'} preencheu o pÃ³s-treino`);
     }
     macroAlerts.forEach(m => {
       const st   = students.find(s => s.id === m.studentId);
       const endMs= new Date(m.startDate+'T12:00:00').getTime() + m.totalWeeks*7*86400000;
       const days = Math.ceil((endMs - Date.now()) / 86400000);
-      notify.warning(`⏰ ${st?.name||'Aluno'}: macrociclo encerra em ${days===0?'hoje':days+' dia(s)'}`);
+      notify.warning(`â° ${st?.name||'Aluno'}: macrociclo encerra em ${days===0?'hoje':days+' dia(s)'}`);
     });
 
     localStorage.setItem('pp_last_notif_check', new Date().toISOString());
@@ -179,7 +179,7 @@ export async function checkAndNotifyNewResponses() {
   }
 }
 
-// ── BADGE NO SINO DA SIDEBAR ────────────────────────────────
+// â”€â”€ BADGE NO SINO DA SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function updateNotificationBadge(count) {
   const badge = document.getElementById('notifBadge');
   if (!badge) return;
@@ -191,7 +191,7 @@ function updateNotificationBadge(count) {
   }
 }
 
-// ── PAINEL DE NOTIFICAÇÕES ──────────────────────────────────
+// â”€â”€ PAINEL DE NOTIFICAÃ‡Ã•ES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function renderNotificationsPanel() {
   // Carregar dados base primeiro
   const students    = await db.getAll('students');
@@ -199,7 +199,7 @@ export async function renderNotificationsPanel() {
   const schedules   = await db.getAll('schedules');
   const macrocycles = await db.getAll('macrocycles');
 
-  // Biofeedback — mesclar trainer + formulários públicos
+  // Biofeedback â€” mesclar trainer + formulÃ¡rios pÃºblicos
   const biofeedback_raw = await db.getAll('biofeedback');
   const activeSt = students.filter(s => s.status === 'Ativo');
   const pubBfArr = await Promise.all(
@@ -219,7 +219,7 @@ export async function renderNotificationsPanel() {
     return schedDate === todayLocal;
   });
 
-  // Macrociclos encerrando em até 7 dias
+  // Macrociclos encerrando em atÃ© 7 dias
   const nowMs = Date.now();
   const macroAlerts = macrocycles
     .filter(m => m.status === 'active' && m.startDate && m.totalWeeks)
@@ -231,7 +231,7 @@ export async function renderNotificationsPanel() {
     .filter(m => m.daysLeft >= 0 && m.daysLeft <= 7)
     .sort((a, b) => a.daysLeft - b.daysLeft);
 
-  // Últimas respostas (últimas 48h) — sem depender de submittedByStudent
+  // Ãšltimas respostas (Ãºltimas 48h) â€” sem depender de submittedByStudent
   const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
   const recentResponses = [
     ...biofeedback
@@ -259,7 +259,7 @@ export async function renderNotificationsPanel() {
       })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  // Reavaliações pendentes
+  // ReavaliaÃ§Ãµes pendentes
   const allAssessmentsNotif = await db.getAll('assessments');
   const reassessAlerts = students
     .filter(s => s.status === 'Ativo')
@@ -287,7 +287,7 @@ export async function renderNotificationsPanel() {
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
             <div>
               <div style="font-size:0.88rem;font-weight:600;color:#f1f5f9">${st?.name || 'Aluno'}</div>
-              <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">${s.time || ''} · ${s.workoutName || 'Treino'}</div>
+              <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">${s.time || ''} Â· ${s.workoutName || 'Treino'}</div>
             </div>
             <button class="btn btn-ghost btn-sm send-reminder"
               data-student-id="${s.studentId}"
@@ -307,17 +307,17 @@ export async function renderNotificationsPanel() {
       ${macroAlerts.length > 0 ? `
       <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08)">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8b5cf6;margin-bottom:10px">
-          ⏰ Macrociclos encerrando (${macroAlerts.length})
+          â° Macrociclos encerrando (${macroAlerts.length})
         </div>
         ${macroAlerts.map(m => {
           const st = students.find(x => x.id === m.studentId);
           const urgColor = m.daysLeft === 0 ? '#ef4444' : m.daysLeft <= 2 ? '#f97316' : '#f59e0b';
-          const urgLabel = m.daysLeft === 0 ? 'Encerra hoje!' : m.daysLeft === 1 ? 'Encerra amanhã' : `${m.daysLeft} dias restantes`;
+          const urgLabel = m.daysLeft === 0 ? 'Encerra hoje!' : m.daysLeft === 1 ? 'Encerra amanhÃ£' : `${m.daysLeft} dias restantes`;
           return `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
             <div>
               <div style="font-size:0.88rem;font-weight:600;color:#f1f5f9">${st?.name || 'Aluno'}</div>
-              <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">${m.name || 'Macrociclo'} · ${m.totalWeeks}sem</div>
+              <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px">${m.name || 'Macrociclo'} Â· ${m.totalWeeks}sem</div>
             </div>
             <span style="font-size:0.75rem;font-weight:700;color:${urgColor};background:${urgColor}22;padding:3px 8px;border-radius:10px;white-space:nowrap">${urgLabel}</span>
           </div>`;
@@ -333,8 +333,8 @@ export async function renderNotificationsPanel() {
           const st = students.find(x => x.id === r.studentId);
           const isPost = r.type === 'post' || r.type === 'post_session';
           const pse = r.type === 'post_session' ? r.data.postBiofeedback?.pse : r.data.pse;
-          const icon = isPost ? '✅' : '📋';
-          const label = isPost ? 'Pós-treino' : 'Pré-treino';
+          const icon = isPost ? 'âœ…' : 'ðŸ“‹';
+          const label = isPost ? 'PÃ³s-treino' : 'PrÃ©-treino';
           const labelColor = isPost ? '#10b981' : '#6366f1';
           const time = new Date(r.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
           const dateStr = new Date(r.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -345,17 +345,17 @@ export async function renderNotificationsPanel() {
               <div style="font-size:0.88rem;font-weight:600;color:#f1f5f9">${st?.name || 'Aluno'}</div>
               <div style="font-size:0.72rem;margin-top:2px">
                 <span style="color:${labelColor}">${label}</span>
-                <span style="color:#64748b"> · ${dateStr} às ${time}${pse ? ` · PSE ${pse}/10` : ''}</span>
+                <span style="color:#64748b"> Â· ${dateStr} Ã s ${time}${pse ? ` Â· PSE ${pse}/10` : ''}</span>
               </div>
             </div>
           </div>`;
-        }).join('') : `<p style="font-size:0.82rem;color:#64748b;margin:0;padding:8px 0">Nenhuma resposta nas últimas 48h</p>`}
+        }).join('') : `<p style="font-size:0.82rem;color:#64748b;margin:0;padding:8px 0">Nenhuma resposta nas Ãºltimas 48h</p>`}
       </div>
 
       ${reassessAlerts?.length > 0 ? `
       <div style="padding:14px 18px;border-top:1px solid rgba(255,255,255,0.08)">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f59e0b;margin-bottom:10px">
-          📐 Reavaliações pendentes (${reassessAlerts.length})
+          ðŸ“ ReavaliaÃ§Ãµes pendentes (${reassessAlerts.length})
         </div>
         ${reassessAlerts.slice(0,4).map(s => {
           const urgColor = s.daysSince>90?'#ef4444':s.daysSince>60?'#f97316':'#f59e0b';
@@ -365,25 +365,25 @@ export async function renderNotificationsPanel() {
             <div>
               <div style="font-size:0.88rem;font-weight:600;color:#f1f5f9">${s.name}</div>
               <div style="font-size:0.72rem;color:${urgColor};margin-top:2px;font-weight:600">${label}</div>
-              ${s.lastAss ? `<div style="font-size:0.65rem;color:#64748b">Última: ${new Date(s.lastAss.date).toLocaleDateString('pt-BR')}</div>` : ''}
+              ${s.lastAss ? `<div style="font-size:0.65rem;color:#64748b">Ãšltima: ${new Date(s.lastAss.date).toLocaleDateString('pt-BR')}</div>` : ''}
             </div>
-            <a href="#/avaliacoes" style="font-size:0.72rem;font-weight:700;color:${urgColor};background:${urgColor}22;padding:3px 8px;border-radius:10px;text-decoration:none;white-space:nowrap">Avaliar →</a>
+            <a href="#/avaliacoes" style="font-size:0.72rem;font-weight:700;color:${urgColor};background:${urgColor}22;padding:3px 8px;border-radius:10px;text-decoration:none;white-space:nowrap">Avaliar â†’</a>
           </div>`;
         }).join('')}
       </div>` : ''}
 
     </div>
-  `:`<div style="padding:14px 18px"><p style="color:#64748b;font-size:0.82rem">Nenhuma notificação</p></div>`}
+  `:`<div style="padding:14px 18px"><p style="color:#64748b;font-size:0.82rem">Nenhuma notificaÃ§Ã£o</p></div>`}
   `;
 }
 
-// ── POLLING — verificar respostas a cada 2 minutos ──────────
+// â”€â”€ POLLING â€” verificar respostas a cada 2 minutos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _pollingInterval = null;
 
 export function startNotificationPolling() {
   if (_pollingInterval) return;
 
-  // Sempre resetar lastCheck ao iniciar nova sessão do app
+  // Sempre resetar lastCheck ao iniciar nova sessÃ£o do app
   // Garante que treinos de hoje e respostas recentes sejam verificados
   const lastCheck = localStorage.getItem('pp_last_notif_check');
   if (lastCheck) {
@@ -404,3 +404,4 @@ export function startNotificationPolling() {
 export function stopNotificationPolling() {
   if (_pollingInterval) { clearInterval(_pollingInterval); _pollingInterval = null; }
 }
+

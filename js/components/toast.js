@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Toast Notifications
+﻿// ========================================
+// VETOR â€” Toast Notifications
 // ========================================
 
 let container = null;
@@ -17,14 +17,14 @@ function ensureContainer() {
 
 export function toast(message, type = 'info', duration = 3500) {
   const c = ensureContainer();
-  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const icons = { success: 'âœ“', error: 'âœ•', warning: 'âš ', info: 'â„¹' };
 
   const el = document.createElement('div');
   el.className = `toast toast-${type} animate-slide-in`;
   el.innerHTML = `
     <span class="toast-icon">${icons[type] || icons.info}</span>
     <span class="toast-msg">${message}</span>
-    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+    <button class="toast-close" onclick="this.parentElement.remove()">âœ•</button>
   `;
 
   c.appendChild(el);
@@ -43,3 +43,4 @@ export const notify = {
   warning: (msg) => toast(msg, 'warning'),
   info: (msg) => toast(msg, 'info'),
 };
+

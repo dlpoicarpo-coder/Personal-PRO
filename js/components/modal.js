@@ -1,5 +1,5 @@
-// ========================================
-// PERSONAL PRO — Modal Component
+﻿// ========================================
+// VETOR â€” Modal Component
 // ========================================
 
 let activeModal = null;
@@ -20,7 +20,7 @@ export function openModal(options = {}) {
     <div class="modal ${sizeClass} animate-slide-up">
       <div class="modal-header">
         <h3 class="modal-title">${title}</h3>
-        <button class="btn-ghost btn-icon modal-close" id="modalCloseBtn">✕</button>
+        <button class="btn-ghost btn-icon modal-close" id="modalCloseBtn">âœ•</button>
       </div>
       <div class="modal-body" id="modalBody">${content}</div>
       ${actions.length ? `
@@ -60,7 +60,7 @@ export function openModal(options = {}) {
     isMouseDownOnModal = false;
   });
 
-  // Action handlers — bind ALL actions with onClick
+  // Action handlers â€” bind ALL actions with onClick
   actions.forEach(a => {
     if (a.onClick) {
       const btn = modal.querySelector(`#${a.id}`);
@@ -106,3 +106,4 @@ export function confirm(message, title = 'Confirmar') {
     });
   });
 }
+

@@ -1,5 +1,5 @@
 {
-  "name": "personal-pro",
+  "name": "vetor",
   "version": "2.2.0",
   "scripts": {
     "build": "node build.js"
