@@ -157,6 +157,13 @@ export async function navigateTo(path) {
     return;
   }
 
+  if (role !== 'trainer') {
+    console.error('[Guard] papel indeterminado, bloqueando');
+    appContainer.innerHTML = renderLogin();
+    initLogin(() => navigateTo('/'));
+    return;
+  }
+
   // Asynchronously seed templates once the trainer is authenticated
   import('./db.js').then(({ default: db }) => {
     db.seedTemplates().catch(console.error);

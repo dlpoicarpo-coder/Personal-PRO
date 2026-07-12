@@ -223,7 +223,10 @@ export async function renderStudentPortal(rawParam) {
       // O usuário logado é de fato um estudante!
       studentId = data.id;
       trainerId = data.trainer_id || data.trainerId;
-      studentData = data;
+      studentData = data.data
+        ? { ...data.data, id: data.id, trainer_id: data.trainer_id,
+            auth_user_id: data.auth_user_id }
+        : data;
       isEmailAuth = true;
       // Atualiza a global config de portalClient usando o client padrão já autenticado
       setPortalClient(supabase);

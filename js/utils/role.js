@@ -16,7 +16,7 @@ export async function getUserRole() {
   }
 
   const sb = getSupabase();
-  if (!sb) return 'trainer'; // fallback
+  if (!sb) return null;
 
   try {
     const { data, error } = await sb
@@ -35,7 +35,7 @@ export async function getUserRole() {
     return cachedRole;
   } catch (err) {
     console.error('Erro ao verificar papel do usuário:', err);
-    return 'trainer'; // fallback seguro
+    return null;
   }
 }
 
