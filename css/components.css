@@ -22,7 +22,7 @@
   width: var(--sidebar-width);
   height: 100vh;
   background: var(--side, #05080E);
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   z-index: var(--z-sidebar);
@@ -156,13 +156,13 @@
 
 .sidebar-link:hover {
   background: rgba(255, 255, 255, 0.03);
-  color: var(--side-ink, #e2e8f0);
+  color: #e2e8f0;
 }
 
 .sidebar-link.active {
   background: rgba(16, 185, 129, 0.13);
   box-shadow: inset 3px 0 0 #10b981;
-  color: var(--side-ink, #e2e8f0);
+  color: #e2e8f0;
   font-weight: 600;
 }
 
