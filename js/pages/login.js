@@ -9,11 +9,12 @@ export function renderLogin() {
   return `
     <div class="login-page">
       <div class="login-card">
-        <div class="login-header" style="display:flex; justify-content:center; align-items:center; margin-bottom:20px; font-size:1.8rem;">
+        <div class="login-header" style="display:flex; flex-direction:column; align-items:center; margin-bottom:20px; font-size:1.8rem;">
           <div class="vetor-logo">
             <span class="vetor-name">Vetor</span>
             <i class="vetor-diamond"></i>
           </div>
+          <span class="login-tagline">Periodização de verdade, sem achismos.</span>
         </div>
 
         <div class="login-tabs">

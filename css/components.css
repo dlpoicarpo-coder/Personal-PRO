@@ -921,6 +921,16 @@
   border-bottom: 1px solid var(--border-color);
 }
 
+.login-tagline {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  text-align: center;
+  letter-spacing: .01em;
+}
+
 .login-title {
   font-size: 2rem;
   font-weight: 500;
