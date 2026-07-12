@@ -124,7 +124,7 @@ export function renderLogin() {
         </div>
 
         <div class="login-footer">
-          <p class="text-muted text-xs">© 2026 Vetor — Dados protegidos por Supabase Auth</p>
+          <p class="text-muted text-xs">© 2026 VETOR — Dados protegidos por Supabase Auth</p>
           <div style="margin-top: 8px; font-size: 0.8rem;">
             <a href="#/termos" target="_blank" style="color: var(--text-muted); text-decoration: none; margin-right: 12px;">Termos</a>
             <a href="#/privacidade" target="_blank" style="color: var(--text-muted); text-decoration: none;">Privacidade</a>

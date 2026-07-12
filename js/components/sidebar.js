@@ -1,5 +1,5 @@
-﻿// ========================================
-// VETOR â€” Sidebar Component (v4)
+// ========================================
+// VETOR — Sidebar Component (v4)
 // ========================================
 import { ICONS } from '../utils/icons.js';
 import { signOut } from '../utils/auth.js';
@@ -11,16 +11,16 @@ const MENU_ITEMS = [
   { id: 'tracker', icon: 'tracker', label: 'Treino ao Vivo', path: '/tracker', highlight: true },
   { id: 'calendar', icon: 'calendar', label: 'Agenda', path: '/agenda' },
   { id: 'workouts', icon: 'workouts', label: 'Treinos', path: '/treinos' },
-  { id: 'periodization', icon: 'periodization', label: 'PeriodizaÃ§Ã£o', path: '/periodizacao' },
-  { id: 'assessments', icon: 'assessments', label: 'AvaliaÃ§Ãµes', path: '/avaliacoes' },
+  { id: 'periodization', icon: 'periodization', label: 'Periodização', path: '/periodizacao' },
+  { id: 'assessments', icon: 'assessments', label: 'Avaliações', path: '/avaliacoes' },
   { id: 'biofeedback', icon: 'biofeedback', label: 'Biofeedback', path: '/biofeedback' },
   { id: 'weekly', icon: 'weekly', label: 'Resumo Semanal', path: '/semanal' },
   { id: 'financial', icon: 'financial', label: 'Financeiro', path: '/financeiro' },
-  { id: 'exercises', icon: 'exercises', label: 'ExercÃ­cios', path: '/exercicios' },
-  { id: 'reports', icon: 'reports', label: 'RelatÃ³rios', path: '/relatorios' },
+  { id: 'exercises', icon: 'exercises', label: 'Exercícios', path: '/exercicios' },
+  { id: 'reports', icon: 'reports', label: 'Relatórios', path: '/relatorios' },
   { id: 'anamnesis', icon: 'assessments', label: 'Anamnese', path: '/anamnese' },
   { id: 'tutorial', icon: 'weekly', label: 'Tutorial', path: '/tutorial' },
-  { id: 'settings', icon: 'settings', label: 'ConfiguraÃ§Ãµes', path: '/config' },
+  { id: 'settings', icon: 'settings', label: 'Configurações', path: '/config' },
 ];
 
 export function renderSidebar(currentPath) {
@@ -32,7 +32,7 @@ export function renderSidebar(currentPath) {
             <span class="vetor-name">Vetor</span>
             <i class="vetor-diamond"></i>
           </div>
-          <span class="sidebar-tagline">TREINO COM DIREÃ‡ÃƒO</span>
+          <span class="sidebar-tagline">TREINO COM DIREÇÃO</span>
         </div>
         <div style="display:flex; gap: 4px;">
           <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Minimizar menu">
@@ -40,7 +40,7 @@ export function renderSidebar(currentPath) {
           </button>
         </div>
       </div>
-      <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">â˜°</button>
+      <button class="sidebar-toggle btn-ghost btn-icon" id="sidebarToggle" title="Menu">☰</button>
       
       <nav class="sidebar-nav">
         ${MENU_ITEMS.map(item => `
@@ -49,7 +49,7 @@ export function renderSidebar(currentPath) {
              data-page="${item.id}"
              id="nav-${item.id}"
              title="${item.label}">
-            <span class="sidebar-icon-svg">${ICONS[item.icon] || 'â€¢'}</span>
+            <span class="sidebar-icon-svg">${ICONS[item.icon] || '•'}</span>
             <span class="sidebar-label">${item.label}</span>
             ${item.highlight ? '<span class="live-dot"></span>' : ''}
           </a>
@@ -65,7 +65,7 @@ export function renderSidebar(currentPath) {
               <span class="sidebar-user-role" id="roleBadge">Personal Trainer</span>
             </div>
           <div style="display: flex; align-items: center; gap: 4px;">
-            <button id="notificationBtn" title="NotificaÃ§Ãµes" style="position:relative; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; opacity: 0.8; transition: all 0.2s; border-radius: 6px;" onmouseover="this.style.opacity='1';this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.opacity='0.8';this.style.background='none'">
+            <button id="notificationBtn" title="Notificações" style="position:relative; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; opacity: 0.8; transition: all 0.2s; border-radius: 6px;" onmouseover="this.style.opacity='1';this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.opacity='0.8';this.style.background='none'">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
               <span id="notifBadge" style="position:absolute;top:-2px;right:-2px;background:var(--danger);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:bold;display:none;align-items:center;justify-content:center;"></span>
             </button>
@@ -128,4 +128,3 @@ export function initSidebar() {
 }
 
 export { MENU_ITEMS };
-

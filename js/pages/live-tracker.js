@@ -1,6 +1,6 @@
 // ========================================
-// VETOR - Live Tracker (v3)
-// Timers conectados • Design limpo • PDF • Excluir sessão
+// VETOR — Live Tracker (v3)
+// Timers conectados · Design limpo · PDF · Excluir sessão
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
@@ -2180,12 +2180,12 @@ async function finishSession(dur, vol, dens, post, navigateFn) {
       const nome      = student.name.split(' ')[0];
       const trainerName = settings?.trainerName || '';
       const msg = [
-        ` *Vetor*`,``,
+        ` *VETOR*`,``,
         `Parabéns pelo treino, ${nome}! 🎉`,``,
         `📊 *Avalie como foi a sessão* (leva ~30 segundos):`,
         postLink,``,
         `Seu feedback ajuda a ajustar o próximo treino. `,``,
-        trainerName ? `_Personal: ${trainerName}_` : `_Vetor_`,
+        trainerName ? `_Personal: ${trainerName}_` : `_VETOR_`,
       ].join('\n');
       const num = student.phone.replace(/\D/g,'');
       const waNum = num.startsWith('55') ? num : '55'+num;
@@ -2599,7 +2599,7 @@ function generateSessionPDF(session, student) {
     // Cabeçalho compacto
     doc.setFillColor(...G); doc.rect(0,0,210,22,'F');
     doc.setTextColor(255,255,255);
-    doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text('Vetor',14,10);
+    doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text('VETOR',14,10);
     doc.setFontSize(7); doc.setFont('helvetica','normal');
     doc.text('Relatório de Sessão · '+dateL,14,17);
     doc.text(student?.name||'Aluno',196,10,{align:'right'});
@@ -2800,7 +2800,7 @@ function generateSessionPDF(session, student) {
       doc.setPage(p);
       doc.setFillColor(...DK); doc.rect(0,287,210,10,'F');
       doc.setTextColor(255,255,255); doc.setFontSize(6.5); doc.setFont('helvetica','normal');
-      doc.text('Vetor — Periodização de verdade, sem achismos',105,293,{align:'center'});
+      doc.text('VETOR — Sistema Profissional de Personal Trainer',105,293,{align:'center'});
       doc.text(`Pág ${p}/${pages}`,196,293);
     }
 

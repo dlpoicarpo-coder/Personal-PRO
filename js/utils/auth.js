@@ -1,12 +1,12 @@
-﻿// ========================================
-// VETOR â€” Supabase Auth Utility
+// ========================================
+// VETOR — Supabase Auth Utility
 // Email/Password with email confirmation
 // Multi-tenant: each trainer has isolated data
 // ========================================
 
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 
-// Singleton client â€” reuse across modules
+// Singleton client — reuse across modules
 let _client = null;
 export function getSupabase() {
   if (!_client && window.supabase && typeof window.supabase.createClient === 'function') {
@@ -53,7 +53,7 @@ export async function getCurrentUser() {
     // Fallback: use cached UID from localStorage to keep app usable offline
     const cachedUid = localStorage.getItem('pp_cached_uid');
     if (cachedUid) {
-      console.warn('Supabase unreachable â€” using cached offline session');
+      console.warn('Supabase unreachable — using cached offline session');
       return { id: cachedUid, email: '', _offline: true };
     }
     return null;
@@ -77,7 +77,7 @@ export async function getSession() {
 // Returns: { user, error, needsConfirmation }
 export async function signUp(email, password, trainerName, cref) {
   const sb = getSupabase();
-  if (!sb) return { error: 'Supabase nÃ£o disponÃ­vel' };
+  if (!sb) return { error: 'Supabase não disponível' };
 
   // Get the app URL for redirect after email confirmation
   const redirectTo = `${window.location.origin}${window.location.pathname}#/`;
@@ -102,14 +102,14 @@ export async function signUp(email, password, trainerName, cref) {
     return { user: data.user, session: data.session, needsConfirmation };
   } catch (err) {
     console.error('signUp failed:', err);
-    return { error: 'Falha na conexÃ£o. Verifique sua internet ou extensÃµes/shields do navegador.' };
+    return { error: 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.' };
   }
 }
 
 // Login with email + password
 export async function signIn(email, password) {
   const sb = getSupabase();
-  if (!sb) return { error: 'Supabase nÃ£o disponÃ­vel' };
+  if (!sb) return { error: 'Supabase não disponível' };
 
   try {
     const { data, error } = await withTimeout(
@@ -127,7 +127,7 @@ export async function signIn(email, password) {
     const isNetworkErr = err.message === 'timeout' || err.message?.includes('fetch') || err.message?.includes('network');
     return { error: isNetworkErr
       ? 'Failed to fetch'
-      : 'Falha na conexÃ£o. Verifique sua internet ou extensÃµes/shields do navegador.'
+      : 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.'
     };
   }
 }
@@ -151,7 +151,7 @@ export async function signOut() {
 // Send password reset email
 export async function sendPasswordReset(email) {
   const sb = getSupabase();
-  if (!sb) return { error: 'Supabase nÃ£o disponÃ­vel' };
+  if (!sb) return { error: 'Supabase não disponível' };
   try {
     const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: `${window.location.origin}${window.location.pathname}#/reset-password`,
@@ -159,7 +159,7 @@ export async function sendPasswordReset(email) {
     return error ? { error: error.message } : { success: true };
   } catch (err) {
     console.error('sendPasswordReset failed:', err);
-    return { error: 'Falha na conexÃ£o. Verifique sua internet ou extensÃµes/shields do navegador.' };
+    return { error: 'Falha na conexão. Verifique sua internet ou extensões/shields do navegador.' };
   }
 }
 
@@ -206,10 +206,9 @@ export async function isAuthenticated() {
   if (user) {
     // Se offline, pula sync (evita travar)
     if (!user._offline) {
-      syncTrainerProfile().catch(() => {}); // fire-and-forget, nÃ£o bloqueia
+      syncTrainerProfile().catch(() => {}); // fire-and-forget, não bloqueia
     }
     return true;
   }
   return false;
 }
-

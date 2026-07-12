@@ -1,10 +1,10 @@
-﻿-- ============================================================
--- VETOR v3 â€” Supabase Schema
--- Multi-tenant: cada trainer_id (auth.uid()) acessa sÃ³ seus dados
--- Execute no Supabase â†’ SQL Editor
+-- ============================================================
+-- VETOR v3 — Supabase Schema
+-- Multi-tenant: cada trainer_id (auth.uid()) acessa só seus dados
+-- Execute no Supabase → SQL Editor
 -- ============================================================
 
--- â”€â”€ 1. HABILITAR EXTENSÃƒO UUID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- ── 1. HABILITAR EXTENSÃO UUID ──────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS workouts (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- SessÃµes de Treino ao Vivo
+-- Sessões de Treino ao Vivo
 CREATE TABLE IF NOT EXISTS sessions (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Agenda / CalendÃ¡rio
+-- Agenda / Calendário
 CREATE TABLE IF NOT EXISTS events (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS events (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- AvaliaÃ§Ãµes FÃ­sicas
+-- Avaliações Físicas
 CREATE TABLE IF NOT EXISTS assessments (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS assessments (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Biofeedback (prÃ©/pÃ³s treino)
+-- Biofeedback (pré/pós treino)
 CREATE TABLE IF NOT EXISTS biofeedback (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS biofeedback (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Macrociclos de PeriodizaÃ§Ã£o
+-- Macrociclos de Periodização
 CREATE TABLE IF NOT EXISTS macrocycles (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS macrocycles (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Agenda / Agendamentos de treinos da periodizaÃ§Ã£o
+-- Agenda / Agendamentos de treinos da periodização
 CREATE TABLE IF NOT EXISTS schedules (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS cycles (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Biblioteca de ExercÃ­cios
+-- Biblioteca de Exercícios
 CREATE TABLE IF NOT EXISTS exercises (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS exercises (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ConfiguraÃ§Ãµes do Treinador
+-- Configurações do Treinador
 CREATE TABLE IF NOT EXISTS settings (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS financial (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Anamneses (formulÃ¡rios de novos alunos)
+-- Anamneses (formulários de novos alunos)
 CREATE TABLE IF NOT EXISTS anamneses (
   id          TEXT PRIMARY KEY,
   trainer_id  UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- pode ser preenchida antes do login
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS anamneses (
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- NotificaÃ§Ãµes Dispensadas (persiste dismiss entre dispositivos)
+-- Notificações Dispensadas (persiste dismiss entre dispositivos)
 CREATE TABLE IF NOT EXISTS notification_dismissed (
   id           TEXT NOT NULL,
   trainer_id   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS notification_dismissed (
 );
 
 -- ============================================================
--- ÃNDICES DE PERFORMANCE
+-- ÍNDICES DE PERFORMANCE
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_students_trainer    ON students(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_workouts_trainer    ON workouts(trainer_id);
@@ -155,8 +155,8 @@ CREATE INDEX IF NOT EXISTS idx_financial_trainer   ON financial(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_notif_dismissed_trainer ON notification_dismissed(trainer_id);
 
 -- ============================================================
--- ROW LEVEL SECURITY (RLS) â€” Isolamento Multi-Tenant
--- Cada trainer_id sÃ³ acessa seus prÃ³prios dados
+-- ROW LEVEL SECURITY (RLS) — Isolamento Multi-Tenant
+-- Cada trainer_id só acessa seus próprios dados
 -- ============================================================
 
 -- Habilitar RLS em todas as tabelas
@@ -175,9 +175,9 @@ ALTER TABLE financial   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE anamneses   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notification_dismissed ENABLE ROW LEVEL SECURITY;
 
--- â”€â”€ FUNÃ‡ÃƒO AUXILIAR (evita repetiÃ§Ã£o) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
--- Cria polÃ­ticas CRUD completas para uma tabela
--- SELECT / INSERT / UPDATE / DELETE apenas para o prÃ³prio trainer
+-- ── FUNÇÃO AUXILIAR (evita repetição) ───────────────────────
+-- Cria políticas CRUD completas para uma tabela
+-- SELECT / INSERT / UPDATE / DELETE apenas para o próprio trainer
 
 -- Macro para cada tabela:
 
@@ -253,7 +253,7 @@ CREATE POLICY "financial_insert" ON financial FOR INSERT WITH CHECK (auth.uid() 
 CREATE POLICY "financial_update" ON financial FOR UPDATE USING (auth.uid() = trainer_id);
 CREATE POLICY "financial_delete" ON financial FOR DELETE USING (auth.uid() = trainer_id);
 
--- ANAMNESES â€” acesso pÃºblico para INSERT (aluno preenche sem login)
+-- ANAMNESES — acesso público para INSERT (aluno preenche sem login)
 -- e acesso do trainer para ver as suas
 CREATE POLICY "anamneses_insert_public" ON anamneses FOR INSERT WITH CHECK (true);
 CREATE POLICY "anamneses_select_trainer" ON anamneses FOR SELECT USING (
@@ -268,36 +268,36 @@ CREATE POLICY "notif_dismissed_insert" ON notification_dismissed FOR INSERT WITH
 CREATE POLICY "notif_dismissed_delete" ON notification_dismissed FOR DELETE USING (auth.uid() = trainer_id);
 
 -- ============================================================
--- POLÃTICAS ADICIONAIS â€” PORTAL DO ALUNO (ACESSO ANÃ”NIMO/PÃšBLICO)
--- Permite que alunos nÃ£o-autenticados via Supabase Auth acessem seus
--- prÃ³prios dados (filtrados no cliente por ID) e registrem check-in/sessÃµes.
+-- POLÍTICAS ADICIONAIS — PORTAL DO ALUNO (ACESSO ANÔNIMO/PÚBLICO)
+-- Permite que alunos não-autenticados via Supabase Auth acessem seus
+-- próprios dados (filtrados no cliente por ID) e registrem check-in/sessões.
 -- ============================================================
 
--- 1. Alunos: permitir leitura anÃ´nima dos perfis
+-- 1. Alunos: permitir leitura anônima dos perfis
 CREATE POLICY "students_select_anonymous" ON students FOR SELECT TO anon USING (true);
 
--- 2. Treinos Prescritos: permitir leitura anÃ´nima
+-- 2. Treinos Prescritos: permitir leitura anônima
 CREATE POLICY "workouts_select_anonymous" ON workouts FOR SELECT TO anon USING (true);
 
--- 3. AvaliaÃ§Ãµes FÃ­sicas: permitir leitura anÃ´nima
+-- 3. Avaliações Físicas: permitir leitura anônima
 CREATE POLICY "assessments_select_anonymous" ON assessments FOR SELECT TO anon USING (true);
 
--- 4. Macrociclos de PeriodizaÃ§Ã£o: permitir leitura anÃ´nima
+-- 4. Macrociclos de Periodização: permitir leitura anônima
 CREATE POLICY "macrocycles_select_anonymous" ON macrocycles FOR SELECT TO anon USING (true);
 
--- Agendamentos/Schedules: permitir leitura anÃ´nima
+-- Agendamentos/Schedules: permitir leitura anônima
 CREATE POLICY "schedules_select_anonymous" ON schedules FOR SELECT TO anon USING (true);
 
--- 5. SessÃµes de Treino: permitir leitura, gravaÃ§Ã£o e atualizaÃ§Ã£o anÃ´nima (necessÃ¡rio para upsert)
+-- 5. Sessões de Treino: permitir leitura, gravação e atualização anônima (necessário para upsert)
 CREATE POLICY "sessions_select_anonymous" ON sessions FOR SELECT TO anon USING (true);
 CREATE POLICY "sessions_insert_anonymous" ON sessions FOR INSERT TO anon WITH CHECK (true);
 CREATE POLICY "sessions_update_anonymous" ON sessions FOR UPDATE TO anon USING (true) WITH CHECK (true);
 
--- 6. Biofeedback: permitir leitura, gravaÃ§Ã£o e atualizaÃ§Ã£o anÃ´nima (necessÃ¡rio para upsert de check-in)
+-- 6. Biofeedback: permitir leitura, gravação e atualização anônima (necessário para upsert de check-in)
 CREATE POLICY "biofeedback_select_anonymous" ON biofeedback FOR SELECT TO anon USING (true);
 CREATE POLICY "biofeedback_update_anonymous" ON biofeedback FOR UPDATE TO anon USING (true) WITH CHECK (true);
 
--- 7. Financeiro: permitir leitura anÃ´nima de faturas (exibiÃ§Ã£o de status de pagamento)
+-- 7. Financeiro: permitir leitura anônima de faturas (exibição de status de pagamento)
 CREATE POLICY "financial_select_anonymous" ON financial FOR SELECT TO anon USING (true);
 
 -- ============================================================
@@ -331,15 +331,15 @@ BEGIN
 END $$;
 
 -- ============================================================
--- CONFIGURAR EMAIL DE CONFIRMAÃ‡ÃƒO (Supabase Dashboard)
+-- CONFIGURAR EMAIL DE CONFIRMAÇÃO (Supabase Dashboard)
 -- ============================================================
--- Acesse: Authentication â†’ Settings â†’ Email Auth
+-- Acesse: Authentication → Settings → Email Auth
 -- Habilite: "Enable Email Confirmations" = ON
 -- Configure: "Site URL" = https://seu-projeto.vercel.app
 -- Configure: "Redirect URLs" = https://seu-projeto.vercel.app/*
 
 -- ============================================================
--- VERIFICAÃ‡ÃƒO FINAL
+-- VERIFICAÇÃO FINAL
 -- ============================================================
 SELECT
   schemaname,
@@ -353,4 +353,3 @@ WHERE schemaname = 'public'
     'financial','anamneses'
   )
 ORDER BY tablename;
-

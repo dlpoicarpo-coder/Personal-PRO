@@ -1,6 +1,6 @@
-﻿// ========================================
-// VETOR â€” Students Page (v2)
-// Design limpo + SVG icons + dados Ãºteis
+// ========================================
+// VETOR — Students Page (v2)
+// Design limpo + SVG icons + dados úteis
 // ========================================
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
@@ -10,13 +10,13 @@ import { getCurrentUser } from '../utils/auth.js';
 
 window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, guardianEmail) => {
   if (!birthDate || birthDate === 'undefined') {
-    alert('Informe a data de nascimento para gerar o convite â€” necessÃ¡ria para conformidade com a LGPD (art. 14).');
+    alert('Informe a data de nascimento para gerar o convite — necessária para conformidade com a LGPD (art. 14).');
     return;
   }
   
   const isMinor = Calc.calcularIdade(birthDate) < 18;
   if (isMinor && (!guardianEmail || guardianEmail === 'undefined' || guardianEmail.trim() === '')) {
-    alert('O e-mail do responsÃ¡vel Ã© obrigatÃ³rio para convidar alunos menores de idade.');
+    alert('O e-mail do responsável é obrigatório para convidar alunos menores de idade.');
     return;
   }
 
@@ -29,10 +29,10 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, gua
   try {
     const { getSupabase } = await import('../utils/auth.js');
     const supabase = getSupabase();
-    if (!supabase) throw new Error('Supabase cliente indisponÃ­vel');
+    if (!supabase) throw new Error('Supabase cliente indisponível');
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) throw new Error('Treinador nÃ£o autenticado. FaÃ§a login novamente.');
+    if (sessionError || !session) throw new Error('Treinador não autenticado. Faça login novamente.');
 
     const res = await fetch('/api/invite-student', {
       method: 'POST',
@@ -50,8 +50,8 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, gua
     }
 
     if (result.viaEmail) {
-      alert(`Convite e Termos de Consentimento LGPD enviados com seguranÃ§a para o e-mail do ResponsÃ¡vel: ${result.emailTo}.\n\nAguardando o aceite do responsÃ¡vel para ativar a conta do aluno.`);
-      btn.innerHTML = 'âœ… Enviado p/ Email';
+      alert(`Convite e Termos de Consentimento LGPD enviados com segurança para o e-mail do Responsável: ${result.emailTo}.\n\nAguardando o aceite do responsável para ativar a conta do aluno.`);
+      btn.innerHTML = '✅ Enviado p/ Email';
       return;
     }
 
@@ -59,7 +59,7 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, gua
     
     // Atualizar badge instantaneamente no modal
     const badge = document.getElementById(`authStatus_${studentId}`);
-    if (badge && badge.innerHTML.includes('Sem conta')) badge.innerHTML = 'ðŸŸ¡ Convite Gerado';
+    if (badge && badge.innerHTML.includes('Sem conta')) badge.innerHTML = '🟡 Convite Gerado';
     
     const link = `${window.location.origin}${window.location.pathname}#/convite?t=${result.token}`;
     
@@ -67,15 +67,15 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, gua
     if (phone) {
       const clean = phone.replace(/\D/g, '');
       const num = clean.length <= 11 ? '55' + clean : clean;
-      const msg = `OlÃ¡ ${name.split(' ')[0]}! Seu acesso ao portal Vetor: ${link}`;
+      const msg = `Olá ${name.split(' ')[0]}! Seu acesso ao portal Vetor: ${link}`;
       const waHref = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
-      waBtn = `<a href="${waHref}" target="_blank" class="btn btn-primary btn-sm" style="padding:4px 8px;background:#25d366;border-color:#25d366;color:white;text-decoration:none">ðŸ’¬ Enviar WhatsApp</a>`;
+      waBtn = `<a href="${waHref}" target="_blank" class="btn btn-primary btn-sm" style="padding:4px 8px;background:#25d366;border-color:#25d366;color:white;text-decoration:none">💬 Enviar WhatsApp</a>`;
     }
 
     const container = document.getElementById(`inviteBox_${studentId}`);
     if (container) {
        container.innerHTML = `
-         <button class="btn btn-secondary btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${link}'); window.notify?.success ? window.notify.success('Link copiado!') : alert('Link copiado!')">ðŸ“‹ Copiar Link</button>
+         <button class="btn btn-secondary btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${link}'); window.notify?.success ? window.notify.success('Link copiado!') : alert('Link copiado!')">📋 Copiar Link</button>
          ${waBtn}
        `;
     }
@@ -103,7 +103,7 @@ export async function renderStudents() {
   const trainerId = settings?.trainerId || user?.id || 'trainer';
   students.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-  // Enriquecer com dados de sessÃ£o
+  // Enriquecer com dados de sessão
   const enriched = students.map(s => {
     const completed = sessions.filter(x => x.studentId === s.id && x.status === 'completed');
     const last = completed.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
@@ -121,7 +121,7 @@ export async function renderStudents() {
     <div class="page-header">
       <div>
         <h1>Alunos</h1>
-        <p class="subtitle">${students.length} cadastrado(s) Â· ${students.filter(s => s.status === 'Ativo').length} ativo(s)</p>
+        <p class="subtitle">${students.length} cadastrado(s) · ${students.filter(s => s.status === 'Ativo').length} ativo(s)</p>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <div style="position:relative">
@@ -136,14 +136,14 @@ export async function renderStudents() {
       <button class="tab active" data-filter="all">Todos (${students.length})</button>
       <button class="tab" data-filter="Presencial">Presencial (${students.filter(s => s.modality === 'Presencial').length})</button>
       <button class="tab" data-filter="Consultoria Online">Online (${students.filter(s => s.modality === 'Consultoria Online').length})</button>
-      <button class="tab" data-filter="HÃ­brido">HÃ­brido (${students.filter(s => s.modality === 'HÃ­brido').length})</button>
+      <button class="tab" data-filter="Híbrido">Híbrido (${students.filter(s => s.modality === 'Híbrido').length})</button>
       <button class="tab" data-filter="Inativo">Inativos (${students.filter(s => s.status === 'Inativo').length})</button>
     </div>
 
     <div id="studentsList">
       ${enriched.length ? renderStudentCards(enriched, trainerId) : `
         <div class="empty-state">
-          <div class="empty-icon">â€”</div>
+          <div class="empty-icon">—</div>
           <h3>Nenhum aluno cadastrado</h3>
           <p>Clique em "Novo Aluno" para adicionar o primeiro</p>
           <button class="btn btn-primary mt-sm" id="addStudentBtnEmpty">+ Novo Aluno</button>
@@ -167,12 +167,12 @@ function renderStudentCards(students, trainerId = 'trainer') {
         <div class="avatar avatar-lg" style="font-size:1.1rem">${initials}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
-          <div class="text-muted text-xs">${s.code || ''}${age ? ` Â· ${age} anos` : ''}${s.gender ? ` Â· ${s.gender === 'M' ? 'Masc.' : 'Fem.'}` : ''}</div>
+          <div class="text-muted text-xs">${s.code || ''}${age ? ` · ${age} anos` : ''}${s.gender ? ` · ${s.gender === 'M' ? 'Masc.' : 'Fem.'}` : ''}</div>
         </div>
         <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">
           ${window.getModalityBadge ? window.getModalityBadge(s.modality) : ''}
           <span class="badge ${s.status === 'Ativo' ? 'badge-success' : 'badge-warning'}" style="font-size:0.6rem;opacity:0.8">${s.status}</span>
-          <span class="badge" style="font-size:0.6rem;background:transparent;border:1px solid var(--border-color)">${s.auth_user_id ? 'âœ… CONTA ATIVA' : 'âš ï¸ SEM CONTA'}</span>
+          <span class="badge" style="font-size:0.6rem;background:transparent;border:1px solid var(--border-color)">${s.auth_user_id ? '✅ CONTA ATIVA' : '⚠️ SEM CONTA'}</span>
         </div>
       </div>
 
@@ -182,17 +182,17 @@ function renderStudentCards(students, trainerId = 'trainer') {
           <div style="font-size:0.8rem;font-weight:600;margin-top:1px">${s.goal}</div>
         </div>` : ''}
         ${s.weeklyFrequency ? `<div style="padding:6px 8px;background:var(--bg-page);border-radius:6px">
-          <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">FrequÃªncia</div>
+          <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">Frequência</div>
           <div style="font-size:0.8rem;font-weight:600;margin-top:1px">${s.weeklyFrequency}</div>
         </div>` : ''}
         <div style="padding:6px 8px;background:var(--bg-page);border-radius:6px">
-          <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">Ãšltimo treino</div>
+          <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">Último treino</div>
           <div style="font-size:0.8rem;font-weight:600;margin-top:1px;color:${dayColor}">
-            ${s._daysSince === null ? 'â€”' : s._daysSince === 0 ? 'Hoje' : s._daysSince === 1 ? 'Ontem' : `${s._daysSince}d atrÃ¡s`}
+            ${s._daysSince === null ? '—' : s._daysSince === 0 ? 'Hoje' : s._daysSince === 1 ? 'Ontem' : `${s._daysSince}d atrás`}
           </div>
         </div>
         <div style="padding:6px 8px;background:var(--bg-page);border-radius:6px">
-          <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">Total sessÃµes</div>
+          <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">Total sessões</div>
           <div style="font-size:0.8rem;font-weight:600;margin-top:1px">${s._totalSessions}</div>
         </div>
       </div>
@@ -200,11 +200,11 @@ function renderStudentCards(students, trainerId = 'trainer') {
         <div class="flex gap-xs" style="border-top:1px solid var(--border-color);padding-top:10px;flex-wrap:wrap">
           ${s.email ? `
           <button class="btn btn-ghost btn-sm invite-student-btn" onclick="window.inviteStudent('${s.id}', '${s.email}', '${s.name.replace(/'/g, "\\'")}', '${s.phone || ''}', this, '${s.birthDate || ''}', '${s.guardian?.email || ''}')" title="${s.auth_user_id ? 'Reenviar Convite' : 'Convidar para o App'}" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text)">
-            ðŸŽŸï¸ <span style="font-size:0.72rem">${s.auth_user_id ? 'Reenviar' : 'Convite'}</span>
+            🎟️ <span style="font-size:0.72rem">${s.auth_user_id ? 'Reenviar' : 'Convite'}</span>
           </button>
           ` : `
           <button class="btn btn-ghost btn-sm" disabled title="Sem e-mail p/ convite" style="flex:1;min-width:65px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px;color:var(--text-muted)">
-            âœ‰ï¸ <span style="font-size:0.72rem">Convite</span>
+            ✉️ <span style="font-size:0.72rem">Convite</span>
           </button>
           `}
           <button class="btn btn-ghost btn-sm view-student" data-id="${s.id}" title="Ver perfil" style="flex:1;min-width:45px;display:flex;align-items:center;justify-content:center;gap:4px;padding:4px">
@@ -230,10 +230,10 @@ function studentFormHTML(student = {}) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Nome Completo *</label>
-          <input class="form-input" name="name" value="${student.name || ''}" required placeholder="Ex: JoÃ£o da Silva" />
+          <input class="form-input" name="name" value="${student.name || ''}" required placeholder="Ex: João da Silva" />
         </div>
         <div class="form-group">
-          <label class="form-label">CÃ³digo</label>
+          <label class="form-label">Código</label>
           <input class="form-input" name="code" value="${student.code || ''}" placeholder="Ex: JOA-001" />
           <div class="form-hint">Deixe vazio para gerar automaticamente de forma sequencial</div>
         </div>
@@ -251,7 +251,7 @@ function studentFormHTML(student = {}) {
           " />
         </div>
         <div class="form-group">
-          <label class="form-label">GÃªnero</label>
+          <label class="form-label">Gênero</label>
           <select class="form-select" name="gender">
             <option value="">Selecione</option>
             <option value="M" ${student.gender === 'M' ? 'selected' : ''}>Masculino</option>
@@ -261,25 +261,25 @@ function studentFormHTML(student = {}) {
         </div>
       </div>
       <div id="guardianSection" style="display: ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'block' : 'none'}; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--warning);">
-        <h4 style="margin:0 0 10px; color: var(--warning)">ResponsÃ¡vel Legal (Menor de Idade)</h4>
+        <h4 style="margin:0 0 10px; color: var(--warning)">Responsável Legal (Menor de Idade)</h4>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Nome do ResponsÃ¡vel *</label>
+            <label class="form-label">Nome do Responsável *</label>
             <input class="form-input" name="guardianName" value="${student.guardian?.name || ''}" placeholder="Nome Completo" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
           </div>
           <div class="form-group">
-            <label class="form-label">CPF do ResponsÃ¡vel *</label>
+            <label class="form-label">CPF do Responsável *</label>
             <input class="form-input" name="guardianCpf" value="${student.guardian?.cpf || ''}" placeholder="000.000.000-00" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">E-mail do ResponsÃ¡vel *</label>
+            <label class="form-label">E-mail do Responsável *</label>
             <input class="form-input" name="guardianEmail" type="email" value="${student.guardian?.email || ''}" placeholder="email@responsavel.com" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
           </div>
           <div class="form-group">
             <label class="form-label">Parentesco *</label>
-            <input class="form-input" name="guardianRelationship" value="${student.guardian?.relationship || ''}" placeholder="Ex: Pai, MÃ£e" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
+            <input class="form-input" name="guardianRelationship" value="${student.guardian?.relationship || ''}" placeholder="Ex: Pai, Mãe" ${student.birthDate && Calc.calcularIdade(student.birthDate) < 18 ? 'required' : ''} />
           </div>
         </div>
       </div>
@@ -298,7 +298,7 @@ function studentFormHTML(student = {}) {
           <label class="form-label">Objetivo Principal</label>
           <select class="form-select" name="goal">
             <option value="">Selecione</option>
-            ${['Hipertrofia','Emagrecimento','Condicionamento','SaÃºde','ReabilitaÃ§Ã£o','Performance','ForÃ§a MÃ¡xima','Qualidade de Vida'].map(g => `<option ${student.goal === g ? 'selected' : ''}>${g}</option>`).join('')}
+            ${['Hipertrofia','Emagrecimento','Condicionamento','Saúde','Reabilitação','Performance','Força Máxima','Qualidade de Vida'].map(g => `<option ${student.goal === g ? 'selected' : ''}>${g}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -306,7 +306,7 @@ function studentFormHTML(student = {}) {
           <select class="form-select" name="modality">
             <option value="Presencial" ${student.modality === 'Presencial' ? 'selected' : ''}>Presencial</option>
             <option value="Consultoria Online" ${student.modality === 'Consultoria Online' ? 'selected' : ''}>Consultoria Online</option>
-            <option value="HÃ­brido" ${student.modality === 'HÃ­brido' ? 'selected' : ''}>HÃ­brido</option>
+            <option value="Híbrido" ${student.modality === 'Híbrido' ? 'selected' : ''}>Híbrido</option>
           </select>
         </div>
       </div>
@@ -316,30 +316,30 @@ function studentFormHTML(student = {}) {
           <select class="form-select" name="status">
             <option value="Ativo" ${(!student.status || student.status === 'Ativo') ? 'selected' : ''}>Ativo</option>
             <option value="Inativo" ${student.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
-            <option value="Em avaliaÃ§Ã£o" ${student.status === 'Em avaliaÃ§Ã£o' ? 'selected' : ''}>Em avaliaÃ§Ã£o</option>
+            <option value="Em avaliação" ${student.status === 'Em avaliação' ? 'selected' : ''}>Em avaliação</option>
             <option value="Suspenso" ${student.status === 'Suspenso' ? 'selected' : ''}>Suspenso</option>
           </select>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">FrequÃªncia Semanal</label>
+          <label class="form-label">Frequência Semanal</label>
           <select class="form-select" name="weeklyFrequency" onchange="const val = parseInt(this.value); if(val) this.form.querySelector('[name=expectedSessions]').value = Math.round(val * 4.33);">
             <option value="">Selecione</option>
             ${[2,3,4,5,6].map(n => `<option value="${n}x por semana" ${student.weeklyFrequency === n+'x por semana' ? 'selected' : ''}>${n}x por semana</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">SessÃµes Esperadas (MÃªs)</label>
-          <input class="form-input" name="expectedSessions" type="number" min="1" max="31" value="${student.expectedSessions || ''}" placeholder="Ex: 12" title="NÃºmero de sessÃµes pagas/esperadas por mÃªs para cÃ¡lculo preciso de Custo da SessÃ£o" />
+          <label class="form-label">Sessões Esperadas (Mês)</label>
+          <input class="form-input" name="expectedSessions" type="number" min="1" max="31" value="${student.expectedSessions || ''}" placeholder="Ex: 12" title="Número de sessões pagas/esperadas por mês para cálculo preciso de Custo da Sessão" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">HorÃ¡rio Preferido</label>
+          <label class="form-label">Horário Preferido</label>
           <select class="form-select" name="preferredTime">
             <option value="">Selecione</option>
-            ${['ManhÃ£ (5-9h)','ManhÃ£ (9-12h)','Tarde (12-17h)','Noite (17-22h)'].map(h => `<option ${student.preferredTime === h ? 'selected' : ''}>${h}</option>`).join('')}
+            ${['Manhã (5-9h)','Manhã (9-12h)','Tarde (12-17h)','Noite (17-22h)'].map(h => `<option ${student.preferredTime === h ? 'selected' : ''}>${h}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -364,8 +364,8 @@ function studentFormHTML(student = {}) {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">ObservaÃ§Ãµes</label>
-        <textarea class="form-textarea" name="notes" rows="3" placeholder="LesÃµes, restriÃ§Ãµes, preferÃªncias...">${student.notes || ''}</textarea>
+        <label class="form-label">Observações</label>
+        <textarea class="form-textarea" name="notes" rows="3" placeholder="Lesões, restrições, preferências...">${student.notes || ''}</textarea>
       </div>
     </form>
   `;
@@ -405,25 +405,25 @@ async function viewStudentHTML(student) {
           <span class="badge ${student.status === 'Ativo' ? 'badge-success' : 'badge-warning'}">${student.status}</span>
           ${student.goal ? `<span class="badge badge-info">${student.goal}</span>` : ''}
           <span class="badge" style="background:transparent;border:1px solid var(--border-color)" id="authStatus_${student.id}">
-             ${student.auth_user_id ? 'âœ… CONTA ATIVA' : 'âš ï¸ SEM CONTA'}
+             ${student.auth_user_id ? '✅ CONTA ATIVA' : '⚠️ SEM CONTA'}
           </span>
         </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
-        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this, '${student.birthDate || ''}', '${student.guardian?.email || ''}')">ðŸš€ ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
+        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this, '${student.birthDate || ''}', '${student.guardian?.email || ''}')">🚀 ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
-        <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">â–¶ Treino</a>
+        <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">▶ Treino</a>
       </div>
     </div>
 
-    <!-- Stats rÃ¡pidas -->
+    <!-- Stats rápidas -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(65px, 1fr));gap:8px;margin-bottom:20px">
       ${[
         { label: 'Idade', value: age !== '-' ? age + ' anos' : '-' },
         { label: 'FC Max', value: age !== '-' ? Calc.fcMax(age) + ' bpm' : '-' },
-        { label: 'SessÃµes', value: String(sessions.length) },
+        { label: 'Sessões', value: String(sessions.length) },
         { label: 'Volume', value: totalVol > 0 ? (totalVol/1000).toFixed(1) + 't' : '-' },
-        { label: 'PSE MÃ©dio', value: String(avgPse) },
+        { label: 'PSE Médio', value: String(avgPse) },
       ].map(s => `<div style="text-align:center;padding:10px 4px;background:var(--bg-page);border-radius:8px">
         <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted)">${s.label}</div>
         <div style="font-size:1.2rem;font-weight:700;color:var(--primary);margin-top:2px">${s.value}</div>
@@ -435,20 +435,20 @@ async function viewStudentHTML(student) {
       ${student.email ? `<div class="text-sm"><span class="text-muted">Email:</span> ${student.email}</div>` : ''}
       ${student.weight ? `<div class="text-sm"><span class="text-muted">Peso:</span> ${student.weight}kg</div>` : ''}
       ${student.height ? `<div class="text-sm"><span class="text-muted">Altura:</span> ${student.height}cm</div>` : ''}
-      ${student.weeklyFrequency ? `<div class="text-sm"><span class="text-muted">FrequÃªncia:</span> ${student.weeklyFrequency}</div>` : ''}
-      ${student.preferredTime ? `<div class="text-sm"><span class="text-muted">HorÃ¡rio:</span> ${student.preferredTime}</div>` : ''}
+      ${student.weeklyFrequency ? `<div class="text-sm"><span class="text-muted">Frequência:</span> ${student.weeklyFrequency}</div>` : ''}
+      ${student.preferredTime ? `<div class="text-sm"><span class="text-muted">Horário:</span> ${student.preferredTime}</div>` : ''}
       ${student.paymentDue ? `<div class="text-sm"><span class="text-muted">Vencimento:</span> ${Calc.formatDate(student.paymentDue)}</div>` : ''}
     </div>
-    ${student.notes ? `<div class="mb-md"><span class="text-muted text-sm">ObservaÃ§Ãµes:</span><p class="text-sm" style="margin-top:4px">${student.notes}</p></div>` : ''}
+    ${student.notes ? `<div class="mb-md"><span class="text-muted text-sm">Observações:</span><p class="text-sm" style="margin-top:4px">${student.notes}</p></div>` : ''}
 
     <!-- Treinos recentes -->
     <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:8px">
       <div class="flex items-center justify-between mb-sm">
         <h4 style="margin:0">Treinos Recentes</h4>
-        <a href="#/treinos" class="btn btn-ghost btn-sm">Ver todos â†’</a>
+        <a href="#/treinos" class="btn btn-ghost btn-sm">Ver todos →</a>
       </div>
       ${workouts.length ? `<table class="data-table" style="font-size:0.82rem">
-        <thead><tr><th>Treino</th><th>Data</th><th>ExercÃ­cios</th></tr></thead>
+        <thead><tr><th>Treino</th><th>Data</th><th>Exercícios</th></tr></thead>
         <tbody>${workouts.map(w => `<tr>
           <td><strong>${w.name}</strong>${w.cycle ? ` <span class="text-muted text-xs">(${w.cycle})</span>` : ''}</td>
           <td>${Calc.formatDate(w.date)}</td>
@@ -457,11 +457,11 @@ async function viewStudentHTML(student) {
       : '<p class="text-muted text-sm">Nenhum treino cadastrado</p>'}
     </div>
 
-    <!-- AvaliaÃ§Ãµes -->
+    <!-- Avaliações -->
     <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:12px">
       <div class="flex items-center justify-between mb-sm">
-        <h4 style="margin:0">AvaliaÃ§Ãµes</h4>
-        <a href="#/avaliacoes" class="btn btn-ghost btn-sm">Ver todas â†’</a>
+        <h4 style="margin:0">Avaliações</h4>
+        <a href="#/avaliacoes" class="btn btn-ghost btn-sm">Ver todas →</a>
       </div>
       ${assessments.length ? `<table class="data-table" style="font-size:0.82rem">
         <thead><tr><th>Tipo</th><th>Data</th><th>Peso</th><th>BF%</th><th>1RM</th></tr></thead>
@@ -472,14 +472,14 @@ async function viewStudentHTML(student) {
           <td>${a.percentualGordura ? a.percentualGordura+'%' : '-'}</td>
           <td>${a.rm1 ? a.rm1+'kg' : '-'}</td>
         </tr>`).join('')}</tbody></table>`
-      : '<p class="text-muted text-sm">Nenhuma avaliaÃ§Ã£o registrada</p>'}
+      : '<p class="text-muted text-sm">Nenhuma avaliação registrada</p>'}
     </div>
 
     <!-- Biofeedback -->
     <div style="border-top:1px solid var(--border-color);padding-top:14px;margin-top:12px">
       <div class="flex items-center justify-between mb-sm">
         <h4 style="margin:0">Biofeedback Recente</h4>
-        <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos â†’</a>
+        <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos →</a>
       </div>
       ${bfData.length ? `<table class="data-table" style="font-size:0.82rem">
         <thead><tr><th>Data</th><th>Ciclo</th><th>Sono</th><th>TQR</th><th>Alim</th><th>Estresse</th><th>Dor</th><th>Motiv</th><th>PSE</th><th>Carga</th></tr></thead>
@@ -499,8 +499,8 @@ async function viewStudentHTML(student) {
     </div>
 
     <div class="flex gap-sm mt-lg" style="border-top:1px solid var(--border-color);padding-top:14px;flex-wrap:wrap">
-      <a href="#/relatorios" class="btn btn-secondary btn-sm">RelatÃ³rio Completo</a>
-      <a href="#/periodizacao" class="btn btn-secondary btn-sm">PeriodizaÃ§Ã£o</a>
+      <a href="#/relatorios" class="btn btn-secondary btn-sm">Relatório Completo</a>
+      <a href="#/periodizacao" class="btn btn-secondary btn-sm">Periodização</a>
       <a href="#/agenda" class="btn btn-secondary btn-sm">Agenda</a>
     </div>
   `;
@@ -517,7 +517,7 @@ export function initStudents(navigateFn) {
 
     if (!isAdmin) {
       if (window._isBillingPastDue) {
-        alert('Sua assinatura estÃ¡ vencida. Regularize seu plano para cadastrar novos alunos.');
+        alert('Sua assinatura está vencida. Regularize seu plano para cadastrar novos alunos.');
         window.location.hash = '/planos';
         return;
       }
@@ -527,7 +527,7 @@ export function initStudents(navigateFn) {
       if (plan === 'Pro') limit = 20;
       if (plan === 'Studio') limit = 50;
       if (allStudents.length >= limit) {
-        alert(`O limite de ${limit} alunos do plano ${plan} foi atingido. FaÃ§a upgrade para adicionar mais alunos.`);
+        alert(`O limite de ${limit} alunos do plano ${plan} foi atingido. Faça upgrade para adicionar mais alunos.`);
         window.location.hash = '/planos';
         return;
       }
@@ -543,9 +543,9 @@ export function initStudents(navigateFn) {
         label: 'Salvar', class: 'btn-primary', id: 'saveStudent', onClick: async () => {
           const fd = new FormData(document.getElementById('studentForm'));
           const data = Object.fromEntries(fd);
-          if (!data.name) { notify.error('Nome Ã© obrigatÃ³rio'); return; }
+          if (!data.name) { notify.error('Nome é obrigatório'); return; }
           if (!data.code) {
-            // GeraÃ§Ã£o de cÃ³digo sequencial Ãºnico: 3 letras do nome + contador padded
+            // Geração de código sequencial único: 3 letras do nome + contador padded
             const allStudents = await db.getAll('students');
             const prefix = data.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
             let num = allStudents.length + 1;
@@ -661,7 +661,7 @@ export function initStudents(navigateFn) {
     btn.addEventListener('click', async () => {
       const s = await db.get('students', btn.dataset.id);
       if (!s) return;
-      if (window.confirm(`Excluir ${s.name}? Todos os dados associados serÃ£o removidos.`)) {
+      if (window.confirm(`Excluir ${s.name}? Todos os dados associados serão removidos.`)) {
         await db.delete('students', s.id);
         notify.success('Aluno removido');
         navigateFn('/alunos');
@@ -669,4 +669,3 @@ export function initStudents(navigateFn) {
     });
   });
 }
-

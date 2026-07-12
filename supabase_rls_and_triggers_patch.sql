@@ -1,6 +1,6 @@
-﻿-- ============================================================
--- VETOR â€” RLS Policies and Triggers Safe Patch
--- Run this in the Supabase Console â†’ SQL Editor
+-- ============================================================
+-- VETOR — RLS Policies and Triggers Safe Patch
+-- Run this in the Supabase Console → SQL Editor
 -- ============================================================
 
 -- 1. Create or replace the update_updated_at trigger function safely
@@ -219,4 +219,3 @@ CREATE INDEX IF NOT EXISTS idx_exercises_trainer_id ON exercises(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_settings_trainer_id ON settings(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_financial_trainer_id ON financial(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_anamneses_trainer_id ON anamneses(trainer_id);
-

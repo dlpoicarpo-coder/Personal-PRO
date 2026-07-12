@@ -1,5 +1,5 @@
-﻿// ========================================
-// VETOR â€” Reports Page (v4)
+// ========================================
+// VETOR — Reports Page (v4)
 // Cycle selection + Student-focused dossier
 // ========================================
 import db from '../db.js';
@@ -13,7 +13,7 @@ export async function renderReports() {
   const active = students.filter(s => s.status === 'Ativo');
   return `
     <div class="page-header">
-      <div><h1>RelatÃ³rios de Performance</h1><p class="subtitle">DossiÃª compacto com grÃ¡ficos de evoluÃ§Ã£o e comparaÃ§Ã£o entre ciclos</p></div>
+      <div><h1>Relatórios de Performance</h1><p class="subtitle">Dossiê compacto com gráficos de evolução e comparação entre ciclos</p></div>
       <div class="flex gap-sm" style="flex-wrap:wrap">
         <select class="form-select" id="reportStudent" style="min-width:220px">
           <option value="">Selecione um aluno</option>
@@ -27,18 +27,18 @@ export async function renderReports() {
           Enviar
         </button>
         <select class="form-select form-select-sm" id="pdfFormatSel" style="display:none; min-width:140px; border-color:var(--primary); color:var(--primary); font-weight:600">
-          <option value="mobile">ðŸ“± Celular (Vertical)</option>
-          <option value="a4">ðŸ“„ A4 (Horizontal)</option>
+          <option value="mobile">📱 Celular (Vertical)</option>
+          <option value="a4">📄 A4 (Horizontal)</option>
         </select>
         <button class="btn btn-primary btn-sm" id="exportPdfBtn" style="display:none">Gerar PDF</button>
       </div>
     </div>
     <div id="pdfAnnotationsContainer" style="display:none;margin-bottom:16px;">
-      <label class="form-label">AnotaÃ§Ãµes do Treinador (para o PDF):</label>
-      <textarea id="pdfAnnotations" class="form-textarea" placeholder="Adicione notas, comentÃ¡rios ou orientaÃ§Ãµes extras para o aluno..."></textarea>
+      <label class="form-label">Anotações do Treinador (para o PDF):</label>
+      <textarea id="pdfAnnotations" class="form-textarea" placeholder="Adicione notas, comentários ou orientações extras para o aluno..."></textarea>
     </div>
     <div id="reportContent">
-      <div class="empty-state"><div class="empty-icon" style="font-size:2rem">â€”</div><h3>Selecione um aluno</h3><p class="text-muted">Escolha um aluno para ver o relatÃ³rio completo</p></div>
+      <div class="empty-state"><div class="empty-icon" style="font-size:2rem">—</div><h3>Selecione um aluno</h3><p class="text-muted">Escolha um aluno para ver o relatório completo</p></div>
     </div>
   `;
 }
@@ -114,11 +114,11 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   const sleepNum = parseFloat(avgSleep) || 0;
   const cycleLabel = cycleFilter || 'Todos os Ciclos';
 
-  // â”€â”€ CÃ¡lculo de calorias com base na avaliaÃ§Ã£o mais recente â”€â”€
+  // ── Cálculo de calorias com base na avaliação mais recente ──
   const lastComp   = assessments.filter(a=>a.type==='composicao').sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
   const age        = student?.birthDate ? Calc.calcularIdade(student.birthDate) : (student?.age || 0);
   const sexo       = student?.gender || 'M';
-  const objMap     = {'Emagrecimento':'emagrecimento','Perda de peso':'emagrecimento','Hipertrofia':'hipertrofia','Ganho de massa':'hipertrofia','ManutenÃ§Ã£o':'manutencao','SaÃºde':'manutencao','Condicionamento':'manutencao'};
+  const objMap     = {'Emagrecimento':'emagrecimento','Perda de peso':'emagrecimento','Hipertrofia':'hipertrofia','Ganho de massa':'hipertrofia','Manutenção':'manutencao','Saúde':'manutencao','Condicionamento':'manutencao'};
   const obj        = objMap[student?.goal] || 'manutencao';
   const tmbResult  = lastComp?.peso && age ? Calc.tmb(lastComp.peso, lastComp.altura, age, sexo, lastComp.massaMagra) : null;
   const sessPerWeek= completed.length > 1
@@ -131,24 +131,24 @@ async function renderStudentReport(studentId, cycleFilter = '') {
 
   // Student-friendly dossier text
   let parecerAluno = '';
-  if (pseNum > 8) parecerAluno += 'AtenÃ§Ã£o: Seus treinos estÃ£o muito intensos! Vamos reduzir um pouco o ritmo para seu corpo se recuperar melhor. ';
-  else if (pseNum > 6) parecerAluno += 'VocÃª estÃ¡ treinando no nÃ­vel ideal! Continue assim, seu corpo estÃ¡ respondendo muito bem. ';
-  else parecerAluno += 'VocÃª ainda tem bastante fÃ´lego! Podemos aumentar a intensidade gradualmente. ';
-  if (sleepNum < 3) parecerAluno += 'Seu sono estÃ¡ abaixo do ideal â€” tente dormir entre 7 e 9 horas para otimizar seus resultados. ';
-  else if (sleepNum >= 3.5) parecerAluno += 'Ã“timo sono! Isso ajuda muito na recuperaÃ§Ã£o e nos ganhos. ';
-  if (completed.length > 0) parecerAluno += `ParabÃ©ns! VocÃª completou ${completed.length} sessÃ£o(Ãµes) no perÃ­odo. `;
-  if (totalLoad > 2000) parecerAluno += 'Sua carga acumulada estÃ¡ alta â€” estamos monitorando para evitar excesso.';
-  else parecerAluno += 'Sua carga estÃ¡ dentro do esperado. Tudo sob controle!';
+  if (pseNum > 8) parecerAluno += 'Atenção: Seus treinos estão muito intensos! Vamos reduzir um pouco o ritmo para seu corpo se recuperar melhor. ';
+  else if (pseNum > 6) parecerAluno += 'Você está treinando no nível ideal! Continue assim, seu corpo está respondendo muito bem. ';
+  else parecerAluno += 'Você ainda tem bastante fôlego! Podemos aumentar a intensidade gradualmente. ';
+  if (sleepNum < 3) parecerAluno += 'Seu sono está abaixo do ideal — tente dormir entre 7 e 9 horas para otimizar seus resultados. ';
+  else if (sleepNum >= 3.5) parecerAluno += 'Ótimo sono! Isso ajuda muito na recuperação e nos ganhos. ';
+  if (completed.length > 0) parecerAluno += `Parabéns! Você completou ${completed.length} sessão(ões) no período. `;
+  if (totalLoad > 2000) parecerAluno += 'Sua carga acumulada está alta — estamos monitorando para evitar excesso.';
+  else parecerAluno += 'Sua carga está dentro do esperado. Tudo sob controle!';
 
   // Professor technical analysis
   let parecerTecnico = '';
-  if (pseNum > 8) parecerTecnico += 'PSE mÃ©dia elevada (>8), indicando possÃ­vel fadiga acumulada. Recomenda-se reduzir volume em 20-30%. ';
-  else if (pseNum > 6) parecerTecnico += 'PSE em nÃ­vel adequado para progressÃ£o. Aluno responde bem ao estÃ­mulo. ';
+  if (pseNum > 8) parecerTecnico += 'PSE média elevada (>8), indicando possível fadiga acumulada. Recomenda-se reduzir volume em 20-30%. ';
+  else if (pseNum > 6) parecerTecnico += 'PSE em nível adequado para progressão. Aluno responde bem ao estímulo. ';
   else parecerTecnico += 'PSE baixa, margem para aumento progressivo de intensidade. ';
-  if (sleepNum < 3) parecerTecnico += 'Sono comprometido â€” orientar higiene do sono. ';
+  if (sleepNum < 3) parecerTecnico += 'Sono comprometido — orientar higiene do sono. ';
   if (totalLoad > 2000) parecerTecnico += 'Carga acumulada significativa. Monitorar sinais de overreaching.';
 
-  // â”€â”€ EvoluÃ§Ã£o de carga por exercÃ­cio (baseado nas sessÃµes) â”€â”€
+  // ── Evolução de carga por exercício (baseado nas sessões) ──
   const loadProgression = {};
   completed
     .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -166,7 +166,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       });
     });
 
-  // Top exercÃ­cios com maior progressÃ£o de carga
+  // Top exercícios com maior progressão de carga
   const progressionItems = Object.entries(loadProgression)
     .filter(([, sets]) => sets.length >= 2)
     .map(([name, sets]) => {
@@ -195,11 +195,11 @@ async function renderStudentReport(studentId, cycleFilter = '') {
   const getBaseWorkoutName = name => {
     if (!name) return 'Treino Avulso';
     return name
-      .replace(/\s*[\-â€”â€“]\s*Semana\s*\d+/i, '')
-      .replace(/\s*[\-â€”â€“]\s*Sem\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
+      .replace(/\s*[\-—–]\s*Sem\s*\d+/i, '')
       .replace(/\s*Semana\s*\d+/i, '')
       .replace(/\s*Sem\s*\d+/i, '')
-      .replace(/\s*[\-â€”â€“]\s*$/g, '')
+      .replace(/\s*[\-—–]\s*$/g, '')
       .trim();
   };
 
@@ -217,9 +217,9 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     compareSessionsHtml = `
     <div class="card mb-lg">
       <div class="card-header">
-        <span class="card-title">Comparativo de SessÃµes IdÃªnticas</span>
+        <span class="card-title">Comparativo de Sessões Idênticas</span>
       </div>
-      <p class="text-xs text-muted mb-md">ComparaÃ§Ã£o cronolÃ³gica do Volume total levantado e da PercepÃ§Ã£o de EsforÃ§o (PSE) para o mesmo protocolo ao longo das semanas, demonstrando a sobrecarga progressiva e a eficiÃªncia neuromuscular.</p>
+      <p class="text-xs text-muted mb-md">Comparação cronológica do Volume total levantado e da Percepção de Esforço (PSE) para o mesmo protocolo ao longo das semanas, demonstrando a sobrecarga progressiva e a eficiência neuromuscular.</p>
       <div class="form-group" style="max-width:300px">
         <select id="compareWorkoutSel" class="form-select" style="margin-bottom:12px;padding:8px;font-size:0.85rem">
           ${comparableBases.map((base, idx) => `<option value="${base}" ${idx===0?'selected':''}>${base}</option>`).join('')}
@@ -237,7 +237,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       <div class="avatar avatar-lg" style="width:60px;height:60px;font-size:1.5rem">${student.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}</div>
       <div>
         <h2 style="margin:0">${student.name}</h2>
-        <div class="text-muted">${student.code} Â· ${student.goal || '-'} Â· ${student.age || '-'} anos</div>
+        <div class="text-muted">${student.code} · ${student.goal || '-'} · ${student.age || '-'} anos</div>
         <div class="text-xs text-muted mt-xs">Ciclo: <strong style="color:var(--primary)">${cycleLabel}</strong></div>
       </div>
     </div>
@@ -245,7 +245,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     <!-- Stats principais -->
     <div class="stats-grid mb-lg" style="grid-template-columns:repeat(5,1fr)">
       <div class="stat-card">
-        <div class="stat-label">SessÃµes</div>
+        <div class="stat-label">Sessões</div>
         <div class="stat-value text-gradient">${completed.length}</div>
         <div class="text-xs text-muted" style="margin-top:4px">realizadas</div>
       </div>
@@ -255,19 +255,19 @@ async function renderStudentReport(studentId, cycleFilter = '') {
         <div class="text-xs text-muted" style="margin-top:4px">${totalVolAllSessions.toLocaleString('pt-BR')} kg</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">PSE MÃ©dia</div>
+        <div class="stat-label">PSE Média</div>
         <div class="stat-value" style="color:${pseNum > 8 ? 'var(--danger)' : pseNum > 6 ? 'var(--warning)' : 'var(--success)'}">${avgPse}</div>
-        <div class="text-xs text-muted" style="margin-top:4px">${pseNum > 8 ? 'Alta â€” atenÃ§Ã£o' : pseNum > 6 ? 'Adequada' : 'Leve'}</div>
+        <div class="text-xs text-muted" style="margin-top:4px">${pseNum > 8 ? 'Alta — atenção' : pseNum > 6 ? 'Adequada' : 'Leve'}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Sono MÃ©dio</div>
+        <div class="stat-label">Sono Médio</div>
         <div class="stat-value" style="color:${sleepNum < 2.5 ? 'var(--danger)' : sleepNum < 3.5 ? 'var(--warning)' : 'var(--success)'}">${avgSleep}</div>
         <div class="text-xs text-muted" style="margin-top:4px">${sleepNum < 2.5 ? 'Insuficiente' : sleepNum < 3.5 ? 'Regular' : 'Bom'}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Carga Total</div>
         <div class="stat-value text-gradient">${Math.round(totalLoad)}</div>
-        <div class="text-xs text-muted" style="margin-top:4px">PSE Ã— duraÃ§Ã£o</div>
+        <div class="text-xs text-muted" style="margin-top:4px">PSE × duração</div>
       </div>
     </div>
 
@@ -276,96 +276,96 @@ async function renderStudentReport(studentId, cycleFilter = '') {
     <!-- Sub-stats de treino -->
     <div class="stats-grid mb-lg" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card" style="padding:12px;text-align:center">
-        <div class="stat-label" style="font-size:0.65rem">MÃ©dia/SessÃ£o</div>
+        <div class="stat-label" style="font-size:0.65rem">Média/Sessão</div>
         <div class="stat-value" style="font-size:1.3rem;color:var(--accent)">${avgVolPerSession.toLocaleString('pt-BR')} kg</div>
         <div class="text-xs text-muted" style="margin-top:2px">volume por treino</div>
       </div>
       <div class="stat-card" style="padding:12px;text-align:center">
         <div class="stat-label" style="font-size:0.65rem">Maior Volume</div>
         <div class="stat-value" style="font-size:1.3rem;color:var(--warning)">${maxVolSession.toLocaleString('pt-BR')} kg</div>
-        <div class="text-xs text-muted" style="margin-top:2px">em uma sessÃ£o</div>
+        <div class="text-xs text-muted" style="margin-top:2px">em uma sessão</div>
       </div>
       <div class="stat-card" style="padding:12px;text-align:center">
-        <div class="stat-label" style="font-size:0.65rem">DuraÃ§Ã£o MÃ©dia</div>
+        <div class="stat-label" style="font-size:0.65rem">Duração Média</div>
         <div class="stat-value" style="font-size:1.3rem;color:var(--primary)">${avgDuration} min</div>
-        <div class="text-xs text-muted" style="margin-top:2px">por sessÃ£o</div>
+        <div class="text-xs text-muted" style="margin-top:2px">por sessão</div>
       </div>
     </div>
 
     ${tmbResult && tdeeResult && metaResult ? `
-    <!-- Gasto EnergÃ©tico e Macros -->
+    <!-- Gasto Energético e Macros -->
     <div class="card mb-lg" style="border-left:3px solid var(--primary)">
       <div class="card-header">
-        <span class="card-title">Gasto EnergÃ©tico Estimado</span>
-        <span class="text-xs text-muted">${tmbResult.formula} Â· Base: ${lastComp ? Calc.formatDate(lastComp.date) : 'â€”'}</span>
+        <span class="card-title">Gasto Energético Estimado</span>
+        <span class="text-xs text-muted">${tmbResult.formula} · Base: ${lastComp ? Calc.formatDate(lastComp.date) : '—'}</span>
       </div>
       <div class="stats-grid mb-sm" style="grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="stat-card" style="text-align:center;padding:10px">
           <div class="stat-label">TMB</div>
           <div style="font-size:1.3rem;font-weight:800;color:var(--text-secondary)">${tmbResult.valor} <span style="font-size:0.72rem">kcal</span></div>
-          <div style="font-size:0.65rem;color:var(--text-muted)">Basal Â· ${tmbResult.formula}</div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">Basal · ${tmbResult.formula}</div>
         </div>
         <div class="stat-card" style="text-align:center;padding:10px">
           <div class="stat-label">TDEE</div>
           <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">${tdeeResult.valor} <span style="font-size:0.72rem">kcal</span></div>
-          <div style="font-size:0.65rem;color:var(--text-muted)">Ã—${tdeeResult.fator} Â· ~${Math.round(sessPerWeek*10)/10}Ã—/sem</div>
+          <div style="font-size:0.65rem;color:var(--text-muted)">×${tdeeResult.fator} · ~${Math.round(sessPerWeek*10)/10}×/sem</div>
         </div>
         <div class="stat-card" style="text-align:center;padding:10px">
-          <div class="stat-label">Meta (${student?.goal||'ManutenÃ§Ã£o'})</div>
+          <div class="stat-label">Meta (${student?.goal||'Manutenção'})</div>
           <div style="font-size:1.3rem;font-weight:800;color:${obj.includes('emagr')?'var(--warning)':obj.includes('hipert')?'var(--success)':'var(--accent)'}">${metaResult.kcal} <span style="font-size:0.72rem">kcal</span></div>
           <div style="font-size:0.65rem;color:var(--text-muted)">${metaResult.label}</div>
         </div>
       </div>
       ${macrosRes ? `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${[['ProteÃ­na',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>`
+        ${[['Proteína',macrosRes.proteina,'#10b981'],['Carboidrato',macrosRes.carboidrato,'#f59e0b'],['Gordura',macrosRes.gordura,'#8b5cf6']].map(([n,m,c])=>`
           <div style="padding:10px 12px;background:var(--bg-page);border-radius:8px;border-left:3px solid ${c}">
             <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">${n}</div>
             <div style="font-size:1.3rem;font-weight:700;color:${c}">${m.g}g</div>
-            <div style="font-size:0.7rem;color:var(--text-muted)">${m.kcal}kcal Â· ${m.pct}%</div>
+            <div style="font-size:0.7rem;color:var(--text-muted)">${m.kcal}kcal · ${m.pct}%</div>
           </div>`).join('')}
       </div>
       <div style="margin-top:8px;font-size:0.72rem;color:var(--text-muted)">
-        ProteÃ­na: <strong>${macrosRes.protPorKg}g/kg</strong> Â· ISSN Position Stand (Stokes et al. 2018) Â· Peso: ${lastComp.peso}kg${lastComp.massaMagra?` Â· Massa magra: ${Calc.formatNum(lastComp.massaMagra)}kg`:''}
+        Proteína: <strong>${macrosRes.protPorKg}g/kg</strong> · ISSN Position Stand (Stokes et al. 2018) · Peso: ${lastComp.peso}kg${lastComp.massaMagra?` · Massa magra: ${Calc.formatNum(lastComp.massaMagra)}kg`:''}
       </div>` : ''}
     </div>` : ''}
 
     <div class="card mb-lg" style="border-left:3px solid var(--primary);background:rgba(16,185,129,0.03)">
       <div class="card-header"><span class="card-title">Resumo para o Aluno</span></div>
-      <p class="text-xs text-muted" style="margin-bottom:8px">AnÃ¡lise em linguagem acessÃ­vel.</p>
+      <p class="text-xs text-muted" style="margin-bottom:8px">Análise em linguagem acessível.</p>
       <p class="text-sm" style="line-height:1.8">${parecerAluno}</p>
     </div>
 
     <div class="card mb-lg" style="border-left:3px solid var(--accent)">
-      <div class="card-header"><span class="card-title">AnÃ¡lise TÃ©cnica do Treinador</span></div>
+      <div class="card-header"><span class="card-title">Análise Técnica do Treinador</span></div>
       <p class="text-xs text-muted" style="margin-bottom:8px">Baseada nos indicadores de carga e bem-estar.</p>
       <p class="text-sm" style="line-height:1.7">${parecerTecnico}</p>
     </div>
 
-    <!-- ProgressÃ£o de carga por exercÃ­cio -->
+    <!-- Progressão de carga por exercício -->
     ${progressionItems.length ? `
     <div class="card mb-lg">
       <div class="card-header">
-        <span class="card-title">ProgressÃ£o de Carga por ExercÃ­cio</span>
-        <span class="text-xs text-muted">${progressionItems.length} exercÃ­cios com dados suficientes</span>
+        <span class="card-title">Progressão de Carga por Exercício</span>
+        <span class="text-xs text-muted">${progressionItems.length} exercícios com dados suficientes</span>
       </div>
-      <p class="text-xs text-muted mb-md">EvoluÃ§Ã£o da carga utilizada ao longo das sessÃµes registradas. Verde = progresso, vermelho = regressÃ£o.</p>
+      <p class="text-xs text-muted mb-md">Evolução da carga utilizada ao longo das sessões registradas. Verde = progresso, vermelho = regressão.</p>
       <div class="table-container">
         <table class="data-table">
           <thead><tr>
-            <th>ExercÃ­cio</th>
-            <th style="text-align:center">1Âª Carga</th>
-            <th style="text-align:center">Ãšltima Carga</th>
-            <th style="text-align:center" class="hide-mobile">MÃ¡ximo</th>
-            <th style="text-align:center">Î” Carga</th>
-            <th style="text-align:center">EvoluÃ§Ã£o</th>
+            <th>Exercício</th>
+            <th style="text-align:center">1ª Carga</th>
+            <th style="text-align:center">Última Carga</th>
+            <th style="text-align:center" class="hide-mobile">Máximo</th>
+            <th style="text-align:center">Δ Carga</th>
+            <th style="text-align:center">Evolução</th>
             <th style="text-align:center" class="hide-mobile">Vol. Total</th>
-            <th style="text-align:center" class="hide-mobile">SÃ©ries</th>
+            <th style="text-align:center" class="hide-mobile">Séries</th>
           </tr></thead>
           <tbody>
             ${progressionItems.map(p => {
               const deltaColor = p.delta > 0 ? 'var(--success)' : p.delta < 0 ? 'var(--danger)' : 'var(--text-muted)';
-              const arrow      = p.delta > 0 ? 'â†‘' : p.delta < 0 ? 'â†“' : '=';
+              const arrow      = p.delta > 0 ? '↑' : p.delta < 0 ? '↓' : '=';
               const barWidth   = Math.min(100, Math.abs(p.pct));
               return `<tr>
                 <td><strong style="font-size:0.85rem">${p.name}</strong></td>
@@ -395,76 +395,76 @@ async function renderStudentReport(studentId, cycleFilter = '') {
       </div>
     </div>` : `
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">ProgressÃ£o de Carga</span></div>
-      <p class="text-muted text-sm" style="padding:16px 0">Sem sessÃµes registradas com setLog suficiente para anÃ¡lise de progressÃ£o. Registre sessÃµes via Treino ao Vivo para ver a evoluÃ§Ã£o.</p>
+      <div class="card-header"><span class="card-title">Progressão de Carga</span></div>
+      <p class="text-muted text-sm" style="padding:16px 0">Sem sessões registradas com setLog suficiente para análise de progressão. Registre sessões via Treino ao Vivo para ver a evolução.</p>
     </div>`}
 
     ${compareSessionsHtml}
 
     <div class="card mb-lg" style="border-left:3px solid var(--accent)">
-      <div class="card-header"><span class="card-title">PeriodizaÃ§Ã£o Atual</span></div>
-      <p class="text-xs text-muted mb-sm">Macrociclo ativo com distribuiÃ§Ã£o de volume e intensidade.</p>
+      <div class="card-header"><span class="card-title">Periodização Atual</span></div>
+      <p class="text-xs text-muted mb-sm">Macrociclo ativo com distribuição de volume e intensidade.</p>
       <div id="reportPeriodization"></div>
     </div>
 
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">EvoluÃ§Ã£o do Bem-estar</span></div>
-      <p class="text-xs text-muted mb-sm">Acompanhamento dos indicadores de Sono, RecuperaÃ§Ã£o Geral (TQR) e NÃ­vel de Estresse ao longo do tempo. Valores mais altos de Sono e TQR indicam melhor capacidade adaptativa e recuperaÃ§Ã£o. Valores baixos de Estresse sÃ£o ideais para o anabolismo e prevenÃ§Ã£o de fadiga crÃ´nica.</p>
+      <div class="card-header"><span class="card-title">Evolução do Bem-estar</span></div>
+      <p class="text-xs text-muted mb-sm">Acompanhamento dos indicadores de Sono, Recuperação Geral (TQR) e Nível de Estresse ao longo do tempo. Valores mais altos de Sono e TQR indicam melhor capacidade adaptativa e recuperação. Valores baixos de Estresse são ideais para o anabolismo e prevenção de fadiga crônica.</p>
       <div style="height:360px;position:relative"><canvas id="wellnessChart"></canvas></div>
     </div>
 
     <div class="card mb-lg">
       <div class="card-header"><span class="card-title">Carga de Treino Semanal</span></div>
-      <p class="text-xs text-muted mb-sm">Carga total semanal calculada como o produto da PercepÃ§Ã£o Subjetiva de EsforÃ§o (PSE) pela DuraÃ§Ã£o da sessÃ£o (minutos). Acompanhe a modulaÃ§Ã£o de carga para evitar aumentos abruptos (superiores a 10% entre semanas) e gerenciar a fadiga.</p>
+      <p class="text-xs text-muted mb-sm">Carga total semanal calculada como o produto da Percepção Subjetiva de Esforço (PSE) pela Duração da sessão (minutos). Acompanhe a modulação de carga para evitar aumentos abruptos (superiores a 10% entre semanas) e gerenciar a fadiga.</p>
       <div style="height:360px;position:relative"><canvas id="loadChart"></canvas></div>
     </div>
 
     <div class="grid-2 mb-lg">
       <div class="card">
-        <div class="card-header"><span class="card-title">PercepÃ§Ã£o Subjetiva de EsforÃ§o (PSE)</span></div>
-        <p class="text-xs text-muted mb-sm">EsforÃ§o relatado pelo aluno apÃ³s cada sessÃ£o (escala Borg modificada de 1 a 10). MÃ©dia consistente acima de 8 indica sessÃµes de alta intensidade com necessidade de atenÃ§Ã£o Ã  recuperaÃ§Ã£o.</p>
+        <div class="card-header"><span class="card-title">Percepção Subjetiva de Esforço (PSE)</span></div>
+        <p class="text-xs text-muted mb-sm">Esforço relatado pelo aluno após cada sessão (escala Borg modificada de 1 a 10). Média consistente acima de 8 indica sessões de alta intensidade com necessidade de atenção à recuperação.</p>
         <div style="height:300px;position:relative"><canvas id="pseChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Radar de ProntidÃ£o</span></div>
-        <p class="text-xs text-muted mb-sm">Snapshot mÃ©dio das Ãºltimas 5 avaliaÃ§Ãµes subjetivas de bem-estar. Uma Ã¡rea de preenchimento maior representa um melhor estado de prontidÃ£o fÃ­sica e mental.</p>
+        <div class="card-header"><span class="card-title">Radar de Prontidão</span></div>
+        <p class="text-xs text-muted mb-sm">Snapshot médio das últimas 5 avaliações subjetivas de bem-estar. Uma área de preenchimento maior representa um melhor estado de prontidão física e mental.</p>
         <div style="height:300px;position:relative"><canvas id="radarChart"></canvas></div>
       </div>
     </div>
 
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">ComparaÃ§Ã£o entre Ciclos</span></div>
-      <p class="text-xs text-muted mb-sm">Comparativo da mÃ©dia dos indicadores entre a primeira metade e a segunda metade do perÃ­odo selecionado, avaliando quantitativamente a evoluÃ§Ã£o do sono, da recuperaÃ§Ã£o, da intensidade e do estresse.</p>
+      <div class="card-header"><span class="card-title">Comparação entre Ciclos</span></div>
+      <p class="text-xs text-muted mb-sm">Comparativo da média dos indicadores entre a primeira metade e a segunda metade do período selecionado, avaliando quantitativamente a evolução do sono, da recuperação, da intensidade e do estresse.</p>
       <div style="height:360px;position:relative"><canvas id="cycleDiffChart"></canvas></div>
     </div>
 
     ${assessments.filter(a => a.type === 'composicao').length ? `
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">EvoluÃ§Ã£o de Medidas Corporais</span></div>
-      <p class="text-xs text-muted mb-sm">Curva evolutiva do peso corporal e percentual de gordura ao longo das avaliaÃ§Ãµes fÃ­sicas consecutivas.</p>
+      <div class="card-header"><span class="card-title">Evolução de Medidas Corporais</span></div>
+      <p class="text-xs text-muted mb-sm">Curva evolutiva do peso corporal e percentual de gordura ao longo das avaliações físicas consecutivas.</p>
       <div style="height:360px;position:relative"><canvas id="measuresChart"></canvas></div>
     </div>` : ''}
 
     <div class="card mb-lg">
-      <div class="card-header"><span class="card-title">Gasto CalÃ³rico Estimado</span></div>
-      <p class="text-xs text-muted mb-sm">Estimativa de gasto energÃ©tico por sessÃ£o com base no MET do treinamento de forÃ§a e no peso corporal registrado.</p>
+      <div class="card-header"><span class="card-title">Gasto Calórico Estimado</span></div>
+      <p class="text-xs text-muted mb-sm">Estimativa de gasto energético por sessão com base no MET do treinamento de força e no peso corporal registrado.</p>
       <div style="height:360px;position:relative"><canvas id="kcalChart"></canvas></div>
     </div>
     
     <div class="card mb-lg" id="densityChart_card">
       <div class="card-header"><span class="card-title">Densidade de Treino (kg/min)</span></div>
-      <p class="text-xs text-muted mb-sm">Quantidade de carga total movimentada dividida pelo tempo da sessÃ£o, indicando a eficiÃªncia de trabalho por minuto.</p>
+      <p class="text-xs text-muted mb-sm">Quantidade de carga total movimentada dividida pelo tempo da sessão, indicando a eficiência de trabalho por minuto.</p>
       <div style="height:360px;position:relative"><canvas id="densityChart"></canvas></div>
     </div>
 
     <div class="grid-2 mb-lg">
       <div class="card">
-        <div class="card-header"><span class="card-title">FrequÃªncia Semanal</span></div>
-        <p class="text-xs text-muted mb-sm">Quantidade de sessÃµes realizadas por semana ao longo das Ãºltimas 8 semanas. A consistÃªncia de treino Ã© o fator crÃ­tico para o sucesso fisiolÃ³gico de longo prazo.</p>
+        <div class="card-header"><span class="card-title">Frequência Semanal</span></div>
+        <p class="text-xs text-muted mb-sm">Quantidade de sessões realizadas por semana ao longo das últimas 8 semanas. A consistência de treino é o fator crítico para o sucesso fisiológico de longo prazo.</p>
         <div style="height:280px;position:relative"><canvas id="freqChart"></canvas></div>
       </div>
       <div class="card"><div class="card-header"><span class="card-title">Alertas Recentes</span></div>
-        <p class="text-xs text-muted mb-sm">Resumo dos Ãºltimos check-ins de biofeedback com classificaÃ§Ã£o automÃ¡tica e recomendaÃ§Ãµes.</p>
+        <p class="text-xs text-muted mb-sm">Resumo dos últimos check-ins de biofeedback com classificação automática e recomendações.</p>
         ${recent10.length ? recent10.slice(-5).reverse().map(e => {
     const alerts = analyzeBiofeedback(e);
     const status = overallStatus(e);
@@ -477,7 +477,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
         a.metric === 'ACWR' || a.metric === 'Ciclo Menstrual' || a.metric === 'Dor Localizada' ? `${a.value}` :
         `${a.value}/10`;
       return `${a.icon} ${a.metric}: ${valText}`;
-    }).join(' Â· ')}</div>` : ''}
+    }).join(' · ')}</div>` : ''}
             <div class="text-xs text-muted mt-xs">${rec.label}</div>
           </div>`;
   }).join('') : '<p class="text-muted text-center" style="padding:20px">Sem dados</p>'}
@@ -506,7 +506,7 @@ export async function initReports(navigateFn) {
     if (annContainer) annContainer.style.display = sid ? 'block' : 'none';
 
     if (!sid) {
-      content.innerHTML = '<div class="empty-state"><div class="empty-icon">â€”</div><h3>Selecione um aluno</h3></div>';
+      content.innerHTML = '<div class="empty-state"><div class="empty-icon">—</div><h3>Selecione um aluno</h3></div>';
       return;
     }
 
@@ -569,7 +569,7 @@ export async function initReports(navigateFn) {
     }
   }
 
-  // WhatsApp â€” enviar resumo ao aluno
+  // WhatsApp — enviar resumo ao aluno
   document.getElementById('exportWaBtn')?.addEventListener('click', async () => {
     const sid = document.getElementById('reportStudent')?.value;
     if (!sid) return;
@@ -585,23 +585,23 @@ export async function initReports(navigateFn) {
     const totalVol = sessions.reduce((t,s)=>t+(s.totalVolume||0),0);
     const cycleLabel = cycleSel?.value || 'Geral';
     const msg = [
-      `ðŸš€ *Seu RelatÃ³rio de Performance - Vetor*`,
+      `🚀 *Seu Relatório de Performance - Vetor*`,
       ``,
-      `ðŸ‘¤ Aluno: *${student.name}*`,
-      `ðŸ“… Ciclo: ${cycleLabel}`,
+      `👤 Aluno: *${student.name}*`,
+      `📅 Ciclo: ${cycleLabel}`,
       ``,
-      `ðŸ‹ *Treinos*`,
-      `â€¢ SessÃµes realizadas: ${sessions.length}`,
-      `â€¢ Volume total acumulado: ${totalVol}kg`,
+      `🏋 *Treinos*`,
+      `• Sessões realizadas: ${sessions.length}`,
+      `• Volume total acumulado: ${totalVol}kg`,
       ``,
-      `ðŸ“ˆ *Indicadores (Ãºltimos ${recent10.length} check-ins)*`,
-      `â€¢ Sono mÃ©dio: ${avgSleep}/5`,
-      `â€¢ TQR mÃ©dio: ${avgTqr||avgTqrR||'-'}/10`,
-      `â€¢ PSE mÃ©dio: ${avgPse}/10`,
+      `📈 *Indicadores (últimos ${recent10.length} check-ins)*`,
+      `• Sono médio: ${avgSleep}/5`,
+      `• TQR médio: ${avgTqr||avgTqrR||'-'}/10`,
+      `• PSE médio: ${avgPse}/10`,
       ``,
-      `âœ… Continue assim! Resultados consistentes vÃªm da consistÃªncia nos treinos e no descanso.`,
+      `✅ Continue assim! Resultados consistentes vêm da consistência nos treinos e no descanso.`,
       ``,
-      `_RelatÃ³rio gerado pelo Vetor_`,
+      `_Relatório gerado pelo Vetor_`,
     ].join('\n');
     const phone = student.phone.replace(/\D/g,'');
     window.open(`https://wa.me/${phone.startsWith('55')?phone:'55'+phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -618,7 +618,7 @@ export async function initReports(navigateFn) {
       return;
     }
     
-    newWin.document.write('<html><body style="font-family:sans-serif;padding:40px;text-align:center;"><h2>Gerando relatÃ³rio...</h2></body></html>');
+    newWin.document.write('<html><body style="font-family:sans-serif;padding:40px;text-align:center;"><h2>Gerando relatório...</h2></body></html>');
     
     const student = await db.get('students', sid);
     if (!student) { newWin.close(); return; }
@@ -627,9 +627,9 @@ export async function initReports(navigateFn) {
     const trainerName = settings?.trainerName || 'Vetor';
 
     const pdfArea = document.getElementById('pdfArea');
-    if (!pdfArea) { newWin.close(); notify.error('Carregue o relatÃ³rio primeiro'); return; }
+    if (!pdfArea) { newWin.close(); notify.error('Carregue o relatório primeiro'); return; }
 
-    // â”€â”€ Dados â”€â”€
+    // ── Dados ──
     const allWorkouts = (await db.getAll('workouts')).filter(w => w.studentId === sid);
     const workouts    = cycleFilter ? allWorkouts.filter(w => String(w.macrocycleId) === String(cycleFilter) || String(w.cycle) === String(cycleFilter)) : allWorkouts;
     const workoutIds  = new Set(workouts.map(w => String(w.id)));
@@ -674,7 +674,7 @@ export async function initReports(navigateFn) {
     const bf          = cycleFilter ? allBiofeedback.filter(b => b.studentId === sid && sessions.some(s => new Date(s.date).toDateString() === new Date(b.date).toDateString())) : allBiofeedback.filter(b => b.studentId === sid);
     const assessments = (await db.getAll('assessments')).filter(a => a.studentId === sid);
 
-    // â”€â”€ Stats â”€â”€
+    // ── Stats ──
     const recent10  = bf.slice(-10);
     const avgPse    = recent10.length ? (recent10.reduce((t,b)=>t+(b.pse||0),0)/recent10.length).toFixed(1) : '-';
     const avgSleep  = recent10.length ? ((recent10.reduce((t,b)=>t+(b.sleep||0),0)/recent10.length)/2).toFixed(1) : '-';
@@ -719,7 +719,7 @@ export async function initReports(navigateFn) {
       .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
       .slice(0, 8);
 
-    // â”€â”€ Resumo de treinos â€” deduplica por nome+ciclo, mostra sÃ³ Ãºnicas â”€â”€
+    // ── Resumo de treinos — deduplica por nome+ciclo, mostra só únicas ──
     const uniqueWorkouts = [];
     const seen = new Set();
     workouts.forEach(w => {
@@ -735,36 +735,36 @@ export async function initReports(navigateFn) {
       byCycle[c].push(w);
     });
 
-    // â”€â”€ Parecer â”€â”€
+    // ── Parecer ──
     const pseNum   = parseFloat(avgPse)||0;
     const sleepNum = parseFloat(avgSleep)||0;
     let parecerAluno = '';
-    if (pseNum > 8)      parecerAluno += 'AtenÃ§Ã£o: seus treinos estÃ£o muito intensos. Vamos ajustar o ritmo para garantir boa recuperaÃ§Ã£o. ';
-    else if (pseNum > 6) parecerAluno += 'VocÃª estÃ¡ treinando na intensidade ideal! Continue assim. ';
-    else                 parecerAluno += 'Boa consistÃªncia! Temos margem para evoluir a intensidade gradualmente. ';
-    if (sleepNum > 0 && sleepNum < 3)    parecerAluno += 'O sono estÃ¡ abaixo do ideal â€” priorize 7 a 9 horas para maximizar os resultados. ';
-    else if (sleepNum >= 3.5)            parecerAluno += 'Ã“tima qualidade de sono! Isso acelera muito a recuperaÃ§Ã£o e os ganhos. ';
-    if (sessions.length > 0)            parecerAluno += `ParabÃ©ns pelas ${sessions.length} sessÃ£o(Ãµes) concluÃ­das! A consistÃªncia Ã© o maior segredo dos resultados. `;
-    parecerAluno += totalLoad > 2000 ? 'A carga acumulada estÃ¡ elevada â€” estamos monitorando de perto.' : 'Sua carga de treino estÃ¡ dentro do esperado.';
+    if (pseNum > 8)      parecerAluno += 'Atenção: seus treinos estão muito intensos. Vamos ajustar o ritmo para garantir boa recuperação. ';
+    else if (pseNum > 6) parecerAluno += 'Você está treinando na intensidade ideal! Continue assim. ';
+    else                 parecerAluno += 'Boa consistência! Temos margem para evoluir a intensidade gradualmente. ';
+    if (sleepNum > 0 && sleepNum < 3)    parecerAluno += 'O sono está abaixo do ideal — priorize 7 a 9 horas para maximizar os resultados. ';
+    else if (sleepNum >= 3.5)            parecerAluno += 'Ótima qualidade de sono! Isso acelera muito a recuperação e os ganhos. ';
+    if (sessions.length > 0)            parecerAluno += `Parabéns pelas ${sessions.length} sessão(ões) concluídas! A consistência é o maior segredo dos resultados. `;
+    parecerAluno += totalLoad > 2000 ? 'A carga acumulada está elevada — estamos monitorando de perto.' : 'Sua carga de treino está dentro do esperado.';
 
     let parecerTecnico = '';
-    if (pseNum > 8)      parecerTecnico += 'PSE mÃ©dia elevada (>8): possÃ­vel fadiga acumulada. Recomendar reduÃ§Ã£o de volume 20â€“30% ou semana de deload. ';
-    else if (pseNum > 6) parecerTecnico += 'PSE em nÃ­vel adequado. ProgressÃ£o viÃ¡vel nas prÃ³ximas semanas. ';
-    else                 parecerTecnico += 'PSE baixa â€” espaÃ§o para aumento de carga ou densidade. ';
+    if (pseNum > 8)      parecerTecnico += 'PSE média elevada (>8): possível fadiga acumulada. Recomendar redução de volume 20–30% ou semana de deload. ';
+    else if (pseNum > 6) parecerTecnico += 'PSE em nível adequado. Progressão viável nas próximas semanas. ';
+    else                 parecerTecnico += 'PSE baixa — espaço para aumento de carga ou densidade. ';
     if (sleepNum > 0 && sleepNum < 3) parecerTecnico += 'Sono comprometido: orientar higiene do sono. ';
-    if (totalLoad > 2000)             parecerTecnico += 'Carga acumulada significativa â€” monitorar sinais de overreaching (queda de performance, irritabilidade, FC elevada em repouso).';
+    if (totalLoad > 2000)             parecerTecnico += 'Carga acumulada significativa — monitorar sinais de overreaching (queda de performance, irritabilidade, FC elevada em repouso).';
 
-    // â”€â”€ Capturar grÃ¡ficos por ID (nÃ£o por posiÃ§Ã£o) â”€â”€
+    // ── Capturar gráficos por ID (não por posição) ──
     const chartIds = [
-      { id: 'wellnessChart',  title: 'EvoluÃ§Ã£o do Bem-estar',      desc: 'Sono (roxo), TQR (verde), Estresse (amarelo), Dor (verm.), MotivaÃ§Ã£o (azul), AlimentaÃ§Ã£o (laranja).' },
-      { id: 'loadChart',      title: 'Carga de Treino Semanal',     desc: 'Carga semanal = PSE Ã— DuraÃ§Ã£o. Aumentos graduais de ~10%/semana sÃ£o ideais para progressÃ£o sem risco.' },
-      { id: 'pseChart',       title: 'PSE por SessÃ£o',              desc: 'PercepÃ§Ã£o Subjetiva de EsforÃ§o (1â€“10). Zona ideal para hipertrofia: 6â€“8. Acima de 8 por 3+ sessÃµes seguidas = atenÃ§Ã£o Ã  fadiga.' },
-      { id: 'radarChart',     title: 'Radar de Wellness',           desc: 'MÃ©dia dos Ãºltimos 5 check-ins. Quanto maior a Ã¡rea, melhor o estado geral. Pontas "encolhidas" indicam itens a melhorar.' },
-      { id: 'freqChart',      title: 'FrequÃªncia Semanal',          desc: 'SessÃµes realizadas por semana. ConsistÃªncia â‰¥3x/semana Ã© fundamental para resultados duradouros.' },
-      { id: 'measuresChart',  title: 'EvoluÃ§Ã£o de Medidas Corporais', desc: 'TendÃªncia de peso e % de gordura ao longo das avaliaÃ§Ãµes fÃ­sicas.' },
-      { id: 'kcalChart',      title: 'Gasto CalÃ³rico',              desc: 'Estimativa de calorias gastas por sessÃ£o ao longo do tempo.' },
-      { id: 'densityChart',   title: 'Densidade de Treino',         desc: 'RelaÃ§Ã£o entre Volume (kg) e DuraÃ§Ã£o (min) das sessÃµes.' },
-      { id: 'cycleDiffChart', title: 'ComparaÃ§Ã£o de PerÃ­odos',      desc: 'ComparaÃ§Ã£o entre a primeira e segunda metade dos dados coletados. Melhoras aparecem como barras verdes maiores.' },
+      { id: 'wellnessChart',  title: 'Evolução do Bem-estar',      desc: 'Sono (roxo), TQR (verde), Estresse (amarelo), Dor (verm.), Motivação (azul), Alimentação (laranja).' },
+      { id: 'loadChart',      title: 'Carga de Treino Semanal',     desc: 'Carga semanal = PSE × Duração. Aumentos graduais de ~10%/semana são ideais para progressão sem risco.' },
+      { id: 'pseChart',       title: 'PSE por Sessão',              desc: 'Percepção Subjetiva de Esforço (1–10). Zona ideal para hipertrofia: 6–8. Acima de 8 por 3+ sessões seguidas = atenção à fadiga.' },
+      { id: 'radarChart',     title: 'Radar de Wellness',           desc: 'Média dos últimos 5 check-ins. Quanto maior a área, melhor o estado geral. Pontas "encolhidas" indicam itens a melhorar.' },
+      { id: 'freqChart',      title: 'Frequência Semanal',          desc: 'Sessões realizadas por semana. Consistência ≥3x/semana é fundamental para resultados duradouros.' },
+      { id: 'measuresChart',  title: 'Evolução de Medidas Corporais', desc: 'Tendência de peso e % de gordura ao longo das avaliações físicas.' },
+      { id: 'kcalChart',      title: 'Gasto Calórico',              desc: 'Estimativa de calorias gastas por sessão ao longo do tempo.' },
+      { id: 'densityChart',   title: 'Densidade de Treino',         desc: 'Relação entre Volume (kg) e Duração (min) das sessões.' },
+      { id: 'cycleDiffChart', title: 'Comparação de Períodos',      desc: 'Comparação entre a primeira e segunda metade dos dados coletados. Melhoras aparecem como barras verdes maiores.' },
     ];
 
     let chartsHTML = '';
@@ -773,7 +773,7 @@ export async function initReports(navigateFn) {
       if (!canvas) return;
       try {
         const img = canvas.toDataURL('image/png');
-        // Verificar se o canvas tem conteÃºdo real (nÃ£o estÃ¡ em branco)
+        // Verificar se o canvas tem conteúdo real (não está em branco)
         if (img === 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==') return;
         chartsHTML += `
           <div class="chart-block">
@@ -784,11 +784,11 @@ export async function initReports(navigateFn) {
       } catch(e) { /* canvas vazio ou sem dados */ }
     });
 
-    // â”€â”€ Gerar PDF via Blob URL (evita bloqueio de popup no Brave/Chrome) â”€â”€
+    // ── Gerar PDF via Blob URL (evita bloqueio de popup no Brave/Chrome) ──
     const format = document.getElementById('pdfFormatSel')?.value || 'mobile';
     const isDark = true; // Always dark theme for PDF
     
-    // ForÃ§ando tema baseado no formato
+    // Forçando tema baseado no formato
     const pdfBg = isDark ? '#0b0f19' : '#ffffff';
     const pdfText = isDark ? '#f1f5f9' : '#111827';
     const pdfSubText = isDark ? '#94a3b8' : '#4b5563';
@@ -805,7 +805,7 @@ export async function initReports(navigateFn) {
 
       const htmlContent = `<!DOCTYPE html><html lang="pt-BR"><head>
       <meta charset="UTF-8">
-      <title>DossiÃª â€” ${student.name}</title>
+      <title>Dossiê — ${student.name}</title>
       <style>
         ${pageConfig}
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -829,7 +829,7 @@ export async function initReports(navigateFn) {
         .stat-val { font-size: 22px; font-weight: 800; color: #10b981; }
         .stat-lbl { font-size: 9px; color: ${pdfSubText}; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
-        /* SecÃ§Ãµes */
+        /* Secções */
         h2 { font-size: 15px; color: #10b981; margin: 20px 0 6px; border-bottom: 1px solid #1f2937; padding-bottom: 5px; font-weight: 700; }
         .section-desc { font-size: 11px; color: ${pdfSubText}; margin: 3px 0 10px; }
 
@@ -849,7 +849,7 @@ export async function initReports(navigateFn) {
         .cycle-title { font-size: 13px; font-weight: 700; color: ${pdfText}; border-bottom: 1px solid ${pdfBorder}; padding-bottom: 4px; margin-bottom: 6px; }
         .cycle-count { font-weight: 400; color: ${pdfSubText}; font-size: 11px; }
 
-        /* GrÃ¡ficos */
+        /* Gráficos */
         .chart-block { margin: 16px 0; page-break-inside: avoid; }
         .chart-block h3 { font-size: 13px; color: #10b981; margin-bottom: 2px; font-weight: 700; }
         .chart-block .chart-desc { font-size: 10px; color: ${pdfSubText}; margin: 0 0 7px; line-height: 1.4; }
@@ -860,7 +860,7 @@ export async function initReports(navigateFn) {
         /* Footer */
         .footer { text-align: center; font-size: 10px; color: ${pdfSubText}; margin-top: 32px; border-top: 1px solid ${pdfBorder}; padding-top: 10px; }
 
-        /* Nota de rodapÃ© */
+        /* Nota de rodapé */
         .footnote { font-size: 10px; color: ${pdfSubText}; font-style: italic; margin-top: 6px; }
 
         @media print {
@@ -873,7 +873,7 @@ export async function initReports(navigateFn) {
     </head><body>
 
       <div class="doc-header">
-        <h1>Vetor - DossiÃª de Performance</h1>
+        <h1>Vetor - Dossiê de Performance</h1>
         <p class="doc-subtitle">Gerado em ${new Date().toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })} por ${trainerName}</p>
       </div>
 
@@ -881,42 +881,42 @@ export async function initReports(navigateFn) {
         <div class="avatar">${student.name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>
         <div class="student-info">
           <h2>${student.name}</h2>
-          <p>${student.code || ''} Â· Objetivo: ${student.goal || '-'} Â· ${student.age || (student.birthDate ? new Date().getFullYear() - new Date(student.birthDate).getFullYear() : '-')} anos</p>
+          <p>${student.code || ''} · Objetivo: ${student.goal || '-'} · ${student.age || (student.birthDate ? new Date().getFullYear() - new Date(student.birthDate).getFullYear() : '-')} anos</p>
           <span class="cycle-tag">${cycleFilter || 'Todos os Ciclos'}</span>
         </div>
       </div>
 
       <div class="stats">
         <div class="stat"><div class="stat-val">${uniqueWorkouts.length}</div><div class="stat-lbl">Treinos Prescritos</div></div>
-        <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">SessÃµes Realizadas</div></div>
-        <div class="stat"><div class="stat-val" style="color:${pseNum>8?'#ef4444':pseNum>6?'#f59e0b':'#10b981'}">${avgPse}</div><div class="stat-lbl">PSE MÃ©dia</div></div>
-        <div class="stat"><div class="stat-val" style="color:${sleepNum>0&&sleepNum<3?'#ef4444':sleepNum>=3.5?'#10b981':'#f59e0b'}">${avgSleep}</div><div class="stat-lbl">Sono MÃ©dio</div></div>
-        <div class="stat"><div class="stat-val" style="color:${parseFloat(avgTqr||0)<5?'#ef4444':parseFloat(avgTqr||0)<7?'#f59e0b':'#10b981'}">${avgTqr||'-'}</div><div class="stat-lbl">TQR MÃ©dio</div></div>
+        <div class="stat"><div class="stat-val">${sessions.length}</div><div class="stat-lbl">Sessões Realizadas</div></div>
+        <div class="stat"><div class="stat-val" style="color:${pseNum>8?'#ef4444':pseNum>6?'#f59e0b':'#10b981'}">${avgPse}</div><div class="stat-lbl">PSE Média</div></div>
+        <div class="stat"><div class="stat-val" style="color:${sleepNum>0&&sleepNum<3?'#ef4444':sleepNum>=3.5?'#10b981':'#f59e0b'}">${avgSleep}</div><div class="stat-lbl">Sono Médio</div></div>
+        <div class="stat"><div class="stat-val" style="color:${parseFloat(avgTqr||0)<5?'#ef4444':parseFloat(avgTqr||0)<7?'#f59e0b':'#10b981'}">${avgTqr||'-'}</div><div class="stat-lbl">TQR Médio</div></div>
         <div class="stat"><div class="stat-val">${Math.round(totalLoad)}</div><div class="stat-lbl">Carga Total</div></div>
       </div>
 
       <h2>Resumo para o Aluno</h2>
-      <p class="section-desc">AnÃ¡lise em linguagem acessÃ­vel sobre seu progresso.</p>
+      <p class="section-desc">Análise em linguagem acessível sobre seu progresso.</p>
       <div class="parecer">${parecerAluno}</div>
 
-      <h2>AnÃ¡lise TÃ©cnica</h2>
-      <p class="section-desc">AvaliaÃ§Ã£o baseada nos indicadores de carga e bem-estar coletados.</p>
+      <h2>Análise Técnica</h2>
+      <p class="section-desc">Avaliação baseada nos indicadores de carga e bem-estar coletados.</p>
       <div class="tecnico">${parecerTecnico}</div>
 
       ${customAnnotations ? `
-      <h2>AnotaÃ§Ãµes do Treinador</h2>
-      <p class="section-desc">ObservaÃ§Ãµes e orientaÃ§Ãµes personalizadas adicionadas neste relatÃ³rio.</p>
+      <h2>Anotações do Treinador</h2>
+      <p class="section-desc">Observações e orientações personalizadas adicionadas neste relatório.</p>
       <div class="tecnico" style="border-left-color: #f59e0b;">${customAnnotations.replace(/\n/g, '<br>')}</div>
       ` : ''}
 
       ${sessions.length ? `
-      <h2>SessÃµes Realizadas</h2>
-      <p class="section-desc">${sessions.length} sessÃ£o(Ãµes) Â· Volume total: ${totalVol.toLocaleString('pt-BR')} kg Â· MÃ©dia/sessÃ£o: ${sessions.length ? Math.round(totalVol / sessions.length).toLocaleString('pt-BR') : 0} kg Â· DuraÃ§Ã£o mÃ©dia: ${avgDuration}min</p>
+      <h2>Sessões Realizadas</h2>
+      <p class="section-desc">${sessions.length} sessão(ões) · Volume total: ${totalVol.toLocaleString('pt-BR')} kg · Média/sessão: ${sessions.length ? Math.round(totalVol / sessions.length).toLocaleString('pt-BR') : 0} kg · Duração média: ${avgDuration}min</p>
       <div style="overflow-x: auto; width: 100%;">
         <table style="min-width: ${format === 'mobile' ? 'auto' : '650px'}; table-layout: auto;">
           <thead><tr>
-            <th>Data</th><th>Treino</th><th>Dur.</th><th>Volume</th><th class="hide-mobile">SÃ©ries</th>
-            <th>PSE</th><th class="hide-mobile">TQR pÃ³s</th><th class="hide-mobile">RIR mÃ©d.</th><th class="hide-mobile">Kcal est.</th><th class="hide-mobile">Densidade</th>
+            <th>Data</th><th>Treino</th><th>Dur.</th><th>Volume</th><th class="hide-mobile">Séries</th>
+            <th>PSE</th><th class="hide-mobile">TQR pós</th><th class="hide-mobile">RIR méd.</th><th class="hide-mobile">Kcal est.</th><th class="hide-mobile">Densidade</th>
           </tr></thead>
           <tbody>
             ${sessions.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,20).map(se=>{
@@ -924,11 +924,11 @@ export async function initReports(navigateFn) {
               const vol     = se.totalVolume ? Math.round(se.totalVolume) : 0;
               const pse     = se.postBiofeedback?.pse || '-';
               const tqrPost = se.postBiofeedback?.tqrPost || '-';
-              // RIR mÃ©dio das sÃ©ries
+              // RIR médio das séries
               const setLog  = se.setLog || [];
               const rirSets = setLog.filter(s => s.rir != null);
               const avgRir  = rirSets.length ? Math.round(rirSets.reduce((t,s)=>t+(s.rir||0),0)/rirSets.length*10)/10 : '-';
-              // Calorias estimadas (MET musculaÃ§Ã£o Ã— peso)
+              // Calorias estimadas (MET musculação × peso)
               const peso    = se.studentWeight || (se.preBiofeedback?.peso) || null;
               const kcalEst = peso && durMin ? Calc.caloriasAtividade(peso, durMin, 'musculacao') : '-';
               // Densidade de treino (volume / minutos)
@@ -940,10 +940,10 @@ export async function initReports(navigateFn) {
                 const setsForEx = setLog.filter(s => s.exIdx === idx);
                 if (setsForEx.length) {
                   const maxLoad = Math.max(...setsForEx.map(s => s.load || 0));
-                  exSummary.push(`${ex.name} (${setsForEx.length}x mÃ¡x ${maxLoad}kg)`);
+                  exSummary.push(`${ex.name} (${setsForEx.length}x máx ${maxLoad}kg)`);
                 }
               });
-              const summaryStr = exSummary.join(' â€¢ ');
+              const summaryStr = exSummary.join(' • ');
 
               return `<tr>
                 <td>${(se.date.includes('T') ? new Date(se.date) : new Date(se.date + 'T12:00')).toLocaleDateString('pt-BR')}</td>
@@ -963,11 +963,11 @@ export async function initReports(navigateFn) {
       </div>` : ''}
 
       ${progressionItems.length ? `
-      <h2>ProgressÃ£o de Carga por ExercÃ­cio</h2>
-      <p class="section-desc">EvoluÃ§Ã£o da carga registrada ao longo das sessÃµes. A sobrecarga progressiva Ã© o principal motor do ganho de forÃ§a e hipertrofia.</p>
+      <h2>Progressão de Carga por Exercício</h2>
+      <p class="section-desc">Evolução da carga registrada ao longo das sessões. A sobrecarga progressiva é o principal motor do ganho de força e hipertrofia.</p>
       <div style="overflow-x: auto; width: 100%;">
         <table style="min-width: ${format === 'mobile' ? 'auto' : '600px'}; table-layout: auto;">
-          <thead><tr><th>ExercÃ­cio</th><th>1Âª Carga</th><th>Ãšltima Carga</th><th class="hide-mobile">MÃ¡ximo</th><th>Î” Carga</th><th>EvoluÃ§Ã£o</th><th class="hide-mobile">Vol. Total</th></tr></thead>
+          <thead><tr><th>Exercício</th><th>1ª Carga</th><th>Última Carga</th><th class="hide-mobile">Máximo</th><th>Δ Carga</th><th>Evolução</th><th class="hide-mobile">Vol. Total</th></tr></thead>
           <tbody>
             ${progressionItems.map(p=>`
               <tr>
@@ -976,7 +976,7 @@ export async function initReports(navigateFn) {
                 <td style="font-weight:700">${p.last.load}kg</td>
                 <td class="hide-mobile" style="color:#f59e0b;font-weight:600">${p.maxLoad}kg</td>
                 <td style="color:${p.delta>=0?'#10b981':'#ef4444'};font-weight:700">${p.delta>0?'+':''}${p.delta}kg</td>
-                <td style="color:${p.delta>=0?'#10b981':'#ef4444'};font-weight:700">${p.delta>0?'â†‘':'â†“'} ${Math.abs(p.pct)}%</td>
+                <td style="color:${p.delta>=0?'#10b981':'#ef4444'};font-weight:700">${p.delta>0?'↑':'↓'} ${Math.abs(p.pct)}%</td>
                 <td class="hide-mobile" style="color:#666">${(p.totalVol/1000).toFixed(1)}t</td>
               </tr>`).join('')}
           </tbody>
@@ -984,19 +984,19 @@ export async function initReports(navigateFn) {
       </div>` : ''}
 
       ${chartsHTML ? `
-      <h2>GrÃ¡ficos de EvoluÃ§Ã£o</h2>
-      <p class="section-desc">VisualizaÃ§Ã£o dos indicadores coletados. Leia as descriÃ§Ãµes para interpretar cada grÃ¡fico.</p>
+      <h2>Gráficos de Evolução</h2>
+      <p class="section-desc">Visualização dos indicadores coletados. Leia as descrições para interpretar cada gráfico.</p>
       <div class="charts-grid">${chartsHTML}</div>` : ''}
 
       <div class="footer">
-        DossiÃª gerado por ${trainerName} - ${new Date().toLocaleDateString('pt-BR')} - Vetor â€” Sistema Profissional de Treinamento
+        Dossiê gerado por ${trainerName} - ${new Date().toLocaleDateString('pt-BR')} - Vetor — Sistema Profissional de Treinamento
       </div>
     </body></html>`;
 
     newWin.document.open();
     newWin.document.write(htmlContent);
     newWin.document.close();
-    notify.success('PDF aberto em uma nova guia! Use Ctrl+P (ou âŒ˜+P) para salvar.');
+    notify.success('PDF aberto em uma nova guia! Use Ctrl+P (ou ⌘+P) para salvar.');
   });
 }
 
@@ -1089,7 +1089,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
 
 
 
-  // Wellness chart â€” filtrar apenas registros que tÃªm dados de bem-estar (nÃ£o sÃ³ PSE do tracker)
+  // Wellness chart — filtrar apenas registros que têm dados de bem-estar (não só PSE do tracker)
   const wCtx = document.getElementById('wellnessChart');
   const bfWellness = bf.filter(b => b.sleep || b.mood || b.energy || b.stress || b.pain || b.motivation || b.food);
   if (wCtx && bfWellness.length > 1) {
@@ -1099,7 +1099,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
         labels: bfWellness.map(b => Calc.formatDate(b.date).slice(0,5)),
         datasets: [
           { label: 'Sono',       data: bfWellness.map(b => b.sleep  || null), borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
-          { label: 'RecuperaÃ§Ã£o (TQR)',      data: bfWellness.map(b => b.tqr ?? b.energy ?? null), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
+          { label: 'Recuperação (TQR)',      data: bfWellness.map(b => b.tqr ?? b.energy ?? null), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true },
           { label: 'Estresse (menor = melhor)', data: bfWellness.map(b => b.stress || null), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.05)', tension: 0.3, pointRadius: 4, borderWidth: 2, fill: false, spanGaps: true, borderDash: [5,3] }
         ]
       },
@@ -1122,7 +1122,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
       }
     });
   } else if (wCtx) {
-    wCtx.parentElement.innerHTML = '<p class="text-muted text-sm text-center" style="padding:40px">Sem dados de bem-estar suficientes. Registre check-ins de biofeedback com sono, disposiÃ§Ã£o e energia.</p>';
+    wCtx.parentElement.innerHTML = '<p class="text-muted text-sm text-center" style="padding:40px">Sem dados de bem-estar suficientes. Registre check-ins de biofeedback com sono, disposição e energia.</p>';
   }
 
   const lCtx = document.getElementById('loadChart');
@@ -1142,8 +1142,8 @@ async function initReportCharts(studentId, cycleFilter = '') {
   if (rCtx && bf.length > 0) {
     const l5 = bf.slice(-5); const avg = k => l5.reduce((s, b) => s + (b[k] || 0), 0) / l5.length;
     new Chart(rCtx, { type: 'radar', data: {
-      labels: ['Sono', 'TQR', 'MotivaÃ§Ã£o', 'AlimentaÃ§Ã£o', 'Baixo Estresse'],
-      datasets: [{ label: 'MÃ©dia (Ãºltimos 5)', data: [
+      labels: ['Sono', 'TQR', 'Motivação', 'Alimentação', 'Baixo Estresse'],
+      datasets: [{ label: 'Média (últimos 5)', data: [
         avg('sleep'), 
         avg('tqr') ?? avg('energy'), 
         avg('motivation') || 5, 
@@ -1158,7 +1158,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
     const done = sessions.filter(s => s.status === 'completed');
     const wc = {}; done.forEach(s => { const d = new Date(s.date || s.createdAt); const ws = new Date(d); ws.setDate(d.getDate() - d.getDay()); const k = ws.toISOString().slice(0, 10); wc[k] = (wc[k] || 0) + 1; });
     const wKeys = Object.keys(wc).sort().slice(-8);
-    new Chart(fCtx, { type: 'bar', data: { labels: wKeys.map(k => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })), datasets: [{ label: 'SessÃµes', data: wKeys.map(k => wc[k]), backgroundColor: 'rgba(6,182,212,0.5)', borderColor: '#06b6d4', borderWidth: 1, borderRadius: 4 }] }, options: { ...co, plugins: { legend: { display: false } }, scales: { ...co.scales, y: { ...co.scales.y, beginAtZero: true, ticks: { ...co.scales.y.ticks, stepSize: 1 } } } } });
+    new Chart(fCtx, { type: 'bar', data: { labels: wKeys.map(k => new Date(k + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })), datasets: [{ label: 'Sessões', data: wKeys.map(k => wc[k]), backgroundColor: 'rgba(6,182,212,0.5)', borderColor: '#06b6d4', borderWidth: 1, borderRadius: 4 }] }, options: { ...co, plugins: { legend: { display: false } }, scales: { ...co.scales, y: { ...co.scales.y, beginAtZero: true, ticks: { ...co.scales.y.ticks, stepSize: 1 } } } } });
   }
 
   const mCtx = document.getElementById('measuresChart');
@@ -1282,10 +1282,10 @@ async function initReportCharts(studentId, cycleFilter = '') {
     });
   }
 
-  // â”€â”€ GRÃFICO DE PROGRESSÃƒO DE CARGA â”€â”€
+  // ── GRÁFICO DE PROGRESSÃO DE CARGA ──
   const lpCtx = document.getElementById('loadProgressChart');
   if (lpCtx && sessions.length >= 2) {
-    // Pegar os top 3 exercÃ­cios mais treinados para o grÃ¡fico de linha
+    // Pegar os top 3 exercícios mais treinados para o gráfico de linha
     const logMap = {};
     [...sessions].filter(s=>s.status==='completed').sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(s => {
       (s.setLog||[]).forEach(set => {
@@ -1302,7 +1302,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
 
     if (top3.length) {
       const colors = ['#10b981','#06b6d4','#f59e0b'];
-      // Coletar todas as datas Ãºnicas ordenadas para usar como labels (evita adaptador de data)
+      // Coletar todas as datas únicas ordenadas para usar como labels (evita adaptador de data)
       const allDates = [...new Set(top3.flatMap(([,v])=>v.map(p=>p.date)))].sort();
       const labelMap = Object.fromEntries(allDates.map((d,i)=>[d,Calc.formatDate(d).slice(0,5)]));
       new Chart(lpCtx, {
@@ -1351,8 +1351,8 @@ async function initReportCharts(studentId, cycleFilter = '') {
       data: {
         labels,
         datasets: [
-          { label: `PerÃ­odo 1 (${first.length} registros)`, data: firstData, backgroundColor: 'rgba(148,163,184,0.5)', borderColor: '#94a3b8', borderWidth: 1, borderRadius: 4 },
-          { label: `PerÃ­odo 2 (${second.length} registros)`, data: secondData, backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10b981', borderWidth: 1, borderRadius: 4 },
+          { label: `Período 1 (${first.length} registros)`, data: firstData, backgroundColor: 'rgba(148,163,184,0.5)', borderColor: '#94a3b8', borderWidth: 1, borderRadius: 4 },
+          { label: `Período 2 (${second.length} registros)`, data: secondData, backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10b981', borderWidth: 1, borderRadius: 4 },
         ]
       },
       options: {
@@ -1366,9 +1366,9 @@ async function initReportCharts(studentId, cycleFilter = '') {
                 const idx = items[0]?.dataIndex;
                 if (idx === undefined) return '';
                 const diff = secondData[idx] - firstData[idx];
-                const arrow = diff > 0 ? 'â†‘' : diff < 0 ? 'â†“' : '=';
+                const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '=';
                 const sign = diff > 0 ? '+' : '';
-                return `VariaÃ§Ã£o: ${arrow} ${sign}${diff.toFixed(1)}`;
+                return `Variação: ${arrow} ${sign}${diff.toFixed(1)}`;
               }
             }
           }
@@ -1383,18 +1383,18 @@ async function initReportCharts(studentId, cycleFilter = '') {
   let compareChart = null;
 
   if (compSel && compCtx && sortedSes.length > 0) {
-    // Broader name normalization â€” strip week/session suffixes and numbering
+    // Broader name normalization — strip week/session suffixes and numbering
     const getBaseWorkoutName = name => {
       if (!name) return 'Treino Avulso';
       return name
-        .replace(/\s*[\-â€”â€“]\s*Semana\s*\d+/i, '')
-        .replace(/\s*[\-â€”â€“]\s*Sem\.?\s*\d+/i, '')
+        .replace(/\s*[\-—–]\s*Semana\s*\d+/i, '')
+        .replace(/\s*[\-—–]\s*Sem\.?\s*\d+/i, '')
         .replace(/\s*Semana\s*\d+/i, '')
         .replace(/\s*Sem\.?\s*\d+/i, '')
         .replace(/\s*S\d+/i, '')       // e.g. "Full Body A S3"
         .replace(/\s*\(\d+\)/g, '')    // e.g. "Full Body A (3)"
         .replace(/\s*#\d+/g, '')       // e.g. "Full Body A #3"
-        .replace(/\s*[\-â€”â€“]\s*$/g, '')
+        .replace(/\s*[\-—–]\s*$/g, '')
         .trim();
     };
 
@@ -1412,7 +1412,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
     if (comparableBases.length > 0) {
       // Rebuild the dropdown options with the correct groups
       compSel.innerHTML = comparableBases.map((base, idx) =>
-        `<option value="${base}" ${idx === 0 ? 'selected' : ''}>${base} (${workoutsByName[base].length} sessÃµes)</option>`
+        `<option value="${base}" ${idx === 0 ? 'selected' : ''}>${base} (${workoutsByName[base].length} sessões)</option>`
       ).join('');
     }
 
@@ -1426,7 +1426,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
       const labels = sessList.map((s, i) => {
         const dStr = Calc.formatDate(s.date).slice(0, 5);
         const wkMatch = (s.workoutName || '').match(/Sem\.?\s*(\d+)/i);
-        return wkMatch ? `Sem ${wkMatch[1]} (${dStr})` : `SessÃ£o ${i + 1} (${dStr})`;
+        return wkMatch ? `Sem ${wkMatch[1]} (${dStr})` : `Sessão ${i + 1} (${dStr})`;
       });
 
       // Volume: use pre-computed totalVolume (most accurate) with setLog as fallback
@@ -1462,7 +1462,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
               spanGaps: true,
             },
             {
-              label: 'PSE â€” PercepÃ§Ã£o de EsforÃ§o (Borg 0-10)',
+              label: 'PSE — Percepção de Esforço (Borg 0-10)',
               data: pseData,
               borderColor: '#ef4444',
               backgroundColor: 'rgba(239,68,68,0.04)',
@@ -1494,7 +1494,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
                 title: ctx => labels[ctx[0]?.dataIndex] || '',
                 label: ctx => {
                   if (ctx.datasetIndex === 0) return ` Volume: ${ctx.parsed.y?.toLocaleString('pt-BR')} kg`;
-                  if (ctx.datasetIndex === 1) return ctx.parsed.y !== null ? ` PSE: ${ctx.parsed.y} / 10` : ' PSE: nÃ£o registrada';
+                  if (ctx.datasetIndex === 1) return ctx.parsed.y !== null ? ` PSE: ${ctx.parsed.y} / 10` : ' PSE: não registrada';
                   return '';
                 },
                 afterBody: items => {
@@ -1503,7 +1503,7 @@ async function initReportCharts(studentId, cycleFilter = '') {
                   const diff = volumeData[i] - volumeData[i - 1];
                   const sign = diff >= 0 ? '+' : '';
                   const pct = volumeData[i - 1] > 0 ? ` (${sign}${Math.round((diff / volumeData[i - 1]) * 100)}%)` : '';
-                  return `VariaÃ§Ã£o vs anterior: ${sign}${diff.toLocaleString('pt-BR')} kg${pct}`;
+                  return `Variação vs anterior: ${sign}${diff.toLocaleString('pt-BR')} kg${pct}`;
                 }
               }
             }
@@ -1542,7 +1542,7 @@ async function loadPeriodizationForReport(studentId, selectedMacroId = null) {
   if (!container) return;
   const macros = (await db.getAll('macrocycles')).filter(m => m.studentId === studentId);
   if (!macros.length) {
-    container.innerHTML = '<p class="text-muted text-sm">Nenhuma periodizaÃ§Ã£o encontrada para este aluno.</p>';
+    container.innerHTML = '<p class="text-muted text-sm">Nenhuma periodização encontrada para este aluno.</p>';
     return;
   }
   
@@ -1565,22 +1565,22 @@ async function loadPeriodizationForReport(studentId, selectedMacroId = null) {
       </select>
     </div>
     ${active.weeks ? `
-    <div class="text-sm text-muted mb-sm"><strong>${active.name}</strong> Â· ${active.totalWeeks} semanas Â· InÃ­cio: ${(active.startDate.includes('T') ? new Date(active.startDate) : new Date(active.startDate + 'T12:00')).toLocaleDateString('pt-BR')}</div>
+    <div class="text-sm text-muted mb-sm"><strong>${active.name}</strong> · ${active.totalWeeks} semanas · Início: ${(active.startDate.includes('T') ? new Date(active.startDate) : new Date(active.startDate + 'T12:00')).toLocaleDateString('pt-BR')}</div>
     <div class="week-timeline" style="min-height:60px">
       ${active.weeks.map((w, i) => {
         const intColor = w.phase === 'deload' ? '#3b82f6' : w.intensityPct >= 85 ? '#ef4444' : w.intensityPct >= 75 ? '#f97316' : w.intensityPct >= 65 ? '#eab308' : '#22c55e';
-        return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label} â€” Vol: ${w.volumePct}% | Int: ${w.intensityPct}%">
+        return `<div class="week-block ${i + 1 === currentWeek ? 'week-current' : ''}" style="border-bottom:3px solid ${intColor}" title="Sem ${w.week}: ${w.label} — Vol: ${w.volumePct}% | Int: ${w.intensityPct}%">
           <div class="week-num" style="color:${intColor}">S${w.week}</div>
           <div class="week-bar-int" style="height:${w.intensityPct * 0.4}px;background:${intColor}"></div>
         </div>`;
       }).join('')}
     </div>
     <div class="flex gap-md mt-sm text-xs text-muted" style="flex-wrap:wrap">
-      <span style="color:#22c55e">â— Leve</span>
-      <span style="color:#eab308">â— Moderada</span>
-      <span style="color:#f97316">â— Alta</span>
-      <span style="color:#ef4444">â— Muito Alta</span>
-      <span style="color:#3b82f6">â— Deload</span>
+      <span style="color:#22c55e">● Leve</span>
+      <span style="color:#eab308">● Moderada</span>
+      <span style="color:#f97316">● Alta</span>
+      <span style="color:#ef4444">● Muito Alta</span>
+      <span style="color:#3b82f6">● Deload</span>
     </div>` : '<p class="text-xs text-muted">Macrociclo sem semanas definidas.</p>'}
   `;
 
@@ -1588,4 +1588,3 @@ async function loadPeriodizationForReport(studentId, selectedMacroId = null) {
     loadPeriodizationForReport(studentId, e.target.value);
   });
 }
-

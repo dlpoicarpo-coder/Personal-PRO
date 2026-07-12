@@ -1,5 +1,5 @@
-﻿// ========================================
-// VETOR â€” Settings Page (v4)
+// ========================================
+// VETOR — Settings Page (v4)
 // ========================================
 
 import db from '../db.js';
@@ -14,7 +14,7 @@ export async function renderSettings() {
   return `
     <div class="page-header">
       <div>
-        <h1>ConfiguraÃ§Ãµes</h1>
+        <h1>Configurações</h1>
         <p class="subtitle">Personalize sua plataforma</p>
       </div>
     </div>
@@ -22,7 +22,7 @@ export async function renderSettings() {
     <div class="grid-2">
       <div class="card">
         <div class="card-header"><span class="card-title">Perfil do Treinador</span></div>
-        <p class="text-muted text-xs mb-md">Estas informaÃ§Ãµes aparecem nos PDFs e relatÃ³rios gerados</p>
+        <p class="text-muted text-xs mb-md">Estas informações aparecem nos PDFs e relatórios gerados</p>
         <form id="trainerForm">
           <div class="form-group">
             <label class="form-label">Nome Completo</label>
@@ -41,20 +41,20 @@ export async function renderSettings() {
             <input class="form-input" name="trainerEmail" type="email" value="${settings.trainerEmail || ''}" placeholder="seu@email.com" />
           </div>
           <div class="form-group">
-            <label class="form-label">Semanas padrÃ£o (Macrociclo)</label>
-            <input class="form-input" name="defaultMacrocycleWeeks" type="number" min="1" max="52" value="${settings.defaultMacrocycleWeeks || 12}" title="DuraÃ§Ã£o padrÃ£o em semanas ao criar um novo macrociclo." />
+            <label class="form-label">Semanas padrão (Macrociclo)</label>
+            <input class="form-input" name="defaultMacrocycleWeeks" type="number" min="1" max="52" value="${settings.defaultMacrocycleWeeks || 12}" title="Duração padrão em semanas ao criar um novo macrociclo." />
           </div>
           <div class="form-group">
-            <label class="form-label">Fuso HorÃ¡rio</label>
+            <label class="form-label">Fuso Horário</label>
             <select class="form-select" name="timezone">
-              <option value="America/Sao_Paulo" ${settings.timezone === 'America/Sao_Paulo' || !settings.timezone ? 'selected' : ''}>BrasÃ­lia (America/Sao_Paulo)</option>
+              <option value="America/Sao_Paulo" ${settings.timezone === 'America/Sao_Paulo' || !settings.timezone ? 'selected' : ''}>Brasília (America/Sao_Paulo)</option>
               <option value="America/Manaus" ${settings.timezone === 'America/Manaus' ? 'selected' : ''}>Manaus (America/Manaus)</option>
               <option value="America/Rio_Branco" ${settings.timezone === 'America/Rio_Branco' ? 'selected' : ''}>Rio Branco (America/Rio_Branco)</option>
               <option value="America/Noronha" ${settings.timezone === 'America/Noronha' ? 'selected' : ''}>Fernando de Noronha (America/Noronha)</option>
             </select>
           </div>
           <div class="form-group" style="border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-top:16px;">
-            <label style="font-weight:600;display:block;margin-bottom:8px">ConfiguraÃ§Ãµes de Feedback PÃ³s-SÃ©rie</label>
+            <label style="font-weight:600;display:block;margin-bottom:8px">Configurações de Feedback Pós-Série</label>
             <div style="display:flex; gap:16px; align-items:center;">
               <label class="flex items-center gap-sm">
                 <input type="checkbox" name="enablePSE" value="true" ${settings.enablePSE !== 'false' ? 'checked' : ''} />
@@ -65,23 +65,23 @@ export async function renderSettings() {
                 Habilitar RIR
               </label>
             </div>
-            <p class="text-xs text-muted" style="margin-top:8px">Se desmarcados, os campos nÃ£o aparecerÃ£o para o aluno durante o Live Tracker.</p>
+            <p class="text-xs text-muted" style="margin-top:8px">Se desmarcados, os campos não aparecerão para o aluno durante o Live Tracker.</p>
           </div>
           <div class="form-group" style="border:1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05); padding:12px; border-radius:8px; margin-top:16px;">
-            <label style="font-weight:600;display:block;margin-bottom:8px">Limiares de DecisÃ£o do Radar (PSE)</label>
-            <p class="text-xs text-muted mb-sm">Defina atÃ© qual PSE a sugestÃ£o serÃ¡ aplicada.</p>
+            <label style="font-weight:600;display:block;margin-bottom:8px">Limiares de Decisão do Radar (PSE)</label>
+            <p class="text-xs text-muted mb-sm">Defina até qual PSE a sugestão será aplicada.</p>
             <div class="grid-2 gap-sm" style="font-size:0.85rem">
-              <div><label>Aumentar Intensidade (AtÃ©)</label><input class="form-input" type="number" min="1" max="10" name="pseIncreaseMax" value="${settings.pseIncreaseMax || 3}" /></div>
-              <div><label>Manter Carga (AtÃ©)</label><input class="form-input" type="number" min="1" max="10" name="pseMaintainMax" value="${settings.pseMaintainMax || 6}" /></div>
-              <div><label>Reduzir Volume (AtÃ©)</label><input class="form-input" type="number" min="1" max="10" name="pseReduceMax" value="${settings.pseReduceMax || 8}" /></div>
-              <div><label>Regenerativo (AtÃ©)</label><input class="form-input" type="number" min="1" max="10" name="pseRegenMax" value="${settings.pseRegenMax || 10}" /></div>
+              <div><label>Aumentar Intensidade (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseIncreaseMax" value="${settings.pseIncreaseMax || 3}" /></div>
+              <div><label>Manter Carga (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseMaintainMax" value="${settings.pseMaintainMax || 6}" /></div>
+              <div><label>Reduzir Volume (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseReduceMax" value="${settings.pseReduceMax || 8}" /></div>
+              <div><label>Regenerativo (Até)</label><input class="form-input" type="number" min="1" max="10" name="pseRegenMax" value="${settings.pseRegenMax || 10}" /></div>
             </div>
           </div>
           <div class="form-group" style="border:1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); padding:12px; border-radius:8px; margin-top:16px;">
             <label style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--primary)">
-              ðŸ’³ Chave PIX PadrÃ£o
+              💳 Chave PIX Padrão
             </label>
-            <p class="text-xs text-muted mb-md">Insira sua chave PIX para utilizÃ¡-la em mensagens automÃ¡ticas de cobranÃ§a enviadas via WhatsApp.</p>
+            <p class="text-xs text-muted mb-md">Insira sua chave PIX para utilizá-la em mensagens automáticas de cobrança enviadas via WhatsApp.</p>
             <input class="form-input" type="text" name="pixKey" value="${settings.pixKey || ''}" placeholder="Sua Chave PIX (CPF, E-mail, Telefone...)" />
           </div>
           <button type="submit" class="btn btn-primary mt-md" style="width:100%">Salvar Perfil</button>
@@ -90,7 +90,7 @@ export async function renderSettings() {
 
       <div class="flex flex-col gap-md">
         <div class="card">
-          <div class="card-header"><span class="card-title">AparÃªncia Visual</span></div>
+          <div class="card-header"><span class="card-title">Aparência Visual</span></div>
           <div class="form-group">
             <label class="form-label">Tema do Sistema</label>
             <select id="themeSelect" class="form-select">
@@ -101,8 +101,8 @@ export async function renderSettings() {
         </div>
 
         <div class="card">
-          <div class="card-header"><span class="card-title">Backup & SeguranÃ§a</span></div>
-          <p class="text-muted text-sm mb-md">Seus dados estÃ£o seguros na nuvem (Supabase).</p>
+          <div class="card-header"><span class="card-title">Backup & Segurança</span></div>
+          <p class="text-muted text-sm mb-md">Seus dados estão seguros na nuvem (Supabase).</p>
           <div class="flex flex-col gap-sm">
             <button class="btn btn-secondary" id="exportBackupBtn">Baixar Backup (JSON)</button>
             <div>
@@ -128,12 +128,12 @@ export async function renderSettings() {
       <div class="card-header"><span class="card-title">Sobre o Vetor</span></div>
       <div class="grid-2">
         <div>
-          <p class="text-sm"><strong>VersÃ£o:</strong> 2.2.0</p>
+          <p class="text-sm"><strong>Versão:</strong> 2.2.0</p>
           <p class="text-sm"><strong>Tecnologia:</strong> HTML5 + CSS3 + Vanilla JS</p>
           <p class="text-sm"><strong>Armazenamento:</strong> Supabase (PostgreSQL)</p>
         </div>
         <div>
-          <p class="text-sm text-muted">Sistema de Treinamento profissional para personal trainers. GestÃ£o de alunos, prescriÃ§Ã£o de treinos, avaliaÃ§Ãµes e biofeedback.</p>
+          <p class="text-sm text-muted">Sistema de Treinamento profissional para personal trainers. Gestão de alunos, prescrição de treinos, avaliações e biofeedback.</p>
         </div>
       </div>
     </div>
@@ -170,7 +170,7 @@ export function initSettings(navigateFn) {
     }
   });
 
-  // Theme toggle â€” LIGHT MODE ACTIVE
+  // Theme toggle — LIGHT MODE ACTIVE
   document.getElementById('themeSelect')?.addEventListener('change', (e) => {
     const theme = e.target.value;
     localStorage.setItem('pp_theme', theme);
@@ -185,7 +185,7 @@ export function initSettings(navigateFn) {
   document.getElementById('importBackupInput')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (window.confirm('Importar backup? Isso substituirÃ¡ todos os dados atuais.')) {
+      if (window.confirm('Importar backup? Isso substituirá todos os dados atuais.')) {
         await importBackup(file);
       }
     }
@@ -204,8 +204,8 @@ export function initSettings(navigateFn) {
 
   // Clear all
   document.getElementById('clearAllBtn')?.addEventListener('click', async () => {
-    if (window.confirm('ATENÃ‡ÃƒO: Isso apagarÃ¡ TODOS os dados permanentemente. Deseja continuar?')) {
-      if (window.confirm('Tem certeza? Essa aÃ§Ã£o NÃƒO pode ser desfeita!')) {
+    if (window.confirm('ATENÇÃO: Isso apagará TODOS os dados permanentemente. Deseja continuar?')) {
+      if (window.confirm('Tem certeza? Essa ação NÃO pode ser desfeita!')) {
         try {
           const stores = ['students', 'workouts', 'exercises', 'assessments', 'biofeedback', 'anamnesis', 'cycles', 'sessions', 'macrocycles', 'financial', 'schedules'];
           for (const s of stores) await db.clear(s);
@@ -223,4 +223,3 @@ export function initSettings(navigateFn) {
     }
   });
 }
-

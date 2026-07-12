@@ -1,6 +1,6 @@
-﻿-- ============================================================
--- VETOR â€” Fix updated_at trigger mismatch
--- Run this script in the Supabase Console â†’ SQL Editor
+-- ============================================================
+-- VETOR — Fix updated_at trigger mismatch
+-- Run this script in the Supabase Console → SQL Editor
 -- ============================================================
 
 -- 1. Safely add updated_at and created_at columns to the sessions table if they do not exist
@@ -23,4 +23,3 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-

@@ -1,24 +1,24 @@
-﻿-- ============================================================
--- VETOR â€” Tabela de NotificaÃ§Ãµes Dispensadas
+-- ============================================================
+-- VETOR — Tabela de Notificações Dispensadas
 -- Permite que o dismiss persista entre dispositivos por trainer
--- Execute no Supabase â†’ SQL Editor
+-- Execute no Supabase → SQL Editor
 -- ============================================================
 
--- Tabela de notificaÃ§Ãµes dispensadas
+-- Tabela de notificações dispensadas
 CREATE TABLE IF NOT EXISTS notification_dismissed (
-  id          TEXT NOT NULL,           -- ID da notificaÃ§Ã£o (ex: "eval-vencida-abc123")
+  id          TEXT NOT NULL,           -- ID da notificação (ex: "eval-vencida-abc123")
   trainer_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   dismissed_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (id, trainer_id)
 );
 
--- Ãndice para busca rÃ¡pida por trainer
+-- Índice para busca rápida por trainer
 CREATE INDEX IF NOT EXISTS idx_notif_dismissed_trainer ON notification_dismissed(trainer_id);
 
 -- RLS
 ALTER TABLE notification_dismissed ENABLE ROW LEVEL SECURITY;
 
--- Cada trainer sÃ³ vÃª/gerencia seus prÃ³prios dismisses
+-- Cada trainer só vê/gerencia seus próprios dismisses
 CREATE POLICY "notif_dismissed_select" ON notification_dismissed
   FOR SELECT USING (auth.uid() = trainer_id);
 
@@ -28,7 +28,6 @@ CREATE POLICY "notif_dismissed_insert" ON notification_dismissed
 CREATE POLICY "notif_dismissed_delete" ON notification_dismissed
   FOR DELETE USING (auth.uid() = trainer_id);
 
--- Auto-limpeza: notificaÃ§Ãµes dispensadas hÃ¡ mais de 30 dias sÃ£o removidas
--- (opcional â€” rode manualmente ou crie um cron via pg_cron)
+-- Auto-limpeza: notificações dispensadas há mais de 30 dias são removidas
+-- (opcional — rode manualmente ou crie um cron via pg_cron)
 -- DELETE FROM notification_dismissed WHERE dismissed_at < NOW() - INTERVAL '30 days';
-

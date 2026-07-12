@@ -1,5 +1,5 @@
-﻿// ========================================
-// VETOR â€” Workout Templates Library
+// ========================================
+// VETOR — Workout Templates Library
 // Pre-built + custom workout templates
 // ========================================
 
@@ -10,7 +10,7 @@ export const BUILT_IN_TEMPLATES = [
     name: 'Superior / Inferior',
     category: 'Hipertrofia',
     goal: 'Hipertrofia',
-    description: 'DivisÃ£o clÃ¡ssica upper/lower para ganho de massa muscular com volume moderado.',
+    description: 'Divisão clássica upper/lower para ganho de massa muscular com volume moderado.',
     daysPerWeek: 4,
     builtIn: true,
     periodizationTypes: ['linear', 'block'],
@@ -21,14 +21,14 @@ export const BUILT_IN_TEMPLATES = [
         { name: 'Desenvolvimento com Halteres', sets: 3, reps: '10-12', load: '', rest: '60', method: '' },
         { name: 'Remada Curvada com Barra', sets: 3, reps: '10', load: '', rest: '90', method: '' },
         { name: 'Rosca Direta com Barra', sets: 3, reps: '12', load: '', rest: '60', method: '' },
-        { name: 'TrÃ­ceps Pulley', sets: 3, reps: '12', load: '', rest: '60', method: '' },
+        { name: 'Tríceps Pulley', sets: 3, reps: '12', load: '', rest: '60', method: '' },
       ]},
       { name: 'Treino B - Inferior', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 4, reps: '8-10', load: '', rest: '120', method: '' },
-        { name: 'Leg Press 45Â°', sets: 4, reps: '10-12', load: '', rest: '90', method: '' },
+        { name: 'Leg Press 45°', sets: 4, reps: '10-12', load: '', rest: '90', method: '' },
         { name: 'Cadeira Extensora', sets: 3, reps: '12', load: '', rest: '60', method: '' },
         { name: 'Mesa Flexora', sets: 3, reps: '12', load: '', rest: '60', method: '' },
-        { name: 'Panturrilha em PÃ© na MÃ¡quina', sets: 4, reps: '15', load: '', rest: '45', method: '' },
+        { name: 'Panturrilha em Pé na Máquina', sets: 4, reps: '15', load: '', rest: '45', method: '' },
       ]}
     ]
   },
@@ -37,7 +37,7 @@ export const BUILT_IN_TEMPLATES = [
     name: 'Push / Pull / Legs',
     category: 'Hipertrofia',
     goal: 'Hipertrofia',
-    description: 'DivisÃ£o PPL clÃ¡ssica para atletas. Alto volume com mÃ©todos intensificadores.',
+    description: 'Divisão PPL clássica para atletas. Alto volume com métodos intensificadores.',
     daysPerWeek: 6,
     builtIn: true,
     periodizationTypes: ['linear', 'undulating', 'concurrent'],
@@ -46,8 +46,8 @@ export const BUILT_IN_TEMPLATES = [
         { name: 'Supino Reto com Barra', sets: 4, reps: '6-8', load: '', rest: '120', method: '' },
         { name: 'Supino Inclinado com Halteres', sets: 4, reps: '8-10', load: '', rest: '90', method: '' },
         { name: 'Desenvolvimento com Barra', sets: 4, reps: '8-10', load: '', rest: '90', method: '' },
-        { name: 'ElevaÃ§Ã£o Lateral', sets: 4, reps: '12-15', load: '', rest: '60', method: 'Drop set' },
-        { name: 'TrÃ­ceps Testa', sets: 3, reps: '10-12', load: '', rest: '60', method: '' },
+        { name: 'Elevação Lateral', sets: 4, reps: '12-15', load: '', rest: '60', method: 'Drop set' },
+        { name: 'Tríceps Testa', sets: 3, reps: '10-12', load: '', rest: '60', method: '' },
       ]},
       { name: 'Pull (Puxar)', exercises: [
         { name: 'Puxada Frontal', sets: 4, reps: '8-10', load: '', rest: '90', method: '' },
@@ -57,7 +57,7 @@ export const BUILT_IN_TEMPLATES = [
       ]},
       { name: 'Legs (Pernas)', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 4, reps: '6-8', load: '', rest: '180', method: '' },
-        { name: 'Leg Press 45Â°', sets: 4, reps: '10-12', load: '', rest: '90', method: '' },
+        { name: 'Leg Press 45°', sets: 4, reps: '10-12', load: '', rest: '90', method: '' },
         { name: 'Cadeira Extensora', sets: 3, reps: '12-15', load: '', rest: '60', method: 'Drop set' },
         { name: 'Mesa Flexora', sets: 4, reps: '10-12', load: '', rest: '60', method: '' },
       ]}
@@ -65,55 +65,55 @@ export const BUILT_IN_TEMPLATES = [
   },
   {
     id: 'tpl_pyramid_hypertrophy',
-    name: 'PirÃ¢mide de Hipertrofia',
+    name: 'Pirâmide de Hipertrofia',
     category: 'Hipertrofia',
     goal: 'Hipertrofia',
-    description: 'Foco na exaustÃ£o total e controle de fadiga usando mÃ©todos de pirÃ¢mide completa e decrescente.',
+    description: 'Foco na exaustão total e controle de fadiga usando métodos de pirâmide completa e decrescente.',
     daysPerWeek: 4,
     builtIn: true,
     periodizationTypes: ['linear', 'undulating'],
     workouts: [
-      { name: 'Peito e TrÃ­ceps', exercises: [
-        { name: 'Supino Reto com Barra', sets: 5, reps: '12-10-8-10-12', load: '', rest: '90', method: 'PirÃ¢mide Completa' },
-        { name: 'Supino Inclinado com Halteres', sets: 4, reps: '8-10-12-15', load: '', rest: '90', method: 'PirÃ¢mide Decrescente' },
-        { name: 'Crucifixo MÃ¡quina', sets: 3, reps: '12-15', load: '', rest: '60', method: 'TensÃ£o ContÃ­nua' },
-        { name: 'TrÃ­ceps Pulley', sets: 4, reps: '10-12-15-20', load: '', rest: '60', method: 'PirÃ¢mide Decrescente' },
+      { name: 'Peito e Tríceps', exercises: [
+        { name: 'Supino Reto com Barra', sets: 5, reps: '12-10-8-10-12', load: '', rest: '90', method: 'Pirâmide Completa' },
+        { name: 'Supino Inclinado com Halteres', sets: 4, reps: '8-10-12-15', load: '', rest: '90', method: 'Pirâmide Decrescente' },
+        { name: 'Crucifixo Máquina', sets: 3, reps: '12-15', load: '', rest: '60', method: 'Tensão Contínua' },
+        { name: 'Tríceps Pulley', sets: 4, reps: '10-12-15-20', load: '', rest: '60', method: 'Pirâmide Decrescente' },
       ]},
-      { name: 'Costas e BÃ­ceps', exercises: [
-        { name: 'Puxada Frontal', sets: 5, reps: '12-10-8-10-12', load: '', rest: '90', method: 'PirÃ¢mide Completa' },
-        { name: 'Remada Curvada com Barra', sets: 4, reps: '8-10-12-15', load: '', rest: '90', method: 'PirÃ¢mide Decrescente' },
-        { name: 'Rosca Direta com Barra', sets: 4, reps: '12-10-8-12', load: '', rest: '60', method: 'PirÃ¢mide' },
+      { name: 'Costas e Bíceps', exercises: [
+        { name: 'Puxada Frontal', sets: 5, reps: '12-10-8-10-12', load: '', rest: '90', method: 'Pirâmide Completa' },
+        { name: 'Remada Curvada com Barra', sets: 4, reps: '8-10-12-15', load: '', rest: '90', method: 'Pirâmide Decrescente' },
+        { name: 'Rosca Direta com Barra', sets: 4, reps: '12-10-8-12', load: '', rest: '60', method: 'Pirâmide' },
       ]},
       { name: 'Pernas', exercises: [
-        { name: 'Agachamento Livre com Barra', sets: 5, reps: '12-10-8-10-12', load: '', rest: '120', method: 'PirÃ¢mide Completa' },
-        { name: 'Leg Press 45Â°', sets: 4, reps: '10-12-15-20', load: '', rest: '90', method: 'PirÃ¢mide Decrescente' },
+        { name: 'Agachamento Livre com Barra', sets: 5, reps: '12-10-8-10-12', load: '', rest: '120', method: 'Pirâmide Completa' },
+        { name: 'Leg Press 45°', sets: 4, reps: '10-12-15-20', load: '', rest: '90', method: 'Pirâmide Decrescente' },
         { name: 'Cadeira Extensora', sets: 4, reps: '15', load: '', rest: '60', method: 'Drop set' },
       ]}
     ]
   },
 
-  // â”€â”€ Template especÃ­fico para OndulatÃ³ria (DUP) â”€â”€
+  // ── Template específico para Ondulatória (DUP) ──
   {
     id: 'tpl_dup_full_body',
-    name: 'DUP â€” Full Body OndulatÃ³rio',
+    name: 'DUP — Full Body Ondulatório',
     category: 'Hipertrofia',
-    goal: 'Hipertrofia + ForÃ§a',
-    description: 'TrÃªs estÃ­mulos por semana alternando ForÃ§a (5Ã—5), Hipertrofia (4Ã—10) e PotÃªncia (3Ã—3) no mesmo exercÃ­cio.',
+    goal: 'Hipertrofia + Força',
+    description: 'Três estímulos por semana alternando Força (5×5), Hipertrofia (4×10) e Potência (3×3) no mesmo exercício.',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['undulating'],
     workouts: [
-      { name: 'Dia ForÃ§a (5Ã—5)', exercises: [
-        { name: 'Agachamento Livre com Barra', sets: 5, reps: '5', load: '', rest: '180', method: 'ForÃ§a' },
-        { name: 'Supino Reto com Barra', sets: 5, reps: '5', load: '', rest: '180', method: 'ForÃ§a' },
-        { name: 'Levantamento Terra', sets: 5, reps: '5', load: '', rest: '180', method: 'ForÃ§a' },
+      { name: 'Dia Força (5×5)', exercises: [
+        { name: 'Agachamento Livre com Barra', sets: 5, reps: '5', load: '', rest: '180', method: 'Força' },
+        { name: 'Supino Reto com Barra', sets: 5, reps: '5', load: '', rest: '180', method: 'Força' },
+        { name: 'Levantamento Terra', sets: 5, reps: '5', load: '', rest: '180', method: 'Força' },
       ]},
-      { name: 'Dia Hipertrofia (4Ã—10)', exercises: [
+      { name: 'Dia Hipertrofia (4×10)', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 4, reps: '10', load: '', rest: '90', method: 'Hipertrofia' },
         { name: 'Supino Reto com Barra', sets: 4, reps: '10', load: '', rest: '90', method: 'Hipertrofia' },
         { name: 'Remada Curvada com Barra', sets: 4, reps: '10', load: '', rest: '90', method: 'Hipertrofia' },
       ]},
-      { name: 'Dia PotÃªncia (3Ã—3)', exercises: [
+      { name: 'Dia Potência (3×3)', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 3, reps: '3', load: '', rest: '240', method: 'Velocidade' },
         { name: 'Supino Reto com Barra', sets: 3, reps: '3', load: '', rest: '240', method: 'Velocidade' },
         { name: 'Levantamento Terra', sets: 3, reps: '3', load: '', rest: '240', method: 'Velocidade' },
@@ -121,33 +121,33 @@ export const BUILT_IN_TEMPLATES = [
     ]
   },
 
-  // â”€â”€ Template especÃ­fico para Blocos â”€â”€
+  // ── Template específico para Blocos ──
   {
     id: 'tpl_block_periodization',
-    name: 'Blocos â€” AcumulaÃ§Ã£o â†’ IntensificaÃ§Ã£o',
-    category: 'ForÃ§a',
-    goal: 'ForÃ§a + Hipertrofia',
-    description: 'ProgressÃ£o em blocos: semanas de acumulaÃ§Ã£o (volume alto) seguidas de intensificaÃ§Ã£o (carga alta) e realizaÃ§Ã£o (pico).',
+    name: 'Blocos — Acumulação → Intensificação',
+    category: 'Força',
+    goal: 'Força + Hipertrofia',
+    description: 'Progressão em blocos: semanas de acumulação (volume alto) seguidas de intensificação (carga alta) e realização (pico).',
     daysPerWeek: 4,
     builtIn: true,
     periodizationTypes: ['block'],
     workouts: [
-      { name: 'A â€” Quadril Dominante', exercises: [
+      { name: 'A — Quadril Dominante', exercises: [
         { name: 'Levantamento Terra', sets: 4, reps: '6', load: '', rest: '180', method: '' },
-        { name: 'Agachamento BÃºlgaro', sets: 3, reps: '8', load: '', rest: '120', method: '' },
+        { name: 'Agachamento Búlgaro', sets: 3, reps: '8', load: '', rest: '120', method: '' },
         { name: 'Mesa Flexora', sets: 3, reps: '10', load: '', rest: '90', method: '' },
       ]},
-      { name: 'B â€” Joelho Dominante', exercises: [
+      { name: 'B — Joelho Dominante', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 4, reps: '6', load: '', rest: '180', method: '' },
-        { name: 'Leg Press 45Â°', sets: 3, reps: '8', load: '', rest: '120', method: '' },
+        { name: 'Leg Press 45°', sets: 3, reps: '8', load: '', rest: '120', method: '' },
         { name: 'Cadeira Extensora', sets: 3, reps: '10', load: '', rest: '60', method: '' },
       ]},
-      { name: 'C â€” Empurrar (Upper Push)', exercises: [
+      { name: 'C — Empurrar (Upper Push)', exercises: [
         { name: 'Supino Reto com Barra', sets: 4, reps: '6', load: '', rest: '180', method: '' },
         { name: 'Desenvolvimento com Barra', sets: 3, reps: '8', load: '', rest: '120', method: '' },
-        { name: 'TrÃ­ceps Testa', sets: 3, reps: '10', load: '', rest: '60', method: '' },
+        { name: 'Tríceps Testa', sets: 3, reps: '10', load: '', rest: '60', method: '' },
       ]},
-      { name: 'D â€” Puxar (Upper Pull)', exercises: [
+      { name: 'D — Puxar (Upper Pull)', exercises: [
         { name: 'Puxada Frontal', sets: 4, reps: '6', load: '', rest: '180', method: '' },
         { name: 'Remada Curvada com Barra', sets: 3, reps: '8', load: '', rest: '120', method: '' },
         { name: 'Rosca Direta com Barra', sets: 3, reps: '10', load: '', rest: '60', method: '' },
@@ -155,90 +155,90 @@ export const BUILT_IN_TEMPLATES = [
     ]
   },
 
-  // â”€â”€ Template especÃ­fico para Conjugada â”€â”€
+  // ── Template específico para Conjugada ──
   {
     id: 'tpl_conjugate',
-    name: 'Conjugada â€” ME + DE',
-    category: 'ForÃ§a',
-    goal: 'ForÃ§a MÃ¡xima',
-    description: 'MÃ©todo Westside: dois dias de EsforÃ§o MÃ¡ximo (ME) e dois de EsforÃ§o DinÃ¢mico (DE) por semana.',
+    name: 'Conjugada — ME + DE',
+    category: 'Força',
+    goal: 'Força Máxima',
+    description: 'Método Westside: dois dias de Esforço Máximo (ME) e dois de Esforço Dinâmico (DE) por semana.',
     daysPerWeek: 4,
     builtIn: true,
     periodizationTypes: ['conjugate'],
     workouts: [
-      { name: 'ME Lower (EsforÃ§o MÃ¡ximo Inferior)', exercises: [
-        { name: 'Agachamento Livre com Barra', sets: 5, reps: '1-3', load: '', rest: '240', method: 'EsforÃ§o MÃ¡ximo' },
+      { name: 'ME Lower (Esforço Máximo Inferior)', exercises: [
+        { name: 'Agachamento Livre com Barra', sets: 5, reps: '1-3', load: '', rest: '240', method: 'Esforço Máximo' },
         { name: 'Levantamento Terra Romeno', sets: 3, reps: '8', load: '', rest: '120', method: '' },
         { name: 'Mesa Flexora', sets: 3, reps: '10', load: '', rest: '90', method: '' },
       ]},
-      { name: 'ME Upper (EsforÃ§o MÃ¡ximo Superior)', exercises: [
-        { name: 'Supino Reto com Barra', sets: 5, reps: '1-3', load: '', rest: '240', method: 'EsforÃ§o MÃ¡ximo' },
+      { name: 'ME Upper (Esforço Máximo Superior)', exercises: [
+        { name: 'Supino Reto com Barra', sets: 5, reps: '1-3', load: '', rest: '240', method: 'Esforço Máximo' },
         { name: 'Remada Curvada com Barra', sets: 4, reps: '6', load: '', rest: '120', method: '' },
-        { name: 'TrÃ­ceps Testa', sets: 3, reps: '8', load: '', rest: '90', method: '' },
+        { name: 'Tríceps Testa', sets: 3, reps: '8', load: '', rest: '90', method: '' },
       ]},
-      { name: 'DE Lower (EsforÃ§o DinÃ¢mico Inferior)', exercises: [
+      { name: 'DE Lower (Esforço Dinâmico Inferior)', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 8, reps: '2', load: '', rest: '60', method: 'Velocidade' },
         { name: 'Levantamento Terra', sets: 6, reps: '1', load: '', rest: '60', method: 'Velocidade' },
       ]},
-      { name: 'DE Upper (EsforÃ§o DinÃ¢mico Superior)', exercises: [
+      { name: 'DE Upper (Esforço Dinâmico Superior)', exercises: [
         { name: 'Supino Reto com Barra', sets: 9, reps: '3', load: '', rest: '60', method: 'Velocidade' },
         { name: 'Remada Unilateral com Halter', sets: 4, reps: '8', load: '', rest: '60', method: '' },
       ]},
     ]
   },
 
-  // â”€â”€ Template especÃ­fico para Concorrente â”€â”€
+  // ── Template específico para Concorrente ──
   {
     id: 'tpl_concurrent',
-    name: 'Concorrente â€” ForÃ§a + Cardio',
+    name: 'Concorrente — Força + Cardio',
     category: 'Hipertrofia',
-    goal: 'Condicionamento + ForÃ§a',
-    description: 'Treinos combinando musculaÃ§Ã£o e trabalho cardiovascular na mesma sessÃ£o ou em dias alternados.',
+    goal: 'Condicionamento + Força',
+    description: 'Treinos combinando musculação e trabalho cardiovascular na mesma sessão ou em dias alternados.',
     daysPerWeek: 4,
     builtIn: true,
     periodizationTypes: ['concurrent'],
     workouts: [
-      { name: 'Treino A â€” ForÃ§a + Cardio LISS', exercises: [
+      { name: 'Treino A — Força + Cardio LISS', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 4, reps: '8', load: '', rest: '120', method: '' },
         { name: 'Supino Reto com Barra', sets: 4, reps: '8', load: '', rest: '120', method: '' },
-        { name: 'Treino ContÃ­nuo (Cardio)', sets: 1, reps: '20 min', load: 'Z2', rest: '0', method: '' },
+        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '20 min', load: 'Z2', rest: '0', method: '' },
       ]},
-      { name: 'Treino B â€” ForÃ§a + HIIT', exercises: [
+      { name: 'Treino B — Força + HIIT', exercises: [
         { name: 'Levantamento Terra', sets: 4, reps: '6', load: '', rest: '180', method: '' },
         { name: 'Puxada Frontal', sets: 4, reps: '10', load: '', rest: '90', method: '' },
-        { name: 'Tiro/Sprint (Cardio)', sets: 6, reps: '30 seg', load: 'Z4', rest: '0', method: 'SÃ©rie' },
+        { name: 'Tiro/Sprint (Cardio)', sets: 6, reps: '30 seg', load: 'Z4', rest: '0', method: 'Série' },
       ]},
     ]
   },
 
-  // â”€â”€ Template para Linear Reversa â”€â”€
+  // ── Template para Linear Reversa ──
   {
     id: 'tpl_reverse_linear',
-    name: 'Linear Reversa â€” RML',
-    category: 'ResistÃªncia',
-    goal: 'ResistÃªncia Muscular',
-    description: 'ComeÃ§a com repetiÃ§Ãµes altas e reduz ao longo do ciclo. Ideal para resistÃªncia e emagrecimento.',
+    name: 'Linear Reversa — RML',
+    category: 'Resistência',
+    goal: 'Resistência Muscular',
+    description: 'Começa com repetições altas e reduz ao longo do ciclo. Ideal para resistência e emagrecimento.',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['reverse_linear'],
     workouts: [
       { name: 'Full Body RML', exercises: [
-        { name: 'Agachamento Livre com Barra', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Supino Inclinado com Halteres', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Puxada Frontal', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Levantamento Terra Romeno', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Desenvolvimento com Halteres', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (ResistÃªncia)' },
+        { name: 'Agachamento Livre com Barra', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Supino Inclinado com Halteres', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Puxada Frontal', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Levantamento Terra Romeno', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Desenvolvimento com Halteres', sets: 3, reps: '20', load: '', rest: '60', method: 'Endurance (Resistência)' },
       ]},
     ]
   },
 
-  // ================= FORÃ‡A =================
+  // ================= FORÇA =================
   {
     id: 'tpl_strength_5x5',
-    name: 'ForÃ§a MÃ¡xima â€” 5x5',
-    category: 'ForÃ§a',
-    goal: 'ForÃ§a',
-    description: 'Programa clÃ¡ssico de forÃ§a 5x5 focando nos levantamentos bÃ¡sicos.',
+    name: 'Força Máxima — 5x5',
+    category: 'Força',
+    goal: 'Força',
+    description: 'Programa clássico de força 5x5 focando nos levantamentos básicos.',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['linear', 'block', 'conjugate'],
@@ -257,17 +257,17 @@ export const BUILT_IN_TEMPLATES = [
   },
   {
     id: 'tpl_strength_powerlifting',
-    name: 'Powerlifting BÃ¡sico',
-    category: 'ForÃ§a',
-    goal: 'ForÃ§a',
-    description: 'Foco puro em Agachamento, Supino e Terra (SBD) com acessÃ³rios auxiliares.',
+    name: 'Powerlifting Básico',
+    category: 'Força',
+    goal: 'Força',
+    description: 'Foco puro em Agachamento, Supino e Terra (SBD) com acessórios auxiliares.',
     daysPerWeek: 4,
     builtIn: true,
     periodizationTypes: ['block', 'conjugate'],
     workouts: [
       { name: 'Squat Day', exercises: [
         { name: 'Agachamento Livre com Barra', sets: 4, reps: '3-5', load: '', rest: '180', method: '' },
-        { name: 'Leg Press 45Â°', sets: 3, reps: '8-10', load: '', rest: '120', method: '' },
+        { name: 'Leg Press 45°', sets: 3, reps: '8-10', load: '', rest: '120', method: '' },
         { name: 'Prancha', sets: 3, reps: '60s', load: '', rest: '60', method: '' },
       ]},
       { name: 'Bench Day', exercises: [
@@ -286,21 +286,21 @@ export const BUILT_IN_TEMPLATES = [
   // ================= CARDIO ENDURANCE =================
   {
     id: 'tpl_cardio_base',
-    name: 'Base AerÃ³bica (LISS)',
+    name: 'Base Aeróbica (LISS)',
     category: 'Cardio Endurance',
     goal: 'Condicionamento',
-    description: 'Volume aerÃ³bico contÃ­nuo de baixa intensidade para desenvolver a base cardiovascular (Zona 2).',
+    description: 'Volume aeróbico contínuo de baixa intensidade para desenvolver a base cardiovascular (Zona 2).',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['lsd', 'polarized'],
     workouts: [
       { name: 'Endurance Longo', exercises: [
         { name: 'Aquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' },
-        { name: 'Treino ContÃ­nuo (Cardio)', sets: 1, reps: '45-60 min', load: 'Z2', rest: '0', method: '' },
+        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '45-60 min', load: 'Z2', rest: '0', method: '' },
         { name: 'Desaquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' }
       ]},
-      { name: 'RecuperaÃ§Ã£o Ativa', exercises: [
-        { name: 'Treino ContÃ­nuo (Cardio)', sets: 1, reps: '30 min', load: 'Z1', rest: '0', method: '' }
+      { name: 'Recuperação Ativa', exercises: [
+        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '30 min', load: 'Z1', rest: '0', method: '' }
       ]}
     ]
   },
@@ -309,15 +309,15 @@ export const BUILT_IN_TEMPLATES = [
     name: 'HIIT Curto',
     category: 'Cardio Endurance',
     goal: 'Emagrecimento',
-    description: 'Treinamento Intervalado de Alta Intensidade para ganho de VO2Max e queima rÃ¡pida.',
+    description: 'Treinamento Intervalado de Alta Intensidade para ganho de VO2Max e queima rápida.',
     daysPerWeek: 2,
     builtIn: true,
     periodizationTypes: ['hiit'],
     workouts: [
       { name: 'HIIT Protocolo 30/60', exercises: [
         { name: 'Aquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' },
-        { name: 'Tiro/Sprint (Cardio)', sets: 8, reps: '30 seg', load: 'Z4', rest: '0', method: 'SÃ©rie' },
-        { name: 'RecuperaÃ§Ã£o Ativa (Cardio)', sets: 8, reps: '60 seg', load: 'Z1', rest: '0', method: 'SÃ©rie' },
+        { name: 'Tiro/Sprint (Cardio)', sets: 8, reps: '30 seg', load: 'Z4', rest: '0', method: 'Série' },
+        { name: 'Recuperação Ativa (Cardio)', sets: 8, reps: '60 seg', load: 'Z1', rest: '0', method: 'Série' },
         { name: 'Desaquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' }
       ]}
     ]
@@ -327,23 +327,23 @@ export const BUILT_IN_TEMPLATES = [
     name: 'Treino de Limiar (Tempo Run)',
     category: 'Cardio Endurance',
     goal: 'Performance',
-    description: 'Treino no VT2/OBLA (85-92% FCmÃ¡x) para aumentar velocidade sustentÃ¡vel. MÃ­nimo 20 min para adaptaÃ§Ã£o do tamponamento de lactato.',
+    description: 'Treino no VT2/OBLA (85-92% FCmáx) para aumentar velocidade sustentável. Mínimo 20 min para adaptação do tamponamento de lactato.',
     daysPerWeek: 2,
     builtIn: true,
     periodizationTypes: ['threshold'],
     workouts: [
       { name: 'Tempo Run', exercises: [
         { name: 'Aquecimento (Cardio)', sets: 1, reps: '10 min', load: 'Z2', rest: '0', method: '' },
-        { name: 'Treino ContÃ­nuo (Cardio)', sets: 1, reps: '20-40 min', load: 'Z4', rest: '0', method: 'Zona 4 (Z4) â€” Limiar' },
+        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '20-40 min', load: 'Z4', rest: '0', method: 'Zona 4 (Z4) — Limiar' },
         { name: 'Desaquecimento (Cardio)', sets: 1, reps: '10 min', load: 'Z1', rest: '0', method: '' }
       ]}
     ]
   },
 
-  // â”€â”€ Template para Polarizado â”€â”€
+  // ── Template para Polarizado ──
   {
     id: 'tpl_polarized',
-    name: 'Polarizado â€” 80/20',
+    name: 'Polarizado — 80/20',
     category: 'Cardio Endurance',
     goal: 'Performance',
     description: '80% do volume em Z1/Z2 e 20% em Z4/Z5. Modelo usado por atletas de elite.',
@@ -351,46 +351,46 @@ export const BUILT_IN_TEMPLATES = [
     builtIn: true,
     periodizationTypes: ['polarized'],
     workouts: [
-      { name: 'SessÃ£o Longa Z2 (Ã—4)', exercises: [
+      { name: 'Sessão Longa Z2 (×4)', exercises: [
         { name: 'Aquecimento (Cardio)', sets: 1, reps: '10 min', load: 'Z1', rest: '0', method: '' },
-        { name: 'Treino ContÃ­nuo (Cardio)', sets: 1, reps: '60-90 min', load: 'Z2', rest: '0', method: '' },
+        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '60-90 min', load: 'Z2', rest: '0', method: '' },
         { name: 'Desaquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' },
       ]},
-      { name: 'SessÃ£o Intensa Z4/Z5 (Ã—1)', exercises: [
+      { name: 'Sessão Intensa Z4/Z5 (×1)', exercises: [
         { name: 'Aquecimento (Cardio)', sets: 1, reps: '15 min', load: 'Z2', rest: '0', method: '' },
-        { name: 'Tiro/Sprint (Cardio)', sets: 5, reps: '4 min', load: 'Z4', rest: '0', method: 'SÃ©rie' },
-        { name: 'RecuperaÃ§Ã£o Ativa (Cardio)', sets: 5, reps: '3 min', load: 'Z1', rest: '0', method: 'SÃ©rie' },
+        { name: 'Tiro/Sprint (Cardio)', sets: 5, reps: '4 min', load: 'Z4', rest: '0', method: 'Série' },
+        { name: 'Recuperação Ativa (Cardio)', sets: 5, reps: '3 min', load: 'Z1', rest: '0', method: 'Série' },
         { name: 'Desaquecimento (Cardio)', sets: 1, reps: '10 min', load: 'Z1', rest: '0', method: '' },
       ]},
     ]
   },
 
-  // â”€â”€ Template para Fartlek â”€â”€
+  // ── Template para Fartlek ──
   {
     id: 'tpl_fartlek',
-    name: 'Fartlek â€” VariaÃ§Ã£o Livre',
+    name: 'Fartlek — Variação Livre',
     category: 'Cardio Endurance',
     goal: 'Condicionamento',
-    description: 'AlternÃ¢ncia livre de ritmo durante o treino, sem protocolo rÃ­gido. Estimula todas as zonas.',
+    description: 'Alternância livre de ritmo durante o treino, sem protocolo rígido. Estimula todas as zonas.',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['fartlek'],
     workouts: [
       { name: 'Fartlek Livre', exercises: [
         { name: 'Aquecimento (Cardio)', sets: 1, reps: '10 min', load: 'Z1', rest: '0', method: '' },
-        { name: 'Treino ContÃ­nuo (Cardio)', sets: 1, reps: '30-40 min', load: 'Z1-Z4', rest: '0', method: 'Fartlek' },
+        { name: 'Treino Contínuo (Cardio)', sets: 1, reps: '30-40 min', load: 'Z1-Z4', rest: '0', method: 'Fartlek' },
         { name: 'Desaquecimento (Cardio)', sets: 1, reps: '5 min', load: 'Z1', rest: '0', method: '' },
       ]},
     ]
   },
 
-  // ================= POTÃŠNCIA =================
+  // ================= POTÊNCIA =================
   {
     id: 'tpl_power_plyo',
-    name: 'PotÃªncia e Pliometria',
-    category: 'PotÃªncia',
+    name: 'Potência e Pliometria',
+    category: 'Potência',
     goal: 'Performance',
-    description: 'Foco na taxa de desenvolvimento de forÃ§a (RFD) usando exercÃ­cios explosivos e saltos.',
+    description: 'Foco na taxa de desenvolvimento de força (RFD) usando exercícios explosivos e saltos.',
     daysPerWeek: 2,
     builtIn: true,
     periodizationTypes: ['conjugate', 'block'],
@@ -402,39 +402,39 @@ export const BUILT_IN_TEMPLATES = [
       ]},
       { name: 'Upper Power', exercises: [
         { name: 'Arremesso de Medicine Ball', sets: 4, reps: '5', load: 'Leve', rest: '90', method: 'Explosivo', loadType: 'bodyweight' },
-        { name: 'FlexÃ£o de BraÃ§o com Salto', sets: 3, reps: '5', load: 'Corporal', rest: '90', method: 'Explosivo', loadType: 'bodyweight' },
+        { name: 'Flexão de Braço com Salto', sets: 3, reps: '5', load: 'Corporal', rest: '90', method: 'Explosivo', loadType: 'bodyweight' },
         { name: 'Supino Reto com Barra', sets: 4, reps: '3', load: '60% 1RM', rest: '120', method: 'Velocidade' },
       ]}
     ]
   },
   {
     id: 'tpl_olympic',
-    name: 'LPO Iniciante (Levantamento OlÃ­mpico)',
-    category: 'PotÃªncia',
+    name: 'LPO Iniciante (Levantamento Olímpico)',
+    category: 'Potência',
     goal: 'Performance',
-    description: 'Movimentos baseados no arranco e arremesso para desenvolvimento de potÃªncia extrema.',
+    description: 'Movimentos baseados no arranco e arremesso para desenvolvimento de potência extrema.',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['block', 'conjugate'],
     workouts: [
       { name: 'Dia A - Arranco', exercises: [
-        { name: 'Arranco (Snatch)', sets: 5, reps: '3', load: 'Moderado', rest: '120', method: 'TÃ©cnica' },
+        { name: 'Arranco (Snatch)', sets: 5, reps: '3', load: 'Moderado', rest: '120', method: 'Técnica' },
         { name: 'Agachamento Frontal', sets: 4, reps: '5', load: 'Pesado', rest: '180', method: '' },
       ]},
       { name: 'Dia B - Arremesso', exercises: [
-        { name: 'Arremesso (Clean & Jerk)', sets: 5, reps: '3', load: 'Moderado', rest: '120', method: 'TÃ©cnica' },
+        { name: 'Arremesso (Clean & Jerk)', sets: 5, reps: '3', load: 'Moderado', rest: '120', method: 'Técnica' },
         { name: 'Levantamento Terra', sets: 4, reps: '5', load: 'Pesado', rest: '180', method: '' },
       ]}
     ]
   },
 
-  // ================= RESISTÃŠNCIA =================
+  // ================= RESISTÊNCIA =================
   {
     id: 'tpl_muscular_endurance',
-    name: 'ResistÃªncia Muscular Localizada',
-    category: 'ResistÃªncia',
+    name: 'Resistência Muscular Localizada',
+    category: 'Resistência',
     goal: 'Condicionamento',
-    description: 'SÃ©ries longas e descansos curtos para melhorar a resistÃªncia muscular Ã  fadiga.',
+    description: 'Séries longas e descansos curtos para melhorar a resistência muscular à fadiga.',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['reverse_linear', 'concurrent'],
@@ -443,60 +443,60 @@ export const BUILT_IN_TEMPLATES = [
         { name: 'Agachamento Livre com Barra', sets: 3, reps: '20', load: 'Leve', rest: '45', method: '' },
         { name: 'Supino Inclinado com Halteres', sets: 3, reps: '20', load: 'Leve', rest: '45', method: '' },
         { name: 'Puxada Frontal', sets: 3, reps: '20', load: 'Leve', rest: '45', method: '' },
-        { name: 'ElevaÃ§Ã£o Lateral', sets: 3, reps: '20', load: 'Leve', rest: '45', method: '' },
+        { name: 'Elevação Lateral', sets: 3, reps: '20', load: 'Leve', rest: '45', method: '' },
         { name: 'Abdominal Crunch', sets: 3, reps: '30', load: 'Corporal', rest: '45', method: '', loadType: 'bodyweight' },
       ]}
     ]
   },
   {
     id: 'tpl_calisthenics',
-    name: 'Calistenia e ResistÃªncia',
-    category: 'ResistÃªncia',
-    goal: 'ResistÃªncia',
-    description: 'Controle corporal e resistÃªncia com exercÃ­cios usando o prÃ³prio peso.',
+    name: 'Calistenia e Resistência',
+    category: 'Resistência',
+    goal: 'Resistência',
+    description: 'Controle corporal e resistência com exercícios usando o próprio peso.',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['reverse_linear', 'concurrent'],
     workouts: [
       { name: 'Upper Calistenia', exercises: [
-        { name: 'Barra Fixa', sets: 4, reps: 'MÃ¡x', load: 'Corporal', rest: '90', method: '', loadType: 'bodyweight' },
-        { name: 'FlexÃ£o de BraÃ§os', sets: 4, reps: 'MÃ¡x', load: 'Corporal', rest: '90', method: '', loadType: 'bodyweight' },
+        { name: 'Barra Fixa', sets: 4, reps: 'Máx', load: 'Corporal', rest: '90', method: '', loadType: 'bodyweight' },
+        { name: 'Flexão de Braços', sets: 4, reps: 'Máx', load: 'Corporal', rest: '90', method: '', loadType: 'bodyweight' },
         { name: 'Mergulho nas Paralelas', sets: 3, reps: '10-15', load: 'Corporal', rest: '90', method: '', loadType: 'bodyweight' },
         { name: 'Prancha', sets: 3, reps: '60s', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
       ]},
       { name: 'Lower e Core', exercises: [
-        { name: 'Agachamento BÃºlgaro', sets: 4, reps: '15', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
+        { name: 'Agachamento Búlgaro', sets: 4, reps: '15', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
         { name: 'Agachamento com Salto', sets: 3, reps: '15', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
-        { name: 'ElevaÃ§Ã£o de Pelve', sets: 3, reps: '20', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
+        { name: 'Elevação de Pelve', sets: 3, reps: '20', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
       ]}
     ]
   },
   {
     id: 'tpl_endurance_pro',
-    name: 'Endurance AvanÃ§ado (ResistÃªncia)',
-    category: 'ResistÃªncia',
-    goal: 'ResistÃªncia',
-    description: 'Volume extremamente alto com cargas moderadas/leves, focado em capacidade de trabalho e resistÃªncia Ã  fadiga muscular (Lactato).',
+    name: 'Endurance Avançado (Resistência)',
+    category: 'Resistência',
+    goal: 'Resistência',
+    description: 'Volume extremamente alto com cargas moderadas/leves, focado em capacidade de trabalho e resistência à fadiga muscular (Lactato).',
     daysPerWeek: 3,
     builtIn: true,
     periodizationTypes: ['reverse_linear', 'lsd'],
     workouts: [
       { name: 'Endurance Inferior', exercises: [
-        { name: 'Agachamento Livre com Barra', sets: 4, reps: '20', load: 'Leve', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Leg Press 45Â°', sets: 4, reps: '20-25', load: 'Leve', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Passada/AvanÃ§o com Halteres', sets: 3, reps: '30 passos', load: 'Leve', rest: '45', method: 'TensÃ£o ContÃ­nua' },
+        { name: 'Agachamento Livre com Barra', sets: 4, reps: '20', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Leg Press 45°', sets: 4, reps: '20-25', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Passada/Avanço com Halteres', sets: 3, reps: '30 passos', load: 'Leve', rest: '45', method: 'Tensão Contínua' },
         { name: 'Cadeira Extensora', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'Rest-Pause' },
       ]},
       { name: 'Endurance Superior', exercises: [
-        { name: 'Supino Reto com Halteres', sets: 4, reps: '15-20', load: 'Leve', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Puxada Frontal', sets: 4, reps: '15-20', load: 'Leve', rest: '60', method: 'Endurance (ResistÃªncia)' },
-        { name: 'Desenvolvimento com Halteres', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'TensÃ£o ContÃ­nua' },
-        { name: 'Remada Baixa', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'Endurance (ResistÃªncia)' },
+        { name: 'Supino Reto com Halteres', sets: 4, reps: '15-20', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Puxada Frontal', sets: 4, reps: '15-20', load: 'Leve', rest: '60', method: 'Endurance (Resistência)' },
+        { name: 'Desenvolvimento com Halteres', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'Tensão Contínua' },
+        { name: 'Remada Baixa', sets: 3, reps: '20', load: 'Leve', rest: '45', method: 'Endurance (Resistência)' },
       ]},
       { name: 'Endurance Full Body', exercises: [
         { name: 'Levantamento Terra', sets: 3, reps: '15', load: 'Moderado', rest: '90', method: '' },
-        { name: 'Agachamento BÃºlgaro', sets: 3, reps: '15', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
-        { name: 'FlexÃ£o de BraÃ§os', sets: 3, reps: 'MÃ¡x', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
+        { name: 'Agachamento Búlgaro', sets: 3, reps: '15', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
+        { name: 'Flexão de Braços', sets: 3, reps: 'Máx', load: 'Corporal', rest: '60', method: '', loadType: 'bodyweight' },
         { name: 'Remada Curvada com Barra', sets: 3, reps: '15', load: 'Leve', rest: '60', method: '' },
         { name: 'Abdominal Crunch', sets: 3, reps: '40', load: 'Corporal', rest: '45', method: '', loadType: 'bodyweight' },
       ]}
@@ -504,43 +504,43 @@ export const BUILT_IN_TEMPLATES = [
   },
   {
     id: 'tpl_ildemera_ondulatorio',
-    name: 'DUP OndulatÃ³rio (Full Body + Cardio)',
+    name: 'DUP Ondulatório (Full Body + Cardio)',
     category: 'Hipertrofia',
     goal: 'Emagrecimento / Condicionamento',
-    description: 'Planejamento estratÃ©gico de 5 dias semanais. Combina 3 treinos Full Body (MetabÃ³lico, Hipertrofia e ForÃ§a) com 2 dias de Cardio (LISS e HIIT).',
+    description: 'Planejamento estratégico de 5 dias semanais. Combina 3 treinos Full Body (Metabólico, Hipertrofia e Força) com 2 dias de Cardio (LISS e HIIT).',
     daysPerWeek: 5,
     builtIn: true,
     periodizationTypes: ['undulating', 'linear'],
     workouts: [
-      { name: 'Full Body A â€” MetabÃ³lico', exercises: [
-        { name: 'Leg 45Â°', sets: 3, reps: '20-25', load: '', rest: '45', method: '', loadType: 'weight' },
-        { name: 'Puxada Alta TriÃ¢ngulo', sets: 3, reps: '18-20', load: '', rest: '45', method: '', loadType: 'weight' },
-        { name: 'Agachamento SumÃ´', sets: 3, reps: '20', load: '', rest: '45', method: '', loadType: 'weight' },
+      { name: 'Full Body A — Metabólico', exercises: [
+        { name: 'Leg 45°', sets: 3, reps: '20-25', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Puxada Alta Triângulo', sets: 3, reps: '18-20', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Agachamento Sumô', sets: 3, reps: '20', load: '', rest: '45', method: '', loadType: 'weight' },
         { name: 'Supino com Halter', sets: 3, reps: '15-18', load: '', rest: '45', method: '', loadType: 'weight' },
-        { name: 'ElevaÃ§Ã£o PÃ©lvica', sets: 3, reps: '20', load: '', rest: '45', method: '', loadType: 'weight' },
+        { name: 'Elevação Pélvica', sets: 3, reps: '20', load: '', rest: '45', method: '', loadType: 'weight' },
         { name: 'Desenvolvimento Unilateral', sets: 2, reps: '18', load: '', rest: '45', method: '', loadType: 'weight' },
-        { name: 'Prancha IsomÃ©trica', sets: 3, reps: '30-40s', load: 'Corporal', rest: '45', method: '', loadType: 'time' }
+        { name: 'Prancha Isométrica', sets: 3, reps: '30-40s', load: 'Corporal', rest: '45', method: '', loadType: 'time' }
       ]},
-      { name: 'Cardio 1 â€” LISS', exercises: [
+      { name: 'Cardio 1 — LISS', exercises: [
         { name: 'Caminhada inclinada', sets: 1, reps: '35-40 min', load: 'Zona 2', rest: '0', method: '', loadType: 'time' }
       ]},
-      { name: 'Full Body B â€” Hipertrofia', exercises: [
-        { name: 'BÃºlgaro no Step', sets: 3, reps: '10-12', load: '', rest: '60', method: '', loadType: 'weight' },
+      { name: 'Full Body B — Hipertrofia', exercises: [
+        { name: 'Búlgaro no Step', sets: 3, reps: '10-12', load: '', rest: '60', method: '', loadType: 'weight' },
         { name: 'Remada Articulada', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
         { name: 'Stiff', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
-        { name: 'FlexÃ£o de BraÃ§os / Supino MÃ¡quina', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
+        { name: 'Flexão de Braços / Supino Máquina', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
         { name: 'Cadeira Extensora', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
         { name: 'Cadeira Abdutora', sets: 3, reps: '15', load: '', rest: '60', method: '', loadType: 'weight' },
         { name: 'Dead Bug', sets: 3, reps: '12', load: '', rest: '60', method: '', loadType: 'weight' },
         { name: 'Panturrilha', sets: 3, reps: '15-20', load: '', rest: '60', method: '', loadType: 'weight' }
       ]},
-      { name: 'Cardio 2 â€” HIIT', exercises: [
+      { name: 'Cardio 2 — HIIT', exercises: [
         { name: 'Escada de Agilidade', sets: 1, reps: '20-25 min', load: 'Borg 7-8', rest: '0', method: 'HIIT 30-30', loadType: 'time' }
       ]},
-      { name: 'Full Body C â€” ForÃ§a (Presencial)', exercises: [
-        { name: 'Leg 45Â°', sets: 4, reps: '8', load: '', rest: '90', method: 'PirÃ¢mide', loadType: 'weight' },
+      { name: 'Full Body C — Força (Presencial)', exercises: [
+        { name: 'Leg 45°', sets: 4, reps: '8', load: '', rest: '90', method: 'Pirâmide', loadType: 'weight' },
         { name: 'Puxada Alta', sets: 4, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
-        { name: 'Agachamento SumÃ´', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
+        { name: 'Agachamento Sumô', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
         { name: 'Desenvolvimento', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
         { name: 'Cadeira Flexora', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
         { name: 'Remada Unilateral', sets: 3, reps: '8', load: '', rest: '90', method: '', loadType: 'weight' },
@@ -558,4 +558,3 @@ export function getTemplatesByCategory() {
   });
   return grouped;
 }
-

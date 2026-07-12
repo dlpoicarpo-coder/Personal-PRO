@@ -1,5 +1,5 @@
-﻿// ========================================
-// VETOR â€” PDF Generator (jsPDF)
+// ========================================
+// VETOR — PDF Generator (jsPDF)
 // ========================================
 
 import { Calc } from './calculations.js';
@@ -77,7 +77,7 @@ export async function generateWorkoutPDF(student, workout, exercises) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(...COLORS.muted);
-  doc.text(`CÃ³digo: ${student.code}  |  Objetivo: ${student.goal || '-'}`, 11, 35);
+  doc.text(`Código: ${student.code}  |  Objetivo: ${student.goal || '-'}`, 11, 35);
   doc.text(`Data: ${Calc.formatDate(workout.date)}`, 11, 38);
 
   if (workout.notes) {
@@ -105,8 +105,8 @@ export async function generateWorkoutPDF(student, workout, exercises) {
         loadVal = sp.load !== undefined && sp.load !== null ? `${sp.load}kg` : '-';
         restVal = sp.rest !== undefined && sp.rest !== null ? `${sp.rest}s` : restVal;
       } else {
-        if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('â†’')) {
-          const parts = ex.reps.split('â†’');
+        if (ex.reps && typeof ex.reps === 'string' && ex.reps.includes('→')) {
+          const parts = ex.reps.split('→');
           repsVal = parts[si] || ex.reps;
         } else {
           repsVal = ex.reps || '12';
@@ -115,10 +115,10 @@ export async function generateWorkoutPDF(student, workout, exercises) {
       }
 
       // Normalize reps format
-      repsVal = repsVal.replace(/â†’/g, ' - ');
+      repsVal = repsVal.replace(/→/g, ' - ');
       
       seriesList.push({
-        label: `SÃ©rie ${si+1}`,
+        label: `Série ${si+1}`,
         reps: repsVal,
         load: loadVal,
         rest: restVal
@@ -127,7 +127,7 @@ export async function generateWorkoutPDF(student, workout, exercises) {
 
     const titleLines = doc.splitTextToSize(`${idx + 1}. ${ex.name || '-'}`, 76);
     const titleHeight = titleLines.length * 4;
-    const detailsStr = `MÃ©todo: ${ex.method || 'PadrÃ£o'} Â· Tipo: ${ex.loadType === 'time' ? 'Tempo' : ex.loadType === 'bodyweight' ? 'P. Corporal' : 'Peso'}`;
+    const detailsStr = `Método: ${ex.method || 'Padrão'} · Tipo: ${ex.loadType === 'time' ? 'Tempo' : ex.loadType === 'bodyweight' ? 'P. Corporal' : 'Peso'}`;
     
     const headerHeight = titleHeight + 8;
     const tableHeaderHeight = 5;
@@ -170,8 +170,8 @@ export async function generateWorkoutPDF(student, workout, exercises) {
     doc.setTextColor(...COLORS.dark);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6.5);
-    doc.text('SÃ‰RIE', 13, ty + 3);
-    doc.text('REPETIÃ‡Ã•ES', 30, ty + 3);
+    doc.text('SÉRIE', 13, ty + 3);
+    doc.text('REPETIÇÕES', 30, ty + 3);
     doc.text('CARGA', 52, ty + 3);
     doc.text('DESCANSO', 72, ty + 3);
 
@@ -210,7 +210,7 @@ export async function generateWorkoutPDF(student, workout, exercises) {
     doc.rect(0, H - 7, W, 7, 'F');
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(6);
-    doc.text(`Vetor - PÃ¡gina ${i}/${pageCount}`, W / 2, H - 3, { align: 'center' });
+    doc.text(`Vetor - Página ${i}/${pageCount}`, W / 2, H - 3, { align: 'center' });
   }
 
   return doc;
@@ -231,7 +231,7 @@ export async function generateReportPDF(student, data) {
   doc.setTextColor(...COLORS.white);
   doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
-  doc.text('DOSSIÃŠ DE', W / 2, 80, { align: 'center' });
+  doc.text('DOSSIÊ DE', W / 2, 80, { align: 'center' });
   doc.text('PERFORMANCE', W / 2, 95, { align: 'center' });
 
   doc.setTextColor(...COLORS.primary);
@@ -240,7 +240,7 @@ export async function generateReportPDF(student, data) {
 
   doc.setTextColor(...COLORS.muted);
   doc.setFontSize(11);
-  doc.text(`CÃ³digo: ${student.code}`, W / 2, 135, { align: 'center' });
+  doc.text(`Código: ${student.code}`, W / 2, 135, { align: 'center' });
   doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, W / 2, 145, { align: 'center' });
 
   doc.setTextColor(...COLORS.white);
@@ -259,14 +259,14 @@ export async function generateReportPDF(student, data) {
   doc.setTextColor(...COLORS.dark);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Resumo do PerÃ­odo', 14, y);
+  doc.text('Resumo do Período', 14, y);
   y += 12;
 
   const summaryItems = [
     ['Treinos realizados', `${data.workoutCount || 0}`],
-    ['AvaliaÃ§Ãµes', `${data.assessmentCount || 0}`],
+    ['Avaliações', `${data.assessmentCount || 0}`],
     ['Check-ins biofeedback', `${data.biofeedbackCount || 0}`],
-    ['PerÃ­odo', data.period || '-'],
+    ['Período', data.period || '-'],
   ];
 
   doc.setFontSize(10);
@@ -288,7 +288,7 @@ export async function generateReportPDF(student, data) {
     doc.rect(0, 290, W, 7, 'F');
     doc.setTextColor(...COLORS.white);
     doc.setFontSize(7);
-    doc.text(`Vetor - PÃ¡gina ${i}/${pageCount}`, W / 2, 295, { align: 'center' });
+    doc.text(`Vetor - Página ${i}/${pageCount}`, W / 2, 295, { align: 'center' });
   }
 
   return doc;
@@ -297,4 +297,3 @@ export async function generateReportPDF(student, data) {
 export function downloadPDF(doc, filename) {
   doc.save(filename);
 }
-

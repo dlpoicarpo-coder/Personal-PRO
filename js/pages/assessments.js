@@ -1,5 +1,5 @@
 // ========================================
-// VETOR - Assessments v3
+// VETOR — Assessments v3
 // Clean · Força+Submax unificados · Ficha por aluno
 // ========================================
 import db from '../db.js';
@@ -1812,7 +1812,7 @@ async function exportFichaPDF(sid) {
   @media print{body{padding:14px 18px}@page{margin:1.5cm}}</style>
   <script>window.onload=function(){setTimeout(function(){window.print()},500)}<\/script>
   </head><body>
-  <div class="h1">Vetor — Ficha de Avaliação</div>
+  <div class="h1">VETOR — Ficha de Avaliação</div>
   <div class="info">
     <div class="av">${ini(student?.name)}</div>
     <div>

@@ -1,28 +1,28 @@
-﻿// ========================================
-// VETOR â€” Sistema de PapÃ©is (Roles)
-// admin    â†’ acessa todos os dados de todos os personals
-//            edita exercÃ­cios/mÃ©todos padrÃ£o do sistema
-//            vÃª estatÃ­sticas globais
-// personal â†’ acessa apenas seus prÃ³prios alunos/dados
-//            pode adicionar exercÃ­cios privados
+// ========================================
+// VETOR — Sistema de Papéis (Roles)
+// admin    → acessa todos os dados de todos os personals
+//            edita exercícios/métodos padrão do sistema
+//            vê estatísticas globais
+// personal → acessa apenas seus próprios alunos/dados
+//            pode adicionar exercícios privados
 // ========================================
 
-// â”€â”€ Como diferenciar na prÃ¡tica â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Como diferenciar na prática ──────────────────────────────
 //
-// No Supabase Dashboard â†’ Authentication â†’ Users â†’ selecione o usuÃ¡rio
-// â†’ Edit user â†’ Raw App Meta Data â†’ adicionar:
+// No Supabase Dashboard → Authentication → Users → selecione o usuário
+// → Edit user → Raw App Meta Data → adicionar:
 //   { "role": "admin" }
 //
-// Para personal trainer (padrÃ£o, sem metadado especial):
-//   { "role": "personal" }   â† ou sem campo role
+// Para personal trainer (padrão, sem metadado especial):
+//   { "role": "personal" }   ← ou sem campo role
 //
-// O campo user_metadata.role Ã© definido pelo admin via dashboard
-// ou via Supabase Admin API â€” nunca pelo prÃ³prio usuÃ¡rio
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// O campo user_metadata.role é definido pelo admin via dashboard
+// ou via Supabase Admin API — nunca pelo próprio usuário
+// ─────────────────────────────────────────────────────────────
 
 import { getCurrentUser } from './auth.js';
 
-// Cache em memÃ³ria para evitar mÃºltiplas chamadas durante a sessÃ£o
+// Cache em memória para evitar múltiplas chamadas durante a sessão
 let _cachedRole = null;
 let _cachedUserId = null;
 
@@ -37,7 +37,7 @@ export async function getUserRole() {
     // Tentar app_metadata primeiro (mais seguro)
     let role = user.app_metadata?.role || user.user_metadata?.role;
 
-    // Se nÃ£o tem role no token atual, tentar refresh para pegar app_metadata
+    // Se não tem role no token atual, tentar refresh para pegar app_metadata
     if (!role) {
       try {
         const { getSupabase } = await import('./auth.js');
@@ -74,18 +74,18 @@ export function clearRoleCache() {
   _cachedUserId = null;
 }
 
-// â”€â”€ Helpers de UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Helpers de UI ─────────────────────────────────────────────
 
 // Ocultar ou mostrar elementos baseado no papel
 export async function applyRoleUI() {
   const admin = await isAdmin();
 
-  // Elementos visÃ­veis apenas para admin
+  // Elementos visíveis apenas para admin
   document.querySelectorAll('[data-role="admin"]').forEach(el => {
     el.style.display = admin ? '' : 'none';
   });
 
-  // Elementos visÃ­veis apenas para personal (nÃ£o admin)
+  // Elementos visíveis apenas para personal (não admin)
   document.querySelectorAll('[data-role="personal"]').forEach(el => {
     el.style.display = !admin ? '' : 'none';
   });
@@ -100,4 +100,3 @@ export async function applyRoleUI() {
 
   return admin;
 }
-
