@@ -1202,19 +1202,19 @@ h4 {
 [data-theme="light"] {
   color-scheme: light;
   
-  --bg:      #F5F7F9;
-  --panel:   #FFFFFF;
-  --line:    #E3E8ED;
-  --ink:     #152029;
-  --dim:     #5A6B78;
-  --faint:   #8395A2;
-  --acc:     #0E9E6E;
+  --bg:      #E9EDF0;
+  --panel:   #F6F8FA;
+  --line:    #D5DCE2;
+  --ink:     #0F1519;
+  --dim:     #46525C;
+  --faint:   #6E7C86;
+  --acc:     #0B8B60;
   --acc-num: #0B8B60;
   
-  --side:      #0D1520;
-  --side-ink:  #E8EDF1;
-  --side-dim:  #8DA0AD;
-  --side-faint:#6C7F8C;
+  --side:      #41535F;
+  --side-ink:  #FFFFFF;
+  --side-dim:  #C3CED6;
+  --side-faint:#A7B4BD;
 
   /* Mapeando para as variáveis do sistema */
   --bg-primary: var(--bg);
@@ -1243,6 +1243,11 @@ h4 {
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
   --shadow-glow: 0 0 20px rgba(14, 158, 110, 0.08);
   --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .sidebar-link.active {
+  background: rgba(16, 185, 129, 0.15);
+  box-shadow: inset 3px 0 0 #10b981;
 }
 
 /* ========================================
