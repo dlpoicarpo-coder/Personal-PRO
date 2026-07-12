@@ -11,7 +11,7 @@ export function renderTermos() {
         
         <div class="legal-content" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-top: 30px;">
           <p><strong>Última atualização: [DATA]</strong></p>
-          <p>Bem-vindo ao <strong>Personal PRO</strong>. Este documento rege a licença de uso do software (SaaS) oferecido pela [NOME DA SUA EMPRESA / SEU NOME], inscrita no CNPJ/CPF [INSERIR AQUI], doravante denominada "Plataforma".</p>
+          <p>Bem-vindo ao <strong>Vetor</strong>. Este documento rege a licença de uso do software (SaaS) oferecido pela [NOME DA SUA EMPRESA / SEU NOME], inscrita no CNPJ/CPF [INSERIR AQUI], doravante denominada "Plataforma".</p>
 
           <h3 style="color: var(--text-primary); margin-top: 20px;">1. Objeto e Natureza do Serviço</h3>
           <p>A Plataforma oferece um sistema de gestão esportiva para Treinadores. A Plataforma atua apenas como uma ferramenta tecnológica.</p>

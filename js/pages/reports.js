@@ -585,7 +585,7 @@ export async function initReports(navigateFn) {
     const totalVol = sessions.reduce((t,s)=>t+(s.totalVolume||0),0);
     const cycleLabel = cycleSel?.value || 'Geral';
     const msg = [
-      `📊 *Seu Relatório de Performance — Personal PRO*`,
+      `🚀 *Seu Relatório de Performance - Vetor*`,
       ``,
       `👤 Aluno: *${student.name}*`,
       `📅 Ciclo: ${cycleLabel}`,
@@ -601,7 +601,7 @@ export async function initReports(navigateFn) {
       ``,
       `✅ Continue assim! Resultados consistentes vêm da consistência nos treinos e no descanso.`,
       ``,
-      `_Relatório gerado pelo Personal PRO_`,
+      `_Relatório gerado pelo Vetor_`,
     ].join('\n');
     const phone = student.phone.replace(/\D/g,'');
     window.open(`https://wa.me/${phone.startsWith('55')?phone:'55'+phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -624,7 +624,7 @@ export async function initReports(navigateFn) {
     if (!student) { newWin.close(); return; }
     const cycleFilter = cycleSel?.value || '';
     const settings    = await db.get('settings', 'trainer') || {};
-    const trainerName = settings?.trainerName || 'Personal PRO';
+    const trainerName = settings?.trainerName || 'Vetor';
 
     const pdfArea = document.getElementById('pdfArea');
     if (!pdfArea) { newWin.close(); notify.error('Carregue o relatório primeiro'); return; }
@@ -873,7 +873,7 @@ export async function initReports(navigateFn) {
     </head><body>
 
       <div class="doc-header">
-        <h1>Personal PRO — Dossiê de Performance</h1>
+        <h1>Vetor - Dossiê de Performance</h1>
         <p class="doc-subtitle">Gerado em ${new Date().toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' })} por ${trainerName}</p>
       </div>
 
@@ -989,7 +989,7 @@ export async function initReports(navigateFn) {
       <div class="charts-grid">${chartsHTML}</div>` : ''}
 
       <div class="footer">
-        Dossiê gerado por ${trainerName} — ${new Date().toLocaleDateString('pt-BR')} — Personal PRO · Sistema Profissional de Treinamento
+        Dossiê gerado por ${trainerName} - ${new Date().toLocaleDateString('pt-BR')} - Vetor — Sistema Profissional de Treinamento
       </div>
     </body></html>`;
 

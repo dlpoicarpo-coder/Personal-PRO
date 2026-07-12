@@ -11,18 +11,18 @@ export function renderPrivacidade() {
         
         <div class="legal-content" style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-top: 30px;">
           <p><strong>Última atualização: [DATA]</strong></p>
-          <p>A Plataforma <strong>Personal PRO</strong> valoriza e respeita a sua privacidade. Esta Política de Privacidade descreve como tratamos, protegemos e armazenamos os dados pessoais de Treinadores e Alunos.</p>
+          <p>A Plataforma <strong>Vetor</strong> valoriza e respeita a sua privacidade. Esta Política de Privacidade descreve como tratamos, protegemos e armazenamos os dados pessoais de Treinadores e Alunos.</p>
 
           <h3 style="color: var(--text-primary); margin-top: 20px;">1. Papéis e Responsabilidades (LGPD)</h3>
           <ul style="margin-left: 20px; margin-bottom: 15px;">
             <li><strong>O Personal Trainer</strong> atua como <strong>Controlador</strong> dos dados.</li>
-            <li><strong>O Personal PRO</strong> atua como <strong>Operador</strong> dos dados.</li>
+            <li><strong>A Plataforma Vetor</strong> atua como <strong>Operador</strong> dos dados.</li>
           </ul>
 
           <h3 style="color: var(--text-primary); margin-top: 20px;">2. Dados Coletados e Base Legal</h3>
           <ul style="margin-left: 20px; margin-bottom: 15px;">
             <li><strong>2.1. Dados de Cadastro, Contato e Responsáveis Legais:</strong> Coletamos nome, e-mail, telefone/WhatsApp, data de nascimento e, no caso de alunos menores de idade, os dados de seus responsáveis legais. A data de nascimento é de preenchimento obrigatório.</li>
-            <li><strong>2.2. Dados Pessoais Sensíveis (Saúde):</strong> O Personal PRO processa dados de saúde. O tratamento ocorre <strong>exclusivamente mediante consentimento específico e destacado</strong> (Art. 11, I, LGPD).</li>
+            <li><strong>2.2. Dados Pessoais Sensíveis (Saúde):</strong> A Plataforma Vetor processa dados de saúde. O tratamento ocorre <strong>exclusivamente mediante consentimento específico e destacado</strong> (Art. 11, I, LGPD).</li>
             <li><strong>2.3. Menores de Idade (Art. 14 da LGPD):</strong> Quando um aluno é menor, o Treinador cadastra obrigatoriamente um Responsável Legal. O convite é enviado exclusivamente para o Responsável, que deve aceitar estes Termos em nome do menor e conceder consentimento explícito. Caso o aluno complete 18 anos durante a utilização do serviço, o consentimento do responsável permanece legalmente válido; todavia, a Plataforma notificará o aluno para ratificar seu consentimento direto.</li>
           </ul>
 
@@ -40,7 +40,7 @@ export function renderPrivacidade() {
           <p>O aluno (ou seu responsável legal) pode solicitar exclusão, acesso ou revogação acionando seu Treinador ou diretamente o Operador através do canal direto: [INSERIR E-MAIL JURÍDICO/DPO].</p>
 
           <h3 style="color: var(--text-primary); margin-top: 20px;">6. Segurança da Informação e Incidentes</h3>
-          <p>Utilizamos proteção multi-tenant via RLS. Em caso de incidentes de segurança com risco relevante aos titulares, o Personal PRO notificará a ANPD e os Treinadores afetados em até <strong>72 horas</strong>.</p>
+          <p>Utilizamos proteção multi-tenant via RLS. Em caso de incidentes de segurança com risco relevante aos titulares, a Plataforma Vetor notificará a ANPD e os Treinadores afetados em até <strong>72 horas</strong>.</p>
         </div>
 
         <div class="text-center" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border);">

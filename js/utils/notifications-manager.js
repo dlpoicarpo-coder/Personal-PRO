@@ -41,7 +41,7 @@ export function sendWorkoutReminder(student, schedule, trainerPhone = '') {
   const phone = student?.phone?.replace(/\D/g, '') || '';
   if (!phone) return null;
 
-  const msg = `Olá, ${name}! 👋\n\nLembrete do seu treino de hoje às *${time}*:\n📋 ${workout}\n\nBom treino! 💪\n\n_Personal PRO_`;
+  const msg = `Olá, ${name}! 👋\n\nLembrete do seu treino de hoje às *${time}*:\n📋 ${workout}\n\nBom treino! 💪\n\n_Vetor_`;
   const wa = `https://wa.me/${phone.startsWith('55') ? phone : '55' + phone}?text=${encodeURIComponent(msg)}`;
   return wa;
 }

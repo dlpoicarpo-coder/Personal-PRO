@@ -115,7 +115,7 @@ export function renderTutorial() {
     <div class="card mb-lg" style="background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.08));border:1px solid var(--primary)">
       <div class="flex items-center gap-md">
         <div>
-          <h3 style="margin:0">Bem-vindo ao Personal PRO</h3>
+          <h3 style="margin:0">Bem-vindo ao Vetor</h3>
           <p class="text-muted text-sm" style="margin:4px 0 0">Sistema completo de gestão para Personal Trainers. Use este guia interativo para dominar todas as funcionalidades.</p>
         </div>
       </div>

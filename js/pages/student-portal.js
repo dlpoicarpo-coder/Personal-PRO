@@ -85,7 +85,7 @@ function showPwaPopup(isIOSMode = false) {
   el.innerHTML = `
     <div class="portal-pwa-popup-inner">
       <div class="portal-pwa-text">
-        <div class="portal-pwa-title">Instalar Personal PRO</div>
+        <div class="portal-pwa-title">Instalar Vetor</div>
         <div class="portal-pwa-sub">Acesse seus treinos sem abrir o navegador!</div>
         ${isIOSMode ? iosInstructions : ''}
       </div>
@@ -621,7 +621,7 @@ function renderPortalShell(student) {
         <div class="portal-pwa-popup-inner">
           <div class="portal-pwa-icon">📲</div>
           <div class="portal-pwa-text">
-            <div class="portal-pwa-title">Instalar Personal PRO</div>
+            <div class="portal-pwa-title">Instalar Vetor</div>
             <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
           </div>
           <div class="portal-pwa-actions">

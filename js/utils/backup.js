@@ -13,7 +13,7 @@ export async function exportBackup() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PersonalPRO_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `Vetor_backup_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     notify.success('Backup exportado com sucesso!');
@@ -52,7 +52,7 @@ export async function exportCSV(storeName) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PersonalPRO_${storeName}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `Vetor_${storeName}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     notify.success('CSV exportado!');

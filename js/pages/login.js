@@ -374,7 +374,7 @@ export async function initLogin(onSuccess) {
   if (hash.includes('access_token') || hash.includes('type=signup')) {
     const user = await getCurrentUser();
     if (user) {
-      notify.success('E-mail confirmado! Bem-vindo ao Personal PRO!');
+      notify.success('E-mail confirmado! Bem-vindo ao Vetor!');
       onSuccess(user);
     }
   }

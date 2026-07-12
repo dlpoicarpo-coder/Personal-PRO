@@ -125,7 +125,7 @@ export async function renderSettings() {
     </div>
 
     <div class="card mt-lg">
-      <div class="card-header"><span class="card-title">Sobre o Personal PRO</span></div>
+      <div class="card-header"><span class="card-title">Sobre o Vetor</span></div>
       <div class="grid-2">
         <div>
           <p class="text-sm"><strong>Versão:</strong> 2.2.0</p>
