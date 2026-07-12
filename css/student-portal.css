@@ -31,25 +31,25 @@
 /* ── CSS Variables — Light ───────────────────────── */
 .portal-root[data-theme="light"] {
   color-scheme: light;
-  --portal-bg-1: #f0f4f8;
-  --portal-bg-2: #e8eff7;
-  --portal-bg-3: #f5f8fc;
-  --portal-surface: #ffffff;
-  --portal-surface-hover: rgba(255,255,255,0.9);
-  --portal-border: rgba(0,0,0,0.08);
-  --portal-text: #1e293b;
-  --portal-text-secondary: #475569;
-  --portal-text-muted: #94a3b8;
-  --portal-primary: #059669;
-  --portal-primary-glow: rgba(5,150,105,0.15);
-  --portal-accent: #0891b2;
+  --portal-bg-1: #E4EAF0;
+  --portal-bg-2: #DCE4EC;
+  --portal-bg-3: #E9EEF3;
+  --portal-surface: #F8FAFC;
+  --portal-surface-hover: #FFFFFF;
+  --portal-border: rgba(15,25,35,0.14);
+  --portal-text: #0F1519;
+  --portal-text-secondary: #46525C;
+  --portal-text-muted: #6E7C86;
+  --portal-primary: #0B8B60;
+  --portal-primary-glow: rgba(11,139,96,0.16);
+  --portal-accent: #0E7490;
   --portal-purple: #7c3aed;
-  --portal-warning: #d97706;
-  --portal-danger: #dc2626;
-  --portal-success: #059669;
-  --portal-nav-bg: rgba(240,244,248,0.97);
-  --portal-header-bg: linear-gradient(to bottom, rgba(240,244,248,0.97), transparent);
-  --portal-pin-card-bg: rgba(255,255,255,0.6);
+  --portal-warning: #B45309;
+  --portal-danger: #C02626;
+  --portal-success: #0B8B60;
+  --portal-nav-bg: rgba(228,234,240,0.97);
+  --portal-header-bg: linear-gradient(to bottom, rgba(228,234,240,0.97), transparent);
+  --portal-pin-card-bg: #F8FAFC;
 }
 
 /* ── Root & theme ─────────────────────────────── */
@@ -697,7 +697,7 @@
 .portal-ex-method { font-size: 0.65rem; color: #f59e0b; background: rgba(245,158,11,0.15); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; font-weight: 700; }
 .portal-ex-video { font-size: 0.7rem; color: #3b82f6; text-decoration: none; display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 6px; background: rgba(59,130,246,0.1); flex-shrink: 0; align-self: flex-start; }
 .portal-ex-desc { font-size: 0.75rem; color: var(--portal-text-secondary); background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 8px; margin-bottom: 12px; border-left: 2px solid var(--portal-border); }
-.portal-root[data-theme="light"] .portal-ex-desc { background: rgba(0,0,0,0.02); }
+.portal-root[data-theme="light"] .portal-ex-desc { background: rgba(15,25,35,0.05); }
 
 /* Set Rows */
 .portal-solo-set-row {
