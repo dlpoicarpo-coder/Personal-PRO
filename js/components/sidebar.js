@@ -32,6 +32,7 @@ export function renderSidebar(currentPath) {
             <span class="vetor-name">Vetor</span>
             <i class="vetor-diamond"></i>
           </div>
+          <span class="sidebar-tagline">TREINO COM DIREÇÃO</span>
         </div>
         <div style="display:flex; gap: 4px;">
           <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Minimizar menu">
