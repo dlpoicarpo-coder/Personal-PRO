@@ -4733,9 +4733,44 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
       <p style="font-size:0.8rem; color:var(--portal-text); line-height:1.6">${parecerAluno}</p>
     </div>
 
-    <div class="glass-card" style="margin-bottom:12px; border-left:3px solid var(--portal-accent)">
-      <div class="portal-card-label" style="margin-bottom:8px">Análise Técnica do Treinador</div>
-      <p style="font-size:0.8rem; color:var(--portal-text); line-height:1.6">${parecerTecnico}</p>
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">Carga de Treino Semanal</div>
+      <div style="height:220px;position:relative"><canvas id="portalLoadChart"></canvas></div>
+    </div>
+    
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">PSE por Sessão</div>
+      <div style="height:220px;position:relative"><canvas id="portalPseChart"></canvas></div>
+    </div>
+    
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">Evolução do Bem-estar</div>
+      <div style="height:250px;position:relative"><canvas id="portalWellnessChart"></canvas></div>
+    </div>
+    
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">Radar de Prontidão</div>
+      <div style="height:250px;position:relative"><canvas id="portalRadarChart"></canvas></div>
+    </div>
+    
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">Densidade (kg/min)</div>
+      <div style="height:220px;position:relative"><canvas id="portalDensityChart"></canvas></div>
+    </div>
+    
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">Frequência Semanal</div>
+      <div style="height:220px;position:relative"><canvas id="portalFreqChart"></canvas></div>
+    </div>
+    
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">Evolução de Medidas Corporais</div>
+      <div style="height:220px;position:relative"><canvas id="portalMeasuresChart"></canvas></div>
+    </div>
+    
+    <div class="glass-card" style="margin-bottom:12px">
+      <div class="portal-card-label" style="margin-bottom:8px">Gasto Calórico Estimado</div>
+      <div style="height:220px;position:relative"><canvas id="portalKcalChart"></canvas></div>
     </div>
 
     ${caloricHtml}
@@ -4840,6 +4875,10 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
    'portalExerciseAnalysisChart','portalMeasuresChart','portalLoadProgressChart'].forEach(destroyPortalChart);
 
   const drawAll = () => {
+    const showEmptyState = (ctx, msg) => {
+      if (ctx && ctx.parentElement) ctx.parentElement.innerHTML = '<p class="text-muted text-sm text-center" style="padding:40px;color:var(--portal-text-muted);font-size:0.8rem">' + msg + '</p>';
+    };
+
     // Wellness
     const wCtx = document.getElementById('portalWellnessChart');
     if (wCtx && bf.length>=2) {
@@ -4851,6 +4890,8 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         {label:'Motivação', data:bf.map(b=>b.motivation||null), borderColor:'#3b82f6', tension:0.3, fill:false, pointRadius:3},
         {label:'Alimentação', data:bf.map(b=>b.food||null), borderColor:'#f97316', tension:0.3, fill:false, pointRadius:3},
       ]}, options:{...co, scales:{...co.scales, y:{...co.scales.y,min:0,max:10}}} });
+    } else if (wCtx) {
+      showEmptyState(wCtx, 'Sem dados de bem-estar suficientes. Registre seus check-ins.');
     }
 
     // PSE per session
@@ -4859,6 +4900,8 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       createPortalChart('portalPseChart', pseCtx, { type:'line', data:{ labels:completed.map(s=>fmtDate(s.date)), datasets:[
         {label:'PSE', data:completed.map(s=>s.postBiofeedback?.pse||null), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.15)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#ef4444'}
       ]}, options:{...co, plugins:{legend:{display:false}}, scales:{...co.scales, y:{...co.scales.y,min:0,max:10}}} });
+    } else if (pseCtx) {
+      showEmptyState(pseCtx, 'Sem dados de PSE. Registre o check-in após os treinos.');
     }
 
     // Volume
@@ -4889,6 +4932,8 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       createPortalChart('portalLoadChart', loadCtx, { type:'bar', data:{ labels:wKeys.map(k=>fmtDate(k)), datasets:[
         {label:'Carga', data:wKeys.map(k=>wc[k]||0), backgroundColor:'rgba(16,185,129,0.5)', borderColor:'#10b981', borderWidth:1, borderRadius:4}
       ]}, options:{...co, plugins:{legend:{display:false}}} });
+    } else if (loadCtx) {
+      showEmptyState(loadCtx, 'Sem dados de sessões para calcular a carga.');
     }
 
     // Kcal
@@ -4900,6 +4945,8 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         {label:'Kcal', data:recent.map(s=>s.durationMin?Math.round(Calc.caloriasAtividade(peso,s.durationMin,'musculacao')):null),
           backgroundColor:'rgba(249,115,22,0.6)', borderColor:'#f97316', borderWidth:1, borderRadius:4}
       ]}, options:{...co, plugins:{legend:{display:false}}} });
+    } else if (kcalCtx) {
+      showEmptyState(kcalCtx, 'Sem dados de sessões para calcular gasto calórico.');
     }
 
     // Density (kg/min)
@@ -4912,6 +4959,8 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
           return s.durationMin>0?parseFloat((vol/s.durationMin).toFixed(1)):null;
         }), borderColor:'#06b6d4', backgroundColor:'rgba(6,182,212,0.1)', fill:true, tension:0.3, pointRadius:3}
       ]}, options:{...co, plugins:{legend:{display:false}}} });
+    } else if (denCtx) {
+      showEmptyState(denCtx, 'Sem dados de sessões para calcular densidade.');
     }
 
     // Weekly frequency
@@ -4930,6 +4979,8 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
       createPortalChart('portalFreqChart', freqCtx, { type:'bar', data:{ labels:fKeys.map(k=>fmtDate(k)), datasets:[
         {label:'Sessoes', data:fKeys.map(k=>fc[k]), backgroundColor:'rgba(6,182,212,0.5)', borderColor:'#06b6d4', borderWidth:1, borderRadius:4}
       ]}, options:{...co, plugins:{legend:{display:false}}, scales:{...co.scales, y:{...co.scales.y,min:0,ticks:{stepSize:1,color:'#94a3b8',font:{size:9}}}}} });
+    } else if (freqCtx) {
+      showEmptyState(freqCtx, 'Sem dados de frequência semanal.');
     }
 
     // Radar de Wellness
@@ -4947,7 +4998,66 @@ function initRelatorios(student, sessions, assessments, biofeedbacks, macrocycle
         scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#64748b',font:{size:9},backdropColor:'transparent'},grid:{color:'rgba(255,255,255,0.08)'},angleLines:{color:'rgba(255,255,255,0.08)'},pointLabels:{color:'#94a3b8',font:{size:10}}}},
         plugins:{legend:{display:false}}
       }});
+    } else if (radCtx) {
+      showEmptyState(radCtx, 'Sem dados de bem-estar suficientes para o radar.');
     }
+
+    // Evolução de Medidas Corporais
+    const mCtx = document.getElementById('portalMeasuresChart');
+    const compAssessments = assessments.filter(a => a.type === 'composicao');
+    if (mCtx && compAssessments.length >= 1) {
+      const sorted = [...compAssessments].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const ds = [];
+      if (sorted.some(a => a.peso)) {
+        ds.push({
+          label: 'Peso (kg)',
+          data: sorted.map(a => a.peso || null),
+          borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)',
+          fill: false, tension: 0.3, yAxisID: 'y', pointRadius: 5, borderWidth: 2
+        });
+      }
+      
+      let pctMin = 0, pctMax = 100;
+      if (sorted.some(a => a.percentualGordura)) {
+        const minFat = Math.min(...sorted.filter(a=>a.percentualGordura).map(a=>a.percentualGordura));
+        const maxFat = Math.max(...sorted.filter(a=>a.percentualGordura).map(a=>a.percentualGordura));
+        pctMin = Math.max(0, minFat - 5);
+        pctMax = Math.min(100, maxFat + 5);
+        ds.push({
+          label: '% Gordura',
+          data: sorted.map(a => a.percentualGordura || null),
+          borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)',
+          fill: false, tension: 0.3, yAxisID: 'y1',
+          borderDash: [5, 3], pointRadius: 5, borderWidth: 2
+        });
+        ds.push({
+          label: '% Massa Magra',
+          data: sorted.map(a => a.percentualGordura ? parseFloat((100 - a.percentualGordura).toFixed(1)) : null),
+          borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)',
+          fill: false, tension: 0.3, yAxisID: 'y1',
+          borderDash: [2, 2], pointRadius: 5, borderWidth: 2
+        });
+      }
+      
+      if (ds.length) {
+        createPortalChart('portalMeasuresChart', mCtx, {
+          type: 'line',
+          data: { labels: sorted.map(a => fmtDate(a.date)), datasets: ds },
+          options: {
+            ...co,
+            scales: {
+              x: { ...co.scales.x },
+              y: { ...co.scales.y, type: 'linear', display: true, position: 'left', title: {display: true, text: 'Peso (kg)', color: '#94a3b8', font: {size: 10}} },
+              y1: { ...co.scales.y, type: 'linear', display: true, position: 'right', min: pctMin, max: pctMax, grid: {drawOnChartArea: false}, title: {display: true, text: 'Percentual (%)', color: '#94a3b8', font: {size: 10}} }
+            },
+            plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 }, usePointStyle: true } } }
+          }
+        });
+      }
+    } else if (mCtx) {
+      showEmptyState(mCtx, 'Sem avaliações físicas para exibir medidas.');
+    }
+
 
     // Load Progression Chart (top 3 exercises)
     const lpCtx = document.getElementById('portalLoadProgressChart');
