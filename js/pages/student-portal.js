@@ -597,13 +597,13 @@ function renderPortalShell(student) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           <span>Início</span>
         </button>
+        <button class="portal-nav-btn" data-section="progresso">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Progresso</span>
+        </button>
         <button class="portal-nav-btn" data-section="treinar">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
           <span>Treinar</span>
-        </button>
-        <button class="portal-nav-btn" data-section="sessoes">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span>Sessões</span>
         </button>
         <button class="portal-nav-btn" data-section="bio">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -612,10 +612,6 @@ function renderPortalShell(student) {
         <button class="portal-nav-btn" data-section="avaliacoes">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           <span>Avaliações</span>
-        </button>
-        <button class="portal-nav-btn" data-section="relatorios">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span>Relatórios</span>
         </button>
       </nav>
 
@@ -926,16 +922,27 @@ async function loadSection(section) {
   switch (section) {
     case 'home': content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks); break;
     case 'treinar': content.innerHTML = renderTreinar(workouts, schedules, sessions); initTreinar(workouts, schedules, student, sessions); break;
-    case 'sessoes': content.innerHTML = renderSessoes(sessions, schedules); break;
+    case 'progresso': 
+      content.innerHTML = await renderProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
+      initProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
+      break;
+    case 'sessoes': 
+      portalState.activeProgressoTab = 'sessoes';
+      content.innerHTML = await renderProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
+      initProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
+      break;
     case 'bio': content.innerHTML = renderBio(biofeedbacks, sid, tid); initBio(); break;
     case 'avaliacoes': content.innerHTML = renderAvaliacoes(assessments); break;
-    case 'relatorios': content.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); initRelatorios(student, sessions, assessments, biofeedbacks, macrocycles); break;
+    case 'relatorios': 
+      portalState.activeProgressoTab = 'relatorios';
+      content.innerHTML = await renderProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
+      initProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
+      break;
     case 'tutorial': content.innerHTML = renderStudentTutorial(); initStudentTutorial(); break;
     default: content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks);
   }
 
   // Bind events after render
-  if (section === 'sessoes') initSessoesSection(sessions);
   if (section === 'home') initHomeSection(student, tid, sessions, biofeedbacks);
 
   // Auto-detect missed workouts (background, non-blocking)
@@ -3863,6 +3870,79 @@ async function showExerciseModal(ex) {
 
     modal.querySelector('#portalExMediaCover')?.addEventListener('click', playVideo);
     modal.querySelector('#portalExPlayVideoBtn')?.addEventListener('click', playVideo);
+  }
+}
+
+async function renderProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles) {
+  const activeTab = portalState.activeProgressoTab || 'sessoes';
+  let tabContent = '';
+  if (activeTab === 'sessoes') {
+    tabContent = renderSessoes(sessions, schedules);
+  } else {
+    tabContent = await renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles);
+  }
+
+  return `
+    <div class="portal-section pb-24 fade-in" style="padding-top: 10px;">
+      <div class="portal-header" style="margin-bottom: 12px; padding: 0 4px;">
+        <div class="portal-header-info">
+          <h2 style="margin:0; font-size:1.5rem; font-weight:700;">Meu Progresso</h2>
+          <p class="portal-text-muted" style="margin-top:4px; font-size:0.9rem;">Acompanhe seu desempenho e histórico</p>
+        </div>
+      </div>
+      
+      <!-- Alternador de Abas Internas -->
+      <div class="portal-progresso-tabs" style="display:flex;background:var(--portal-surface);border-radius:12px;padding:4px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.05)">
+        <button id="progTabSessoes" class="portal-progresso-tab ${activeTab === 'sessoes' ? 'active' : ''}" style="flex:1;padding:10px;border-radius:8px;border:none;background:${activeTab === 'sessoes' ? 'var(--portal-primary)' : 'transparent'};color:${activeTab === 'sessoes' ? '#fff' : 'var(--portal-text-muted)'};font-weight:600;font-size:0.9rem;transition:all 0.2s;cursor:pointer;">Sessões</button>
+        <button id="progTabRelatorios" class="portal-progresso-tab ${activeTab === 'relatorios' ? 'active' : ''}" style="flex:1;padding:10px;border-radius:8px;border:none;background:${activeTab === 'relatorios' ? 'var(--portal-primary)' : 'transparent'};color:${activeTab === 'relatorios' ? '#fff' : 'var(--portal-text-muted)'};font-weight:600;font-size:0.9rem;transition:all 0.2s;cursor:pointer;">Relatórios</button>
+      </div>
+
+      <div id="progressoContentContainer">
+        ${tabContent}
+      </div>
+    </div>
+  `;
+}
+
+function initProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles) {
+  const activeTab = portalState.activeProgressoTab || 'sessoes';
+  
+  if (activeTab === 'sessoes') {
+    initSessoesSection(sessions);
+  } else {
+    initRelatorios(student, sessions, assessments, biofeedbacks, macrocycles);
+  }
+
+  const btnSessoes = document.getElementById('progTabSessoes');
+  const btnRelatorios = document.getElementById('progTabRelatorios');
+  const container = document.getElementById('progressoContentContainer');
+
+  if (btnSessoes && btnRelatorios && container) {
+    btnSessoes.addEventListener('click', async () => {
+      portalState.activeProgressoTab = 'sessoes';
+      btnSessoes.style.background = 'var(--portal-primary)';
+      btnSessoes.style.color = '#fff';
+      btnSessoes.classList.add('active');
+      btnRelatorios.style.background = 'transparent';
+      btnRelatorios.style.color = 'var(--portal-text-muted)';
+      btnRelatorios.classList.remove('active');
+      
+      container.innerHTML = renderSessoes(sessions, schedules);
+      initSessoesSection(sessions);
+    });
+
+    btnRelatorios.addEventListener('click', async () => {
+      portalState.activeProgressoTab = 'relatorios';
+      btnRelatorios.style.background = 'var(--portal-primary)';
+      btnRelatorios.style.color = '#fff';
+      btnRelatorios.classList.add('active');
+      btnSessoes.style.background = 'transparent';
+      btnSessoes.style.color = 'var(--portal-text-muted)';
+      btnSessoes.classList.remove('active');
+      
+      container.innerHTML = await renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles);
+      initRelatorios(student, sessions, assessments, biofeedbacks, macrocycles);
+    });
   }
 }
 
