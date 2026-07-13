@@ -80,29 +80,49 @@
 
     // Service Worker
     if ('serviceWorker' in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
           .then(reg => {
-            console.log('SW registered:', reg.scope);
             reg.addEventListener('updatefound', () => {
-              const newWorker = reg.installing;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-                  window.location.reload();
+              const nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Há versão nova esperando. NÃO recarregar sozinho.
+                  mostrarBannerAtualizacao(reg);
                 }
               });
             });
           })
           .catch(err => console.log('SW failed:', err));
       });
+    }
 
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      });
+    function mostrarBannerAtualizacao(reg) {
+      if (document.getElementById('sw-update-banner')) return;
+      const b = document.createElement('div');
+      b.id = 'sw-update-banner';
+      b.style.cssText = 'position:fixed;bottom:16px;left:50%;' +
+        'transform:translateX(-50%);z-index:9999;background:#10b981;' +
+        'color:#fff;padding:10px 16px;border-radius:8px;font:14px Inter,' +
+        'sans-serif;display:flex;gap:12px;align-items:center;' +
+        'box-shadow:0 4px 16px rgba(0,0,0,.3)';
+      b.innerHTML = '<span>Nova versão disponível</span>' +
+        '<button id="sw-update-btn" style="background:#fff;color:#0B8B60;' +
+        'border:0;padding:6px 12px;border-radius:6px;font-weight:600;' +
+        'cursor:pointer">Atualizar</button>';
+      document.body.appendChild(b);
+      document.getElementById('sw-update-btn').onclick = () => {
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        b.remove();
+      };
     }
   </script>
 </body>
