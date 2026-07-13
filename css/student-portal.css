@@ -946,3 +946,11 @@ select.portal-solo-input {
 .portal-remember-me:hover input[type="checkbox"] {
   border-color: var(--portal-primary);
 }
+
+.portal-nav { overflow: visible; }
+.portal-nav-btn { font-size: 0.65rem; }
+.portal-nav-fab { position: relative; min-width: 48px; min-height: 48px; }
+.portal-fab-diamond { width: 42px; height: 42px; background: var(--portal-primary); transform: rotate(45deg); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-top: -18px; box-shadow: 0 4px 14px var(--portal-primary-glow); transition: transform .15s, box-shadow .15s; }
+.portal-fab-icon { transform: rotate(-45deg); color: #fff; margin-left: 1px; }
+.portal-nav-fab:active .portal-fab-diamond { transform: rotate(45deg) scale(.94); }
+.portal-nav-fab.active .portal-fab-diamond { box-shadow: 0 4px 20px var(--portal-primary-glow), 0 0 0 3px var(--portal-primary-glow); }

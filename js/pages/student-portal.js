@@ -601,8 +601,10 @@ function renderPortalShell(student) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span>Progresso</span>
         </button>
-        <button class="portal-nav-btn" data-section="treinar">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        <button class="portal-nav-btn portal-nav-fab" data-section="treinar" aria-label="Iniciar treino">
+          <span class="portal-fab-diamond">
+            <svg class="portal-fab-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>
+          </span>
           <span>Treinar</span>
         </button>
         <button class="portal-nav-btn" data-section="bio">
