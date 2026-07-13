@@ -1,1 +1,8 @@
-﻿js/utils/config.js
+js/utils/config.js
+
+# Cópias antigas e config de editor — nunca versionar
+/Personal Pro/
+/temp_repo/
+/v2_full/
+/_ARQUIVO_ANTIGO/
+*.code-profile
