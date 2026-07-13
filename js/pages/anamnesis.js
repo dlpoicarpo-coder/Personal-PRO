@@ -282,6 +282,10 @@ const ANAMNESE_CSS = `
   .ana-check{width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.15);border:2px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
   .ana-success h3{color:#f1f5f9;margin:0 0 8px}
   .ana-success p{color:#64748b;margin:0;font-size:0.9rem}
+  .ana-progress { margin-bottom: 24px; }
+  .ana-progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .ana-progress-fill { height: 100%; background: #10b981; transition: width 0.3s ease; }
+  .ana-progress-text { font-size: 0.78rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
 
   /* LIGHT MODE */
   [data-theme="light"] .ana-page{background:#f1f5f9}
@@ -302,6 +306,7 @@ const ANAMNESE_CSS = `
   [data-theme="light"] .ana-textarea::placeholder{color:#94a3b8}
   [data-theme="light"] .ana-success h3{color:#0f172a}
   [data-theme="light"] .ana-success p{color:#64748b}
+  [data-theme="light"] .ana-progress-bar { background: rgba(0,0,0,0.08); }
 `;
 
 export async function renderAnamneseForm() {
@@ -316,19 +321,32 @@ export async function renderAnamneseForm() {
           </div>
         </div>
         <div class="ana-body">
+          <div class="ana-progress">
+            <div class="ana-progress-bar">
+              <div class="ana-progress-fill" id="anaProgressFill" style="width:0%"></div>
+            </div>
+            <div class="ana-progress-text" id="anaProgressText">Etapa 1 de X</div>
+          </div>
           <div class="ana-intro">
             Preencha com atenção. Suas respostas ajudarão o treinador a criar o programa ideal para você.
           </div>
           <form id="anamneseForm">
-            ${ANAMNESIS_QUESTIONS.map(sec => `
-              <div class="ana-section">${sec.section}</div>
-              ${sec.fields.map(f => {
-                if (f.type === 'select') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><select class="ana-select" name="${f.name}" ${f.required ? 'required' : ''}><option value="">Selecione...</option>${f.options.map(o => `<option>${o}</option>`).join('')}</select></div>`;
-                if (f.type === 'textarea') return `<div class="ana-group"><label class="ana-label">${f.label}</label><textarea class="ana-textarea" name="${f.name}" rows="2" placeholder="Descreva..."></textarea></div>`;
-                return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><input class="ana-input" name="${f.name}" type="${f.type}" ${f.required ? 'required' : ''} placeholder="" /></div>`;
-              }).join('')}
+            ${ANAMNESIS_QUESTIONS.map((sec, index) => `
+              <div class="ana-step" data-step="${index}" style="display: none;">
+                <div class="ana-section">${sec.section}</div>
+                ${sec.fields.map(f => {
+                  if (f.type === 'select') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><select class="ana-select" name="${f.name}" ${f.required ? 'required' : ''}><option value="">Selecione...</option>${f.options.map(o => `<option>${o}</option>`).join('')}</select></div>`;
+                  if (f.type === 'textarea') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><textarea class="ana-textarea" name="${f.name}" rows="2" placeholder="Descreva..." ${f.required ? 'required' : ''}></textarea></div>`;
+                  if (f.type === 'checkbox') return `<div class="ana-group" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px"><input type="checkbox" class="ana-checkbox" id="${f.name}" name="${f.name}" ${f.required ? 'required' : ''} style="margin-top:2px;width:18px;height:18px;accent-color:#10b981;cursor:pointer"><label for="${f.name}" style="font-size:0.85rem;color:#e2e8f0;line-height:1.4;cursor:pointer">${f.label}${f.required ? ' *' : ''}</label></div>`;
+                  return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><input class="ana-input" name="${f.name}" type="${f.type}" ${f.required ? 'required' : ''} placeholder="" /></div>`;
+                }).join('')}
+              </div>
             `).join('')}
-            <button type="submit" id="anamneseSubmit" class="ana-submit">Enviar Anamnese</button>
+            <div class="ana-footer" style="display:flex;gap:12px;margin-top:24px">
+              <button type="button" id="anaPrev" class="ana-submit" style="background:rgba(255,255,255,0.1);color:#e2e8f0;margin-top:0;display:none">Voltar</button>
+              <button type="button" id="anaNext" class="ana-submit" style="margin-top:0">Próximo</button>
+              <button type="submit" id="anamneseSubmit" class="ana-submit" style="margin-top:0;display:none">Enviar Anamnese</button>
+            </div>
           </form>
           <div id="anamneseSuccess" style="display:none">
             <div class="ana-success">
@@ -343,70 +361,79 @@ export async function renderAnamneseForm() {
 }
 
 export function initAnamneseForm() {
-  const SAVE_KEY = 'ana_draft';
   const form = document.getElementById('anamneseForm');
   if (!form) return;
 
-  // ── 1. Restore saved draft ──────────────────────────────
-  try {
-    const saved = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
-    if (Object.keys(saved).length > 0) {
-      Object.entries(saved).forEach(([name, value]) => {
-        const el = form.elements[name];
-        if (!el) return;
-        if (el.tagName === 'SELECT' || el.type === 'text' || el.type === 'email' ||
-            el.type === 'tel' || el.type === 'date' || el.tagName === 'TEXTAREA') {
-          el.value = value;
-        }
-      });
-      // Show "draft restored" banner
-      const banner = document.createElement('div');
-      banner.id = 'anaDraftBanner';
-      banner.style.cssText = 'background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:0.78rem;color:#10b981;display:flex;align-items:center;gap:8px;';
-      banner.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Rascunho restaurado — continue de onde parou!`;
-      form.insertBefore(banner, form.firstChild);
+  const steps = form.querySelectorAll('.ana-step');
+  const prevBtn = document.getElementById('anaPrev');
+  const nextBtn = document.getElementById('anaNext');
+  const submitBtn = document.getElementById('anamneseSubmit');
+  const progressFill = document.getElementById('anaProgressFill');
+  const progressText = document.getElementById('anaProgressText');
+  
+  let currentStep = 0;
+  let formMemory = {}; // A memória entre etapas deve ser uma variável JS
+
+  const updateUI = () => {
+    steps.forEach((el, idx) => {
+      el.style.display = idx === currentStep ? 'block' : 'none';
+      if (idx === currentStep) el.classList.add('active');
+      else el.classList.remove('active');
+    });
+
+    const total = steps.length;
+    progressFill.style.width = `${((currentStep + 1) / total) * 100}%`;
+    progressText.textContent = `Etapa ${currentStep + 1} de ${total}`;
+
+    if (currentStep === 0) {
+      prevBtn.style.display = 'none';
+    } else {
+      prevBtn.style.display = 'block';
     }
-  } catch(_) {}
 
-  // ── 2. Autosave on every field change ──────────────────
-  form.addEventListener('input', () => {
-    try {
-      const fd = new FormData(form);
-      const snapshot = Object.fromEntries(fd);
-      sessionStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
-    } catch(_) {}
-  });
-  form.addEventListener('change', () => {
-    try {
-      const fd = new FormData(form);
-      const snapshot = Object.fromEntries(fd);
-      sessionStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
-    } catch(_) {}
+    if (currentStep === total - 1) {
+      nextBtn.style.display = 'none';
+      submitBtn.style.display = 'block';
+    } else {
+      nextBtn.style.display = 'block';
+      submitBtn.style.display = 'none';
+    }
+  };
+
+  const saveToMemory = () => {
+    const fd = new FormData(form);
+    formMemory = Object.fromEntries(fd);
+  };
+
+  prevBtn.addEventListener('click', () => {
+    if (currentStep > 0) {
+      saveToMemory();
+      currentStep--;
+      updateUI();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   });
 
-  // ── 3. Block hash navigation while form has data ───────
-  const guardHashChange = (e) => {
-    try {
-      const draft = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
-      const hasData = Object.values(draft).some(v => v && v.trim?.());
-      if (hasData) {
-        // Restore hash to keep user on form
-        e.preventDefault?.();
-        history.pushState(null, '', window.location.href);
+  nextBtn.addEventListener('click', () => {
+    const activeStep = steps[currentStep];
+    const inputs = activeStep.querySelectorAll('input, select, textarea');
+    let isValid = true;
+    for (const input of inputs) {
+      if (!input.checkValidity()) {
+        input.reportValidity();
+        isValid = false;
+        break;
       }
-    } catch(_) {}
-  };
-  window.addEventListener('hashchange', guardHashChange);
+    }
+    if (isValid && currentStep < steps.length - 1) {
+      saveToMemory();
+      currentStep++;
+      updateUI();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
 
-  // Block accidental page close/refresh
-  const guardUnload = (e) => {
-    try {
-      const draft = JSON.parse(sessionStorage.getItem(SAVE_KEY) || '{}');
-      const hasData = Object.values(draft).some(v => v && v.trim?.());
-      if (hasData) { e.preventDefault(); e.returnValue = ''; }
-    } catch(_) {}
-  };
-  window.addEventListener('beforeunload', guardUnload);
+  updateUI();
 
   // ── 4. Submit ───────────────────────────────────────────
   form.addEventListener('submit', async (e) => {
@@ -459,21 +486,16 @@ export function initAnamneseForm() {
           });
         }
         
-        if (!res.ok) {
-          const finalErr = await res.text();
-          console.error('Anamnese Supabase error:', finalErr);
-          // Fallback: save locally se falhar completamente
-          const { default: dbM } = await import('../db.js');
-          await dbM.add('anamnesis', data);
-        }
+      if (!res.ok) {
+        const finalErr = await res.text();
+        console.error('Anamnese Supabase error:', finalErr);
+        // Fallback: save locally se falhar completamente
+        const { default: dbM } = await import('../db.js');
+        await dbM.add('anamnesis', data);
       }
+    }
 
-      // Clear draft and remove guards on success
-      sessionStorage.removeItem(SAVE_KEY);
-      window.removeEventListener('hashchange', guardHashChange);
-      window.removeEventListener('beforeunload', guardUnload);
-
-      form.style.display = 'none';
+    form.style.display = 'none';
       document.getElementById('anamneseSuccess').style.display = '';
     } catch (err) {
       console.error('Anamnese submit error:', err);
