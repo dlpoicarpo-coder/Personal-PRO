@@ -10,11 +10,27 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 let _client = null;
 export function getSupabase() {
   if (!_client && window.supabase && typeof window.supabase.createClient === 'function') {
+    const customStorage = {
+      getItem: (key) => window.localStorage.getItem(key) || window.sessionStorage.getItem(key),
+      setItem: (key, value) => {
+        if (window.sessionStorage.getItem('pp_temp_session') === 'true') {
+          window.sessionStorage.setItem(key, value);
+        } else {
+          window.localStorage.setItem(key, value);
+        }
+      },
+      removeItem: (key) => {
+        window.localStorage.removeItem(key);
+        window.sessionStorage.removeItem(key);
+      }
+    };
+
     _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true, // handles email confirmation redirect
+        storage: customStorage
       }
     });
   }
