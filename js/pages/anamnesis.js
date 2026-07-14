@@ -70,6 +70,8 @@ export const ANAMNESIS_QUESTIONS = [
     { name: 'goalDetail',   label: 'Descreva seu objetivo com detalhes',       type: 'textarea' },
     { name: 'constancyObstacles',label:'O que pode atrapalhar sua constância?',type: 'textarea' },
     { name: 'additionalNotes',   label: 'Algo mais que gostaria de informar?', type: 'textarea' },
+    { name: 'consent_veracidade', label: 'Declaro que as informações prestadas são verdadeiras e completas.', type: 'checkbox', required: true },
+    { name: 'consent_dados_saude', label: 'Autorizo o uso destas informações, incluindo meus dados de saúde, exclusivamente para a prescrição do meu treinamento personalizado. (Art. 11, Lei 13.709/2018 — LGPD)', type: 'checkbox', required: true }
   ]},
 ];
 
@@ -208,6 +210,7 @@ export function initAnamnesis(navigateFn) {
           <div>
             <h3 style="margin:0">${s.fullName || '—'}</h3>
             <p class="text-muted text-xs">${s.submittedAt ? 'Recebido em ' + new Date(s.submittedAt).toLocaleDateString('pt-BR') : ''}</p>
+            ${s.consent_timestamp ? `<p class="text-xs" style="color:var(--success);margin-top:4px">Consentimento LGPD: ${new Date(s.consent_timestamp).toLocaleString('pt-BR')}</p>` : ''}
           </div>
         </div>
         ${ANAMNESIS_QUESTIONS.map(sec => `
@@ -360,7 +363,7 @@ export async function renderAnamneseForm() {
                 ${sec.fields.map(f => {
                   if (f.type === 'select') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><select class="ana-select" name="${f.name}" ${f.required ? 'required' : ''}><option value="">Selecione...</option>${f.options.map(o => `<option>${o}</option>`).join('')}</select></div>`;
                   if (f.type === 'textarea') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><textarea class="ana-textarea" name="${f.name}" rows="2" placeholder="Descreva..." ${f.required ? 'required' : ''}></textarea></div>`;
-                  if (f.type === 'checkbox') return `<div class="ana-group" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px"><input type="checkbox" class="ana-checkbox" id="${f.name}" name="${f.name}" ${f.required ? 'required' : ''} style="margin-top:2px;width:18px;height:18px;accent-color:#10b981;cursor:pointer"><label for="${f.name}" style="font-size:0.85rem;color:#e2e8f0;line-height:1.4;cursor:pointer">${f.label}${f.required ? ' *' : ''}</label></div>`;
+                  if (f.type === 'checkbox') return `<div class="ana-group" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px"><input type="checkbox" class="ana-checkbox" id="${f.name}" name="${f.name}" ${f.required ? 'required' : ''} style="margin-top:2px;width:22px;height:22px;accent-color:#10b981;cursor:pointer;flex-shrink:0"><label for="${f.name}" style="font-size:0.9rem;color:#fff;line-height:1.5;cursor:pointer">${f.label}${f.required ? ' *' : ''}</label></div>`;
                   return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><input class="ana-input" name="${f.name}" type="${f.type}" ${f.required ? 'required' : ''} placeholder="" /></div>`;
                 }).join('')}
               </div>
@@ -417,11 +420,29 @@ export function initAnamneseForm() {
     if (currentStep === total - 1) {
       nextBtn.style.display = 'none';
       submitBtn.style.display = 'block';
+      checkConsents();
     } else {
       nextBtn.style.display = 'block';
       submitBtn.style.display = 'none';
     }
   };
+
+  const checkConsents = () => {
+    const cv = form.querySelector('[name="consent_veracidade"]');
+    const cds = form.querySelector('[name="consent_dados_saude"]');
+    if (cv && cds) {
+      const isValid = cv.checked && cds.checked;
+      submitBtn.disabled = !isValid;
+      submitBtn.style.opacity = isValid ? '1' : '0.5';
+      submitBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+    }
+  };
+
+  form.addEventListener('change', (e) => {
+    if (e.target.name === 'consent_veracidade' || e.target.name === 'consent_dados_saude') {
+      checkConsents();
+    }
+  });
 
   const saveToMemory = () => {
     const fd = new FormData(form);
@@ -468,6 +489,7 @@ export function initAnamneseForm() {
       const fd   = new FormData(form);
       const data = Object.fromEntries(fd);
       data.submittedAt = new Date().toISOString();
+      data.consent_timestamp = new Date().toISOString();
       data.id = 'ana_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 
       // Extract trainerId from URL hash (?trainer=...)
