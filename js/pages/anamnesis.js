@@ -24,6 +24,11 @@ export const ANAMNESIS_QUESTIONS = [
     { name: 'height',       label: 'Altura (cm)',                             type: 'number',  required: true },
     { name: 'emergencyContactName', label: 'Contato de emergência — nome',    type: 'text' },
     { name: 'emergencyContactPhone',label: 'Contato de emergência — telefone',type: 'text' },
+    { name: 'guardian_name', label: 'Nome completo do responsável legal', type: 'text', required: false },
+    { name: 'guardian_email', label: 'E-mail do responsável legal', type: 'email', required: false },
+    { name: 'guardian_phone', label: 'Telefone do responsável legal', type: 'tel', required: false },
+    { name: 'guardian_relationship', label: 'Grau de parentesco', type: 'select', options: ['Mãe','Pai','Tutor legal','Outro'], required: false },
+    { name: 'consent_responsavel_legal', label: 'Declaro ser o responsável legal e autorizo o tratamento dos dados de saúde do menor para fins de prescrição de treinamento.', type: 'checkbox', required: false }
   ]},
   { section: 'PAR-Q+', description: 'As perguntas abaixo seguem o PAR-Q+, questionário padrão internacional de prontidão para atividade física. Responda com sinceridade — elas existem para a sua segurança.', fields: [
     { name: 'parq_heart',       label: 'Algum médico já disse que você possui problema cardíaco e que só deveria fazer atividade física supervisionado por profissional de saúde?', type: 'select', options: ['Não','Sim'], required: true },
@@ -443,6 +448,48 @@ export function initAnamneseForm() {
       checkConsents();
     }
   });
+
+  // Minor Logic
+  const guardianNames = ['guardian_name', 'guardian_email', 'guardian_phone', 'guardian_relationship', 'consent_responsavel_legal'];
+  const guardianFields = guardianNames.map(n => form.querySelector(`[name="${n}"]`)?.closest('.ana-group')).filter(Boolean);
+  guardianFields.forEach(el => { if (el) el.style.display = 'none'; });
+  
+  if (guardianFields[0]) {
+    const warningHtml = `<div id="guardianWarning" style="display:none;background:rgba(234,179,8,0.1);border-left:3px solid var(--warning);padding:12px;margin-bottom:16px;font-size:0.85rem;color:var(--text-primary)">
+      <strong style="color:var(--warning)">Atenção:</strong> Como você é menor de 18 anos, é necessário o consentimento do seu responsável legal (Art. 14, Lei 13.709/2018).
+    </div>`;
+    guardianFields[0].insertAdjacentHTML('beforebegin', warningHtml);
+  }
+  
+  const warningEl = document.getElementById('guardianWarning');
+  const birthDateInput = form.querySelector('[name="birthDate"]');
+  
+  if (birthDateInput) {
+    birthDateInput.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (!val) return;
+      const age = Calc.calcularIdade(val);
+      const isMinor = age < 18;
+      
+      if (warningEl) warningEl.style.display = isMinor ? 'block' : 'none';
+      
+      guardianFields.forEach(el => {
+        if (!el) return;
+        el.style.display = isMinor ? 'flex' : 'none';
+        if (el.classList.contains('ana-group') && !el.querySelector('input[type="checkbox"]')) {
+           el.style.display = isMinor ? 'block' : 'none';
+        }
+        const input = el.querySelector('input, select, textarea');
+        if (input) {
+          input.required = isMinor;
+          if (!isMinor) {
+             if(input.type === 'checkbox') input.checked = false;
+             else input.value = '';
+          }
+        }
+      });
+    });
+  }
 
   const saveToMemory = () => {
     const fd = new FormData(form);
