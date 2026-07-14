@@ -212,9 +212,10 @@ export function initAnamnesis(navigateFn) {
       
       let riskCount = 0;
       for (const key in s) {
-        if (key.startsWith('parq_')) {
-          if (key === 'parq_pregnancy' && s[key] !== 'Não se aplica' && s[key] !== '') riskCount++;
-          else if (s[key] === 'Sim') riskCount++;
+        if (key.startsWith('parq_') && s[key]) {
+          const v = s[key].toString().trim().toLowerCase();
+          if (key === 'parq_pregnancy' && v !== 'não se aplica' && v !== 'nao se aplica' && v !== '') riskCount++;
+          else if (v === 'sim') riskCount++;
         }
       }
 
@@ -228,17 +229,36 @@ export function initAnamnesis(navigateFn) {
           </div>
         </div>
         ${riskCount > 0 ? `<div style="background:rgba(239,68,68,0.1);border-left:3px solid var(--danger);color:var(--text-primary);padding:10px;margin-bottom:16px;font-size:0.85rem"><strong>⚠️ ${riskCount} resposta(s) de risco no PAR-Q+</strong></div>` : ''}
+        
+        ${s.guardian_name ? `
+          <div style="background:rgba(234,179,8,0.05);border:1px solid var(--warning);border-radius:8px;padding:16px;margin-bottom:16px">
+            <h4 style="color:var(--warning);margin-top:0;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Responsável Legal (Menor de 18 anos)
+            </h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.85rem">
+              <div><span class="text-muted">Nome:</span> <strong style="color:var(--text-primary)">${s.guardian_name}</strong></div>
+              <div><span class="text-muted">Parentesco:</span> <strong style="color:var(--text-primary)">${s.guardian_relationship || '—'}</strong></div>
+              <div><span class="text-muted">E-mail:</span> <strong style="color:var(--text-primary)">${s.guardian_email || '—'}</strong></div>
+              <div><span class="text-muted">Telefone:</span> <strong style="color:var(--text-primary)">${s.guardian_phone || '—'}</strong></div>
+              <div style="grid-column:1/-1;margin-top:8px"><span class="text-muted">Consentimento:</span> <strong style="color:var(--success)">${s.consent_responsavel_legal === 'on' || s.consent_responsavel_legal === true || s.consent_responsavel_legal === 'true' ? 'Sim, autorizado' : '—'}</strong></div>
+            </div>
+          </div>
+        ` : ''}
+
         ${ANAMNESIS_QUESTIONS.map(sec => `
           <div style="margin-bottom:16px">
             <h4 style="color:var(--primary);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border-color)">${sec.section}</h4>
             ${sec.fields.map(f => {
+              if (f.name.startsWith('guardian_') || f.name === 'consent_responsavel_legal') return '';
               const val = s[f.name];
               if (!val) return '';
               
               let isRisk = false;
               if (f.name.startsWith('parq_')) {
-                if (f.name === 'parq_pregnancy' && val !== 'Não se aplica') isRisk = true;
-                else if (val === 'Sim') isRisk = true;
+                const v = val.toString().trim().toLowerCase();
+                if (f.name === 'parq_pregnancy' && v !== 'não se aplica' && v !== 'nao se aplica') isRisk = true;
+                else if (v === 'sim') isRisk = true;
               }
               
               const valHtml = isRisk 
@@ -486,6 +506,21 @@ export function initAnamneseForm() {
   const birthDateInput = form.querySelector('[name="birthDate"]');
   
   if (birthDateInput) {
+    const today = new Date();
+    const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    const maxDate = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    birthDateInput.min = minDate;
+    birthDateInput.max = maxDate;
+    
+    birthDateInput.addEventListener('input', () => {
+      birthDateInput.setCustomValidity('');
+      const val = birthDateInput.value;
+      if (val) {
+        if (val < minDate) birthDateInput.setCustomValidity('Data inválida (mais de 120 anos).');
+        if (val > maxDate) birthDateInput.setCustomValidity('O aluno deve ter pelo menos 5 anos de idade.');
+      }
+    });
+
     birthDateInput.addEventListener('change', (e) => {
       const val = e.target.value;
       if (!val) return;
