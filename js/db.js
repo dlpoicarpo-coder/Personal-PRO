@@ -615,29 +615,6 @@ class Database {
     'events','prescriptions','anamnesis','settings','exercises','methods',
   ]);
 
-  // ── GET ALL RECORDS ──
-  async getStudentByEmail(email) {
-    const trainerId = await this._getTrainerId();
-    const local = this._getLocal('students', trainerId) || [];
-    const localMatch = local.find(s => s.email?.toLowerCase().trim() === email);
-    if (localMatch) return fixObjectEncoding(localMatch);
-    if (!this.supabase) return null;
-    try {
-      const { data, error } = await this.supabase
-        .from('students')
-        .select('*')
-        .ilike('data->>email', email);
-      if (!error && data && data.length > 0) {
-        const r = data[0];
-        const res = r.data ? { ...r.data, id: r.id, auth_user_id: r.auth_user_id } : r;
-        res._synced = true;
-        return fixObjectEncoding(res);
-      }
-    } catch (e) {
-      console.error('getStudentByEmail error:', e);
-    }
-    return null;
-  }
 
   async getAll(storeName) {
     const trainerId = await this._getTrainerId();

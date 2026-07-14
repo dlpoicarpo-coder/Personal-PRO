@@ -167,13 +167,14 @@ export async function initLogin(onSuccess) {
   roleStudentBtn?.addEventListener('click', () => {
     activeRole = 'student';
     roleStudentBtn.classList.add('active');
+    roleStudentBtn.classList.add('active');
     roleStudentBtn.style.background = 'var(--primary)';
     roleStudentBtn.style.color = '#fff';
     roleTrainerBtn.classList.remove('active');
     roleTrainerBtn.style.background = 'transparent';
     roleTrainerBtn.style.color = 'var(--text-muted)';
-    if (passwordGroup) passwordGroup.style.display = 'none';
-    if (loginPassInput) loginPassInput.required = false;
+    if (passwordGroup) passwordGroup.style.display = '';
+    if (loginPassInput) loginPassInput.required = true;
     if (loginSubmitBtn) loginSubmitBtn.textContent = 'Acessar Portal';
   });
 
@@ -217,30 +218,6 @@ export async function initLogin(onSuccess) {
     const fd = new FormData(e.target);
     const { email, password } = Object.fromEntries(fd);
 
-    if (activeRole === 'student') {
-      try {
-        const { default: db } = await import('../db.js');
-        const cleanEmail = email.trim().toLowerCase();
-        const student = await db.getStudentByEmail(cleanEmail);
-        if (!student) {
-          errEl.textContent = 'Nenhum aluno cadastrado com este e-mail.';
-          errEl.style.display = '';
-          btn.disabled = false;
-          btn.textContent = 'Acessar Portal';
-          return;
-        }
-        notify.success(`Olá, ${student.name}! Redirecionando para seu portal...`);
-        localStorage.setItem('portal_logged_student_id', student.id);
-        window.location.hash = `#/portal/${student.id}`;
-      } catch (err) {
-        errEl.textContent = 'Erro ao buscar aluno: ' + err.message;
-        errEl.style.display = '';
-        btn.disabled = false;
-        btn.textContent = 'Acessar Portal';
-      }
-      return;
-    }
-
     const result = await signIn(email, password);
 
     if (result.error) {
@@ -273,6 +250,53 @@ export async function initLogin(onSuccess) {
       btn.disabled = false;
       btn.textContent = 'Entrar no Sistema';
     } else {
+      const { getSupabase } = await import('../utils/auth.js');
+      const supabase = getSupabase();
+      
+      // Validar papel se for aluno
+      if (activeRole === 'student') {
+        const user = result.user || (await supabase.auth.getUser()).data?.user;
+        if (user) {
+          const { data: stdData, error: stdErr } = await supabase
+            .from('students')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .limit(1);
+
+          if (stdErr || !stdData || stdData.length === 0) {
+            await supabase.auth.signOut();
+            errEl.textContent = 'Esta conta não é de aluno.';
+            errEl.style.display = '';
+            btn.disabled = false;
+            btn.textContent = 'Acessar Portal';
+            return;
+          }
+          // É aluno mesmo, redireciona pro portal (sem hash ID)
+          window.location.hash = '#/portal';
+          return;
+        }
+      } else {
+        // Se for treinador tentando logar
+        const user = result.user || (await supabase.auth.getUser()).data?.user;
+        if (user) {
+          // Checar se é aluno tentando acessar o painel de treinador
+          const { data: stdData } = await supabase
+            .from('students')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .limit(1);
+
+          if (stdData && stdData.length > 0) {
+            await supabase.auth.signOut();
+            errEl.textContent = 'Esta conta é de aluno. Use a aba "Aluno" para acessar o portal.';
+            errEl.style.display = '';
+            btn.disabled = false;
+            btn.textContent = 'Entrar no Sistema';
+            return;
+          }
+        }
+      }
+
       notify.success(`Bem-vindo, ${result.user?.user_metadata?.trainer_name || result.user?.email}!`);
       onSuccess(result.user);
     }

@@ -207,7 +207,7 @@ export async function renderStudentPortal(rawParam) {
 
   // 1. Tentar resolver por Sessão do Auth (Login Silencioso ou Explícito)
   if (supabase && user && role === 'student') {
-    // Tenta encontrar o vínculo do estudante para este usuário autenticado
+    // Busca o estudante atrelado a este usuário logado. IGNORA o rawParam
     const { data, error } = await supabase
       .from('students')
       .select('*')
@@ -216,11 +216,11 @@ export async function renderStudentPortal(rawParam) {
       .maybeSingle();
     
     if (error) {
-      console.error('[Student Auth] Erro ao buscar aluno associado ao auth.uid():', error);
+      console.error('[Student Auth] Erro ao buscar aluno associado:', error);
     }
 
     if (data) {
-      // O usuário logado é de fato um estudante!
+      // É estudante
       studentId = data.id;
       trainerId = data.trainer_id || data.trainerId;
       studentData = data.data
@@ -228,68 +228,56 @@ export async function renderStudentPortal(rawParam) {
             auth_user_id: data.auth_user_id }
         : data;
       isEmailAuth = true;
-      // Atualiza a global config de portalClient usando o client padrão já autenticado
       setPortalClient(supabase);
       const db = (await import('../db.js')).default;
       db.setClient(supabase);
     }
   }
 
-  // 2. Fallback para Treinador acessando a view (usa a URL para obter o ID)
-  if (!studentId && rawParam && rawParam !== 'undefined') {
-    const [rawSid, query] = rawParam.split('?');
-    studentId = rawSid;
-    const params = new URLSearchParams(query || '');
-    trainerId = params.get('t') || '';
-  }
+  // 2. Não autenticado como student
+  if (!isEmailAuth) {
+    if (!isTrainerAuth) {
+      // NÃO TEM SESSÃO: redireciona para tela unificada de login
+      window.location.hash = '#/login';
+      return `<div style="padding:40px;color:#fff;text-align:center;">Redirecionando para o login...</div>`;
+    } else {
+      // TREINADOR: acessando a view do aluno (aqui sim usamos o ID da URL)
+      if (rawParam && rawParam !== 'undefined') {
+        const [rawSid, query] = rawParam.split('?');
+        studentId = rawSid;
+        const params = new URLSearchParams(query || '');
+        trainerId = params.get('t') || '';
+      }
+      
+      if (!studentId) {
+        window.location.hash = '#/alunos';
+        return `<div style="padding:40px;color:#fff;text-align:center;">Nenhum aluno especificado.</div>`;
+      }
 
-  // 3. Se ainda não há studentId, mostrar Login com Email
-  if (!studentId) {
-    return renderEmailLoginScreen();
+      const db = (await import('../db.js')).default;
+      studentData = await db.get('students', studentId).catch(() => null);
+      if (!studentData) {
+        window.location.hash = '#/alunos';
+        return `<div style="padding:40px;color:#fff;text-align:center;">Aluno não encontrado.</div>`;
+      }
+      if (studentData.trainerId || studentData.trainer_id) {
+        trainerId = studentData.trainerId || studentData.trainer_id;
+      }
+    }
   }
 
   portalState.studentId = studentId;
   portalState.trainerId = trainerId;
-
-  // Se não foi email auth
-  if (!isEmailAuth) {
-    if (!isTrainerAuth) {
-      // Limpa possíveis tokens legados de PIN
-      const sessionKey = `portal_auth_${studentId}`;
-      sessionStorage.removeItem(sessionKey);
-      localStorage.removeItem(sessionKey);
-      
-      // Limpa a URL legada para evitar confusão (se possível)
-      if (window.history.pushState) {
-        window.history.replaceState(null, '', window.location.pathname + '#/portal');
-      }
-
-      return renderEmailLoginScreen('O acesso agora é feito com seu e-mail e senha. Peça o convite ao seu treinador se ainda não tem conta.');
-    }
-
-    // Busca o aluno (trainer view)
-    const db = (await import('../db.js')).default;
-    studentData = await db.get('students', studentId).catch(() => null);
-    if (!studentData) {
-      return renderEmailLoginScreen('Aluno não encontrado.');
-    }
-
-    if (studentData.trainerId || studentData.trainer_id) {
-      trainerId = studentData.trainerId || studentData.trainer_id;
-      portalState.trainerId = trainerId;
-    }
-  }
+  portalState.student = studentData;
 
   const db = (await import('../db.js')).default;
   db.studentPortalTrainerId = trainerId;
 
-  // PWA offline info
   if (studentData && studentData.name) {
     localStorage.setItem(`portal_name_${studentId}`, studentData.name);
     localStorage.setItem(`portal_logged_student_id`, studentId);
   }
 
-  portalState.student = studentData;
   return renderPortalShell(studentData);
 }
 
@@ -6126,131 +6114,7 @@ function initStudentTutorial() {
   }
 }
 
-// ── EMAIL LOGIN SCREEN ────────────────────────────────────────
-function renderEmailLoginScreen(infoMessage = '') {
-  return `
-    <div class="portal-root" data-theme="dark">
-      <div class="portal-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
-        <div class="portal-brand" style="display:flex;justify-content:center;margin-bottom:40px;font-size:2rem;">
-          <div class="vetor-logo">
-            <span class="vetor-name">Vetor</span>
-            <i class="vetor-diamond"></i>
-          </div>
-        </div>
-        
-        <div class="portal-card" style="width:100%;max-width:380px;padding:36px 28px;border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);background:rgba(15,20,32,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
-          <div style="text-align:center;margin-bottom:28px;">
-            <h2 style="font-size:1.5rem;font-weight:700;color:var(--portal-text);margin-bottom:8px;">Acesse seu Treino</h2>
-            <p style="color:var(--portal-text-muted);font-size:0.95rem;">Faça login com seu e-mail e senha.</p>
-          </div>
-          
-          ${infoMessage ? `<div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:12px;border-radius:12px;margin-bottom:24px;font-size:0.9rem;text-align:center;line-height:1.4;">${infoMessage}</div>` : ''}
 
-          <form id="studentPortalLoginForm" onsubmit="return false;">
-            <div style="margin-bottom:20px;">
-              <label style="display:block;margin-bottom:8px;font-size:0.85rem;color:var(--portal-text-muted);font-weight:600;text-align:left;">E-mail</label>
-              <input type="email" id="studentLoginEmail" required placeholder="seu@email.com" 
-                style="width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.2);color:var(--portal-text);font-size:1rem;outline:none;transition:all 0.2s;">
-            </div>
-            
-            <div style="margin-bottom:28px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <label style="font-size:0.85rem;color:var(--portal-text-muted);font-weight:600;">Senha</label>
-                <a href="#" id="studentForgotPassword" style="font-size:0.8rem;color:var(--portal-primary);text-decoration:none;">Esqueci minha senha</a>
-              </div>
-              <input type="password" id="studentLoginPassword" required placeholder="Sua senha" 
-                style="width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.2);color:var(--portal-text);font-size:1rem;outline:none;transition:all 0.2s;">
-            </div>
-
-            <div id="studentLoginError" style="display:none;color:#ef4444;font-size:0.85rem;margin-bottom:20px;text-align:center;background:rgba(239,68,68,0.1);padding:10px;border-radius:8px;"></div>
-            <div id="studentLoginSuccess" style="display:none;color:#10b981;font-size:0.85rem;margin-bottom:20px;text-align:center;background:rgba(16,185,129,0.1);padding:10px;border-radius:8px;"></div>
-
-            <button type="submit" id="studentLoginBtn" class="portal-btn-primary" style="width:100%;padding:16px;font-size:1rem;font-weight:700;border-radius:12px;background:linear-gradient(135deg, var(--portal-primary), var(--portal-primary-hover));color:#fff;border:none;cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;">
-              Entrar no Portal
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function initEmailLoginScreen() {
-  const form = document.getElementById('studentPortalLoginForm');
-  const emailInput = document.getElementById('studentLoginEmail');
-  const passInput = document.getElementById('studentLoginPassword');
-  const errorEl = document.getElementById('studentLoginError');
-  const btn = document.getElementById('studentLoginBtn');
-  const successEl = document.getElementById('studentLoginSuccess');
-  const forgotBtn = document.getElementById('studentForgotPassword');
-
-  if (!form) return;
-
-  forgotBtn?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const email = emailInput.value.trim();
-    if (!email) {
-      errorEl.textContent = 'Digite seu e-mail antes de solicitar recuperação de senha.';
-      errorEl.style.display = 'block';
-      successEl.style.display = 'none';
-      return;
-    }
-    errorEl.style.display = 'none';
-    successEl.style.display = 'none';
-    forgotBtn.innerText = 'Enviando...';
-    try {
-      const { sendPasswordReset } = await import('../utils/auth.js');
-      const res = await sendPasswordReset(email);
-      if (res.error) throw new Error(res.error || 'Erro ao enviar recuperação.');
-      successEl.textContent = 'Enviamos um link de recuperação para seu e-mail.';
-      successEl.style.display = 'block';
-    } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.style.display = 'block';
-    } finally {
-      forgotBtn.innerText = 'Esqueci minha senha';
-    }
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const email = emailInput.value.trim();
-    const password = passInput.value.trim();
-    if (!email || !password) return;
-
-    errorEl.style.display = 'none';
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<div class="portal-spin-ring" style="width:20px;height:20px;border-width:2px;margin:0 auto;"></div>';
-
-    try {
-      const { getSupabase } = await import('../utils/auth.js');
-      const supabase = getSupabase();
-      if (!supabase) {
-        throw new Error('Erro de conexão: Cliente do sistema indisponível.');
-      }
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
-
-      if (error) {
-        throw new Error('E-mail ou senha incorretos.');
-      }
-
-      // Sucesso! Recarregar a página. Como há sessão, o renderStudentPortal assumirá.
-      window.location.reload();
-
-    } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.style.display = 'block';
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-    }
-  });
-}
 
 function getYouTubeEmbedUrl(url) {
   if (!url) return '';
