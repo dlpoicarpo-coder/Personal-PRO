@@ -486,7 +486,7 @@ function showLgpdRatificationPopup(studentId) {
   
   el.innerHTML = `
     <div class="portal-pwa-popup-inner" style="border: 1px solid var(--warning)">
-      <div class="portal-pwa-icon">⚠️</div>
+      <div class="portal-pwa-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
       <div class="portal-pwa-text">
         <div class="portal-pwa-title" style="color: var(--warning)">Aviso Legal Importante</div>
         <div class="portal-pwa-sub" style="margin-bottom: 15px;">Você completou 18 anos. Para continuarmos personalizando seus treinos, confirme que autoriza o tratamento dos seus dados de saúde e aceita os Termos, conforme a LGPD.</div>
@@ -605,7 +605,7 @@ function renderPortalShell(student) {
       <!-- PWA Install Popup -->
       <div id="pwaInstallPopup" class="portal-pwa-popup">
         <div class="portal-pwa-popup-inner">
-          <div class="portal-pwa-icon">📲</div>
+          <div class="portal-pwa-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
           <div class="portal-pwa-text">
             <div class="portal-pwa-title">Instalar Vetor</div>
             <div class="portal-pwa-sub">Adicione à tela inicial para acesso rápido sem abrir o navegador!</div>
@@ -1009,7 +1009,7 @@ function showToast(msg, type = 'info', duration = 5000) {
   const el = document.createElement('div');
   el.id = 'portalToast';
   el.className = `portal-toast portal-toast-${type}`;
-  el.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1.1rem;line-height:1">✕</button>`;
+  el.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1.1rem;line-height:1">&#x2715;</button>`;
   document.querySelector('.portal-content')?.prepend(el);
   setTimeout(() => el.remove(), duration);
 }
@@ -1104,7 +1104,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     checkinBanner = checkedIn
       ? `<div class="portal-reminder portal-reminder-success">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Check-in do treino de hoje já realizado ✅
+          Check-in do treino de hoje já realizado
         </div>`
       : `<div class="portal-reminder portal-reminder-info" id="checkinBanner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1140,7 +1140,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
       <!-- Greeting -->
       <div class="portal-greeting-card glass-card">
         <div class="portal-greeting-text">
-          <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]} 👋</div>
+          <div class="portal-greeting-hi">Olá, ${(student?.name||'').split(' ')[0]}</div>
           <div class="portal-greeting-date">${now.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' })}</div>
         </div>
         ${lastSession ? `<div class="portal-last-session">Último treino: ${Math.abs(getDaysDifference(lastSession.date))}d atrás</div>` : ''}
@@ -1306,7 +1306,9 @@ function renderTreinar(workouts, schedules, sessions = []) {
   
   const recoveryCard = running ? `
     <div id="soloRecoveryCard" class="glass-card" style="padding:24px 20px;text-align:center;margin-top:10px;border:1px solid rgba(99,102,241,0.25)">
-      <div style="font-size:2.2rem;margin-bottom:12px;animation: pulse 2s infinite">⚡</div>
+      <div style="font-size:2.2rem;margin-bottom:12px;animation: pulse 2s infinite">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
       <style>
         @keyframes pulse {
           0% { transform: scale(1); opacity: 0.8; }
@@ -1445,9 +1447,11 @@ function renderTreinar(workouts, schedules, sessions = []) {
           </div>
           <div class="portal-live-stat">
             <div class="portal-live-val" id="liveRest" style="color:#06b6d4">00:00</div>
-            <div class="portal-live-lbl">🙏 Descanso</div>
+            <div class="portal-live-lbl">Descanso</div>
           </div>
-          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer">🔔</button>
+          <button id="soundToggleBtn" class="portal-sound-btn" title="Som do timer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </button>
         </div>
 
         <!-- Rest timer overlay (hidden until set done) -->
@@ -1457,7 +1461,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
           <div class="portal-rest-bar-track"><div class="portal-rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
           <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
-            <button class="portal-rest-skip" id="restResume" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.3);color:#10b981;grid-column: span 2">RETOMAR EXERCÍCIOS ⏩</button>
+            <button class="portal-rest-skip" id="restResume" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.3);color:#10b981;grid-column: span 2">RETOMAR EXERCÍCIOS</button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
         </div>
@@ -1578,7 +1582,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       }
       lastTickTime = now;
       const totalElapsed = soloStartTime ? Math.floor((now - soloStartTime) / 1000) : 0;
-      updateTimerDisplays(totalElapsed);
+      updateTimerDisplays();
     }
   }
 
@@ -1615,7 +1619,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         const overlay = document.getElementById('restTimerOverlay');
         if (overlay) overlay.style.display = 'none';
         playBeep(1000, 0.25, 3);
-        sendLocalNotification("Descanso Concluído! 💪", "Hora de começar a próxima série!");
+        sendLocalNotification("Descanso Concluído!", "Hora de começar a próxima série!");
         triggerAutoSave();
       } else {
         const cd = document.getElementById('restCountdown');
@@ -1630,12 +1634,13 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     return gap;
   }
 
-  function updateTimerDisplays(totalElapsed) {
+  function updateTimerDisplays() {
+    const total = workSeconds + restSeconds;
     const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
     const el = document.getElementById('liveTotal');
     const ew = document.getElementById('liveWork');
     const er = document.getElementById('liveRest');
-    if (el) el.textContent = fmt(totalElapsed);
+    if (el) el.textContent = fmt(total);
     if (ew) ew.textContent = fmt(workSeconds);
     if (er) er.textContent = fmt(restSeconds);
   }
@@ -2063,8 +2068,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         }
       }
 
-      const totalElapsed = Math.floor((now - soloStartTime) / 1000);
-      updateTimerDisplays(totalElapsed);
+      updateTimerDisplays();
     }, 1000);
 
     autoSaveInterval = setInterval(autoSaveSoloSession, 20000);
@@ -2181,7 +2185,12 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   // Sound toggle
   document.getElementById('soundToggleBtn')?.addEventListener('click', () => {
     soundEnabled = !soundEnabled;
-    document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔔' : '🔕';
+    const btn = document.getElementById('soundToggleBtn');
+    if (btn) {
+      btn.innerHTML = soundEnabled
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+    }
   });
 
   // Rest timer
@@ -2205,18 +2214,20 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     
     restTimer = setInterval(() => {
       restRemaining--;
-      restSeconds++;
+      // NOTE: restSeconds is incremented by soloTimerInterval (single source of truth)
+      // restTimer only manages the countdown UI + beeps + overlay state
       updateUI();
       if (restRemaining <= 5 && restRemaining > 0) {
         playBeep(800, 0.06, 1);
       }
       if (restRemaining <= 0) {
         clearInterval(restTimer);
+        restTimer = null;
         overlay.style.display = 'none';
         isResting = false;
         activeRestingRowId = null;
         playBeep(1000, 0.25, 3);
-        sendLocalNotification("Descanso Concluído! 💪", "Hora de começar a próxima série!");
+        sendLocalNotification("Descanso Concluído!", "Hora de começar a próxima série!");
       }
     }, 1000);
   }
@@ -2310,7 +2321,6 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       const isDone = doneBtn.classList.toggle('done');
       row.classList.toggle('set-done', isDone);
       if (isDone) {
-        workSeconds += 30;
         const restInput = document.getElementById(`fex_${ei}_rest`);
         const restSec = parseInt(restInput?.value) || 60;
         const overlay = document.getElementById('restTimerOverlay');
@@ -2406,7 +2416,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                 return `
                   <div class="portal-cardio-embedded" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06);box-sizing:border-box" onclick="event.stopPropagation()">
                     <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-                      <span>📊 Perfil do Ritmo (Cardio)</span>
+                      <span>Perfil do Ritmo (Cardio)</span>
                       <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
                     </div>
                     <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
@@ -2550,7 +2560,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                 return `
                   <div class="portal-cardio-embedded" style="margin-top:10px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06)">
                     <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-                      <span>📊 Perfil do Ritmo (Cardio)</span>
+                      <span>Perfil do Ritmo (Cardio)</span>
                       <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
                     </div>
                     <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
@@ -2816,7 +2826,6 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         if (row) {
           row.classList.toggle('set-done', isDone);
           if (isDone) {
-            workSeconds += 30;
             const ei = parseInt(btn.dataset.ei);
             const ex = w?.exercises?.[ei];
             const isCombined = COMBINED_SET.has(ex?.method);
@@ -2930,7 +2939,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         row.querySelector(`#sdb_${ei}_${si}`)?.addEventListener('click', (e) => {
           const doneBtn = e.currentTarget;
           const isDone = doneBtn.classList.toggle('done');
-          if (isDone) { workSeconds += 30; startRestTimer(parseInt(restSec)||60); }
+          if (isDone) { startRestTimer(parseInt(restSec)||60); }
           else if (activeRestingRowId === row.id) stopRestTimer();
         });
         // Bind PSE/RIR
@@ -3008,7 +3017,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         if (rb && rs) { updateRirButton(rb,''); rb.addEventListener('click', ()=>openCustomSelector('RIR',RIR_OPTIONS,rs.value,v=>{rs.value=v;updateRirButton(rb,v);})); }
         row.querySelector('.portal-solo-done-btn')?.addEventListener('click', e => {
           const isDone = e.currentTarget.classList.toggle('done');
-          if (isDone) { workSeconds += 30; startRestTimer(60); }
+          if (isDone) { startRestTimer(60); }
         });
       });
       card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3044,8 +3053,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         }
       }
 
-      const totalElapsed = Math.floor((now - soloStartTime) / 1000);
-      updateTimerDisplays(totalElapsed);
+      updateTimerDisplays();
     }, 1000);
   }
 
@@ -3586,7 +3594,7 @@ async function showExerciseModal(ex) {
       <div style="padding:0 20px 16px">
         <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:14px 16px;border:1px solid rgba(255,255,255,0.06);margin-bottom:12px">
           <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-            <span>📊 Perfil do Ritmo (Cardio/HIIT)</span>
+            <span>Perfil do Ritmo (Cardio/HIIT)</span>
             <span style="font-size:0.68rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
           </div>
           <div style="position:relative;height:160px;width:100%;margin-bottom:14px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
@@ -4246,7 +4254,7 @@ function renderAvaliacoes(assessments) {
       <!-- COMPOSIÇÃO CORPORAL -->
       <div class="glass-card" style="margin-bottom:16px">
         <div class="portal-card-label" style="display:flex;align-items:center;gap:6px;font-size:0.95rem;font-weight:800">
-          ⚖️ Composição Corporal
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2 17h20l-2.596-7.54A2 2 0 0 0 17.5 8z"/><path d="M12 8v9"/><path d="M8 17l1 4h6l1-4"/></svg> Composição Corporal
         </div>
         ${compAss.length === 0 ? `
           <p class="portal-text-muted" style="text-align:center;padding:20px 0;font-size:0.8rem">Nenhuma avaliação de composição corporal registrada.</p>
@@ -4616,7 +4624,7 @@ async function renderRelatorios(student, sessions, assessments, biofeedbacks, ma
   if (uniqueExercises.length > 0) {
     exerciseProgressionChartHtml = `
       <div class="glass-card" style="margin-bottom:12px">
-        <div class="portal-card-label">📊 Análise Multivariada por Exercício</div>
+        <div class="portal-card-label">Análise Multivariada por Exercício</div>
         <p style="font-size:0.72rem;color:var(--portal-text-muted);margin:4px 0 8px">
           Compare a evolução da Carga (eixo esquerdo) vs PSE e RIR (eixo direito) ao longo do tempo.
         </p>
