@@ -3,7 +3,7 @@ import { notify } from '../components/toast.js';
 
 export function renderInviteScreen() {
   return `
-    <div class="portal-root" data-theme="dark">
+    <div class="portal-root" data-theme="dark" style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
       <div class="portal-pin-screen">
         <div class="portal-pin-card" style="max-width: 400px; width: 90%; padding: 30px 20px;">
           <div class="vetor-logo" style="margin-bottom: 20px; justify-content: center; font-size: 1.5rem;">
