@@ -331,7 +331,13 @@ function initApp() {
 
     // Database deduplication and methods repair
     setTimeout(async () => {
+      const { getCurrentUser } = await import('./utils/auth.js');
+      const user = await getCurrentUser();
+      if (!user) return; // Executa apenas se houver sessão ativa
+
       if (localStorage.getItem('fixed_db_v8')) return;
+      localStorage.setItem('fixed_db_v8', '1'); // Setado antes para evitar loops
+      
       try {
         // Dedup exercises
         const exs = await db.getAll('exercises');
@@ -405,8 +411,6 @@ function initApp() {
         for (const m of defaultMethods) {
           if (!freshMethods.find(x => x.name === m.name)) await db.add('methods', m);
         }
-        localStorage.setItem('fixed_db_v8', '1');
-        window.location.reload();
       } catch(e) { console.error('DB repair error:', e); }
     }, 2000);
   });
