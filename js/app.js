@@ -322,11 +322,21 @@ window.addEventListener('hashchange', () => {
 
 // Initialize app  
 function initApp() {
-  // Apply saved theme — default to light mode (item 16)
-  const savedTheme = localStorage.getItem('pp_theme') || 'light';
+  // Apply saved theme — fallback to localStorage before session loads
+  let savedTheme = localStorage.getItem('pp_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
 
   import('./db.js').then(({ default: db }) => {
+    // Override with source of truth
+    db.getAll('settings').then(settingsList => {
+      const settings = settingsList[0];
+      if (settings && settings.theme && settings.theme !== savedTheme) {
+        savedTheme = settings.theme;
+        localStorage.setItem('pp_theme', savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+    }).catch(() => {});
+
     db.seedTemplates().catch(console.error);
 
     // Database deduplication and methods repair

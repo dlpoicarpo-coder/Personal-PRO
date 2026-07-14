@@ -8,8 +8,9 @@ import { notify } from '../components/toast.js';
 import { signOut } from '../utils/auth.js';
 
 export async function renderSettings() {
-  const settings = await db.get('settings', 'trainer') || {};
-  const currentTheme = localStorage.getItem('pp_theme') || 'dark';
+  const settingsList = await db.getAll('settings');
+  const settings = settingsList[0] || {};
+  const currentTheme = settings.theme || localStorage.getItem('pp_theme') || 'dark';
 
   return `
     <div class="page-header">
@@ -170,11 +171,18 @@ export function initSettings(navigateFn) {
     }
   });
 
-  // Theme toggle — LIGHT MODE ACTIVE
-  document.getElementById('themeSelect')?.addEventListener('change', (e) => {
+  document.getElementById('themeSelect')?.addEventListener('change', async (e) => {
     const theme = e.target.value;
     localStorage.setItem('pp_theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
+    try {
+      const settingsList = await db.getAll('settings');
+      let currentSettings = settingsList[0] || { id: Date.now().toString() };
+      currentSettings.theme = theme;
+      await db.put('settings', currentSettings);
+    } catch (err) {
+      console.warn('Erro ao salvar tema em settings:', err);
+    }
     notify.success(`Tema ${theme === 'light' ? 'claro' : 'escuro'} ativado!`);
   });
 
