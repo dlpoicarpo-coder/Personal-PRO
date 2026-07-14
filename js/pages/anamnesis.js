@@ -13,42 +13,63 @@ const ICON_DEL  = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13
 const ICON_WA   = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
 
 export const ANAMNESIS_QUESTIONS = [
-  { section: 'Dados Pessoais', fields: [
+  { section: 'Identificação', fields: [
     { name: 'fullName',     label: 'Nome Completo',                           type: 'text',    required: true },
     { name: 'birthDate',    label: 'Data de Nascimento',                      type: 'date',    required: true },
-    { name: 'gender',       label: 'Gênero',                                  type: 'select',  options: ['Masculino','Feminino','Outro'] },
-    { name: 'phone',        label: 'Telefone / WhatsApp',                     type: 'tel' },
-    { name: 'email',        label: 'E-mail',                                  type: 'email' },
+    { name: 'gender',       label: 'Gênero',                                  type: 'select',  options: ['Masculino','Feminino','Outro'], required: true },
+    { name: 'phone',        label: 'Telefone / WhatsApp',                     type: 'tel',     required: true },
+    { name: 'email',        label: 'E-mail',                                  type: 'email',   required: true },
     { name: 'occupation',   label: 'Profissão / Ocupação',                    type: 'text' },
+    { name: 'weight',       label: 'Peso atual (kg)',                         type: 'number',  required: true },
+    { name: 'height',       label: 'Altura (cm)',                             type: 'number',  required: true },
+    { name: 'emergencyContactName', label: 'Contato de emergência — nome',    type: 'text' },
+    { name: 'emergencyContactPhone',label: 'Contato de emergência — telefone',type: 'text' },
+  ]},
+  { section: 'PAR-Q+', description: 'As perguntas abaixo seguem o PAR-Q+, questionário padrão internacional de prontidão para atividade física. Responda com sinceridade — elas existem para a sua segurança.', fields: [
+    { name: 'parq_heart',       label: 'Algum médico já disse que você possui problema cardíaco e que só deveria fazer atividade física supervisionado por profissional de saúde?', type: 'select', options: ['Não','Sim'], required: true },
+    { name: 'parq_chest_pain',  label: 'Você sente dor no peito quando pratica atividade física?', type: 'select', options: ['Não','Sim'], required: true },
+    { name: 'parq_chest_month', label: 'No último mês, sentiu dor no peito ao praticar atividade física?', type: 'select', options: ['Não','Sim'], required: true },
+    { name: 'parq_dizziness',   label: 'Você apresenta desequilíbrio devido a tontura e/ou perda de consciência?', type: 'select', options: ['Não','Sim'], required: true },
+    { name: 'parq_bone',        label: 'Você possui algum problema ósseo ou articular que poderia ser piorado pela atividade física?', type: 'select', options: ['Não','Sim'], required: true },
+    { name: 'parq_meds',        label: 'Você toma atualmente algum medicamento para pressão arterial e/ou problema cardíaco?', type: 'select', options: ['Não','Sim'], required: true },
+    { name: 'parq_other',       label: 'Sabe de alguma outra razão pela qual não deveria praticar atividade física?', type: 'select', options: ['Não','Sim'], required: true },
+    { name: 'parq_pregnancy',   label: 'Você está grávida, no pós-parto ou amamentando?', type: 'select', options: ['Não se aplica','Grávida','Pós-parto','Amamentando'], required: true }
   ]},
   { section: 'Histórico de Saúde', fields: [
     { name: 'conditions',    label: 'Possui condição médica? (diabetes, hipertensão, etc.)', type: 'textarea' },
     { name: 'medications',   label: 'Toma medicação regular?',                type: 'textarea' },
     { name: 'surgeries',     label: 'Já fez cirurgia?',                       type: 'textarea' },
     { name: 'injuries',      label: 'Lesões ou dores articulares/musculares?',type: 'textarea' },
+    { name: 'injuriesDetails',label: 'Se sim, em quais regiões do corpo?',    type: 'textarea' },
     { name: 'familyHistory', label: 'Histórico familiar de cardiopatias, AVC ou diabetes?', type: 'select', options: ['Sim','Não','Não sei'] },
+    { name: 'medicalFollowUp',label: 'Faz acompanhamento com nutricionista, ortopedista ou cardiologista? (Se sim, envie o exame mais recente ao seu treinador pelo WhatsApp)', type: 'textarea' }
+  ]},
+  { section: 'Estilo de Vida', fields: [
     { name: 'smoker',        label: 'Fumante?',                               type: 'select',  options: ['Não','Sim','Ex-fumante'] },
     { name: 'alcohol',       label: 'Consome bebidas alcoólicas?',            type: 'select',  options: ['Não','Raramente','Moderadamente','Frequentemente'] },
-  ]},
-  { section: 'Atividade Física', fields: [
-    { name: 'currentActivity', label: 'Pratica exercícios atualmente?',        type: 'select', options: ['Sim, regularmente','Sim, esporadicamente','Não pratico'] },
-    { name: 'activityType',    label: 'Que tipo de exercício pratica / já praticou?', type: 'textarea' },
-    { name: 'frequency',       label: 'Quantas vezes por semana pode treinar?',type: 'select', options: ['2x','3x','4x','5x','6x'] },
-    { name: 'experience',      label: 'Experiência com musculação',            type: 'select', options: ['Nunca treinei','Iniciante (< 6 meses)','Intermediário (6m–2 anos)','Avançado (> 2 anos)'] },
-    { name: 'timeAvailable',   label: 'Tempo disponível por sessão',           type: 'select', options: ['30–45 min','45–60 min','60–75 min','75–90 min','> 90 min'] },
-  ]},
-  { section: 'Objetivos e Estilo de Vida', fields: [
-    { name: 'mainGoal',     label: 'Objetivo principal',                       type: 'select', options: ['Hipertrofia','Emagrecimento','Condicionamento','Saúde / Qualidade de Vida','Reabilitação','Performance Esportiva'] },
-    { name: 'goalDetail',   label: 'Descreva seu objetivo com detalhes',       type: 'textarea' },
     { name: 'sleepHours',   label: 'Horas de sono por noite (média)',          type: 'select', options: ['Menos de 5h','5–6h','6–7h','7–8h','Mais de 8h'] },
     { name: 'sleepQuality', label: 'Qualidade do sono',                        type: 'select', options: ['Ruim','Regular','Bom','Excelente'] },
     { name: 'stressLevel',  label: 'Nível de estresse no dia a dia',           type: 'select', options: ['Baixo','Moderado','Alto','Muito alto'] },
     { name: 'nutrition',    label: 'Como é sua alimentação?',                  type: 'select', options: ['Equilibrada','Razoável','Desregulada','Faço acompanhamento nutricional'] },
     { name: 'hydration',    label: 'Consumo diário de água (litros)',          type: 'select', options: ['Menos de 1L','1–2L','2–3L','Mais de 3L'] },
+    { name: 'workActivity', label: 'Nível de atividade no trabalho',           type: 'select', options: ['Sedentário','Moderado','Ativo'] },
+    { name: 'routineIntensity',label:'Descreva a intensidade da sua rotina (física ou mental)', type: 'textarea' }
   ]},
-  { section: 'Informações Adicionais', fields: [
-    { name: 'additionalNotes',   label: 'Algo mais que gostaria de informar?', type: 'textarea' },
+  { section: 'Treino e Preferências', fields: [
+    { name: 'currentActivity', label: 'Pratica exercícios atualmente?',        type: 'select', options: ['Sim, regularmente','Sim, esporadicamente','Não pratico'] },
+    { name: 'activityType',    label: 'Que tipo de exercício pratica / já praticou?', type: 'textarea' },
+    { name: 'experience',      label: 'Experiência com musculação',            type: 'select', options: ['Nunca treinei','Iniciante (< 6 meses)','Intermediário (6m–2 anos)','Avançado (> 2 anos)'] },
+    { name: 'frequency',       label: 'Quantas vezes por semana pode treinar?',type: 'select', options: ['2x','3x','4x','5x','6x'] },
+    { name: 'timeAvailable',   label: 'Tempo disponível por sessão',           type: 'select', options: ['30–45 min','45–60 min','60–75 min','75–90 min','> 90 min'] },
     { name: 'preferredSchedule', label: 'Horário preferido de treino',         type: 'select', options: ['Manhã (5–9h)','Meio-dia (11–14h)','Tarde (14–18h)','Noite (18–22h)'] },
+    { name: 'preferredModalities',label:'Modalidades preferidas (musculação, funcional, HIIT, corrida, pilates, yoga, lutas, ao ar livre, em casa...)', type: 'textarea' },
+    { name: 'dislikedModalities',label: 'Alguma modalidade que NÃO gosta?',   type: 'textarea' }
+  ]},
+  { section: 'Objetivos', fields: [
+    { name: 'mainGoal',     label: 'Objetivo principal',                       type: 'select', options: ['Hipertrofia','Emagrecimento','Condicionamento','Saúde / Qualidade de Vida','Reabilitação','Performance Esportiva'] },
+    { name: 'goalDetail',   label: 'Descreva seu objetivo com detalhes',       type: 'textarea' },
+    { name: 'constancyObstacles',label:'O que pode atrapalhar sua constância?',type: 'textarea' },
+    { name: 'additionalNotes',   label: 'Algo mais que gostaria de informar?', type: 'textarea' },
   ]},
 ];
 
@@ -285,6 +306,7 @@ const ANAMNESE_CSS = `
   .ana-progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
   .ana-progress-fill { height: 100%; background: #10b981; transition: width 0.3s ease; }
   .ana-progress-text { font-size: 0.78rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
+  .ana-desc{font-size:0.82rem;color:#64748b;margin-bottom:18px;line-height:1.5}
 
   /* LIGHT MODE */
   [data-theme="light"] .ana-page{background:#f1f5f9}
@@ -306,6 +328,7 @@ const ANAMNESE_CSS = `
   [data-theme="light"] .ana-success h3{color:#0f172a}
   [data-theme="light"] .ana-success p{color:#64748b}
   [data-theme="light"] .ana-progress-bar { background: rgba(0,0,0,0.08); }
+  [data-theme="light"] .ana-desc{color:#475569}
 `;
 
 export async function renderAnamneseForm() {
@@ -333,11 +356,12 @@ export async function renderAnamneseForm() {
             ${ANAMNESIS_QUESTIONS.map((sec, index) => `
               <div class="ana-step" data-step="${index}" style="display: none;">
                 <div class="ana-section">${sec.section}</div>
+                ${sec.description ? \`<p class="ana-desc">\${sec.description}</p>\` : ''}
                 ${sec.fields.map(f => {
-                  if (f.type === 'select') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><select class="ana-select" name="${f.name}" ${f.required ? 'required' : ''}><option value="">Selecione...</option>${f.options.map(o => `<option>${o}</option>`).join('')}</select></div>`;
-                  if (f.type === 'textarea') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><textarea class="ana-textarea" name="${f.name}" rows="2" placeholder="Descreva..." ${f.required ? 'required' : ''}></textarea></div>`;
-                  if (f.type === 'checkbox') return `<div class="ana-group" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px"><input type="checkbox" class="ana-checkbox" id="${f.name}" name="${f.name}" ${f.required ? 'required' : ''} style="margin-top:2px;width:18px;height:18px;accent-color:#10b981;cursor:pointer"><label for="${f.name}" style="font-size:0.85rem;color:#e2e8f0;line-height:1.4;cursor:pointer">${f.label}${f.required ? ' *' : ''}</label></div>`;
-                  return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><input class="ana-input" name="${f.name}" type="${f.type}" ${f.required ? 'required' : ''} placeholder="" /></div>`;
+                  if (f.type === 'select') return \`<div class="ana-group"><label class="ana-label">\${f.label}\${f.required ? ' *' : ''}</label><select class="ana-select" name="\${f.name}" \${f.required ? 'required' : ''}><option value="">Selecione...</option>\${f.options.map(o => \`<option>\${o}</option>\`).join('')}</select></div>\`;
+                  if (f.type === 'textarea') return \`<div class="ana-group"><label class="ana-label">\${f.label}\${f.required ? ' *' : ''}</label><textarea class="ana-textarea" name="\${f.name}" rows="2" placeholder="Descreva..." \${f.required ? 'required' : ''}></textarea></div>\`;
+                  if (f.type === 'checkbox') return \`<div class="ana-group" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px"><input type="checkbox" class="ana-checkbox" id="\${f.name}" name="\${f.name}" \${f.required ? 'required' : ''} style="margin-top:2px;width:18px;height:18px;accent-color:#10b981;cursor:pointer"><label for="\${f.name}" style="font-size:0.85rem;color:#e2e8f0;line-height:1.4;cursor:pointer">\${f.label}\${f.required ? ' *' : ''}</label></div>\`;
+                  return \`<div class="ana-group"><label class="ana-label">\${f.label}\${f.required ? ' *' : ''}</label><input class="ana-input" name="\${f.name}" type="\${f.type}" \${f.required ? 'required' : ''} placeholder="" /></div>\`;
                 }).join('')}
               </div>
             `).join('')}
