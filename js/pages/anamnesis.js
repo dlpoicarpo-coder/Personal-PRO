@@ -209,6 +209,15 @@ export function initAnamnesis(navigateFn) {
     btn.addEventListener('click', async () => {
       const s = await db.get('anamnesis', btn.dataset.id);
       if (!s) return;
+      
+      let riskCount = 0;
+      for (const key in s) {
+        if (key.startsWith('parq_')) {
+          if (key === 'parq_pregnancy' && s[key] !== 'Não se aplica' && s[key] !== '') riskCount++;
+          else if (s[key] === 'Sim') riskCount++;
+        }
+      }
+
       const html = `
         <div class="flex items-center gap-md mb-lg">
           <div class="avatar">${initials(s.fullName)}</div>
@@ -218,15 +227,27 @@ export function initAnamnesis(navigateFn) {
             ${s.consent_timestamp ? `<p class="text-xs" style="color:var(--success);margin-top:4px">Consentimento LGPD: ${new Date(s.consent_timestamp).toLocaleString('pt-BR')}</p>` : ''}
           </div>
         </div>
+        ${riskCount > 0 ? `<div style="background:rgba(239,68,68,0.1);border-left:3px solid var(--danger);color:var(--text-primary);padding:10px;margin-bottom:16px;font-size:0.85rem"><strong>⚠️ ${riskCount} resposta(s) de risco no PAR-Q+</strong></div>` : ''}
         ${ANAMNESIS_QUESTIONS.map(sec => `
           <div style="margin-bottom:16px">
             <h4 style="color:var(--primary);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border-color)">${sec.section}</h4>
             ${sec.fields.map(f => {
               const val = s[f.name];
               if (!val) return '';
+              
+              let isRisk = false;
+              if (f.name.startsWith('parq_')) {
+                if (f.name === 'parq_pregnancy' && val !== 'Não se aplica') isRisk = true;
+                else if (val === 'Sim') isRisk = true;
+              }
+              
+              const valHtml = isRisk 
+                ? `<span style="background:var(--danger);color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:0.75rem">${val}</span>`
+                : `<strong style="text-align:right;max-width:55%">${val}</strong>`;
+                
               return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-color);font-size:0.82rem">
-                <span class="text-muted">${f.label}</span>
-                <strong style="text-align:right;max-width:55%">${val}</strong>
+                <span class="text-muted" style="${isRisk ? 'color:var(--danger);font-weight:bold' : ''}">${f.label}</span>
+                <div style="text-align:right;max-width:55%">${valHtml}</div>
               </div>`;
             }).filter(Boolean).join('')}
           </div>`).join('')}`;
@@ -516,6 +537,18 @@ export function initAnamneseForm() {
         break;
       }
     }
+    
+    if (isValid && currentStep === 0) {
+      const emailInput = form.querySelector('[name="email"]');
+      const guardianEmailInput = form.querySelector('[name="guardian_email"]');
+      if (emailInput && guardianEmailInput && guardianEmailInput.required) {
+        if (emailInput.value.trim().toLowerCase() === guardianEmailInput.value.trim().toLowerCase()) {
+          alert('O e-mail do responsável deve ser diferente do seu.');
+          isValid = false;
+        }
+      }
+    }
+
     if (isValid && currentStep < steps.length - 1) {
       saveToMemory();
       currentStep++;
