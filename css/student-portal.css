@@ -659,6 +659,32 @@
 .portal-suggested-meta { font-size: 0.8rem; color: var(--portal-text-secondary); }
 
 /* Live Panel */
+.portal-consent-group {
+  text-align: left;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.portal-consent-group input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--portal-primary);
+  flex-shrink: 0;
+}
+.portal-consent-group label {
+  font-size: 0.9rem;
+  color: var(--portal-text);
+  cursor: pointer;
+  line-height: 1.5;
+}
+.portal-consent-group a {
+  color: var(--portal-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
 .portal-live-panel {
   display: flex; justify-content: space-between; align-items: center;
   background: var(--portal-surface); border: 1px solid var(--portal-border);

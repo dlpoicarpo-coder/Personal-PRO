@@ -42,16 +42,16 @@ export function renderInviteScreen() {
                 <input type="password" id="invitePassword" class="form-input" required minlength="6" placeholder="Mínimo 6 caracteres" style="background:var(--bg-body); border-color:var(--border-color); color:var(--text-primary)"/>
               </div>
               
-              <div class="form-group" style="text-align: left; margin-bottom: 10px; display: flex; gap: 8px; align-items: flex-start;">
-                <input type="checkbox" id="inviteTermsCheck" required style="margin-top: 4px;" />
-                <label for="inviteTermsCheck" id="labelTerms" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; line-height: 1.4;">
-                  Li e aceito os <a href="#/termos" target="_blank" style="color: var(--primary); text-decoration: none;">Termos de Uso</a> e a <a href="#/privacidade" target="_blank" style="color: var(--primary); text-decoration: none;">Política de Privacidade</a>.
+              <div class="portal-consent-group">
+                <input type="checkbox" id="inviteTermsCheck" required />
+                <label for="inviteTermsCheck" id="labelTerms">
+                  Li e aceito os <a href="#/termos" target="_blank">Termos de Uso</a> e a <a href="#/privacidade" target="_blank">Política de Privacidade</a>.
                 </label>
               </div>
               
-              <div class="form-group" style="text-align: left; margin-bottom: 20px; display: flex; gap: 8px; align-items: flex-start;">
-                <input type="checkbox" id="inviteHealthCheck" required style="margin-top: 4px;" />
-                <label for="inviteHealthCheck" id="labelHealth" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; line-height: 1.4;">
+              <div class="portal-consent-group">
+                <input type="checkbox" id="inviteHealthCheck" required />
+                <label for="inviteHealthCheck" id="labelHealth">
                   Autorizo o tratamento dos meus dados de saúde (avaliações físicas, biofeedback, condições médicas, lesões e medicações) para fins de acompanhamento do meu treinamento por meu personal trainer.
                 </label>
               </div>
