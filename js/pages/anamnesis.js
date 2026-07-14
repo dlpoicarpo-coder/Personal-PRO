@@ -252,18 +252,27 @@ export function initAnamnesis(navigateFn) {
             ${sec.fields.map(f => {
               if (f.name.startsWith('guardian_') || f.name === 'consent_responsavel_legal') return '';
               const val = s[f.name];
-              if (!val) return '';
               
+              if (!val && f.type !== 'checkbox') return '';
+              
+              let valHtml = '';
               let isRisk = false;
-              if (f.name.startsWith('parq_')) {
-                const v = val.toString().trim().toLowerCase();
-                if (f.name === 'parq_pregnancy' && v !== 'não se aplica' && v !== 'nao se aplica') isRisk = true;
-                else if (v === 'sim') isRisk = true;
-              }
               
-              const valHtml = isRisk 
-                ? `<span style="background:var(--danger);color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:0.75rem">${val}</span>`
-                : `<strong style="text-align:right;max-width:55%">${val}</strong>`;
+              if (f.type === 'checkbox') {
+                const isChecked = val === 'on' || val === true || val === 'true' || val === '1' || val === 't';
+                valHtml = isChecked 
+                  ? `<strong style="color:var(--success);text-align:right;max-width:55%">Sim, autorizo</strong>` 
+                  : `<strong style="color:var(--danger);text-align:right;max-width:55%">Não autorizado</strong>`;
+              } else {
+                if (f.name.startsWith('parq_')) {
+                  const v = val.toString().trim().toLowerCase();
+                  if (f.name === 'parq_pregnancy' && v !== 'não se aplica' && v !== 'nao se aplica') isRisk = true;
+                  else if (v === 'sim') isRisk = true;
+                }
+                valHtml = isRisk 
+                  ? `<span style="background:var(--danger);color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:0.75rem">${val}</span>`
+                  : `<strong style="text-align:right;max-width:55%">${val}</strong>`;
+              }
                 
               return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-color);font-size:0.82rem">
                 <span class="text-muted" style="${isRisk ? 'color:var(--danger);font-weight:bold' : ''}">${f.label}</span>
