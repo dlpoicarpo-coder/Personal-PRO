@@ -308,12 +308,8 @@ function startStudentAutoSync(sid, tid) {
 }
 
 export function initStudentPortal(rawParam) {
-  // Tela de Login com Email (Sem sessão / URL limpa)
-  if (document.getElementById('studentPortalLoginForm')) {
-    initEmailLoginScreen();
-    return;
-  }
-
+  // Se redirecionou ou deu erro no render, aborta inicialização do portal UI
+  if (!portalState.studentId) return;
 
   
   // Portal nav (Aluno autenticado e autorizado)
