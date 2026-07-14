@@ -356,12 +356,12 @@ export async function renderAnamneseForm() {
             ${ANAMNESIS_QUESTIONS.map((sec, index) => `
               <div class="ana-step" data-step="${index}" style="display: none;">
                 <div class="ana-section">${sec.section}</div>
-                ${sec.description ? \`<p class="ana-desc">\${sec.description}</p>\` : ''}
+                ${sec.description ? `<p class="ana-desc">${sec.description}</p>` : ''}
                 ${sec.fields.map(f => {
-                  if (f.type === 'select') return \`<div class="ana-group"><label class="ana-label">\${f.label}\${f.required ? ' *' : ''}</label><select class="ana-select" name="\${f.name}" \${f.required ? 'required' : ''}><option value="">Selecione...</option>\${f.options.map(o => \`<option>\${o}</option>\`).join('')}</select></div>\`;
-                  if (f.type === 'textarea') return \`<div class="ana-group"><label class="ana-label">\${f.label}\${f.required ? ' *' : ''}</label><textarea class="ana-textarea" name="\${f.name}" rows="2" placeholder="Descreva..." \${f.required ? 'required' : ''}></textarea></div>\`;
-                  if (f.type === 'checkbox') return \`<div class="ana-group" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px"><input type="checkbox" class="ana-checkbox" id="\${f.name}" name="\${f.name}" \${f.required ? 'required' : ''} style="margin-top:2px;width:18px;height:18px;accent-color:#10b981;cursor:pointer"><label for="\${f.name}" style="font-size:0.85rem;color:#e2e8f0;line-height:1.4;cursor:pointer">\${f.label}\${f.required ? ' *' : ''}</label></div>\`;
-                  return \`<div class="ana-group"><label class="ana-label">\${f.label}\${f.required ? ' *' : ''}</label><input class="ana-input" name="\${f.name}" type="\${f.type}" \${f.required ? 'required' : ''} placeholder="" /></div>\`;
+                  if (f.type === 'select') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><select class="ana-select" name="${f.name}" ${f.required ? 'required' : ''}><option value="">Selecione...</option>${f.options.map(o => `<option>${o}</option>`).join('')}</select></div>`;
+                  if (f.type === 'textarea') return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><textarea class="ana-textarea" name="${f.name}" rows="2" placeholder="Descreva..." ${f.required ? 'required' : ''}></textarea></div>`;
+                  if (f.type === 'checkbox') return `<div class="ana-group" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px"><input type="checkbox" class="ana-checkbox" id="${f.name}" name="${f.name}" ${f.required ? 'required' : ''} style="margin-top:2px;width:18px;height:18px;accent-color:#10b981;cursor:pointer"><label for="${f.name}" style="font-size:0.85rem;color:#e2e8f0;line-height:1.4;cursor:pointer">${f.label}${f.required ? ' *' : ''}</label></div>`;
+                  return `<div class="ana-group"><label class="ana-label">${f.label}${f.required ? ' *' : ''}</label><input class="ana-input" name="${f.name}" type="${f.type}" ${f.required ? 'required' : ''} placeholder="" /></div>`;
                 }).join('')}
               </div>
             `).join('')}
