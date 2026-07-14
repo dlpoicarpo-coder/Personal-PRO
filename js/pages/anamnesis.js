@@ -350,6 +350,7 @@ const ANAMNESE_CSS = `
     border-radius:9px;color:#e2e8f0;font-size:0.88rem;font-family:inherit;transition:border-color 0.15s;
   }
   .ana-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  .ana-select option { color: #0F1519; }
   .ana-textarea{resize:vertical;min-height:64px}
   .ana-input:focus,.ana-select:focus,.ana-textarea:focus{outline:none;border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.04)}
   .ana-input::placeholder,.ana-textarea::placeholder{color:#334155}
