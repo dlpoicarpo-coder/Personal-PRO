@@ -333,8 +333,9 @@ function initApp() {
     // Override with source of truth
     db.getAll('settings').then(settingsList => {
       const settings = settingsList[0];
-      if (settings && settings.theme && settings.theme !== savedTheme) {
-        savedTheme = settings.theme;
+      const settingsTheme = settings && (settings.theme || (settings.data && settings.data.theme));
+      if (settingsTheme && settingsTheme !== savedTheme) {
+        savedTheme = settingsTheme;
         localStorage.setItem('pp_theme', savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
