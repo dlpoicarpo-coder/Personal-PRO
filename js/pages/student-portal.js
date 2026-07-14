@@ -1457,8 +1457,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
           <div class="portal-rest-bar-track"><div class="portal-rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
           <div class="portal-rest-actions" style="margin-top:12px;gap:8px">
             <button class="portal-rest-adj" id="restMinus">-15s</button>
-            <button class="portal-rest-skip" id="restPauseToggle" style="background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#f59e0b">Pausar ⏸</button>
-            <button class="portal-rest-skip" id="restSkip" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#818cf8">Trabalho </button>
+            <button class="portal-rest-skip" id="restResume" style="background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.3);color:#10b981;grid-column: span 2">RETOMAR EXERCÍCIOS ⏩</button>
             <button class="portal-rest-adj" id="restPlus">+15s</button>
           </div>
         </div>
@@ -1589,19 +1588,15 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
     if (elapsed > 1800) {
       // Long inactivity gap (> 30 min)
-      if (isResting && !isRestPaused) {
+      if (isResting) {
         timeResting = Math.min(elapsed, restRemaining);
       }
       // timeWorking is 0
     } else {
       // Normal catchup
       if (isResting) {
-        if (isRestPaused) {
-          timeWorking = elapsed;
-        } else {
-          timeResting = Math.min(elapsed, restRemaining);
-          timeWorking = elapsed - timeResting;
-        }
+        timeResting = Math.min(elapsed, restRemaining);
+        timeWorking = elapsed - timeResting;
       } else {
         timeWorking = elapsed;
       }
@@ -1611,7 +1606,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     restSeconds += timeResting;
     workSeconds += timeWorking;
 
-    if (isResting && !isRestPaused) {
+    if (isResting) {
       restRemaining -= timeResting;
       if (restRemaining <= 0) {
         clearInterval(restTimer);
@@ -1800,7 +1795,6 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       restRemaining,
       restTotal,
       activeRestingRowId,
-      isRestPaused,
       lastSavedTime: new Date().toISOString(),
       exercises: data.exercises,
       setLog: data.setLog,
@@ -2003,19 +1997,15 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
     if (elapsedSinceLastSave > 1800) {
       // Long inactivity gap (> 30 min)
-      if (saved.isResting && !saved.isRestPaused) {
+      if (saved.isResting) {
         timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
       }
       // timeWorking is 0
     } else {
       // Normal catchup
       if (saved.isResting) {
-        if (saved.isRestPaused) {
-          timeWorking = elapsedSinceLastSave;
-        } else {
-          timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
-          timeWorking = elapsedSinceLastSave - timeResting;
-        }
+        timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
+        timeWorking = elapsedSinceLastSave - timeResting;
       } else {
         timeWorking = elapsedSinceLastSave;
       }
@@ -2034,7 +2024,6 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         restTotal = saved.restTotal || 60;
         restRemaining = newRestRemaining;
         activeRestingRowId = saved.activeRestingRowId;
-        isRestPaused = saved.isRestPaused || false;
         
         const row = document.getElementById(activeRestingRowId);
         const overlay = document.getElementById('restTimerOverlay');
@@ -2196,22 +2185,11 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   });
 
   // Rest timer
-  let isRestPaused = false;
-
   function startRestTimer(seconds) {
     if (restTimer) clearInterval(restTimer);
     restTotal = seconds;
     restRemaining = seconds;
     isResting = true;
-    isRestPaused = false;
-    
-    const pauseToggle = document.getElementById('restPauseToggle');
-    if (pauseToggle) {
-      pauseToggle.textContent = 'Pausar ⏸';
-      pauseToggle.style.background = 'rgba(245,158,11,0.15)';
-      pauseToggle.style.borderColor = 'rgba(245,158,11,0.3)';
-      pauseToggle.style.color = '#f59e0b';
-    }
 
     const overlay = document.getElementById('restTimerOverlay');
     const cd = document.getElementById('restCountdown');
@@ -2226,7 +2204,6 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     updateUI();
     
     restTimer = setInterval(() => {
-      if (isRestPaused) return;
       restRemaining--;
       restSeconds++;
       updateUI();
@@ -2351,25 +2328,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     });
   };
 
-  document.getElementById('restPauseToggle')?.addEventListener('click', () => {
-    isRestPaused = !isRestPaused;
-    const btn = document.getElementById('restPauseToggle');
-    if (btn) {
-      if (isRestPaused) {
-        btn.textContent = 'Retomar ▶';
-        btn.style.background = 'rgba(16,185,129,0.15)';
-        btn.style.borderColor = 'rgba(16,185,129,0.3)';
-        btn.style.color = '#10b981';
-      } else {
-        btn.textContent = 'Pausar ⏸';
-        btn.style.background = 'rgba(245,158,11,0.15)';
-        btn.style.borderColor = 'rgba(245,158,11,0.3)';
-        btn.style.color = '#f59e0b';
-      }
-    }
-  });
-
-  document.getElementById('restSkip')?.addEventListener('click', stopRestTimer);
+  document.getElementById('restResume')?.addEventListener('click', stopRestTimer);
   document.getElementById('restMinus')?.addEventListener('click', () => {
     restRemaining = Math.max(5, restRemaining - 15);
     restTotal = Math.max(5, restTotal - 15);
