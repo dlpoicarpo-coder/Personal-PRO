@@ -19,7 +19,7 @@ export function renderLogin() {
 
         <div class="login-tabs">
           <button class="login-tab active" id="tabLogin">Entrar</button>
-          <button class="login-tab" id="tabSignup">Criar Conta</button>
+          <button class="login-tab" id="tabSignup">Sou personal trainer</button>
         </div>
 
         <div class="login-body" id="loginBody">
@@ -57,6 +57,10 @@ export function renderLogin() {
 
           <!-- Signup Form -->
           <div id="panelSignup" style="display:none">
+            <div id="trainerOnlyNotice" style="background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.35);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:0.82rem;line-height:1.5;color:var(--text-muted)">
+              <strong style="color:#f59e0b;display:block;margin-bottom:4px">Esta tela e apenas para personal trainers.</strong>
+              Se voce e aluno, use o link de convite que seu treinador enviou. Nao crie uma conta por aqui.
+            </div>
             <form id="signupForm" autocomplete="on">
               <div class="form-group">
                 <label class="form-label">Nome completo *</label>
@@ -166,11 +170,13 @@ export async function initLogin(onSuccess) {
     if (passwordGroup) passwordGroup.style.display = '';
     if (loginPassInput) loginPassInput.required = true;
     if (loginSubmitBtn) loginSubmitBtn.textContent = 'Entrar no Sistema';
+    // Treinador: mostrar aba "Sou personal trainer"
+    const tabSignup = document.getElementById('tabSignup');
+    if (tabSignup) tabSignup.style.display = '';
   });
 
   roleStudentBtn?.addEventListener('click', () => {
     activeRole = 'student';
-    roleStudentBtn.classList.add('active');
     roleStudentBtn.classList.add('active');
     roleStudentBtn.style.background = 'var(--primary)';
     roleStudentBtn.style.color = '#fff';
@@ -180,6 +186,15 @@ export async function initLogin(onSuccess) {
     if (passwordGroup) passwordGroup.style.display = '';
     if (loginPassInput) loginPassInput.required = true;
     if (loginSubmitBtn) loginSubmitBtn.textContent = 'Acessar Portal';
+    // Aluno nao cria conta sozinho: esconder aba e voltar para login se necessario
+    const tabSignup = document.getElementById('tabSignup');
+    const tabLogin = document.getElementById('tabLogin');
+    if (tabSignup) tabSignup.style.display = 'none';
+    if (tabSignup && tabSignup.classList.contains('active')) {
+      tabSignup.classList.remove('active');
+      if (tabLogin) tabLogin.classList.add('active');
+      showPanel('panelLogin');
+    }
   });
 
   // Tab switching
