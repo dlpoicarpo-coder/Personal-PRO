@@ -249,8 +249,7 @@ export function initAnamnesis(navigateFn) {
   });
 }
 
-const ANA_SUPABASE_URL = 'https://vbxedlloesvjpqzunqyv.supabase.co';
-const ANA_SUPABASE_ANON = 'sb_publishable_d4P6mzDj_sSUpFibSGUcdg_2GOsD35E';
+import { SUPABASE_URL, SUPABASE_KEY } from '../utils/config.js';
 
 const ANAMNESE_CSS = `
   *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
@@ -459,11 +458,11 @@ export function initAnamneseForm() {
         data:       { ...data },
       };
 
-      let res = await fetch(`${ANA_SUPABASE_URL}/rest/v1/anamnesis`, {
+      let res = await fetch(`${SUPABASE_URL}/rest/v1/anamnesis`, {
         method: 'POST',
         headers: {
-          'apikey':        ANA_SUPABASE_ANON,
-          'Authorization': `Bearer ${ANA_SUPABASE_ANON}`,
+          'apikey':        SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
           'Content-Type':  'application/json',
           'Prefer':        'return=minimal',
         },
@@ -471,36 +470,34 @@ export function initAnamneseForm() {
       });
 
       if (!res.ok) {
-        const errText = await res.text();
+        let errText = await res.text();
         if (errText.includes('23505') || errText.includes('unique_violation') || res.status === 409) {
           // Fallback para PATCH se o registro já existir
-          res = await fetch(`${ANA_SUPABASE_URL}/rest/v1/anamnesis?id=eq.${encodeURIComponent(data.id)}`, {
+          res = await fetch(`${SUPABASE_URL}/rest/v1/anamnesis?id=eq.${encodeURIComponent(data.id)}`, {
             method: 'PATCH',
             headers: {
-              'apikey':        ANA_SUPABASE_ANON,
-              'Authorization': `Bearer ${ANA_SUPABASE_ANON}`,
+              'apikey':        SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
               'Content-Type':  'application/json',
               'Prefer':        'return=minimal',
             },
             body: JSON.stringify(row),
           });
+          if (!res.ok) {
+            errText = await res.text();
+            throw new Error('Falha ao atualizar anamnese: ' + errText);
+          }
+        } else {
+          throw new Error('Falha ao enviar anamnese: ' + errText);
         }
-        
-      if (!res.ok) {
-        const finalErr = await res.text();
-        console.error('Anamnese Supabase error:', finalErr);
-        // Fallback: save locally se falhar completamente
-        const { default: dbM } = await import('../db.js');
-        await dbM.add('anamnesis', data);
       }
-    }
 
-    form.style.display = 'none';
+      form.style.display = 'none';
       document.getElementById('anamneseSuccess').style.display = '';
     } catch (err) {
       console.error('Anamnese submit error:', err);
       if (btn) { btn.disabled = false; btn.textContent = 'Enviar Anamnese'; }
-      alert('Erro ao enviar. Verifique sua conexão e tente novamente.');
+      alert(err.message || 'Erro ao enviar. Verifique sua conexão e tente novamente.');
     }
   });
 }
