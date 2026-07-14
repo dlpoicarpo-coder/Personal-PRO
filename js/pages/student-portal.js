@@ -65,6 +65,7 @@ if (isIOS && !isInStandaloneMode) {
 
 function showPwaPopup(isIOSMode = false) {
   if (pwaPopupShown) return;
+  if (window.location.hash.startsWith('#/convite')) return;
   if (!isIOSMode && !deferredPrompt) return;
   pwaPopupShown = true;
   const popup = document.getElementById('pwaInstallPopup');

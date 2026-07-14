@@ -102,6 +102,21 @@ export async function navigateTo(path) {
     return;
   }
 
+  // Manage student portal stylesheet based on route
+  const isPortalRoute = path.startsWith('/portal') || path.startsWith('/convite');
+  if (isPortalRoute) {
+    if (!document.getElementById('studentPortalStylesheet')) {
+      const link = document.createElement('link');
+      link.id = 'studentPortalStylesheet';
+      link.rel = 'stylesheet';
+      link.href = 'css/student-portal.css';
+      document.head.appendChild(link);
+    }
+  } else {
+    const link = document.getElementById('studentPortalStylesheet');
+    if (link) link.remove();
+  }
+
   if (path.startsWith('/convite')) {
     appContainer.className = '';
     const { renderInviteScreen, initInviteScreen } = await import('./pages/invite.js');
@@ -111,14 +126,6 @@ export async function navigateTo(path) {
   }
 
   if (path.startsWith('/portal')) {
-    // Inject custom PWA Mobile student portal stylesheet
-    if (!document.getElementById('studentPortalStylesheet')) {
-      const link = document.createElement('link');
-      link.id = 'studentPortalStylesheet';
-      link.rel = 'stylesheet';
-      link.href = 'css/student-portal.css';
-      document.head.appendChild(link);
-    }
     let rawParam = path.split('/portal/')[1] || path.split('/portal')[1];
     if (rawParam && rawParam.startsWith('/')) rawParam = rawParam.substring(1);
     
@@ -133,10 +140,6 @@ export async function navigateTo(path) {
     appContainer.innerHTML = await renderStudentPortal(rawParam);
     initStudentPortal(rawParam);
     return;
-  } else {
-    // Remove student portal stylesheet if on trainer routes
-    const link = document.getElementById('studentPortalStylesheet');
-    if (link) link.remove();
   }
 
   // 1. Auth check
