@@ -338,6 +338,14 @@ function initApp() {
       if (localStorage.getItem('fixed_db_v8')) return;
       localStorage.setItem('fixed_db_v8', '1'); // Setado antes para evitar loops
       
+      let overlayTimer = setTimeout(() => {
+        const div = document.createElement('div');
+        div.id = 'seedingOverlay';
+        div.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(8,12,18,0.85);backdrop-filter:blur(4px);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#10b981;font-size:1.1rem;font-weight:600;gap:16px;';
+        div.innerHTML = '<i class="vetor-diamond" style="width:32px;height:32px"></i><span>Preparando seus dados...</span>';
+        document.body.appendChild(div);
+      }, 800);
+
       try {
         // Dedup exercises
         const exs = await db.getAll('exercises');
@@ -411,7 +419,13 @@ function initApp() {
         for (const m of defaultMethods) {
           if (!freshMethods.find(x => x.name === m.name)) await db.add('methods', m);
         }
-      } catch(e) { console.error('DB repair error:', e); }
+      } catch(e) { 
+        console.error('DB repair error:', e); 
+      } finally {
+        clearTimeout(overlayTimer);
+        const overlay = document.getElementById('seedingOverlay');
+        if (overlay) overlay.remove();
+      }
     }, 2000);
   });
   
