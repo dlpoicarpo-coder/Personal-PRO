@@ -239,7 +239,7 @@ export async function renderStudentPortal(rawParam) {
     if (!isTrainerAuth) {
       // NÃO TEM SESSÃO: redireciona para tela unificada de login
       window.location.hash = '#/login';
-      return `<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; color: #fff; text-align: center; background: var(--bg-primary, #0f1420);">Redirecionando para o login...</div>`;
+      return `<div class="login-page" style="color: #fff; text-align: center;">Redirecionando para o login...</div>`;
     } else {
       // TREINADOR: acessando a view do aluno (aqui sim usamos o ID da URL)
       if (rawParam && rawParam !== 'undefined') {
