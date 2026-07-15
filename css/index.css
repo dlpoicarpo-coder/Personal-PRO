@@ -1211,10 +1211,10 @@ h4 {
   --acc:     #0B8B60;
   --acc-num: #0B8B60;
   
-  --side:       #5C6E7A;
-  --side-ink:   #FFFFFF;
-  --side-dim:   #D3DCE2;
-  --side-faint: #B9C4CC;
+  --side:       #c7d0da;   /* era #5C6E7A — 1 degrau acima do card #edf0f4 */
+  --side-ink:   #1a2330;   /* era #FFFFFF — texto escuro para tema claro */
+  --side-dim:   #2b3642;   /* era #D3DCE2 — itens de menu */
+  --side-faint: #6b7684;   /* era #B9C4CC — itens secundarios / tagline */
 
   /* Mapeando para as variáveis do sistema */
   --bg-primary: var(--bg);
@@ -1245,9 +1245,19 @@ h4 {
   --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
 }
 
+[data-theme="light"] .sidebar {
+  border-right: 1px solid #b3bdc9;
+}
+
 [data-theme="light"] .sidebar-link.active {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16,185,129,0.15);
   box-shadow: inset 3px 0 0 #10b981;
+  color: #0f3d2e;   /* verde-escuro legivel — override do #e2e8f0 da regra base */
+}
+
+[data-theme="light"] .sidebar-link:hover {
+  background: rgba(15,25,35,0.05);   /* leve escurecimento visivel no claro */
+  color: #1a2330;
 }
 
 /* ========================================
