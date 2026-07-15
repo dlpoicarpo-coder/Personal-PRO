@@ -3754,25 +3754,25 @@ async function showExerciseModal(ex) {
 
       <!-- Quick stats row -->
       <div style="display:flex;gap:8px;padding:0 20px 16px;overflow-x:auto">
-        ${ex.sets ? `<div style="background:rgba(99,102,241,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:800;color:#818cf8">${ex.sets}</div>
-          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Séries</div>
+        ${ex.sets ? `<div style="background:var(--portal-surface);border:1px solid var(--portal-border);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--portal-purple)">${ex.sets}</div>
+          <div style="font-size:0.68rem;color:var(--portal-text-muted);margin-top:2px">Séries</div>
         </div>` : ''}
-        ${ex.reps ? `<div style="background:rgba(16,185,129,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:800;color:#10b981">${ex.reps}</div>
-          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Reps</div>
+        ${ex.reps ? `<div style="background:var(--portal-surface);border:1px solid var(--portal-border);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--portal-primary)">${ex.reps}</div>
+          <div style="font-size:0.68rem;color:var(--portal-text-muted);margin-top:2px">Reps</div>
         </div>` : ''}
-        ${ex.load ? `<div style="background:rgba(249,115,22,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:800;color:#f97316">${formatLoadWithBpm(ex, portalState.student)}</div>
-          <div style="font-size:0.68rem;color:#ea580c;margin-top:2px">${loadTypeLabel}</div>
+        ${ex.load ? `<div style="background:var(--portal-surface);border:1px solid var(--portal-border);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--portal-warning)">${formatLoadWithBpm(ex, portalState.student)}</div>
+          <div style="font-size:0.68rem;color:var(--portal-text-muted);margin-top:2px">${loadTypeLabel}</div>
         </div>` : ''}
-        ${ex.rest ? `<div style="background:rgba(6,182,212,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:800;color:#06b6d4">${ex.rest}s</div>
-          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Descanso</div>
+        ${ex.rest ? `<div style="background:var(--portal-surface);border:1px solid var(--portal-border);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--portal-accent)">${ex.rest}s</div>
+          <div style="font-size:0.68rem;color:var(--portal-text-muted);margin-top:2px">Descanso</div>
         </div>` : ''}
-        ${ex.rir!=null ? `<div style="background:rgba(245,158,11,0.15);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:800;color:#f59e0b">RIR ${ex.rir}</div>
-          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px">Reserva</div>
+        ${ex.rir!=null ? `<div style="background:var(--portal-surface);border:1px solid var(--portal-border);border-radius:10px;padding:8px 14px;text-align:center;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--portal-warning)">RIR ${ex.rir}</div>
+          <div style="font-size:0.68rem;color:var(--portal-text-muted);margin-top:2px">Reserva</div>
         </div>` : ''}
       </div>
 
@@ -3803,9 +3803,9 @@ async function showExerciseModal(ex) {
         ` : ''}
 
         ${!ex.videoUrl && !finalImageUrl ? `
-          <div id="portalExMediaFallback" style="display:flex;height:120px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed rgba(255,255,255,0.1)">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            <span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">Nenhuma mídia vinculada</span>
+          <div id="portalExMediaFallback" style="display:flex;height:120px;background:var(--portal-surface);border-radius:14px;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--portal-border)">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--portal-text-muted)" stroke-width="1.5" opacity="0.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span style="font-size:0.75rem;color:var(--portal-text-muted)">Nenhuma mídia vinculada</span>
           </div>
         ` : ''}
       </div>
@@ -3813,25 +3813,25 @@ async function showExerciseModal(ex) {
       <!-- Description / Technique -->
       <div style="padding:0 20px 20px">
         ${ex.description||ex.notes||ex.technique ? `
-        <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px;border-left:3px solid ${muscleColor}">
+        <div style="background:var(--portal-surface);border:1px solid var(--portal-border);border-radius:14px;padding:14px 16px;border-left:3px solid ${muscleColor}">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${muscleColor};margin-bottom:8px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${muscleColor}" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Técnica de Execução
           </div>
-          <p style="font-size:0.82rem;line-height:1.7;color:var(--portal-text-secondary,#94a3b8);margin:0">${ex.description||ex.notes||ex.technique}</p>
+          <p style="font-size:0.82rem;line-height:1.7;color:var(--portal-text-secondary);margin:0">${ex.description||ex.notes||ex.technique}</p>
         </div>` : `
-        <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px">
-          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:8px">Dicas de Execução</div>
-          <p style="font-size:0.82rem;line-height:1.7;color:#64748b;margin:0">Mantenha a postura correta durante todo o movimento. Controle a fase excêntrica (descida) em 2-3 segundos. Respire corretamente: expire no esforço, inspire no retorno.</p>
+        <div style="background:var(--portal-surface);border:1px solid var(--portal-border);border-radius:14px;padding:14px 16px">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-text-muted);margin-bottom:8px">Dicas de Execução</div>
+          <p style="font-size:0.82rem;line-height:1.7;color:var(--portal-text-secondary);margin:0">Mantenha a postura correta durante todo o movimento. Controle a fase excêntrica (descida) em 2-3 segundos. Respire corretamente: expire no esforço, inspire no retorno.</p>
         </div>`}
 
         ${ex.method ? `
-        <div style="margin-top:10px;background:rgba(139,92,246,0.1);border-radius:10px;padding:12px 14px;border:1px solid rgba(139,92,246,0.2)">
+        <div style="margin-top:10px;background:var(--portal-surface);border-radius:10px;padding:12px 14px;border:1px solid var(--portal-border)">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.5"><polygon points="12 2 2 7 12 22 22 7 12 2"/></svg>
-            <span style="font-size:0.8rem;color:#a78bfa;font-weight:700">${ex.method}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--portal-purple)" stroke-width="2.5"><polygon points="12 2 2 7 12 22 22 7 12 2"/></svg>
+            <span style="font-size:0.8rem;color:var(--portal-purple);font-weight:700">${ex.method}</span>
           </div>
-          ${methodDesc ? `<div style="font-size:0.75rem;color:rgba(255,255,255,0.75);line-height:1.45;margin-top:4px">${methodDesc}</div>` : ''}
+          ${methodDesc ? `<div style="font-size:0.75rem;color:var(--portal-text-secondary);line-height:1.45;margin-top:4px">${methodDesc}</div>` : ''}
         </div>` : ''}
       </div>
     </div>
@@ -3891,8 +3891,9 @@ async function showExerciseModal(ex) {
 async function renderProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles) {
   const activeTab = portalState.activeProgressoTab || 'sessoes';
   let tabContent = '';
+  const workouts = await db.getAll('workouts');
   if (activeTab === 'sessoes') {
-    tabContent = renderSessoes(sessions, schedules);
+    tabContent = renderSessoes(sessions, schedules, workouts);
   } else {
     tabContent = await renderRelatorios(student, sessions, assessments, biofeedbacks, macrocycles);
   }
@@ -3961,7 +3962,7 @@ function initProgresso(student, sessions, schedules, assessments, biofeedbacks, 
   }
 }
 
-function renderSessoes(sessions, schedules) {
+function renderSessoes(sessions, schedules, workouts = []) {
   const now = new Date();
   const upcoming = schedules
     .filter(s => new Date(s.date+'T'+(s.time||'23:59')) >= now)
@@ -3987,27 +3988,33 @@ function renderSessoes(sessions, schedules) {
 
       ${upcoming.length ? `
         <div class="portal-section-sub">Próximas sessões</div>
-        ${upcoming.map(s => `
-          <div class="glass-card portal-session-upcoming">
+        ${upcoming.map(s => {
+          const w = workouts.find(x => x.id === s.workoutId);
+          const color = w?.color || 'var(--portal-border)';
+          return `
+          <div class="glass-card portal-session-upcoming" style="border-left: 3px solid ${color}; padding-left: 14px;">
             <div class="portal-session-date">${safeFormatDate(s.date)}</div>
             <div class="portal-session-time">${s.time || 'Horário a confirmar'}</div>
             <div class="portal-session-name">${s.workoutName || 'Treino'}</div>
           </div>
-        `).join('')}
+        `;}).join('')}
       ` : ''}
 
       <!-- CHECKOUT PENDENTE -->
       ${needsCheckout.length ? `
         <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)"> Checkout pendente</div>
-        ${needsCheckout.map(s => `
-          <div class="glass-card portal-checkout-card" id="checkout_${s.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+        ${needsCheckout.map(s => {
+          const w = workouts.find(x => x.id === s.workoutId);
+          const color = w?.color || 'var(--portal-warning)';
+          return `
+          <div class="glass-card portal-checkout-card" id="checkout_${s.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px; border-left: 3px solid ${color};">
             <div>
               <div class="portal-session-name" style="font-weight:700;font-size:0.95rem">${s.workoutName||'Treino'}</div>
               <div class="portal-session-meta" style="font-size:0.75rem;color:var(--portal-text-muted);margin-top:2px">${safeFormatDate(s.date)}</div>
             </div>
             <button onclick="window.showPortalCheckoutById('${s.id}')" class="portal-reminder-btn portal-reminder-btn-warning">Fazer checkout</button>
           </div>
-        `).join('')}
+        `;}).join('')}
       ` : ''}
 
       <div class="portal-section-sub" style="margin-top:20px">Histórico</div>
@@ -4018,8 +4025,10 @@ function renderSessoes(sessions, schedules) {
           const pse = s.postBiofeedback?.pse;
           const isSolo = s.isSolo;
           const hasCheckout = !!(s.postBiofeedback && s.postBiofeedback.submittedByStudent);
+          const w = workouts.find(x => x.id === s.workoutId);
+          const color = w?.color || 'transparent';
           return `
-            <div class="portal-session-card glass-card${isSolo ? ' portal-session-solo' : ''}">
+            <div class="portal-session-card glass-card${isSolo ? ' portal-session-solo' : ''}" style="border-left: 3px solid ${color};">
               <div class="portal-session-header">
                 <div>
                   <div class="portal-session-name">${s.workoutName||'Treino'}${isSolo ? ' <span class="portal-solo-badge">autônomo</span>' : ''}</div>
