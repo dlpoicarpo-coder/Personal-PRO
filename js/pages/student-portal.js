@@ -4042,51 +4042,50 @@ function renderBio(biofeedbacks, sid, tid) {
     <div class="portal-section">
       <h2 class="portal-section-title">Check-in</h2>
 
-      <div class="glass-card portal-bio-form-card">
-        <div class="portal-card-label">Biofeedback Pré-treino</div>
+        <div class="portal-card-label" style="margin-bottom: 12px; font-size: 1.1rem; color: var(--portal-text);">Biofeedback Pré-treino</div>
         <form id="portalBioForm">
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_MOON} Qualidade do Sono</label>
             ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
           </div>
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Recuperação (TQR)</label>
             ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
           </div>
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FOOD} Alimentação nas últimas 24h</label>
             ${renderInlineCardSelector('food', ALIMENTACAO_OPTIONS, 5)}
           </div>
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_BRAIN} Estresse</label>
             ${renderInlineCardSelector('stress', ESTRESSE_OPTIONS, 5)}
           </div>
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_PAIN} Dor ou Desconforto Articular</label>
             ${renderInlineCardSelector('pain', DOR_OPTIONS, 1, 'window.onBioPainChange')}
-          </div>
-          <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
-            <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(toque para marcar/desmarcar)</span></label>
-            <div id="painRegionsGrid" style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid var(--portal-border);border-radius:12px">
-              ${(() => {
-                const groups = {};
-                PAIN_REGIONS.forEach(r => {
-                  if (!groups[r.group]) groups[r.group] = [];
-                  groups[r.group].push(r);
-                });
-                return Object.entries(groups).map(([grp, regions]) => `
-                  <div style="margin-bottom:10px">
-                    <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--portal-text-muted);margin-bottom:5px">${grp}</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:5px">
-                      ${regions.map(r => `
-                        <button type="button" class="portal-pain-chip" data-region="${r.id}"
-                          style="display:flex;align-items:center;padding:5px 12px;border-radius:20px;border:1.5px solid var(--portal-border);background:transparent;color:var(--portal-text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
-                          <span>${r.label}</span>
-                          <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
-                        </button>`).join('')}
-                    </div>
-                  </div>`).join('');
-              })()}
+            <div id="portalPainGrp" style="display:none;margin-top:12px;margin-bottom:12px">
+              <label class="portal-bio-label">Locais de dor <span class="text-muted text-xs">(toque para marcar/desmarcar)</span></label>
+              <div id="painRegionsGrid" style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.02);border:1px solid var(--portal-border);border-radius:12px">
+                ${(() => {
+                  const groups = {};
+                  PAIN_REGIONS.forEach(r => {
+                    if (!groups[r.group]) groups[r.group] = [];
+                    groups[r.group].push(r);
+                  });
+                  return Object.entries(groups).map(([grp, regions]) => `
+                    <div style="margin-bottom:10px">
+                      <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--portal-text-muted);margin-bottom:5px">${grp}</div>
+                      <div style="display:flex;flex-wrap:wrap;gap:5px">
+                        ${regions.map(r => `
+                          <button type="button" class="portal-pain-chip" data-region="${r.id}"
+                            style="display:flex;align-items:center;padding:5px 12px;border-radius:20px;border:1.5px solid var(--portal-border);background:transparent;color:var(--portal-text-muted);font-size:0.75rem;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
+                            <span>${r.label}</span>
+                            <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
+                          </button>`).join('')}
+                      </div>
+                    </div>`).join('');
+                })()}
+              </div>
             </div>
             <div class="portal-bio-field" style="margin-top:10px">
               <input class="portal-solo-input" name="painDescription" placeholder="Descreva a dor (opcional)..." style="text-align:left;padding:8px 12px;width:100%" />
@@ -5422,6 +5421,14 @@ function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
 }
 
 // ── CUSTOM SELECTION SYSTEM FOR PSE & RIR ─────────────────────
+const FEELING_OPTIONS = [
+  { value: '1', label: '1 - Esgotado', desc: 'Completamente sem energia, exaustão extrema', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  { value: '2', label: '2 - Cansado', desc: 'Fadiga alta, exigiu muito do corpo', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+  { value: '3', label: '3 - Ok', desc: 'Treino foi bom, cansaço normal e esperado', color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+  { value: '4', label: '4 - Bem', desc: 'Boa energia, corpo já recuperando', color: '#84cc16', bg: 'rgba(132,204,22,0.1)' },
+  { value: '5', label: '5 - Excelente', desc: 'Ótima sensação, energia lá no alto', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' }
+];
+
 const PSE_OPTIONS = [
   { value: '1', label: '1 - Extremamente Leve', desc: 'Esforço mínimo, respiração totalmente normal', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   { value: '2', label: '2 - Muito Leve', desc: 'Fácil de manter, conversa fluida sem pausas', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
@@ -5741,41 +5748,7 @@ function showPortalCheckoutModal(session) {
         display: block;
         margin-top: 2px;
       }
-      .portal-feeling-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 6px;
-        margin-top: 6px;
-      }
-      .portal-feeling-emoji-btn {
-        flex: 1;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 12px;
-        padding: 10px 2px;
-        font-size: 1.25rem;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        transition: all 0.2s ease;
-        color: var(--portal-text-muted, #94a3b8);
-      }
-      .portal-feeling-emoji-lbl {
-        font-size: 0.65rem;
-        font-weight: 600;
-      }
-      .portal-feeling-emoji-btn:hover {
-        background: rgba(255,255,255,0.06);
-        transform: translateY(-1px);
-      }
-      .portal-feeling-emoji-btn.active {
-        border-color: var(--portal-primary, #6366f1);
-        background: rgba(99,102,241,0.12);
-        color: var(--portal-primary, #6366f1);
-        transform: scale(1.05);
-      }
+
       .portal-pain-chip-chk {
         display: flex;
         align-items: center;
@@ -5835,35 +5808,19 @@ function showPortalCheckoutModal(session) {
 
       <div style="overflow-y: auto; flex: 1; padding-right: 4px;" id="portalCheckoutForm">
         <!-- 1. PSE INLINE CARDS -->
-        <div class="portal-checkout-field">
+        <div class="glass-card portal-checkout-field" style="padding: 16px; margin-bottom: 12px;">
           <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Intensidade do Esforço Percebido (PSE)</label>
           ${renderInlineCardSelector('pse', PSE_OPTIONS, currentPse)}
         </div>
 
         <!-- 2. FEELING/SATISFACTION -->
-        <div class="portal-checkout-field">
+        <div class="glass-card portal-checkout-field" style="padding: 16px; margin-bottom: 12px;">
           <label class="portal-checkout-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_SMILE} Sensação pós-treino (Recuperação/Humor)</label>
-          <div class="portal-feeling-row">
-            <button class="portal-feeling-emoji-btn ${currentFeeling===1?'active':''}" data-val="1">
-              <span>${ICON_FEELING_1}</span><span class="portal-feeling-emoji-lbl">Esgotado</span>
-            </button>
-            <button class="portal-feeling-emoji-btn ${currentFeeling===2?'active':''}" data-val="2">
-              <span>${ICON_FEELING_2}</span><span class="portal-feeling-emoji-lbl">Cansado</span>
-            </button>
-            <button class="portal-feeling-emoji-btn ${currentFeeling===3?'active':''}" data-val="3">
-              <span>${ICON_FEELING_3}</span><span class="portal-feeling-emoji-lbl">Ok</span>
-            </button>
-            <button class="portal-feeling-emoji-btn ${currentFeeling===4?'active':''}" data-val="4">
-              <span>${ICON_FEELING_4}</span><span class="portal-feeling-emoji-lbl">Bem</span>
-            </button>
-            <button class="portal-feeling-emoji-btn ${currentFeeling===5?'active':''}" data-val="5">
-              <span>${ICON_FEELING_5}</span><span class="portal-feeling-emoji-lbl">Excelente</span>
-            </button>
-          </div>
+          ${renderInlineCardSelector('feeling', FEELING_OPTIONS, currentFeeling || 3)}
         </div>
 
         <!-- 3. NOTES -->
-        <div class="portal-checkout-field">
+        <div class="glass-card portal-checkout-field" style="padding: 16px; margin-bottom: 12px;">
           <label class="portal-checkout-label">Observações do Treino</label>
           <textarea id="chkModalNotes" class="portal-textarea" rows="2" placeholder="Ex: RIR em agachamento foi menor, me senti muito forte hoje...">${currentNotes}</textarea>
         </div>
@@ -5875,15 +5832,7 @@ function showPortalCheckoutModal(session) {
 
   container.appendChild(overlay);
 
-  // Feeling buttons
-  let selectedFeeling = currentFeeling;
-  overlay.querySelectorAll('.portal-feeling-emoji-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      overlay.querySelectorAll('.portal-feeling-emoji-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedFeeling = parseInt(btn.dataset.val);
-    });
-  });
+
 
   const closeSheet = () => {
     overlay.style.animation = 'portalFadeIn 0.2s ease-in reverse';
@@ -5905,12 +5854,13 @@ function showPortalCheckoutModal(session) {
   // Submit Handler
   document.getElementById('chkModalSubmitBtn').addEventListener('click', async () => {
     const pse = parseInt(document.getElementById('portal_pse')?.value) || 5;
+    const feeling = parseInt(document.getElementById('portal_feeling')?.value) || 3;
     const notes = document.getElementById('chkModalNotes').value || '';
 
     const postBiofeedback = {
       pse,
-      feeling: selectedFeeling,
-      satisfaction: selectedFeeling * 2, // Map 1-5 feeling to 2-10 satisfaction
+      feeling: feeling,
+      satisfaction: feeling * 2, // Map 1-5 feeling to 2-10 satisfaction
       notes,
       date: Calc.nowISO(),
       submittedAt: Calc.nowISO(),
