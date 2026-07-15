@@ -4125,32 +4125,32 @@ function renderBio(biofeedbacks, sid, tid) {
             <div class="portal-bio-date">${parseLocalDate(b.date).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}</div>
             <div class="portal-bio-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
               ${b.sleep!=null?`
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.2);color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                <span class="portal-history-badge portal-history-badge-sleep">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                   Sono: ${b.sleep}
                 </span>`:''}
               ${b.tqr!=null?`
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.2);color:#6ee7b7;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                <span class="portal-history-badge portal-history-badge-tqr">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                   TQR: ${b.tqr}
                 </span>`:''}
               ${b.food!=null?`
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.2);color:#fda4af;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                <span class="portal-history-badge portal-history-badge-food">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/></svg>
                   Alim: ${b.food}/5
                 </span>`:''}
               ${b.stress!=null?`
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);color:#fde047;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                <span class="portal-history-badge portal-history-badge-stress">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   Stress: ${b.stress}
                 </span>`:''}
               ${b.pain!=null?`
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.2);color:#fca5a5;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                <span class="portal-history-badge portal-history-badge-pain">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><path d="M12 2v20M2 12h20"/></svg>
                   Dor: ${b.pain}
                 </span>`:''}
               ${b.motivation!=null?`
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.2);color:#ffedd5;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:600">
+                <span class="portal-history-badge portal-history-badge-motivation">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   Mot: ${b.motivation}
                 </span>`:''}

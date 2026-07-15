@@ -461,6 +461,11 @@
   background: rgba(245,158,11,0.12); color: #f59e0b;
 }
 
+.portal-root[data-theme="light"] .pse-badge.pse-green, .portal-root[data-theme="light"] .pse-mini.pse-green { background: rgba(22,163,74,0.1); color: #16a34a; border-color: rgba(22,163,74,0.2); }
+.portal-root[data-theme="light"] .pse-badge.pse-yellow, .portal-root[data-theme="light"] .pse-mini.pse-yellow { background: rgba(217,119,6,0.1); color: #d97706; border-color: rgba(217,119,6,0.2); }
+.portal-root[data-theme="light"] .pse-badge.pse-orange, .portal-root[data-theme="light"] .pse-mini.pse-orange { background: rgba(234,88,12,0.1); color: #ea580c; border-color: rgba(234,88,12,0.2); }
+.portal-root[data-theme="light"] .pse-badge.pse-red, .portal-root[data-theme="light"] .pse-mini.pse-red { background: rgba(220,38,38,0.1); color: #dc2626; border-color: rgba(220,38,38,0.2); }
+
 .pse-mini {
   border-radius: 4px; padding: 1px 5px; font-size: 0.65rem; font-weight: 700;
 }
@@ -541,6 +546,21 @@
 .portal-bio-date { font-size: 0.72rem; color: var(--portal-text-muted); margin-bottom: 6px; text-transform: capitalize; }
 .portal-bio-row { display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.82rem; color: var(--portal-text-secondary); }
 .portal-bio-notes { font-size: 0.72rem; color: var(--portal-text-muted); margin-top: 6px; font-style: italic; }
+
+.portal-history-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:6px; font-size:0.68rem; font-weight:600; border: 1px solid transparent; }
+.portal-history-badge-sleep { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.2); color: #93c5fd; }
+.portal-history-badge-tqr { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.2); color: #6ee7b7; }
+.portal-history-badge-food { background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.2); color: #fda4af; }
+.portal-history-badge-stress { background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.2); color: #fde047; }
+.portal-history-badge-pain { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.2); color: #fca5a5; }
+.portal-history-badge-motivation { background: rgba(249,115,22,0.12); border-color: rgba(249,115,22,0.2); color: #ffedd5; }
+
+.portal-root[data-theme="light"] .portal-history-badge-sleep { background: rgba(37,99,235,0.1); border-color: rgba(37,99,235,0.2); color: #2563eb; }
+.portal-root[data-theme="light"] .portal-history-badge-tqr { background: rgba(5,150,105,0.1); border-color: rgba(5,150,105,0.2); color: #059669; }
+.portal-root[data-theme="light"] .portal-history-badge-food { background: rgba(225,29,72,0.1); border-color: rgba(225,29,72,0.2); color: #e11d48; }
+.portal-root[data-theme="light"] .portal-history-badge-stress { background: rgba(217,119,6,0.1); border-color: rgba(217,119,6,0.2); color: #d97706; }
+.portal-root[data-theme="light"] .portal-history-badge-pain { background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.2); color: #dc2626; }
+.portal-root[data-theme="light"] .portal-history-badge-motivation { background: rgba(234,88,12,0.1); border-color: rgba(234,88,12,0.2); color: #ea580c; }
 
 .portal-success {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
