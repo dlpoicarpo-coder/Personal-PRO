@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vetor-v63';
+const CACHE_NAME = 'vetor-v64';
 const ASSETS = [
   '/',
   '/index.html',

@@ -1265,7 +1265,17 @@ function hexToRgb(hex) {
 }
 
 function getWorkoutTheme(name) {
-  const norm = (name || '').toLowerCase();
+  const normRaw = (name || '').toLowerCase();
+  
+  // Extract base name to keep identical workouts (e.g. Sem 1, Sem 2) in the exact same tone
+  let baseName = name || '';
+  baseName = baseName.replace(/\s*[\-\–]\s*Semana\s*\d+/i, '')
+                     .replace(/\s*[\-\–]\s*Sem\s*\d+/i, '')
+                     .replace(/\s*Semana\s*\d+/i, '')
+                     .replace(/\s*Sem\s*\d+/i, '')
+                     .replace(/\s*[\-\–]\s*$/g, '')
+                     .trim();
+  const norm = baseName.toLowerCase();
   
   // Categorias
   const isCardio = norm.match(/cardio|corrida|esteira|bike|aerob|caminh|pedal|hiit/);
@@ -4113,13 +4123,13 @@ function renderBio(biofeedbacks, sid, tid) {
               <input class="portal-solo-input" name="painDescription" placeholder="Descreva a dor (opcional)..." style="text-align:left;padding:8px 12px;width:100%" />
             </div>
           </div>
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FIRE} Motivação para Treinar</label>
             ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 8)}
           </div>
           
           ${isWomanUnder40 ? `
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual (Se aplicável)</label>
             <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
               <option value="" selected>Não se aplica / Prefiro não informar</option>
@@ -4131,7 +4141,7 @@ function renderBio(biofeedbacks, sid, tid) {
           </div>
           ` : ''}
 
-          <div class="portal-bio-field">
+          <div class="glass-card portal-bio-field" style="padding: 16px; margin-bottom: 12px;">
             <label class="portal-bio-label">Notas</label>
             <textarea name="notes" class="portal-textarea" rows="2" placeholder="Como está se sentindo hoje?"></textarea>
           </div>

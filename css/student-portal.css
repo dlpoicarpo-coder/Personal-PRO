@@ -660,7 +660,9 @@
 .portal-workout-pick-item {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 10px 8px; border-radius: 12px;
-  background: var(--portal-surface); border: 2px solid var(--portal-border);
+  background: var(--portal-surface); 
+  border: 1px solid var(--portal-border);
+  border-top: 3px solid rgba(var(--wk-rgb, 148, 163, 184), 0.8);
   cursor: pointer; transition: all 0.15s; text-align: center;
 }
 .portal-workout-pick-item:hover { 
