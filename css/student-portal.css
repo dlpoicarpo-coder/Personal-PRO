@@ -14,8 +14,8 @@
   --portal-surface-hover: #1a2540;
   --portal-border: rgba(255,255,255,0.1);
   --portal-text: #e2e8f0;
-  --portal-text-secondary: #94a3b8;
-  --portal-text-muted: #64748b;
+  --portal-text-secondary: #cbd5e1;
+  --portal-text-muted: #94a3b8;
   --portal-primary: #10b981;
   --portal-primary-glow: rgba(16,185,129,0.25);
   --portal-accent: #06b6d4;
@@ -38,8 +38,8 @@
   --portal-surface-hover: #f4f6f9;
   --portal-border: rgba(15,25,35,0.14);
   --portal-text: #0F1519;
-  --portal-text-secondary: #46525C;
-  --portal-text-muted: #6E7C86;
+  --portal-text-secondary: #334155;
+  --portal-text-muted: #475569;
   --portal-primary: #0B8B60;
   --portal-primary-glow: rgba(11,139,96,0.16);
   --portal-accent: #0E7490;
@@ -651,7 +651,7 @@
 }
 
 /* ── Workout card picker (replaces select) ────────── */
-.portal-workout-picker {
+.portal-workout-picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 8px;
@@ -664,6 +664,22 @@
   border: 1px solid var(--portal-border);
   border-top: 3px solid rgba(var(--wk-rgb, 148, 163, 184), 0.8);
   cursor: pointer; transition: all 0.15s; text-align: center;
+  position: relative;
+}
+.portal-workout-pick-item.completed {
+  opacity: 0.65;
+}
+.portal-workout-pick-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--portal-success);
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 .portal-workout-pick-item:hover { 
   border-color: rgba(var(--wk-rgb, 99, 102, 241), 1); 

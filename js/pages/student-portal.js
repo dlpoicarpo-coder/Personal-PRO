@@ -1432,28 +1432,58 @@ function renderTreinar(workouts, schedules, sessions = []) {
         ${suggestedCard}
 
         <div class="portal-section-sub" style="margin-top:${(missedCard||suggestedCard)?'20px':'0'}">Ou escolha outro treino</div>
-        <div class="portal-bio-field">
-          <div class="portal-workout-picker" id="soloWorkoutPicker">
-            <div class="portal-workout-pick-item selected" data-wid="" style="--wk-rgb: ${getWorkoutTheme('Livre').rgb}">
-              <div class="portal-workout-pick-icon">${getWorkoutTheme('Livre').svg}</div>
-              <div class="portal-workout-pick-name">Livre</div>
-              <div class="portal-workout-pick-sub">Sem base</div>
-            </div>
-            ${[...workouts]
-              .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }))
-              .map(w => {
-                const theme = getWorkoutTheme(w.name);
-                return `
-                <div class="portal-workout-pick-item" data-wid="${w.id}" style="--wk-rgb: ${theme.rgb}">
-                  <div class="portal-workout-pick-icon">${theme.svg}</div>
-                  <div class="portal-workout-pick-name">${w.name || 'Treino'}</div>
-                  <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
+        <div class="portal-bio-field" id="soloWorkoutPicker">
+          ${(function(){
+            const groups = {};
+            workouts.forEach(w => {
+              const isCompleted = sessions.some(s => s.workoutId === w.id && s.status === 'completed');
+              let weekMatch = (w.name||'').match(/Semana\s*(\d+)|Sem\s*(\d+)/i);
+              let weekNum = weekMatch ? parseInt(weekMatch[1] || weekMatch[2], 10) : null;
+              let groupName = weekNum ? `Semana ${weekNum}` : 'Outros';
+              if (!groups[groupName]) groups[groupName] = [];
+              groups[groupName].push({ ...w, isCompleted });
+            });
+
+            const sortedGroups = Object.keys(groups).sort((a,b) => {
+              if (a === 'Outros') return 1;
+              if (b === 'Outros') return -1;
+              return parseInt(a.replace('Semana ','')) - parseInt(b.replace('Semana ',''));
+            });
+
+            let html = `
+              <div class="portal-section-sub" style="margin-top: 0; margin-bottom: 8px;">Geral</div>
+              <div class="portal-workout-picker-grid">
+                <div class="portal-workout-pick-item selected" data-wid="" style="--wk-rgb: ${getWorkoutTheme('Livre').rgb}">
+                  <div class="portal-workout-pick-icon">${getWorkoutTheme('Livre').svg}</div>
+                  <div class="portal-workout-pick-name">Livre</div>
+                  <div class="portal-workout-pick-sub">Sem base</div>
                 </div>
-                `;
-              }).join('')}
-          </div>
-          <input type="hidden" id="soloWorkoutSel" value="">
+              </div>
+            `;
+
+            sortedGroups.forEach(g => {
+              const items = groups[g].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
+              html += `
+                <div class="portal-section-sub" style="margin-top: 16px; margin-bottom: 8px;">${g}</div>
+                <div class="portal-workout-picker-grid">
+                  ${items.map(w => {
+                    const theme = getWorkoutTheme(w.name);
+                    return `
+                    <div class="portal-workout-pick-item ${w.isCompleted ? 'completed' : ''}" data-wid="${w.id}" style="--wk-rgb: ${theme.rgb}">
+                      ${w.isCompleted ? `<div class="portal-workout-pick-badge">Concluído</div>` : ''}
+                      <div class="portal-workout-pick-icon">${theme.svg}</div>
+                      <div class="portal-workout-pick-name">${w.name || 'Treino'}</div>
+                      <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
+                    </div>
+                    `;
+                  }).join('')}
+                </div>
+              `;
+            });
+            return html;
+          })()}
         </div>
+        <input type="hidden" id="soloWorkoutSel" value="">
 
         <div id="soloExercisesBlock"></div>
 
@@ -5541,8 +5571,8 @@ function openCustomSelector(title, options, currentValue, onSelect) {
         box-sizing: border-box;
       }
       .portal-root[data-theme="light"] .portal-sel-option-row {
-        background: rgba(0,0,0,0.02);
-        border-color: rgba(0,0,0,0.05);
+        background: rgba(0,0,0,0.08);
+        border-color: rgba(0,0,0,0.12);
       }
       .portal-sel-option-row:hover {
         background: rgba(255,255,255,0.06);
@@ -5637,9 +5667,9 @@ function updatePseButton(btn, val) {
   if (!btn) return;
   if (!val) {
     btn.textContent = 'PSE';
-    btn.style.background = 'var(--portal-surface, #1e293b)';
-    btn.style.color = 'var(--portal-text-muted, #94a3b8)';
-    btn.style.borderColor = 'var(--portal-border, #334155)';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
     return;
   }
   
@@ -5666,9 +5696,9 @@ function updateRirButton(btn, val) {
   if (!btn) return;
   if (val === '' || val == null) {
     btn.textContent = 'RIR';
-    btn.style.background = 'var(--portal-surface, #1e293b)';
-    btn.style.color = 'var(--portal-text-muted, #94a3b8)';
-    btn.style.borderColor = 'var(--portal-border, #334155)';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
     return;
   }
   
