@@ -590,7 +590,6 @@ function renderPortalShell(student) {
           <span class="portal-fab-diamond">
             <svg class="portal-fab-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>
           </span>
-          <span>Treinar</span>
         </button>
         <button class="portal-nav-btn" data-section="bio">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
