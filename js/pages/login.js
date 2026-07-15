@@ -100,7 +100,7 @@ export function renderLogin() {
 
           <!-- Email Confirmation Pending -->
           <div id="panelConfirmation" style="display:none;text-align:center;padding:20px 0">
-            <div style="font-size:3rem;margin-bottom:16px">📧</div>
+            <div style="font-size:3rem;margin-bottom:16px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
             <h3 style="margin-bottom:8px">Confirme seu e-mail</h3>
             <p class="text-muted text-sm" style="line-height:1.7;margin-bottom:16px">
               Enviamos um link de confirmação para <strong id="confirmEmail"></strong>.<br>
@@ -251,7 +251,7 @@ export async function initLogin(onSuccess) {
       if (msg.includes('Invalid login')) msg = 'E-mail ou senha incorretos.';
       if (msg.includes('Email not confirmed')) msg = 'E-mail ainda não confirmado. Verifique sua caixa de entrada.';
       if (msg.includes('Failed to fetch') || msg.includes('fetch') || msg.includes('ERR_NAME') || msg.includes('timeout') || msg.includes('network')) {
-        msg = '⚠️ Sem conexão com o servidor. Verifique sua internet e tente novamente.';
+        msg = 'Sem conexão com o servidor. Verifique sua internet e tente novamente.';
         errEl.innerHTML = `
           <div style="line-height:1.6">
             <strong>Não foi possível conectar ao servidor.</strong><br>
@@ -260,7 +260,7 @@ export async function initLogin(onSuccess) {
               <li>Internet instável ou roteador travado</li>
               <li>Bloqueador de anúncios/VPN interferindo</li>
             </ul>
-            <button id="retryLoginBtn" class="btn btn-primary btn-sm" style="width:100%;margin-top:4px">🔄 Tentar novamente</button>
+            <button id="retryLoginBtn" class="btn btn-primary btn-sm" style="width:100%;margin-top:4px">Tentar novamente</button>
           </div>`;
         errEl.style.display = '';
         btn.disabled = false;
