@@ -1259,44 +1259,63 @@ function initHomeSection(student, tid, sessions, biofeedbacks) {
   });
 }
 
-function getWorkoutSVG(name) {
+function hexToRgb(hex) {
+  const bigint = parseInt(hex.replace('#',''), 16);
+  return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255].join(',');
+}
+
+function getWorkoutTheme(name) {
   const norm = (name || '').toLowerCase();
   
-  if (norm.includes('cardio') || norm.includes('corrida') || norm.includes('esteira') || norm.includes('bike') || norm.includes('aerob') || norm.includes('caminh') || norm.includes('pedal') || norm.includes('hiit')) {
-    return `
-      <svg class="portal-workout-pick-svg icon-cardio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-      </svg>
-    `;
+  // Categorias
+  const isCardio = norm.match(/cardio|corrida|esteira|bike|aerob|caminh|pedal|hiit/);
+  const isRecup = norm.match(/core|funcional|abd|along|mobil|recup|regen|estabil/);
+  const isResist = norm.match(/resist|endurance|longo|maratona/);
+  const isHibrido = norm.match(/mist|hibrid|cross/);
+  
+  // Hash simples para variar o tom dentro da paleta base
+  let hash = 0;
+  for (let i = 0; i < norm.length; i++) hash = norm.charCodeAt(i) + ((hash << 5) - hash);
+  hash = Math.abs(hash);
+
+  // Paletas 
+  const strengthPalette = ['#ef4444', '#f97316', '#f59e0b', '#dc2626', '#ea580c']; // Vermelho/Laranja
+  const cardioPalette = ['#06b6d4', '#0ea5e9', '#3b82f6', '#0891b2', '#0284c7']; // Ciano/Azul
+  const recupPalette = ['#10b981', '#059669', '#14b8a6', '#0d9488', '#22c55e']; // Verde
+  const resistPalette = ['#8b5cf6', '#6366f1', '#a855f7', '#7c3aed', '#4f46e5']; // Roxo
+  const hibridoPalette = ['#eab308', '#ca8a04', '#d97706', '#facc15']; // Amarelo
+
+  let palette = strengthPalette; 
+  let iconHtml = '';
+  
+  if (isCardio) {
+    palette = cardioPalette;
+    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>`;
+  } else if (isRecup) {
+    palette = recupPalette;
+    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>`;
+  } else if (isResist) {
+    palette = resistPalette;
+    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>`;
+  } else if (isHibrido) {
+    palette = hibridoPalette;
+    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>`;
+  } else {
+    // Default (Strength / Hipertrofia) or Livre
+    if (norm.includes('livre') || !name) {
+      iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>`;
+    } else {
+      iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12" /><rect x="3" y="8" width="3" height="8" rx="1" /><rect x="18" y="8" width="3" height="8" rx="1" /><rect x="1" y="10" width="2" height="4" rx="0.5" /><rect x="21" y="10" width="2" height="4" rx="0.5" /></svg>`;
+    }
   }
   
-  if (norm.includes('core') || norm.includes('funcional') || norm.includes('abd') || norm.includes('along') || norm.includes('mobil') || norm.includes('recup') || norm.includes('regen') || norm.includes('estabil')) {
-    return `
-      <svg class="portal-workout-pick-svg icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    `;
-  }
+  const hex = palette[hash % palette.length];
   
-  if (norm.includes('livre') || !norm) {
-    return `
-      <svg class="portal-workout-pick-svg icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <circle cx="12" cy="12" r="6" />
-        <circle cx="12" cy="12" r="2" />
-      </svg>
-    `;
-  }
-  
-  return `
-    <svg class="portal-workout-pick-svg icon-dumbbell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="6" y1="12" x2="18" y2="12" />
-      <rect x="3" y="8" width="3" height="8" rx="1" />
-      <rect x="18" y="8" width="3" height="8" rx="1" />
-      <rect x="1" y="10" width="2" height="4" rx="0.5" />
-      <rect x="21" y="10" width="2" height="4" rx="0.5" />
-    </svg>
-  `;
+  return {
+    svg: iconHtml,
+    hex: hex,
+    rgb: hexToRgb(hex)
+  };
 }
 
 // ── TREINAR (Smart) ────────────────────────────────────────────────
@@ -1372,8 +1391,8 @@ function renderTreinar(workouts, schedules, sessions = []) {
   const suggestedWorkout = suggestedSched ? workouts.find(w => w.id === suggestedSched.workoutId) : null;
 
   const suggestedCard = suggestedWorkout ? `
-    <div class="portal-suggested-card" id="suggestedCard">
-      <div class="portal-suggested-label">
+    <div class="portal-suggested-card" id="suggestedCard" style="--wk-rgb: ${getWorkoutTheme(suggestedWorkout.name).rgb}; background: linear-gradient(135deg, rgba(var(--wk-rgb),0.15), rgba(var(--wk-rgb),0.03)); border-color: rgba(var(--wk-rgb), 0.3)">
+      <div class="portal-suggested-label" style="color: rgb(var(--wk-rgb))">
         ${todaySched
           ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Treino de HOJE`
           : `Próximo treino — ${new Date(suggestedSched.date+'T12:00').toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`}
@@ -1385,7 +1404,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
         <button class="portal-submit-btn" id="previewSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin:0;flex:1;min-width:130px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:0.82rem;padding:10px 14px">
           Ver Exercícios
         </button>
-        <button class="portal-submit-btn" id="startSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin:0;flex:1;min-width:130px;font-size:0.82rem;padding:10px 14px">
+        <button class="portal-submit-btn" id="startSuggestedBtn" data-wid="${suggestedWorkout.id}" style="margin:0;flex:1;min-width:130px;background:linear-gradient(135deg, rgba(var(--wk-rgb), 1), rgba(var(--wk-rgb), 0.8));font-size:0.82rem;padding:10px 14px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Iniciar Treino
         </button>
@@ -1405,20 +1424,23 @@ function renderTreinar(workouts, schedules, sessions = []) {
         <div class="portal-section-sub" style="margin-top:${(missedCard||suggestedCard)?'20px':'0'}">Ou escolha outro treino</div>
         <div class="portal-bio-field">
           <div class="portal-workout-picker" id="soloWorkoutPicker">
-            <div class="portal-workout-pick-item selected" data-wid="">
-              <div class="portal-workout-pick-icon">${getWorkoutSVG('Livre')}</div>
+            <div class="portal-workout-pick-item selected" data-wid="" style="--wk-rgb: ${getWorkoutTheme('Livre').rgb}">
+              <div class="portal-workout-pick-icon">${getWorkoutTheme('Livre').svg}</div>
               <div class="portal-workout-pick-name">Livre</div>
               <div class="portal-workout-pick-sub">Sem base</div>
             </div>
             ${[...workouts]
               .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }))
-              .map(w => `
-                <div class="portal-workout-pick-item" data-wid="${w.id}">
-                  <div class="portal-workout-pick-icon">${getWorkoutSVG(w.name)}</div>
+              .map(w => {
+                const theme = getWorkoutTheme(w.name);
+                return `
+                <div class="portal-workout-pick-item" data-wid="${w.id}" style="--wk-rgb: ${theme.rgb}">
+                  <div class="portal-workout-pick-icon">${theme.svg}</div>
                   <div class="portal-workout-pick-name">${w.name || 'Treino'}</div>
                   <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
                 </div>
-              `).join('')}
+                `;
+              }).join('')}
           </div>
           <input type="hidden" id="soloWorkoutSel" value="">
         </div>

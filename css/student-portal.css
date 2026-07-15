@@ -663,8 +663,14 @@
   background: var(--portal-surface); border: 2px solid var(--portal-border);
   cursor: pointer; transition: all 0.15s; text-align: center;
 }
-.portal-workout-pick-item:hover { border-color: var(--portal-primary); background: var(--portal-primary-glow); }
-.portal-workout-pick-item.selected { border-color: var(--portal-primary); background: var(--portal-primary-glow); }
+.portal-workout-pick-item:hover { 
+  border-color: rgba(var(--wk-rgb, 99, 102, 241), 1); 
+  background: rgba(var(--wk-rgb, 99, 102, 241), 0.1); 
+}
+.portal-workout-pick-item.selected { 
+  border-color: rgba(var(--wk-rgb, 99, 102, 241), 1); 
+  background: rgba(var(--wk-rgb, 99, 102, 241), 0.15); 
+}
 .portal-workout-pick-icon { font-size: 1.3rem; }
 .portal-workout-pick-name { font-size: 0.72rem; font-weight: 700; color: var(--portal-text); line-height: 1.2; }
 .portal-workout-pick-sub { font-size: 0.62rem; color: var(--portal-text-muted); }
@@ -943,19 +949,7 @@ select.portal-solo-input {
   display: block;
   stroke-width: 2.2;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s;
-}
-
-.portal-workout-pick-svg.icon-target {
-  stroke: var(--portal-accent);
-}
-.portal-workout-pick-svg.icon-dumbbell {
-  stroke: var(--portal-primary);
-}
-.portal-workout-pick-svg.icon-cardio {
-  stroke: var(--portal-warning);
-}
-.portal-workout-pick-svg.icon-shield {
-  stroke: var(--portal-purple);
+  stroke: rgba(var(--wk-rgb, 148, 163, 184), 1); /* usa a cor dinmica */
 }
 
 .portal-workout-pick-item:hover .portal-workout-pick-svg {
@@ -964,7 +958,7 @@ select.portal-solo-input {
 
 .portal-workout-pick-item.selected .portal-workout-pick-svg {
   transform: scale(1.18);
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15));
+  filter: drop-shadow(0 0 6px rgba(var(--wk-rgb, 255, 255, 255), 0.3));
 }
 
 /* ── PWA Meta ─────────────────────────────────────── */
