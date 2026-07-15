@@ -832,51 +832,37 @@ select.portal-solo-input {
 
 /* ── Premium Inline Scale Card Selector ────────── */
 .portal-sel-option-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  cursor: pointer;
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 8px;
+}
+.portal-sel-option-btn {
+  flex: 1; min-width: 44px; max-width: 54px; aspect-ratio: 1; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1rem; cursor: pointer;
+  background: rgba(255, 255, 255, 0.05); color: var(--portal-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-bottom: 2px;
-  box-sizing: border-box;
 }
-.portal-root[data-theme="light"] .portal-sel-option-row {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.05);
+.portal-root[data-theme="light"] .portal-sel-option-btn {
+  background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.08);
 }
-.portal-sel-option-row:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
-}
-.portal-root[data-theme="light"] .portal-sel-option-row:hover {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-.portal-sel-option-row.active {
+.portal-sel-option-btn:hover { transform: translateY(-2px); }
+.portal-sel-option-btn.active {
   border-width: 2px !important;
   border-color: var(--opt-color) !important;
   background: var(--opt-bg) !important;
-  box-shadow: 0 0 12px var(--opt-bg) !important;
-  transform: scale(1.01);
+  color: var(--opt-color) !important;
+  box-shadow: 0 4px 12px var(--opt-bg) !important;
+  transform: scale(1.08);
 }
-.portal-sel-badge-num {
-  width: 32px;
-  height: 32px;
-  border-radius: 50% !important; /* Premium circle shape */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.95rem;
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
+.portal-sel-desc-box {
+  background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 12px;
+  text-align: center; border: 1px solid rgba(255,255,255,0.05);
 }
+.portal-root[data-theme="light"] .portal-sel-desc-box {
+  background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.05);
+}
+.portal-sel-desc-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
+.portal-sel-desc-text { font-size: 0.75rem; color: var(--portal-text-muted); }
 
 /* ── Macrocycle Timeline ── */
 .week-timeline {

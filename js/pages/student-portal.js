@@ -5381,33 +5381,42 @@ const MOTIVACAO_OPTIONS = [
 ];
 
 function renderInlineCardSelector(name, options, currentValue, onSelectJS) {
+  const selectedOpt = options.find(o => String(o.value) === String(currentValue)) || options[0] || {};
   return `
     <input type="hidden" name="${name}" id="portal_${name}" value="${currentValue}" />
-    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="inline_scale_${name}">
-      ${options.map(opt => {
-        const isActive = String(currentValue) === String(opt.value);
-        return `
-          <div class="portal-sel-option-row ${isActive ? 'active' : ''}" 
-               style="--opt-color: ${opt.color}; --opt-bg: ${opt.bg};"
-               data-val="${opt.value}"
-               onclick="
-                 document.getElementById('portal_${name}').value = '${opt.value}';
-                 document.querySelectorAll('#inline_scale_${name} .portal-sel-option-row').forEach(el => el.classList.remove('active'));
-                 this.classList.add('active');
-                 ${onSelectJS ? `${onSelectJS}('${opt.value}');` : ''}
-               ">
-            <div class="portal-sel-badge-num" style="background: ${opt.bg}; color: ${opt.color}; border: 1px solid ${opt.color}33;">
+    <div style="margin-top: 6px;" id="inline_scale_${name}">
+      <div class="portal-sel-option-row">
+        ${options.map(opt => {
+          const isActive = String(currentValue) === String(opt.value);
+          return `
+            <div class="portal-sel-option-btn ${isActive ? 'active' : ''}" 
+                 style="--opt-color: ${opt.color}; --opt-bg: ${opt.bg};"
+                 data-val="${opt.value}"
+                 data-label="${opt.label}"
+                 data-desc="${opt.desc}"
+                 onclick="
+                   document.getElementById('portal_${name}').value = '${opt.value}';
+                   const container = document.getElementById('inline_scale_${name}');
+                   container.querySelectorAll('.portal-sel-option-btn').forEach(el => el.classList.remove('active'));
+                   this.classList.add('active');
+                   const labelEl = container.querySelector('.portal-sel-desc-label');
+                   const descEl = container.querySelector('.portal-sel-desc-text');
+                   if (labelEl) {
+                     labelEl.innerText = this.getAttribute('data-label');
+                     labelEl.style.color = this.style.getPropertyValue('--opt-color');
+                   }
+                   if (descEl) descEl.innerText = this.getAttribute('data-desc');
+                   ${onSelectJS ? `${onSelectJS}('${opt.value}');` : ''}
+                 ">
               ${opt.display || opt.value}
             </div>
-            <div style="flex: 1; min-width: 0; text-align: left;">
-              <div style="font-size: 0.85rem; font-weight: 700; color: var(--portal-text);">${opt.label}</div>
-              <div style="font-size: 0.72rem; color: var(--portal-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">
-                ${opt.desc}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('')}
+          `;
+        }).join('')}
+      </div>
+      <div class="portal-sel-desc-box">
+        <div class="portal-sel-desc-label" style="color: ${selectedOpt.color || '#94a3b8'}">${selectedOpt.label || ''}</div>
+        <div class="portal-sel-desc-text">${selectedOpt.desc || ''}</div>
+      </div>
     </div>
   `;
 }
