@@ -76,14 +76,6 @@
 .portal-root[data-theme="light"] .portal-reminder-btn:hover {
   background: rgba(0,0,0,0.1);
 }
-.portal-reminder-btn-warning {
-  background: var(--portal-warning);
-  color: #0f172a !important;
-  border: none;
-}
-.portal-reminder-btn-warning:hover {
-  filter: brightness(0.9);
-}
 
 /* ── Root & theme ─────────────────────────────── */
 .portal-root {
@@ -309,6 +301,15 @@
   cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block;
 }
 .portal-reminder-btn:hover { background: rgba(255,255,255,0.25); }
+.portal-root .portal-reminder-btn.portal-reminder-btn-warning {
+  background: var(--portal-warning);
+  color: #0f172a !important;
+  border: none;
+}
+.portal-root .portal-reminder-btn.portal-reminder-btn-warning:hover {
+  background: var(--portal-warning);
+  filter: brightness(0.9);
+}
 
 /* ── Toast ────────────────────────────────────── */
 .portal-toast {
