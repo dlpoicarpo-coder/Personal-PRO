@@ -1202,8 +1202,8 @@ h4 {
 [data-theme="light"] {
   color-scheme: light;
   
-  --bg:      #E9EDF0;
-  --panel:   #F6F8FA;
+  --bg:      #dde2e7;   /* era #E9EDF0 */
+  --panel:   #edf0f4;   /* era #F6F8FA */
   --line:    #D5DCE2;
   --ink:     #0F1519;
   --dim:     #46525C;

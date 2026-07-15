@@ -31,11 +31,11 @@
 /* ── CSS Variables — Light ───────────────────────── */
 .portal-root[data-theme="light"] {
   color-scheme: light;
-  --portal-bg-1: #E4EAF0;
-  --portal-bg-2: #DCE4EC;
-  --portal-bg-3: #E9EEF3;
-  --portal-surface: #F8FAFC;
-  --portal-surface-hover: #FFFFFF;
+  --portal-bg-1: #dbe1e8;
+  --portal-bg-2: #d3dae2;
+  --portal-bg-3: #e0e6ec;
+  --portal-surface: #eef1f5;
+  --portal-surface-hover: #f4f6f9;
   --portal-border: rgba(15,25,35,0.14);
   --portal-text: #0F1519;
   --portal-text-secondary: #46525C;
