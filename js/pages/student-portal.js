@@ -1264,11 +1264,53 @@ function hexToRgb(hex) {
   return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255].join(',');
 }
 
-function getWorkoutTheme(name) {
-  const normRaw = (name || '').toLowerCase();
-  
-  // Extract base name to keep identical workouts (e.g. Sem 1, Sem 2) in the exact same tone
-  let baseName = name || '';
+// SVG icons por categoria
+const WORKOUT_ICONS = {
+  cardio:   `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>`,
+  recup:    `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>`,
+  resist:   `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>`,
+  hibrido:  `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>`,
+  livre:    `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>`,
+  strength: `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12" /><rect x="3" y="8" width="3" height="8" rx="1" /><rect x="18" y="8" width="3" height="8" rx="1" /><rect x="1" y="10" width="2" height="4" rx="0.5" /><rect x="21" y="10" width="2" height="4" rx="0.5" /></svg>`,
+};
+
+// Mapa direto: category (campo JSONB) → paleta + ícone
+// Quando o treinador preencheu category, este mapa tem prioridade total sobre o regex.
+const CATEGORY_THEME = {
+  'MMII':       { palette: ['#ef4444', '#f97316', '#f59e0b', '#dc2626', '#ea580c'], icon: 'strength' },
+  'MMSS':       { palette: ['#f97316', '#fb923c', '#fdba74', '#ea580c', '#c2410c'], icon: 'strength' },
+  'Full Body':  { palette: ['#8b5cf6', '#6366f1', '#a855f7', '#7c3aed', '#4f46e5'], icon: 'resist'  },
+  'HIIT':       { palette: ['#06b6d4', '#0ea5e9', '#3b82f6', '#0891b2', '#0284c7'], icon: 'cardio'  },
+  'Core':       { palette: ['#10b981', '#059669', '#14b8a6', '#0d9488', '#22c55e'], icon: 'recup'   },
+  'Livre':      { palette: ['#94a3b8', '#64748b', '#cbd5e1', '#475569', '#334155'], icon: 'livre'   },
+};
+
+/**
+ * Retorna { svg, hex, rgb } para um treino.
+ * @param {string} name     - Nome do treino (sempre disponível)
+ * @param {string} category - Categoria JSONB do treino (MMII/MMSS/Full Body/HIIT/Core/Livre)
+ *                            Quando preenchida, tem prioridade total sobre o regex de nome.
+ */
+function getWorkoutTheme(name, category) {
+  // ── 1. Category field (autoridade máxima) ──────────────────────────
+  if (category && CATEGORY_THEME[category]) {
+    const ct = CATEGORY_THEME[category];
+    // Hash no nome normalizado para manter tom consistente entre semanas do mesmo treino
+    let baseName = (name || '').replace(/\s*[\-\–]\s*Semana\s*\d+/i, '')
+                               .replace(/\s*[\-\–]\s*Sem\s*\d+/i, '')
+                               .replace(/\s*Semana\s*\d+/i, '')
+                               .replace(/\s*Sem\s*\d+/i, '')
+                               .replace(/\s*[\-\–]\s*$/g, '')
+                               .trim().toLowerCase();
+    let hash = 0;
+    for (let i = 0; i < baseName.length; i++) hash = baseName.charCodeAt(i) + ((hash << 5) - hash);
+    hash = Math.abs(hash);
+    const hex = ct.palette[hash % ct.palette.length];
+    return { svg: WORKOUT_ICONS[ct.icon], hex, rgb: hexToRgb(hex) };
+  }
+
+  // ── 2. Fallback: inferência por regex no nome ─────────────────────
+  let baseName = (name || '');
   baseName = baseName.replace(/\s*[\-\–]\s*Semana\s*\d+/i, '')
                      .replace(/\s*[\-\–]\s*Sem\s*\d+/i, '')
                      .replace(/\s*Semana\s*\d+/i, '')
@@ -1276,56 +1318,34 @@ function getWorkoutTheme(name) {
                      .replace(/\s*[\-\–]\s*$/g, '')
                      .trim();
   const norm = baseName.toLowerCase();
-  
-  // Categorias
-  const isCardio = norm.match(/cardio|corrida|esteira|bike|aerob|caminh|pedal|hiit/);
-  const isRecup = norm.match(/core|funcional|abd|along|mobil|recup|regen|estabil/);
-  const isResist = norm.match(/resist|endurance|longo|maratona/);
-  const isHibrido = norm.match(/mist|hibrid|cross/);
-  
-  // Hash simples para variar o tom dentro da paleta base
+
   let hash = 0;
   for (let i = 0; i < norm.length; i++) hash = norm.charCodeAt(i) + ((hash << 5) - hash);
   hash = Math.abs(hash);
 
-  // Paletas 
-  const strengthPalette = ['#ef4444', '#f97316', '#f59e0b', '#dc2626', '#ea580c']; // Vermelho/Laranja
-  const cardioPalette = ['#06b6d4', '#0ea5e9', '#3b82f6', '#0891b2', '#0284c7']; // Ciano/Azul
-  const recupPalette = ['#10b981', '#059669', '#14b8a6', '#0d9488', '#22c55e']; // Verde
-  const resistPalette = ['#8b5cf6', '#6366f1', '#a855f7', '#7c3aed', '#4f46e5']; // Roxo
-  const hibridoPalette = ['#eab308', '#ca8a04', '#d97706', '#facc15']; // Amarelo
+  const strengthPalette = ['#ef4444', '#f97316', '#f59e0b', '#dc2626', '#ea580c'];
+  const cardioPalette   = ['#06b6d4', '#0ea5e9', '#3b82f6', '#0891b2', '#0284c7'];
+  const recupPalette    = ['#10b981', '#059669', '#14b8a6', '#0d9488', '#22c55e'];
+  const resistPalette   = ['#8b5cf6', '#6366f1', '#a855f7', '#7c3aed', '#4f46e5'];
+  const hibridoPalette  = ['#eab308', '#ca8a04', '#d97706', '#facc15'];
 
-  let palette = strengthPalette; 
-  let iconHtml = '';
-  
-  if (isCardio) {
-    palette = cardioPalette;
-    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>`;
-  } else if (isRecup) {
-    palette = recupPalette;
-    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>`;
-  } else if (isResist) {
-    palette = resistPalette;
-    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>`;
-  } else if (isHibrido) {
-    palette = hibridoPalette;
-    iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>`;
-  } else {
-    // Default (Strength / Hipertrofia) or Livre
-    if (norm.includes('livre') || !name) {
-      iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>`;
-    } else {
-      iconHtml = `<svg class="portal-workout-pick-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="18" y2="12" /><rect x="3" y="8" width="3" height="8" rx="1" /><rect x="18" y="8" width="3" height="8" rx="1" /><rect x="1" y="10" width="2" height="4" rx="0.5" /><rect x="21" y="10" width="2" height="4" rx="0.5" /></svg>`;
-    }
+  let palette  = strengthPalette;
+  let iconKey  = 'strength';
+
+  if (norm.match(/cardio|corrida|esteira|bike|aerob|caminh|pedal|hiit/)) {
+    palette = cardioPalette; iconKey = 'cardio';
+  } else if (norm.match(/core|funcional|abd|along|mobil|recup|regen|estabil/)) {
+    palette = recupPalette; iconKey = 'recup';
+  } else if (norm.match(/resist|endurance|longo|maratona/)) {
+    palette = resistPalette; iconKey = 'resist';
+  } else if (norm.match(/mist|hibrid|cross/)) {
+    palette = hibridoPalette; iconKey = 'hibrido';
+  } else if (norm.includes('livre') || !name) {
+    iconKey = 'livre';
   }
-  
+
   const hex = palette[hash % palette.length];
-  
-  return {
-    svg: iconHtml,
-    hex: hex,
-    rgb: hexToRgb(hex)
-  };
+  return { svg: WORKOUT_ICONS[iconKey], hex, rgb: hexToRgb(hex) };
 }
 
 // ── TREINAR (Smart) ────────────────────────────────────────────────
@@ -1401,7 +1421,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
   const suggestedWorkout = suggestedSched ? workouts.find(w => w.id === suggestedSched.workoutId) : null;
 
   const suggestedCard = suggestedWorkout ? `
-    <div class="portal-suggested-card" id="suggestedCard" style="--wk-rgb: ${getWorkoutTheme(suggestedWorkout.name).rgb}; background: linear-gradient(135deg, rgba(var(--wk-rgb),0.15), rgba(var(--wk-rgb),0.03)); border-color: rgba(var(--wk-rgb), 0.3)">
+    <div class="portal-suggested-card" id="suggestedCard" style="--wk-rgb: ${getWorkoutTheme(suggestedWorkout.name, suggestedWorkout.category).rgb}; background: linear-gradient(135deg, rgba(var(--wk-rgb),0.15), rgba(var(--wk-rgb),0.03)); border-color: rgba(var(--wk-rgb), 0.3)">
       <div class="portal-suggested-label" style="color: rgb(var(--wk-rgb))">
         ${todaySched
           ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Treino de HOJE`
@@ -1453,8 +1473,8 @@ function renderTreinar(workouts, schedules, sessions = []) {
             let html = `
               <div class="portal-section-sub" style="margin-top: 0; margin-bottom: 8px;">Geral</div>
               <div class="portal-workout-picker-grid">
-                <div class="portal-workout-pick-item selected" data-wid="" style="--wk-rgb: ${getWorkoutTheme('Livre').rgb}">
-                  <div class="portal-workout-pick-icon">${getWorkoutTheme('Livre').svg}</div>
+                <div class="portal-workout-pick-item selected" data-wid="" style="--wk-rgb: ${getWorkoutTheme('Livre', 'Livre').rgb}">
+                  <div class="portal-workout-pick-icon">${getWorkoutTheme('Livre', 'Livre').svg}</div>
                   <div class="portal-workout-pick-name">Livre</div>
                   <div class="portal-workout-pick-sub">Sem base</div>
                 </div>
@@ -1467,7 +1487,7 @@ function renderTreinar(workouts, schedules, sessions = []) {
                 <div class="portal-section-sub" style="margin-top: 16px; margin-bottom: 8px;">${g}</div>
                 <div class="portal-workout-picker-grid">
                   ${items.map(w => {
-                    const theme = getWorkoutTheme(w.name);
+                    const theme = getWorkoutTheme(w.name, w.category);
                     return `
                     <div class="portal-workout-pick-item ${w.isCompleted ? 'completed' : ''}" data-wid="${w.id}" style="--wk-rgb: ${theme.rgb}">
                       ${w.isCompleted ? `<div class="portal-workout-pick-badge">Concluído</div>` : ''}
@@ -3990,7 +4010,7 @@ function renderSessoes(sessions, schedules, workouts = []) {
         <div class="portal-section-sub">Próximas sessões</div>
         ${upcoming.map(s => {
           const w = workouts.find(x => x.id === s.workoutId);
-          const color = w?.color || 'var(--portal-border)';
+          const color = w ? getWorkoutTheme(w.name, w.category).hex : 'var(--portal-border)';
           return `
           <div class="glass-card portal-session-upcoming" style="border-left: 3px solid ${color}; padding-left: 14px;">
             <div class="portal-session-date">${safeFormatDate(s.date)}</div>
@@ -4005,7 +4025,7 @@ function renderSessoes(sessions, schedules, workouts = []) {
         <div class="portal-section-sub" style="margin-top:20px;color:var(--portal-warning)"> Checkout pendente</div>
         ${needsCheckout.map(s => {
           const w = workouts.find(x => x.id === s.workoutId);
-          const color = w?.color || 'var(--portal-warning)';
+          const color = w ? getWorkoutTheme(w.name, w.category).hex : 'var(--portal-warning)';
           return `
           <div class="glass-card portal-checkout-card" id="checkout_${s.id}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px; border-left: 3px solid ${color};">
             <div>
@@ -4026,7 +4046,7 @@ function renderSessoes(sessions, schedules, workouts = []) {
           const isSolo = s.isSolo;
           const hasCheckout = !!(s.postBiofeedback && s.postBiofeedback.submittedByStudent);
           const w = workouts.find(x => x.id === s.workoutId);
-          const color = w?.color || 'transparent';
+          const color = w ? getWorkoutTheme(w.name, w.category).hex : 'transparent';
           return `
             <div class="portal-session-card glass-card${isSolo ? ' portal-session-solo' : ''}" style="border-left: 3px solid ${color};">
               <div class="portal-session-header">

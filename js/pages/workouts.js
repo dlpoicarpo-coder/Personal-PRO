@@ -224,6 +224,18 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
           <label class="form-label">Nome do Treino *</label>
           <input class="form-input" name="name" value="${workout.name||''}" placeholder="Ex: Treino A - Superior" required />
         </div>
+        <div class="form-group">
+          <label class="form-label">Categoria</label>
+          <select class="form-select" name="category">
+            <option value="">Selecione...</option>
+            <option value="MMII" ${workout.category==='MMII'?'selected':''}>MMII — Membros Inferiores</option>
+            <option value="MMSS" ${workout.category==='MMSS'?'selected':''}>MMSS — Membros Superiores</option>
+            <option value="Full Body" ${workout.category==='Full Body'?'selected':''}>Full Body</option>
+            <option value="HIIT" ${workout.category==='HIIT'?'selected':''}>HIIT / Cardio</option>
+            <option value="Core" ${workout.category==='Core'?'selected':''}>Core / Funcional</option>
+            <option value="Livre" ${workout.category==='Livre'?'selected':''}>Livre</option>
+          </select>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -1221,7 +1233,7 @@ export function initWorkouts(navigateFn) {
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
         { label: 'Salvar Treino', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('workoutForm'));
-          const data = { studentId: fd.get('studentId'), name: fd.get('name'), date: fd.get('date'), cycle: fd.get('cycle'), notes: fd.get('notes') };
+          const data = { studentId: fd.get('studentId'), name: fd.get('name'), date: fd.get('date'), cycle: fd.get('cycle'), notes: fd.get('notes'), category: fd.get('category') || null };
           if (!data.studentId || !data.name) { notify.error('Aluno e nome são obrigatórios'); return; }
           data.exercises = collectExercises();
           await db.add('workouts', data);
@@ -1693,6 +1705,7 @@ export function initWorkouts(navigateFn) {
                 date:      fd.get('date'),
                 cycle:     fd.get('cycle'),
                 notes:     fd.get('notes'),
+                category:  fd.get('category') || null,
                 exercises: collectExercises(),
               };
               if (!data.studentId || !data.name) {
