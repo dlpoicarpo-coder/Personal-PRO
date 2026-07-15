@@ -52,6 +52,39 @@
   --portal-pin-card-bg: #F8FAFC;
 }
 
+/* Light Theme Overrides for Reminders (Banners) */
+.portal-root[data-theme="light"] .portal-reminder-info {
+  background: rgba(6,182,212,0.15);
+  border-color: rgba(6,182,212,0.3);
+  color: #0891b2;
+}
+.portal-root[data-theme="light"] .portal-reminder-warning {
+  background: rgba(245,158,11,0.15);
+  border-color: rgba(245,158,11,0.3);
+  color: #b45309;
+}
+.portal-root[data-theme="light"] .portal-reminder-success {
+  background: rgba(16,185,129,0.15);
+  border-color: rgba(16,185,129,0.3);
+  color: #059669;
+}
+.portal-root[data-theme="light"] .portal-reminder-btn {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.12);
+  color: inherit;
+}
+.portal-root[data-theme="light"] .portal-reminder-btn:hover {
+  background: rgba(0,0,0,0.1);
+}
+.portal-reminder-btn-warning {
+  background: var(--portal-warning);
+  color: #0f172a !important;
+  border: none;
+}
+.portal-reminder-btn-warning:hover {
+  filter: brightness(0.9);
+}
+
 /* ── Root & theme ─────────────────────────────── */
 .portal-root {
   min-height: 100vh;

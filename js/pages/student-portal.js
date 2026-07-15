@@ -1127,7 +1127,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
     checkoutBanner = `<div class="portal-reminder portal-reminder-warning">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       ${needsCheckout.length} treino(s) aguardando checkout!
-      <button onclick="window.showPortalCheckoutById('${s.id}')" class="portal-reminder-btn" style="background:var(--portal-warning);color:#0f172a;border:none;border-radius:6px;padding:4px 8px;font-size:0.75rem;font-weight:700;cursor:pointer;margin-left:8px">Fazer agora</button>
+      <button onclick="window.showPortalCheckoutById('${s.id}')" class="portal-reminder-btn portal-reminder-btn-warning">Fazer agora</button>
     </div>`;
   }
 
@@ -3944,7 +3944,7 @@ function renderSessoes(sessions, schedules) {
               <div class="portal-session-name" style="font-weight:700;font-size:0.95rem">${s.workoutName||'Treino'}</div>
               <div class="portal-session-meta" style="font-size:0.75rem;color:var(--portal-text-muted);margin-top:2px">${safeFormatDate(s.date)}</div>
             </div>
-            <button onclick="window.showPortalCheckoutById('${s.id}')" class="portal-reminder-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 12px rgba(245,158,11,0.15);color:#ffffff;border:none;border-radius:6px;padding:6px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:12px">Fazer checkout</button>
+            <button onclick="window.showPortalCheckoutById('${s.id}')" class="portal-reminder-btn portal-reminder-btn-warning">Fazer checkout</button>
           </div>
         `).join('')}
       ` : ''}
