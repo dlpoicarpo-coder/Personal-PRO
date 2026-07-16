@@ -173,7 +173,7 @@ export async function renderDashboard() {
     </div>
 
     <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Resumo Operacional</h3>
-    <div class="grid-3 mb-lg stagger-children">
+    <div class="grid-3 mb-lg stagger-children" style="align-items: start;">
       
       <!-- Card 1: Inatividade de Alunos -->
       <div class="card" style="padding: 16px;">
@@ -242,8 +242,10 @@ export async function renderDashboard() {
         </div>
       </div>
 
-      <!-- Card 3: Macrociclos Críticos -->
-      <div class="card" style="padding: 16px;">
+      <!-- Coluna da Direita (Agrupa Macrociclos, Radar e Avanço) -->
+      <div class="flex flex-col gap-md">
+        <!-- Card 3: Macrociclos Críticos -->
+        <div class="card" style="padding: 12px 16px;">
         <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
           <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -272,9 +274,13 @@ export async function renderDashboard() {
           }).join('')}
           ${criticalMacros.length === 0 ? '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum macrociclo crítico</p>' : ''}
         </div>
-    <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Radar PSE (Prontidão e Carga)</h3>
-    <div class="card mb-lg" style="padding: 16px;">
-      <div class="flex flex-col gap-xs">
+      </div> <!-- Fecha Card 3 -->
+
+      <!-- Radar PSE -->
+      <div>
+        <h3 class="mb-xs mt-xs" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Radar PSE (Prontidão e Carga)</h3>
+        <div class="card" style="padding: 12px 16px;">
+          <div class="flex flex-col gap-xs">
         ${radarItems.length > 0 ? radarItems.map(item => {
           const color = item.level === 'danger' ? 'var(--danger)' : 'var(--warning)';
           const iconSvg = item.kind === 'load' 
@@ -292,21 +298,23 @@ export async function renderDashboard() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
           `;
-        }).join('') : '<p class="text-muted text-sm text-center" style="padding: 20px 0;">Nenhum alerta hoje.</p>'}
+        }).join('') : '<p class="text-muted text-sm text-center" style="padding: 10px 0;">Nenhum alerta hoje.</p>'}
       </div>
       ${maturingStudentsCount > 0 ? `
-        <div class="text-center mt-md pt-sm" style="border-top: 1px dashed var(--border-color);">
+        <div class="text-center mt-sm pt-xs" style="border-top: 1px dashed var(--border-color);">
           <span class="text-muted text-xs">${maturingStudentsCount} aluno(s) em base de maturação (coletando dados).</span>
         </div>
       ` : ''}
     </div>
+    </div> <!-- Fecha Radar PSE wrapper -->
 
     ${adjustmentAlerts.length > 0 ? `
-    <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Avanço de Macrociclo</h3>
-    <div class="card mb-lg" style="padding: 16px;">
-      <div class="flex flex-col gap-xs">
-        ${adjustmentAlerts.map(a => `
-            <div class="flex items-center gap-sm" style="padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+    <div>
+      <h3 class="mb-xs mt-xs" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Avanço de Macrociclo</h3>
+      <div class="card" style="padding: 12px 16px;">
+        <div class="flex flex-col gap-xs">
+          ${adjustmentAlerts.map(a => `
+              <div class="flex items-center gap-sm" style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
               <div class="avatar avatar-sm" style="width: 36px; height: 36px; font-size: 1rem; background: var(--primary)15; color: var(--primary);">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
               </div>
