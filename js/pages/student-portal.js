@@ -3626,7 +3626,7 @@ async function showExerciseModal(ex) {
   const modal = document.createElement('div');
   modal.id = 'exDetailModal';
   modal.style.cssText = `
-    position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;justify-content:flex-end;
+    position:fixed;inset:0;z-index:10010;display:flex;flex-direction:column;justify-content:flex-end;
     align-items:center;
     background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
     animation:fadeIn 0.2s ease;
@@ -3749,7 +3749,8 @@ async function showExerciseModal(ex) {
     </div>
   `;
 
-  document.body.appendChild(modal);
+  const container = document.querySelector('.portal-root') || document.body;
+  container.appendChild(modal);
 
   // Initialize cardio interval chart if applicable
   if (isCardio && typeof Chart !== 'undefined') {
