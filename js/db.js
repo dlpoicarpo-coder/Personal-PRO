@@ -1600,8 +1600,25 @@ async seedTemplates() {
       m.is_default && 
       (!m.id.startsWith('met_') || !m.id.endsWith('_' + trainerId) || !newMethodIds.has(m.id))
     );
+
+    // ── DEBUG DIAGNÓSTICO: logar o que seria deletado ──
+    console.log("=== DIAGNÓSTICO: MÉTODOS MARCADOS PARA DELEÇÃO ===");
+    console.log("Trainer ID:", trainerId);
+    console.log("newMethodIds:", Array.from(newMethodIds));
+    const diagLog = defaultToClean.map(m => ({
+      id: m.id,
+      is_default: m.is_default,
+      name: m.name,
+      trainer_id: m.trainer_id,
+      startsWithMet: m.id ? m.id.startsWith('met_') : false,
+      endsWithTrainer: m.id ? m.id.endsWith('_' + trainerId) : false,
+      inNewIds: newMethodIds.has(m.id)
+    }));
+    console.log(JSON.stringify(diagLog, null, 2));
+    // ───────────────────────────────────────────────────
+
     for (const m of defaultToClean) {
-      await this.delete('methods', m.id);
+      // await this.delete('methods', m.id); // COMENTADO PARA DIAGNÓSTICO
     }
 
     // Clear any accidental tombstones for the seeded methods to prevent sync from deleting them
