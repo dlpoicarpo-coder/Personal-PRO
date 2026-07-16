@@ -5,6 +5,7 @@
 
 import db from '../db.js';
 import { Calc } from '../utils/calculations.js';
+import { computeReadiness, computeLoad } from '../utils/readiness.js';
 
 export async function renderDashboard() {
   const students = await db.getAll('students');
@@ -83,35 +84,45 @@ export async function renderDashboard() {
       return a.status.daysLeft - b.status.daysLeft;
     });
 
-  // 4. Radar de Ajustes (Lembretes)
-  const adjustmentAlerts = [];
-  
-  // A. Gatilho de PSE
-  const recentDays = 7;
-  const recentMs = recentDays * 86400000;
-  
-  const pseIncreaseMax = parseInt(settings.pseIncreaseMax || 3, 10);
-  const pseMaintainMax = parseInt(settings.pseMaintainMax || 6, 10);
-  const pseReduceMax   = parseInt(settings.pseReduceMax || 8, 10);
+  // 4. Radar PSE (Prontidão e Carga Baseada no Z-Score)
+  const radarItems = [];
+  let maturingStudentsCount = 0;
 
-  completedSessions.forEach(s => {
-    if (now.getTime() - new Date(s.date).getTime() < recentMs) {
-      if (s.postBiofeedback && s.postBiofeedback.pse) {
-        const pse = parseInt(s.postBiofeedback.pse, 10);
-        const st = students.find(x => x.id === s.studentId);
-        if (st) {
-          if (pse <= pseIncreaseMax) {
-            adjustmentAlerts.push({ type: 'pse_low', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Aumentar intensidade.` });
-          } else if (pse > pseMaintainMax && pse <= pseReduceMax) {
-            adjustmentAlerts.push({ type: 'pse_high', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Reduzir volume ~20%.` });
-          } else if (pse > pseReduceMax) {
-            adjustmentAlerts.push({ type: 'pse_critical', student: st, session: s, text: `${st.name.split(' ')[0]} relatou PSE ${pse} no ${s.workoutName || 'treino'}. Sugestão: Sessão regenerativa + alerta ao trainer.` });
-          }
-          // Zona 4-6 (manter carga) não gera alerta no radar para não poluir
-        }
-      }
+  activeStudents.forEach(st => {
+    const r = computeReadiness(st.id, biofeedback, st.name);
+    const l = computeLoad(st.id, completedSessions, st.name);
+
+    let studentHasAlert = false;
+    let studentIsMaturing = false;
+
+    if (r.level !== 'none') {
+      radarItems.push({ student: st, kind: 'readiness', level: r.level, headline: r.headline });
+      studentHasAlert = true;
+    } else if (r.status === 'collecting') {
+      studentIsMaturing = true;
+    }
+
+    if (l.level !== 'none') {
+      radarItems.push({ student: st, kind: 'load', level: l.level, headline: l.headline });
+      studentHasAlert = true;
+    } else if (l.status === 'maturing') {
+      studentIsMaturing = true;
+    }
+
+    if (!studentHasAlert && studentIsMaturing) {
+      maturingStudentsCount++;
     }
   });
+
+  // Ordenar: danger no topo
+  radarItems.sort((a, b) => {
+    if (a.level === 'danger' && b.level !== 'danger') return -1;
+    if (a.level !== 'danger' && b.level === 'danger') return 1;
+    return 0;
+  });
+
+  // 5. Lembretes do Sistema (Avanço de Macrociclo)
+  const adjustmentAlerts = [];
 
   // B. Gatilho de Macrociclo (Troca de Fase)
   macrocycles.forEach(m => {
@@ -261,32 +272,54 @@ export async function renderDashboard() {
           }).join('')}
           ${criticalMacros.length === 0 ? '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum macrociclo crítico</p>' : ''}
         </div>
-      </div>
-
-    </div>
-
-    <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Radar de Ajustes (Carga e Volume)</h3>
+    <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Radar PSE (Prontidão e Carga)</h3>
     <div class="card mb-lg" style="padding: 16px;">
       <div class="flex flex-col gap-xs">
-        ${adjustmentAlerts.length > 0 ? adjustmentAlerts.map(a => {
-          const color = a.type === 'pse_high' ? 'var(--danger)' : a.type === 'pse_low' ? 'var(--warning)' : 'var(--primary)';
-          const iconSvg = a.type.startsWith('pse') 
-            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
-            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
+        ${radarItems.length > 0 ? radarItems.map(item => {
+          const color = item.level === 'danger' ? 'var(--danger)' : 'var(--warning)';
+          const iconSvg = item.kind === 'load' 
+            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
           return `
-            <div class="flex items-center gap-sm" style="padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+            <a href="#/biofeedback?sid=${item.student.id}" class="flex items-center gap-sm" style="padding: 12px 0; border-bottom: 1px solid var(--border-color); text-decoration: none; color: inherit;">
               <div class="avatar avatar-sm" style="width: 36px; height: 36px; font-size: 1rem; background: ${color}15; color: ${color};">
                 ${iconSvg}
               </div>
               <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 0.95rem; font-weight: 500;">${a.text}</div>
-                <div class="text-muted text-xs">${a.type.startsWith('pse') ? 'Feedback de Treino' : 'Avanço de Macrociclo'}</div>
+                <div style="font-size: 0.95rem; font-weight: 600;">${item.student.name.split(' ')[0]}</div>
+                <div class="text-xs" style="color: ${color}; font-weight: 500;">${item.headline}</div>
               </div>
-              <a href="#/treinos" class="btn btn-ghost btn-sm" style="color: var(--primary);">Revisar</a>
-            </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
           `;
-        }).join('') : '<p class="text-muted text-sm text-center" style="padding: 20px 0;">Nenhum ajuste pendente identificado no momento.</p>'}
+        }).join('') : '<p class="text-muted text-sm text-center" style="padding: 20px 0;">Nenhum alerta hoje.</p>'}
       </div>
+      ${maturingStudentsCount > 0 ? `
+        <div class="text-center mt-md pt-sm" style="border-top: 1px dashed var(--border-color);">
+          <span class="text-muted text-xs">${maturingStudentsCount} aluno(s) em base de maturação (coletando dados).</span>
+        </div>
+      ` : ''}
+    </div>
+
+    ${adjustmentAlerts.length > 0 ? `
+    <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Avanço de Macrociclo</h3>
+    <div class="card mb-lg" style="padding: 16px;">
+      <div class="flex flex-col gap-xs">
+        ${adjustmentAlerts.map(a => `
+            <div class="flex items-center gap-sm" style="padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+              <div class="avatar avatar-sm" style="width: 36px; height: 36px; font-size: 1rem; background: var(--primary)15; color: var(--primary);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.95rem; font-weight: 500;">${a.text}</div>
+                <div class="text-muted text-xs">Lembrete do Sistema</div>
+              </div>
+              <a href="#/alunos" class="btn btn-ghost btn-sm" style="color: var(--primary);">Revisar</a>
+            </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}      </div>
     </div>
 
     <div class="grid-2">
