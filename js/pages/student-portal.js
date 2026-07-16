@@ -1277,12 +1277,12 @@ const WORKOUT_ICONS = {
 // Mapa direto: category (campo JSONB) → paleta + ícone
 // Quando o treinador preencheu category, este mapa tem prioridade total sobre o regex.
 const CATEGORY_THEME = {
-  'MMII':       { palette: ['#ef4444', '#f97316', '#f59e0b', '#dc2626', '#ea580c'], icon: 'strength' },
-  'MMSS':       { palette: ['#f97316', '#fb923c', '#fdba74', '#ea580c', '#c2410c'], icon: 'strength' },
-  'Full Body':  { palette: ['#8b5cf6', '#6366f1', '#a855f7', '#7c3aed', '#4f46e5'], icon: 'resist'  },
-  'HIIT':       { palette: ['#06b6d4', '#0ea5e9', '#3b82f6', '#0891b2', '#0284c7'], icon: 'cardio'  },
-  'Core':       { palette: ['#10b981', '#059669', '#14b8a6', '#0d9488', '#22c55e'], icon: 'recup'   },
-  'Livre':      { palette: ['#94a3b8', '#64748b', '#cbd5e1', '#475569', '#334155'], icon: 'livre'   },
+  'MMII':      { hex: '#f97316', rgb: '249,115,22',  icon: 'strength' },
+  'MMSS':      { hex: '#3b82f6', rgb: '59,130,246',  icon: 'strength' },
+  'Full Body': { hex: '#10b981', rgb: '16,185,129',  icon: 'resist'   },
+  'HIIT':      { hex: '#06b6d4', rgb: '6,182,212',   icon: 'cardio'   },
+  'Core':      { hex: '#a855f7', rgb: '168,85,247',  icon: 'recup'    },
+  'Livre':     { hex: '#6b7280', rgb: '107,114,128', icon: 'livre'    },
 };
 
 /**
@@ -1485,15 +1485,19 @@ function renderTreinar(workouts, schedules, sessions = []) {
               const items = groups[g].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' }));
               html += `
                 <div class="portal-section-sub" style="margin-top: 16px; margin-bottom: 8px;">${g}</div>
-                <div class="portal-workout-picker-grid">
+                <div style="display:flex; flex-direction:column; gap:8px;">
                   ${items.map(w => {
                     const theme = getWorkoutTheme(w.name, w.category);
                     return `
-                    <div class="portal-workout-pick-item ${w.isCompleted ? 'completed' : ''}" data-wid="${w.id}" style="--wk-rgb: ${theme.rgb}">
-                      ${w.isCompleted ? `<div class="portal-workout-pick-badge">Concluído</div>` : ''}
-                      <div class="portal-workout-pick-icon">${theme.svg}</div>
-                      <div class="portal-workout-pick-name">${w.name || 'Treino'}</div>
-                      <div class="portal-workout-pick-sub">${(w.exercises||[]).length} ex.</div>
+                    <div class="portal-workout-pick-item glass-card ${w.isCompleted ? 'completed' : ''}" data-wid="${w.id}" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-left:3px solid ${theme.hex}; --wk-rgb:${theme.rgb}; cursor:pointer; width:100%; box-sizing:border-box;">
+                      <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                        <div class="portal-workout-pick-name" style="font-size:0.95rem; font-weight:700; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${w.name || 'Treino'}</div>
+                        <span style="font-size:0.7rem; font-weight:600; color:${theme.hex}; padding:2px 8px; border-radius:12px; background:rgba(var(--wk-rgb),0.15); flex-shrink:0;">${w.category || 'Livre'}</span>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+                        <div style="font-size:0.75rem; color:var(--portal-text-muted);">${(w.exercises||[]).length} ex.</div>
+                        ${w.isCompleted ? `<div style="font-size:0.7rem; font-weight:700; color:var(--portal-success); text-transform:uppercase; letter-spacing:0.05em;">Concluído</div>` : ''}
+                      </div>
                     </div>
                     `;
                   }).join('')}
@@ -3535,6 +3539,7 @@ function initCardioChart(segments, isTimeSpeed) {
 }
 
 // -- EXERCISE DETAIL MODAL -------------------------------------
+window.showExerciseModal = showExerciseModal;
 async function showExerciseModal(ex) {
   // Remove any existing modal
   document.getElementById('exDetailModal')?.remove();
@@ -6357,10 +6362,10 @@ window.showWorkoutSheet = function(w) {
   sheet.querySelector('.sheet-close-btn').addEventListener('click', closeSheet);
   
   sheet.querySelector('.sheet-start-btn').addEventListener('click', () => {
+    const sel = document.getElementById('soloWorkoutSel');
+    if (sel) sel.value = w.id;
     closeSheet();
-    if (typeof window.startWorkout === 'function') {
-      window.startWorkout(w.id);
-    }
+    document.getElementById('soloStartBtn')?.click();
   });
 
   sheet.querySelectorAll('.portal-ex-pick-card').forEach(card => {
