@@ -6211,7 +6211,7 @@ window.showWorkoutSheet = function(w) {
   for (let i = 0; i < (w.exercises || []).length; i++) {
     if (!COMBO.has(w.exercises[i].method)) continue;
     if (w.exercises[i].groupId) continue;
-    const gid = \`grp_\${++gc}\`;
+    const gid = `grp_${++gc}`;
     w.exercises[i].groupId = gid;
     for (let j = i + 1; j < w.exercises.length; j++) {
       if (w.exercises[j].method === w.exercises[i].method) w.exercises[j].groupId = gid;
@@ -6238,74 +6238,74 @@ window.showWorkoutSheet = function(w) {
           const formatTimeLabel = (sec) => {
             const m = Math.floor(sec / 60);
             const s = Math.floor(sec % 60);
-            return \`\${m}:\${String(s).padStart(2, '0')}\`;
+            return `${m}:${String(s).padStart(2, '0')}`;
           };
           const formatDurationText = (sec) => {
             const m = Math.floor(sec / 60);
             const s = Math.floor(sec % 60);
-            if (s > 0) return \`\${m} min \${s}s\`;
-            return \`\${m} min\`;
+            if (s > 0) return `${m} min ${s}s`;
+            return `${m} min`;
           };
 
-          cardioHtml = \`
+          cardioHtml = `
             <div class="portal-cardio-embedded" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.06);box-sizing:border-box" onclick="event.stopPropagation()">
               <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--portal-accent,#06b6d4);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
                 <span>Perfil do Ritmo (Cardio)</span>
-                <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: \${formatDurationText(totalSec)}</span>
+                <span style="font-size:0.65rem;color:var(--portal-text-secondary);font-weight:500;text-transform:none;letter-spacing:0">Duração: ${formatDurationText(totalSec)}</span>
               </div>
               <div style="position:relative;height:120px;width:100%;margin-bottom:8px;background:rgba(0,0,0,0.15);border-radius:8px;padding:4px">
-                <canvas id="cardioEmbedChart_preview_\${i}" style="width:100%;height:100%"></canvas>
+                <canvas id="cardioEmbedChart_preview_${i}" style="width:100%;height:100%"></canvas>
               </div>
               <div style="display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;padding-right:4px">
-                \${segments.map((seg) => {
-                  const timeLabel = \`\${formatTimeLabel(seg.start)} a \${formatTimeLabel(seg.end)}\`;
-                  const targetLabel = seg.load != null ? \`\${seg.load}\` : \`\${seg.intensity}%\`;
-                  return \`
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.015);border-radius:6px;font-size:0.7rem;border-left:3px solid \${getZoneColor(seg.intensity)}">
+                ${segments.map((seg) => {
+                  const timeLabel = `${formatTimeLabel(seg.start)} a ${formatTimeLabel(seg.end)}`;
+                  const targetLabel = seg.load != null ? `${seg.load}` : `${seg.intensity}%`;
+                  return `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:rgba(255,255,255,0.015);border-radius:6px;font-size:0.7rem;border-left:3px solid ${getZoneColor(seg.intensity)}">
                       <div style="display:flex;flex-direction:column;text-align:left">
-                        <span style="font-weight:700;color:var(--portal-text,#f1f5f9)">\${seg.label}</span>
-                        <span style="font-size:0.65rem;color:#94a3b8">⏱ \${timeLabel} (\${formatTimeLabel(seg.duration)})</span>
+                        <span style="font-weight:700;color:var(--portal-text,#f1f5f9)">${seg.label}</span>
+                        <span style="font-size:0.65rem;color:#94a3b8">⏱ ${timeLabel} (${formatTimeLabel(seg.duration)})</span>
                       </div>
-                      <div style="font-weight:700;color:\${getZoneColor(seg.intensity)}">
-                        \${targetLabel}
+                      <div style="font-weight:700;color:${getZoneColor(seg.intensity)}">
+                        ${targetLabel}
                       </div>
                     </div>
-                  \`;
+                  `;
                 }).join('')}
               </div>
             </div>
-          \`;
+          `;
         }
       }
 
-      return \`
-      <div class="glass-card portal-ex-pick-card" data-ei="\${i}" data-wid="\${w.id}" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all 0.2s">
+      return `
+      <div class="glass-card portal-ex-pick-card" data-ei="${i}" data-wid="${w.id}" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all 0.2s">
         <div style="display:flex;align-items:center;gap:12px;width:100%">
-          <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">\${i+1}</div>
+          <div class="portal-ex-num" style="min-width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700">${i+1}</div>
           <div style="flex:1;min-width:0">
-            <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">\${ex.name}</div>
-            <div class="portal-ex-detail">\${ex.sets||3}×\${ex.reps||'10-12'}\${ex.load?' &middot; '+ (typeof formatLoadWithBpm === 'function' && portalState ? formatLoadWithBpm(ex, portalState.student, 'short') : ex.load):''}\${ex.rest?' &middot; '+ex.rest+'s':''}</div>
+            <div class="portal-ex-name" style="font-size:0.88rem;font-weight:600">${ex.name}</div>
+            <div class="portal-ex-detail">${ex.sets||3}×${ex.reps||'10-12'}${ex.load?' &middot; '+ (typeof formatLoadWithBpm === 'function' && portalState ? formatLoadWithBpm(ex, portalState.student, 'short') : ex.load):''}${ex.rest?' &middot; '+ex.rest+'s':''}</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--portal-text-muted);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-        \${cardioHtml}
-      </div>\`;
+        ${cardioHtml}
+      </div>`;
     }).join('');
   } else {
-    exercisesHtml = \`<div style="color: #94a3b8; font-size: 0.9rem; text-align: center; padding: 20px 0;">Nenhum exercício neste treino.</div>\`;
+    exercisesHtml = `<div style="color: #94a3b8; font-size: 0.9rem; text-align: center; padding: 20px 0;">Nenhum exercício neste treino.</div>`;
   }
 
-  sheet.innerHTML = \`
-    <div style="position:absolute; top:0; left:0; width:100%; height:80px; background:linear-gradient(to right, \${theme.hex}, \${theme.hex}); opacity:0.1; pointer-events:none;"></div>
+  sheet.innerHTML = `
+    <div style="position:absolute; top:0; left:0; width:100%; height:80px; background:linear-gradient(to right, ${theme.hex}, ${theme.hex}); opacity:0.1; pointer-events:none;"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; z-index:1;">
       <div style="display:flex; align-items:center; gap:12px;">
-        <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg, \${theme.hex}, \${theme.hex}); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:1.1rem; flex-shrink:0; box-shadow:0 4px 12px \${theme.hex}40;">
-          \${(w.name || 'LV').substring(0,2).toUpperCase()}
+        <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg, ${theme.hex}, ${theme.hex}); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:1.1rem; flex-shrink:0; box-shadow:0 4px 12px ${theme.hex}40;">
+          ${(w.name || 'LV').substring(0,2).toUpperCase()}
         </div>
         <div>
-          <h2 style="margin:0; font-size:1.3rem; font-weight:700; color:#f8fafc;">\${w.name || 'Treino Livre'}</h2>
-          <span style="font-size:0.75rem; font-weight:600; color:\${theme.hex}; padding:2px 8px; border-radius:12px; background:\${theme.hex}20;">
-            \${cat}
+          <h2 style="margin:0; font-size:1.3rem; font-weight:700; color:#f8fafc;">${w.name || 'Treino Livre'}</h2>
+          <span style="font-size:0.75rem; font-weight:600; color:${theme.hex}; padding:2px 8px; border-radius:12px; background:${theme.hex}20;">
+            ${cat}
           </span>
         </div>
       </div>
@@ -6316,16 +6316,16 @@ window.showWorkoutSheet = function(w) {
 
     <div style="flex:1; overflow-y:auto; padding-right:4px; margin-top:8px; z-index:1;">
       <div class="portal-section-sub" style="margin-bottom:12px; font-size:1rem; font-weight:600;">Exercícios do Treino</div>
-      \${exercisesHtml}
+      ${exercisesHtml}
     </div>
 
     <div style="display:flex; gap:12px; margin-top:16px; z-index:1;">
-      <button class="sheet-start-btn" style="flex:1; background:\${theme.hex}; color:#fff; border:none; padding:14px; border-radius:12px; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 4px 12px \${theme.hex}40; display:flex; justify-content:center; align-items:center; gap:8px;">
+      <button class="sheet-start-btn" style="flex:1; background:${theme.hex}; color:#fff; border:none; padding:14px; border-radius:12px; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 4px 12px ${theme.hex}40; display:flex; justify-content:center; align-items:center; gap:8px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         Iniciar Treino
       </button>
     </div>
-  \`;
+  `;
 
   overlay.appendChild(sheet);
   container.appendChild(overlay);
@@ -6334,7 +6334,7 @@ window.showWorkoutSheet = function(w) {
     w.exercises.forEach((ex, i) => {
       if (isCardioExercise(ex) && typeof initEmbeddedCardioChart === 'function') {
         setTimeout(() => {
-          initEmbeddedCardioChart(\`cardioEmbedChart_preview_\${i}\`, ex);
+          initEmbeddedCardioChart(`cardioEmbedChart_preview_${i}`, ex);
         }, 100);
       }
     });
