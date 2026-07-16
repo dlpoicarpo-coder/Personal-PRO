@@ -1482,10 +1482,12 @@ async seedTemplates() {
 
     if (!hasAllDefault) {
       console.log('[Seed] Seeding missing default exercises...');
-      // Clean up legacy/removed default templates for this trainer
-      const defaultToClean = existing.filter(e => 
-        e.is_default && 
-        (!e.id.startsWith('ex_') || !e.id.endsWith('_' + trainerId) || !newExerciseIds.has(e.id))
+      
+      const canonicalIds = newExerciseIds;
+      const defaultToClean = existing.filter(e =>
+        e.is_default &&
+        !e.id.startsWith('ex_') &&
+        !canonicalIds.has(e.id)
       );
       for (const ex of defaultToClean) {
         await this.delete('exercises', ex.id);
@@ -1595,30 +1597,15 @@ async seedTemplates() {
     const existing = await this.getAll('methods');
     const newMethodIds = new Set(methods.map(m => 'met_' + slugify(m.name) + '_' + trainerId));
     
-    // Clean up legacy/removed default methods for this trainer
-    const defaultToClean = existing.filter(m => 
-      m.is_default && 
-      (!m.id.startsWith('met_') || !m.id.endsWith('_' + trainerId) || !newMethodIds.has(m.id))
+    const canonicalIds = newMethodIds;
+    const defaultToClean = existing.filter(m =>
+      m.is_default &&
+      !m.id.startsWith('met_') &&
+      !canonicalIds.has(m.id)
     );
 
-    // ── DEBUG DIAGNÓSTICO: logar o que seria deletado ──
-    console.log("=== DIAGNÓSTICO: MÉTODOS MARCADOS PARA DELEÇÃO ===");
-    console.log("Trainer ID:", trainerId);
-    console.log("newMethodIds:", Array.from(newMethodIds));
-    const diagLog = defaultToClean.map(m => ({
-      id: m.id,
-      is_default: m.is_default,
-      name: m.name,
-      trainer_id: m.trainer_id,
-      startsWithMet: m.id ? m.id.startsWith('met_') : false,
-      endsWithTrainer: m.id ? m.id.endsWith('_' + trainerId) : false,
-      inNewIds: newMethodIds.has(m.id)
-    }));
-    console.log(JSON.stringify(diagLog, null, 2));
-    // ───────────────────────────────────────────────────
-
     for (const m of defaultToClean) {
-      // await this.delete('methods', m.id); // COMENTADO PARA DIAGNÓSTICO
+      await this.delete('methods', m.id);
     }
 
     // Clear any accidental tombstones for the seeded methods to prevent sync from deleting them
@@ -1631,6 +1618,8 @@ async seedTemplates() {
       const id = 'met_' + slugify(m.name) + '_' + trainerId;
       await this.put('methods', { ...m, id, is_default: true, trainer_id: trainerId });
     }
+
+
   }
 
 

@@ -115,6 +115,13 @@ export async function renderSettings() {
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-header"><span class="card-title">Ações Rápidas</span></div>
+          <div class="flex flex-col gap-sm">
+            <button class="btn btn-secondary btn-sm" id="forceCleanDuplicatesBtn" style="border-color:var(--primary);color:var(--primary)">Forçar Limpeza de Duplicatas</button>
+          </div>
+        </div>
+
         <div class="card" style="border-color: rgba(239, 68, 68, 0.3);">
           <div class="card-header"><span class="card-title" style="color: var(--danger);">Zona de Perigo</span></div>
           <div class="flex flex-col gap-sm">
@@ -207,6 +214,30 @@ export function initSettings(navigateFn) {
       const baseUrl = window.location.href.split('#')[0];
       window.location.href = baseUrl + '#/';
       setTimeout(() => window.location.reload(), 100);
+    }
+  });
+
+  // Forçar Limpeza de Duplicatas
+  document.getElementById('forceCleanDuplicatesBtn')?.addEventListener('click', async () => {
+    if (window.confirm('Forçar limpeza de exercícios e métodos duplicados legados?')) {
+      const btn = document.getElementById('forceCleanDuplicatesBtn');
+      btn.textContent = 'Limpando...';
+      btn.disabled = true;
+      try {
+        const { getCurrentUser } = await import('../utils/auth.js');
+        const user = await getCurrentUser();
+        const trainerId = user?.id || 'admin';
+        await db.seedExercises(trainerId);
+        await db.seedMethods(trainerId);
+        notify.success('Limpeza concluída. Duplicatas removidas.');
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        console.error(err);
+        notify.error('Erro ao limpar duplicatas.');
+      } finally {
+        btn.textContent = 'Forçar Limpeza de Duplicatas';
+        btn.disabled = false;
+      }
     }
   });
 
