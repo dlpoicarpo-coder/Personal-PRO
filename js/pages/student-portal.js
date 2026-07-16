@@ -1295,18 +1295,7 @@ function getWorkoutTheme(name, category) {
   // ── 1. Category field (autoridade máxima) ──────────────────────────
   if (category && CATEGORY_THEME[category]) {
     const ct = CATEGORY_THEME[category];
-    // Hash no nome normalizado para manter tom consistente entre semanas do mesmo treino
-    let baseName = (name || '').replace(/\s*[\-\–]\s*Semana\s*\d+/i, '')
-                               .replace(/\s*[\-\–]\s*Sem\s*\d+/i, '')
-                               .replace(/\s*Semana\s*\d+/i, '')
-                               .replace(/\s*Sem\s*\d+/i, '')
-                               .replace(/\s*[\-\–]\s*$/g, '')
-                               .trim().toLowerCase();
-    let hash = 0;
-    for (let i = 0; i < baseName.length; i++) hash = baseName.charCodeAt(i) + ((hash << 5) - hash);
-    hash = Math.abs(hash);
-    const hex = ct.palette[hash % ct.palette.length];
-    return { svg: WORKOUT_ICONS[ct.icon], hex, rgb: hexToRgb(hex) };
+    return { svg: WORKOUT_ICONS[ct.icon], hex: ct.hex, rgb: ct.rgb };
   }
 
   // ── 2. Fallback: inferência por regex no nome ─────────────────────
