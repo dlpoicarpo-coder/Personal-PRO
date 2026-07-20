@@ -474,7 +474,7 @@ async function renderStudentReport(studentId, cycleFilter = '') {
             ${alerts.length ? `<div class="text-sm mt-xs">${alerts.map(a => {
       const valText = a.metric === 'Sono' ? `${Math.round(a.value / 2)}/5` :
         a.metric === 'Dor' ? `${a.value > 8 ? 5 : a.value > 6 ? 4 : a.value > 4 ? 3 : a.value > 2 ? 2 : 1}/5` :
-        a.metric === 'ACWR' || a.metric === 'Ciclo Menstrual' || a.metric === 'Dor Localizada' ? `${a.value}` :
+        a.metric === 'Ciclo Menstrual' || a.metric === 'Dor Localizada' ? `${a.value}` :
         `${a.value}/10`;
       return `${a.icon} ${a.metric}: ${valText}`;
     }).join(' · ')}</div>` : ''}

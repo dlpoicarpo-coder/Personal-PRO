@@ -132,17 +132,6 @@ export function analyzeBiofeedback(entry) {
     });
   }
 
-  // ACWR alert
-  if (entry.acwr != null) {
-    if (entry.acwr > 1.5) {
-      alerts.push({ level: 'danger', metric: 'ACWR', value: entry.acwr.toFixed(2), action: 'Risco alto de lesão! Reduzir volume e intensidade imediatamente.', icon: '●' });
-    } else if (entry.acwr > 1.3) {
-      alerts.push({ level: 'warning', metric: 'ACWR', value: entry.acwr.toFixed(2), action: 'Atenção com a progressão de carga. Monitorar sinais de overtraining.', icon: '○' });
-    } else if (entry.acwr < 0.8 && entry.acwr > 0) {
-      alerts.push({ level: 'info', metric: 'ACWR', value: entry.acwr.toFixed(2), action: 'Subtreinamento. O aluno pode suportar mais volume.', icon: '◦' });
-    }
-  }
-
   // Menstrual Cycle alert
   if (entry.menstrualCycle) {
     if (entry.menstrualCycle === 'Lutea' || entry.menstrualCycle === 'Menstruacao') {

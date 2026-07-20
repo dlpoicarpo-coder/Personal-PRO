@@ -309,18 +309,4 @@ export const Calc = {
     return Math.round(pse * duracaoMin);
   },
 
-  // ── ACWR ─────────────────────────────────────────────────
-  acwr(cargaAguda, cargaCronica) {
-    if (!cargaAguda || !cargaCronica || cargaCronica === 0) return 0;
-    return Math.round((cargaAguda / cargaCronica) * 100) / 100;
-  },
-
-  acwrClassificacao(acwr) {
-    if (acwr === 0)    return { label: 'Sem dados',      color: 'info' };
-    if (acwr < 0.8)    return { label: 'Destreino',      color: 'info' };
-    if (acwr <= 1.3)   return { label: 'Zona ótima',     color: 'success' };
-    if (acwr <= 1.5)   return { label: 'Atenção',        color: 'warning' };
-    return              { label: 'Risco de lesão',   color: 'danger' };
-  },
-
 };
