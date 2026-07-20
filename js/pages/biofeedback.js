@@ -128,11 +128,11 @@ export async function renderBiofeedback() {
         </div>`).join('')}
     </div>` : ''}
 
-    <div id="bfContent">${renderBfContent(allBf, students, '')}</div>
+    <div id="bfContent">${await renderBfContent(allBf, students, '')}</div>
   `;
 }
 
-function renderBfContent(entries, students, filterStudentId, limitOverride = 30, periodFilter = 'month') {
+async function renderBfContent(entries, students, filterStudentId, limitOverride = 30, periodFilter = 'month') {
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const last30Start = new Date(now.getTime() - 30 * 86400000);
@@ -290,7 +290,7 @@ export function initBiofeedback(navigateFn) {
     const allBf    = (await db.getAll('biofeedback')).sort((a,b) => new Date(b.date)-new Date(a.date));
     const el       = document.getElementById('bfContent');
     if (el) {
-      el.innerHTML = renderBfContent(allBf, students, sid, limit, period);
+      el.innerHTML = await renderBfContent(allBf, students, sid, limit, period);
       setTimeout(() => {
         initBfCharts(allBf, students, sid);
         bindBfActions(navigateFn, students);
@@ -740,7 +740,7 @@ function bindBfActions(navigateFn, studentsCache) {
             const newBf = (await db.getAll('biofeedback')).sort((a,b)=>new Date(b.date)-new Date(a.date));
             const contentEl = document.getElementById('bfContent');
             if(contentEl) {
-              contentEl.innerHTML = renderBfContent(newBf, studentsList, sid);
+              contentEl.innerHTML = await renderBfContent(newBf, studentsList, sid);
               initBfCharts(newBf, studentsList, sid);
               bindBfActions(navigateFn, studentsList);
             } else {
