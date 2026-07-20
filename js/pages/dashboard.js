@@ -32,12 +32,35 @@ export async function renderDashboard() {
     return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
   });
 
-  // Recent biofeedback alerts
-  const recentBf = biofeedback
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 10);
+  // 4. Aderência
+  const activeMacros = macrocycles.filter(m => m.status === 'active');
+  const studentAdherences = [];
+  
+  const cutoffDate = '2026-06-27';
+  const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-  const avgSleep = recentBf.length ? ((recentBf.reduce((s, b) => s + (b.sleep || 0), 0) / recentBf.length)/2).toFixed(1) : '-';
+  activeMacros.forEach(m => {
+    // previstos
+    const previstos = workouts.filter(w => w.macrocycleId === m.id && w.date && w.date <= todayStr);
+    
+    if (previstos.length > 0) {
+      // realizados
+      const realizados = completedSessions.filter(s => 
+        s.date >= cutoffDate && 
+        previstos.some(p => p.id === s.workoutId)
+      );
+      
+      let aderencia = realizados.length / previstos.length;
+      if (aderencia > 1) aderencia = 1; // teto 100%
+      studentAdherences.push(aderencia);
+    }
+  });
+
+  let aderenciaGeral = null;
+  if (studentAdherences.length > 0) {
+    const sum = studentAdherences.reduce((acc, curr) => acc + curr, 0);
+    aderenciaGeral = Math.round((sum / studentAdherences.length) * 100);
+  }
 
   // 1. Triagem (Sinais de Atenção)
   const triageItems = buildTriage({
@@ -142,9 +165,9 @@ export async function renderDashboard() {
         <div class="stat-change">neste mês</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value text-gradient">${avgSleep}</div>
-        <div class="stat-label">Média de Sono</div>
-        <div class="stat-change">últimos check-ins</div>
+        <div class="stat-value ${aderenciaGeral === null ? 'text-gradient' : ''}" ${aderenciaGeral !== null ? `style="color: ${aderenciaGeral >= 70 ? 'var(--success)' : aderenciaGeral >= 50 ? 'var(--warning)' : 'var(--danger)'};"` : ''}>${aderenciaGeral !== null ? aderenciaGeral + '%' : '—'}</div>
+        <div class="stat-label">Aderência (30d)</div>
+        <div class="stat-change">sessões realizadas vs. previstas</div>
       </div>
     </div>
 
