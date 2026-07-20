@@ -354,7 +354,7 @@ export async function renderDashboard() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Alunos Recentes</span>
-          <a href="#/alunos" class="btn btn-ghost btn-sm">Ver todos →</a>
+          <a href="#/alunos" class="btn btn-ghost btn-sm">Ver todos</a>
         </div>
         ${activeStudents.length ? `
           <div class="student-list">
@@ -382,7 +382,7 @@ export async function renderDashboard() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Biofeedback Recente</span>
-          <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos →</a>
+          <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos</a>
         </div>
         ${recentBf.length ? `
           <div>
@@ -452,7 +452,7 @@ export async function initDashboardCharts() {
       } catch {}
 
       const fmtBRL = (v) => 'R$ ' + Number(v||0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-      const msg = `Olá ${st.name.split(' ')[0]}! 👋\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* está pendente.\n\nChave Pix: ${pixKey}\n\nQualquer dúvida estou à disposição! 💪`;
+      const msg = `Olá ${st.name.split(' ')[0]},\n\nPassando para lembrar que sua mensalidade de *${fmtBRL(amount)}* com vencimento em *${due}* está pendente.\n\nChave Pix: ${pixKey}\n\nQualquer dúvida estou à disposição.`;
       
       // Open WhatsApp
       const cleanPhone = st.phone.replace(/\D/g, '');
