@@ -32,6 +32,11 @@ export async function renderDashboard() {
     return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
   });
 
+  // Recent biofeedback alerts
+  const recentBf = biofeedback
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
+
   // 4. Aderência
   const activeMacros = macrocycles.filter(m => m.status === 'active');
   const studentAdherences = [];
