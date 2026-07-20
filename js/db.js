@@ -76,7 +76,7 @@ class Database {
     try {
       const supabase = getSupabase();
       if (!supabase) return null;
-      const { data, error } = await supabase.from('subscriptions').select('*').single();
+      const { data, error } = await supabase.from('subscriptions').select('*').maybeSingle();
       if (data) {
         this._subscription = data;
         return data;
@@ -1485,10 +1485,13 @@ async seedTemplates() {
       // Clean up legacy/removed default templates for this trainer
       const defaultToClean = existing.filter(e => 
         e.is_default && 
-        (!e.id.startsWith('ex_') || !e.id.endsWith('_' + trainerId) || !newExerciseIds.has(e.id))
+        !e.id.startsWith('ex_') && !newExerciseIds.has(e.id)
       );
-      for (const ex of defaultToClean) {
-        await this.delete('exercises', ex.id);
+      
+      if (false) { // DESLIGADO TEMPORARIAMENTE PARA EVITAR LOOP FK
+        for (const ex of defaultToClean) {
+          await this.delete('exercises', ex.id);
+        }
       }
 
       // Clear any accidental tombstones for the seeded exercises to prevent sync from deleting them
@@ -1598,27 +1601,13 @@ async seedTemplates() {
     // Clean up legacy/removed default methods for this trainer
     const defaultToClean = existing.filter(m => 
       m.is_default && 
-      (!m.id.startsWith('met_') || !m.id.endsWith('_' + trainerId) || !newMethodIds.has(m.id))
+      !m.id.startsWith('met_') && !newMethodIds.has(m.id)
     );
 
-    // ── DEBUG DIAGNÓSTICO: logar o que seria deletado ──
-    console.log("=== DIAGNÓSTICO: MÉTODOS MARCADOS PARA DELEÇÃO ===");
-    console.log("Trainer ID:", trainerId);
-    console.log("newMethodIds:", Array.from(newMethodIds));
-    const diagLog = defaultToClean.map(m => ({
-      id: m.id,
-      is_default: m.is_default,
-      name: m.name,
-      trainer_id: m.trainer_id,
-      startsWithMet: m.id ? m.id.startsWith('met_') : false,
-      endsWithTrainer: m.id ? m.id.endsWith('_' + trainerId) : false,
-      inNewIds: newMethodIds.has(m.id)
-    }));
-    console.log(JSON.stringify(diagLog, null, 2));
-    // ───────────────────────────────────────────────────
-
-    for (const m of defaultToClean) {
-      // await this.delete('methods', m.id); // COMENTADO PARA DIAGNÓSTICO
+    if (false) { // DESLIGADO TEMPORARIAMENTE PARA EVITAR LOOP FK
+      for (const m of defaultToClean) {
+        await this.delete('methods', m.id);
+      }
     }
 
     // Clear any accidental tombstones for the seeded methods to prevent sync from deleting them
