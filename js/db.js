@@ -1483,12 +1483,17 @@ async seedTemplates() {
     if (!hasAllDefault) {
       console.log('[Seed] Seeding missing default exercises...');
       // Clean up legacy/removed default templates for this trainer
-      const defaultToClean = existing.filter(e => 
-        e.is_default && 
-        !e.id.startsWith('ex_') && !newExerciseIds.has(e.id)
+      const defaultToClean = existing.filter(e =>
+        e.is_default === true &&
+        !String(e.id).startsWith('ex_')  // só UUID legado; canônico ex_... preservado
       );
-      
-      if (false) { // DESLIGADO TEMPORARIAMENTE PARA EVITAR LOOP FK
+
+      // Faxina de duplicatas legado: condição correta acima.
+      // DELETE automático DESLIGADO por decisão de segurança (o auto-delete
+      // no sync causou loop de deleção em massa). Limpeza é manual via SQL
+      // quando necessário. Ver defaultToClean para a condição correta.
+      const AUTO_CLEAN_ENABLED_EX = false;
+      if (AUTO_CLEAN_ENABLED_EX) {
         for (const ex of defaultToClean) {
           await this.delete('exercises', ex.id);
         }
@@ -1599,12 +1604,17 @@ async seedTemplates() {
     const newMethodIds = new Set(methods.map(m => 'met_' + slugify(m.name) + '_' + trainerId));
     
     // Clean up legacy/removed default methods for this trainer
-    const defaultToClean = existing.filter(m => 
-      m.is_default && 
-      !m.id.startsWith('met_') && !newMethodIds.has(m.id)
+    const defaultToClean = existing.filter(m =>
+      m.is_default === true &&
+      !String(m.id).startsWith('met_')  // só UUID legado; canônico met_... preservado
     );
 
-    if (false) { // DESLIGADO TEMPORARIAMENTE PARA EVITAR LOOP FK
+    // Faxina de duplicatas legado: condição correta acima.
+    // DELETE automático DESLIGADO por decisão de segurança (o auto-delete
+    // no sync causou loop de deleção em massa). Limpeza é manual via SQL
+    // quando necessário. Ver defaultToClean para a condição correta.
+    const AUTO_CLEAN_ENABLED_MET = false;
+    if (AUTO_CLEAN_ENABLED_MET) {
       for (const m of defaultToClean) {
         await this.delete('methods', m.id);
       }
