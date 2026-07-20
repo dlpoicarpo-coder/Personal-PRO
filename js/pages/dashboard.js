@@ -16,6 +16,7 @@ export async function renderDashboard() {
   const sessions = await db.getAll('sessions');
   const macrocycles = await db.getAll('macrocycles');
   const financial = await db.getAll('financial');
+  const schedules = await db.getAll('schedules');
   const settings = await db.get('settings', 'trainer') || {};
 
   const activeStudents = students.filter(s => s.status === 'Ativo');
@@ -37,26 +38,33 @@ export async function renderDashboard() {
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 10);
 
-  // 4. Aderência
+  // 4. Aderência (semana atual)
   const activeMacros = macrocycles.filter(m => m.status === 'active');
   const studentAdherences = [];
   
-  const cutoffDate = '2026-06-27';
   const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // segunda-feira
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6); // domingo
+  
+  const weekStartStr = new Date(weekStart.getTime() - weekStart.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const weekEndStr = new Date(weekEnd.getTime() - weekEnd.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
   activeMacros.forEach(m => {
-    // previstos
-    const previstos = workouts.filter(w => w.macrocycleId === m.id && w.date && w.date <= todayStr);
+    const previstos_semana = workouts.filter(w =>
+      w.macrocycleId === m.id &&
+      w.date >= weekStartStr && w.date <= weekEndStr
+    );
     
-    if (previstos.length > 0) {
-      // realizados
-      const realizados = completedSessions.filter(s => 
-        s.date >= cutoffDate && 
-        previstos.some(p => p.id === s.workoutId)
+    if (previstos_semana.length > 0) {
+      const realizados_semana = completedSessions.filter(s => 
+        previstos_semana.some(p => p.id === s.workoutId)
       );
       
-      let aderencia = realizados.length / previstos.length;
-      if (aderencia > 1) aderencia = 1; // teto 100%
+      let aderencia = realizados_semana.length / previstos_semana.length;
+      if (aderencia > 1) aderencia = 1;
       studentAdherences.push(aderencia);
     }
   });
@@ -66,6 +74,17 @@ export async function renderDashboard() {
     const sum = studentAdherences.reduce((acc, curr) => acc + curr, 0);
     aderenciaGeral = Math.round((sum / studentAdherences.length) * 100);
   }
+
+  // 5. Agenda de hoje
+  const todayWorkouts = workouts.filter(w =>
+    w.date === todayStr &&
+    activeStudents.some(s => s.id === w.studentId)
+  ).map(w => {
+    const st = activeStudents.find(s => s.id === w.studentId);
+    const sch = schedules.find(s => s.workoutId === w.id && s.date === todayStr);
+    const checkin = biofeedback.find(b => b.studentId === w.studentId && b.date?.startsWith(todayStr) && b.formType === 'pre');
+    return { student: st, workout: w, time: sch?.time || null, checkin };
+  }).sort((a,b) => (a.time||'99:99').localeCompare(b.time||'99:99'));
 
   // 1. Triagem (Sinais de Atenção)
   const triageItems = buildTriage({
@@ -125,21 +144,12 @@ export async function renderDashboard() {
     return 0;
   });
 
-  // 5. Lembretes do Sistema (Avanço de Macrociclo)
-  const adjustmentAlerts = [];
-
-  // B. Gatilho de Macrociclo (Troca de Fase)
-  macrocycles.forEach(m => {
-    const status = Calc.getMacrocycleStatus(m, now);
-    if (status.isChangingWeek) {
-      const st = students.find(x => x.id === m.studentId);
-      if (st) adjustmentAlerts.push({ 
-        type: 'macro_phase', 
-        student: st, 
-        text: `${st.name.split(' ')[0]} entrou na Semana ${status.currentWeek} do macrociclo. Avalie a necessidade de ajuste de cargas.` 
-      });
-    }
-  });
+  // 6. Ciclos terminando
+  const endingSoon = macrocycles
+    .filter(m => m.status === 'active')
+    .map(m => ({ m, st: students.find(s => s.id === m.studentId), status: Calc.getMacrocycleStatus(m, now) }))
+    .filter(({ status }) => status.daysLeft > 0 && status.daysLeft <= 14)
+    .sort((a,b) => a.status.daysLeft - b.status.daysLeft);
 
 
   return `
@@ -170,8 +180,8 @@ export async function renderDashboard() {
         <div class="stat-change">neste mês</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value ${aderenciaGeral === null ? 'text-gradient' : ''}" ${aderenciaGeral !== null ? `style="color: ${aderenciaGeral >= 70 ? 'var(--success)' : aderenciaGeral >= 50 ? 'var(--warning)' : 'var(--danger)'};"` : ''}>${aderenciaGeral !== null ? aderenciaGeral + '%' : '—'}</div>
-        <div class="stat-label">Aderência (30d)</div>
+        <div class="stat-value ${aderenciaGeral === null ? 'text-gradient' : ''}" ${aderenciaGeral !== null ? `style="color: ${aderenciaGeral >= 80 ? 'var(--success)' : aderenciaGeral >= 50 ? 'var(--warning)' : 'var(--danger)'};"` : ''}>${aderenciaGeral !== null ? aderenciaGeral + '%' : '—'}</div>
+        <div class="stat-label">Aderência (semana)</div>
         <div class="stat-change">sessões realizadas vs. previstas</div>
       </div>
     </div>
@@ -212,6 +222,42 @@ export async function renderDashboard() {
               <span class="text-muted text-xs">${maturingStudentsCount} aluno(s) com base em maturação.</span>
             </div>
           ` : ''}
+        </div>
+      </div>
+
+      <!-- Card 2: Agenda de hoje -->
+      <div class="card" style="padding: 16px;">
+        <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
+          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Agenda de hoje
+          </span>
+          <a href="#/calendario" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver calendário</a>
+        </div>
+        <div class="flex flex-col gap-xs">
+          ${todayWorkouts.length > 0 ? todayWorkouts.map(tw => {
+            const timeText = tw.time || 'Horário a confirmar';
+            const checkinBadge = tw.checkin 
+              ? `<span class="badge badge-success" style="font-size:0.65rem; padding: 2px 6px;">Check-in feito</span>`
+              : `<span class="badge" style="background:var(--bg-secondary); color:var(--text-muted); font-size:0.65rem; padding: 2px 6px;">Aguardando</span>`;
+            return `
+              <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
+                <div class="flex items-center gap-sm" style="min-width: 0; flex: 1;">
+                  <div class="avatar avatar-sm" style="width: 26px; height: 26px; font-size: 0.7rem; flex-shrink: 0;">
+                    ${tw.student ? tw.student.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '?'}
+                  </div>
+                  <div style="min-width: 0; flex: 1;">
+                    <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tw.student ? tw.student.name.split(' ')[0] : 'Aluno'}</div>
+                    <div class="text-xs" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tw.workout.name}</div>
+                  </div>
+                </div>
+                <div class="flex flex-col items-end gap-xs" style="flex-shrink: 0; margin-left: 8px;">
+                  <span style="font-weight: 500; font-size: 0.8rem;">${timeText}</span>
+                  ${checkinBadge}
+                </div>
+              </div>
+            `;
+          }).join('') : '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum treino agendado para hoje</p>'}
         </div>
       </div>
 
@@ -276,26 +322,32 @@ export async function renderDashboard() {
     </div>
     </div> <!-- Fecha Radar PSE wrapper -->
 
-    ${adjustmentAlerts.length > 0 ? `
     <div>
-      <h3 class="mb-xs mt-xs" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Avanço de Macrociclo</h3>
+      <h3 class="mb-xs mt-xs" style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Ciclos Terminando</h3>
       <div class="card" style="padding: 12px 16px;">
         <div class="flex flex-col gap-xs">
-          ${adjustmentAlerts.map(a => `
+          ${endingSoon.length > 0 ? endingSoon.map(item => {
+            const { m, st, status } = item;
+            const daysLeft = status.daysLeft;
+            const color = daysLeft <= 7 ? 'var(--danger)' : 'var(--warning)';
+            const bgClass = daysLeft <= 7 ? 'var(--danger)' : 'var(--warning)';
+            const label = daysLeft <= 7 ? `termina em ${daysLeft}d` : `semana ${status.currentWeek} de ${m.totalWeeks}`;
+            return `
               <div class="flex items-center gap-sm" style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
-              <div class="avatar avatar-sm" style="width: 36px; height: 36px; font-size: 1rem; background: var(--primary)15; color: var(--primary);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <div class="avatar avatar-sm" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                  ${st ? st.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '?'}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${st ? st.name.split(' ')[0] : 'Aluno'}</div>
+                  <div class="text-muted text-xs" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.name}</div>
+                </div>
+                <span class="badge" style="background:${bgClass}15; color:${color}; font-size: 0.68rem; padding: 2px 8px; text-transform: uppercase;">${label}</span>
               </div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 0.95rem; font-weight: 500;">${a.text}</div>
-                <div class="text-muted text-xs">Lembrete do Sistema</div>
-              </div>
-              <a href="#/alunos" class="btn btn-ghost btn-sm" style="color: var(--primary);">Revisar</a>
-            </div>
-        `).join('')}
+            `;
+          }).join('') : '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum ciclo encerrando em breve</p>'}
+        </div>
       </div>
-    </div>
-    ` : ''}      </div>
+    </div>      </div>
     </div>
 
     <div class="grid-2">
