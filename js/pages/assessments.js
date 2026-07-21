@@ -1168,7 +1168,7 @@ export function initAssessments(navigateFn) {
           notify.success('Teste Step atualizado!');
         };
       } else {
-        content = \`<form id="editAssForm">
+        content = `<form id="editAssForm">
           <div class="form-row">
             <div class="form-group"><label class="form-label">Data</label>
               <input class="form-input" name="date" type="date" value="${a.date ? a.date.slice(0,10) : ''}" />
