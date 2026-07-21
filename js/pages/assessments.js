@@ -1134,24 +1134,24 @@ export function initAssessments(navigateFn) {
           notify.success('Teste Rockport atualizado!');
         };
       } else if (a.type === 'step') {
-        title = \`Editar Step - \${st?.name || 'Aluno'}\`;
-        content = \`<form id="editAssForm">
+        title = `Editar Step - ${st?.name || 'Aluno'}`;
+        content = `<form id="editAssForm">
           <div class="form-row">
             <div class="form-group"><label class="form-label">Data</label>
-              <input class="form-input" name="date" type="date" value="\${a.date?.split('T')[0] || ''}" /></div>
+              <input class="form-input" name="date" type="date" value="${a.date?.split('T')[0] || ''}" /></div>
             <div class="form-group"><label class="form-label">Sexo</label>
-              <input class="form-input" name="genero" type="text" readonly style="background:var(--bg-secondary);color:var(--text-muted)" value="\${a.sexo || 'F'}" /></div>
+              <input class="form-input" name="genero" type="text" readonly style="background:var(--bg-secondary);color:var(--text-muted)" value="${a.sexo || 'F'}" /></div>
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">FC Recuperação (bpm)</label>
-              <input class="form-input" name="fcRecuperacao" type="number" value="\${a.fcRecuperacao || ''}" /></div>
+              <input class="form-input" name="fcRecuperacao" type="number" value="${a.fcRecuperacao || ''}" /></div>
             <div class="form-group"><label class="form-label">VO₂max (ml/kg/min) — override opcional</label>
-              <input class="form-input" name="vo2max" type="number" step="0.1" value="\${a.vo2max || ''}" /></div>
+              <input class="form-input" name="vo2max" type="number" step="0.1" value="${a.vo2max || ''}" /></div>
           </div>
           <div class="form-group"><label class="form-label">Observações</label>
-            <textarea class="form-textarea" name="notes" rows="2">\${a.notes || ''}</textarea>
+            <textarea class="form-textarea" name="notes" rows="2">${a.notes || ''}</textarea>
           </div>
-        </form>\`;
+        </form>`;
         onSaveFn = async () => {
           const fd = new FormData(document.getElementById('editAssForm'));
           const vo2 = Calc.vo2maxStepQueens({
@@ -1790,12 +1790,12 @@ function rockportFormHTML(students) {
 
 function stepFormHTML(students) {
   const today = new Date().toISOString().slice(0,10);
-  return \`<form id="assessForm">
+  return `<form id="assessForm">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Aluno *</label>
-        <select class="form-select" name="studentId" required>\${studentSelectOpts(students)}</select></div>
+        <select class="form-select" name="studentId" required>${studentSelectOpts(students)}</select></div>
       <div class="form-group"><label class="form-label">Data</label>
-        <input class="form-input" name="date" type="date" value="\${today}" /></div>
+        <input class="form-input" name="date" type="date" value="${today}" /></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Sexo</label>
@@ -1811,7 +1811,7 @@ function stepFormHTML(students) {
     <div class="form-group"><label class="form-label">Observações</label>
       <textarea class="form-textarea" name="notes" rows="2" placeholder="Ex: Banco de 41,3 cm..."></textarea>
     </div>
-  </form>\`;
+  </form>`;
 }
 
 // ── FICHA COMPLETA ────────────────────────────────────────────
