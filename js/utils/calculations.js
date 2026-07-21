@@ -302,6 +302,31 @@ export const Calc = {
     return Math.round((nivel * 0.5 + shuttle * 0.1 + 3.46) * 10) / 10;
   },
 
+  // Rockport 1 milha (Kline et al., 1987) — submaximo, caminhada
+  // sexo: 'M' = 1, 'F' = 0 | peso em kg (convertido p/ lb) | tempo em min decimais | fc final em bpm
+  vo2maxRockport({ pesoKg, idade, sexo, tempoMin, fcFinal }) {
+    if (!pesoKg || !idade || !tempoMin || !fcFinal) return null;
+    const pesoLb = pesoKg * 2.20462;
+    const g = (String(sexo).toUpperCase() === 'M') ? 1 : 0;
+    const vo2 = 132.853
+      - (0.0769 * pesoLb)
+      - (0.3877 * idade)
+      + (6.315  * g)
+      - (3.2649 * tempoMin)
+      - (0.1565 * fcFinal);
+    return Math.round(vo2 * 10) / 10;
+  },
+
+  // Queens College / McArdle (1972) — submaximo, banco 41,3 cm, 3 min
+  // fcRecuperacao: contagem de 15 s (entre 5-20 s de recuperacao) x 4 = bpm
+  vo2maxStepQueens({ sexo, fcRecuperacao }) {
+    if (!fcRecuperacao) return null;
+    const vo2 = (String(sexo).toUpperCase() === 'M')
+      ? 111.33 - (0.42   * fcRecuperacao)
+      : 65.81  - (0.1847 * fcRecuperacao);
+    return Math.round(vo2 * 10) / 10;
+  },
+
   // ── CARGA DE TREINO ──────────────────────────────────────
   cargaTreino(pse, duracaoMin) {
     // Foster (1996): Carga = PSE × Duração (min)
@@ -309,4 +334,43 @@ export const Calc = {
     return Math.round(pse * duracaoMin);
   },
 
+};
+
+export const PROTOCOLOS_INFO = {
+  conconi: {
+    nome: 'Teste de Conconi (limiar + VO2max)',
+    tipo: 'Maximo, incremental (corrida)',
+    equipamento: 'Pista ou esteira + frequencimetro (cinta)',
+    protocolo: 'Corrida em velocidade crescente ate a exaustao. Identifica o ponto de deflexao da FC (limiar anaerobio) e a VMA (velocidade aerobia maxima).',
+    formula: 'VO2max ~ VMA (km/h) x 3,5',
+    cuidados: 'Teste maximo. Exige base de corrida. Nao indicado para iniciantes ou decondicionados sem liberacao medica.',
+    fonte: 'Conconi et al., 1982',
+  },
+  rockport: {
+    nome: 'Rockport 1 milha (caminhada)',
+    tipo: 'Submaximo (caminhada)',
+    equipamento: 'Percurso de 1.609 m (pista ou esteira a 0%) + frequencimetro + balanca',
+    protocolo: 'Caminhar 1 milha (1.609 m) o mais rapido possivel, SEM correr. Registrar o tempo total (min) e a FC nos ultimos ~10 s.',
+    formula: 'VO2max = 132,853 - 0,0769xpeso(lb) - 0,3877xidade + 6,315xsexo(M=1/F=0) - 3,2649xtempo(min) - 0,1565xFC',
+    cuidados: 'Validado para 30-69 anos. Ideal para iniciantes, idosos e retorno de lesao. Erro-padrao ~5 ml/kg/min. Para 18-24 anos, subtrair 6 do resultado.',
+    fonte: 'Kline et al., 1987',
+  },
+  step: {
+    nome: 'Queens College / McArdle (banco)',
+    tipo: 'Submaximo (step)',
+    equipamento: 'Banco de 41,3 cm (16,25 pol) + metronomo + relogio/frequencimetro',
+    protocolo: 'Subir e descer por 3 min: mulheres 22 passos/min, homens 24 passos/min (metronomo). Ao terminar, ficar em pe, esperar 5 s e contar a FC por 15 s (entre 5-20 s de recuperacao); multiplicar por 4 = bpm.',
+    formula: 'Homens: VO2max = 111,33 - 0,42xFC | Mulheres: VO2max = 65,81 - 0,1847xFC',
+    cuidados: 'Interromper se atingir 85% da FCmax. A altura fixa do banco desfavorece pessoas muito altas ou baixas.',
+    fonte: 'McArdle et al., 1972',
+  },
+  cooper: {
+    nome: 'Teste de Cooper (12 min)',
+    tipo: 'Maximo (corrida)',
+    equipamento: 'Pista demarcada + cronometro',
+    protocolo: 'Percorrer a maior distancia possivel em 12 min (correndo ou caminhando). Registrar a distancia em metros.',
+    formula: 'VO2max = (distancia(m) - 504,9) / 44,73',
+    cuidados: 'Esforco maximo. Exige base de corrida. Resultado enviesado em quem nao corre.',
+    fonte: 'Cooper, 1968',
+  },
 };
