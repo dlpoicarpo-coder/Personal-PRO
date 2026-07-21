@@ -128,6 +128,7 @@ export async function renderAssessments() {
   const compAss  = assessments.filter(a=>a.type==='composicao');
   const forcaAss = assessments.filter(a=>a.type==='forca');
   const concAss  = assessments.filter(a=>a.type==='conconi');
+  const rockAss  = assessments.filter(a=>a.type==='rockport');
   const avalAlu  = [...new Set(assessments.map(a=>a.studentId))].length;
 
   // PRs por exercício para o badge
@@ -161,6 +162,7 @@ export async function renderAssessments() {
   const { sortedStudents: compStudents, groups: compGroups } = groupAssessmentsByStudent(compAss);
   const { sortedStudents: forcaStudents, groups: forcaGroups } = groupAssessmentsByStudent(forcaAss);
   const { sortedStudents: conconiStudents, groups: conconiGroups } = groupAssessmentsByStudent(concAss);
+  const { sortedStudents: rockStudents, groups: rockGroups } = groupAssessmentsByStudent(rockAss);
 
   return `
     <div class="page-header">
@@ -182,7 +184,7 @@ export async function renderAssessments() {
       ${[
         ['COMPOSIÇÃO', compAss.length,  'text-gradient', 'avaliações'],
         ['FORÇA / 1RM', forcaAss.length, 'warning',       'registros'],
-        ['CONCONI / VO₂', concAss.length,'accent',        'testes'],
+        ['VO₂ / CARDIO', concAss.length + rockAss.length,'accent',        'testes'],
         ['ALUNOS',        avalAlu,       'primary',        'avaliados'],
       ].map(([l,v,c,s])=>`
         <div class="stat-card" style="text-align:center;padding:12px">
@@ -197,6 +199,7 @@ export async function renderAssessments() {
       <button class="tab active" data-type="composicao">Composição</button>
       <button class="tab" data-type="forca">Força &amp; 1RM</button>
       <button class="tab" data-type="conconi">Conconi / VO₂</button>
+      <button class="tab" data-type="rockport">Rockport</button>
       <button class="tab" data-type="zonas">Zonas FC &amp; Carga</button>
       <button class="tab" data-type="evolucao">Evolução</button>
       <button class="tab" data-type="ficha">Ficha do Aluno</button>
@@ -472,6 +475,66 @@ export async function renderAssessments() {
         </div>`}
     </div>
 
+    <!-- ── ROCKPORT ── -->
+    <div id="panel-rockport" class="assessment-panel" style="display:none">
+      ${!rockAss.length ? `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <h3>Nenhum teste Rockport registrado</h3>
+          <p class="text-muted">Adicione os resultados do teste de 1 milha caminhada.</p>
+        </div>
+      ` : `
+        <div class="card p-0" style="overflow:hidden">
+          <div class="table-responsive">
+            <table class="table">
+              <thead><tr>
+                <th>Aluno</th>
+                <th>Data</th>
+                <th>Peso</th>
+                <th>Tempo</th>
+                <th>FC final</th>
+                <th>VO₂max</th>
+                <th style="width:100px;text-align:right">Ações</th>
+              </tr></thead>
+              ${rockStudents.map(student => {
+                const studentAssessments = rockGroups[student.id] || [];
+                return `
+                <tbody class="student-group">
+                  ${studentAssessments.map((a, i) => `
+                    <tr>
+                      ${i === 0 ? `<td rowspan="${studentAssessments.length}">
+                        <div class="flex items-center gap-sm">
+                          <div class="avatar avatar-sm">${student.name.substring(0,2).toUpperCase()}</div>
+                          <div>
+                            <div style="font-weight:600">${student.name}</div>
+                          </div>
+                        </div>
+                      </td>` : ''}
+                      <td>${new Date(a.date).toLocaleDateString('pt-BR')}</td>
+                      <td>${a.pesoKg ? a.pesoKg+' kg' : '—'}</td>
+                      <td>${a.tempoMin ? a.tempoMin+' min' : '—'}</td>
+                      <td>${a.fcFinal ? a.fcFinal+' bpm' : '—'}</td>
+                      <td><strong style="color:var(--accent)">${a.vo2max ? Calc.formatNum(a.vo2max)+' ml/kg/min' : '—'}</strong></td>
+                      <td style="text-align:right">
+                        <div class="flex gap-xs" style="justify-content:flex-end">
+                          <button class="btn btn-ghost btn-sm btn-icon" onclick="window.editAssessment('${a.id}')" title="Editar">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                          <button class="btn btn-ghost btn-sm btn-icon text-danger" onclick="window.deleteAssessment('${a.id}')" title="Excluir">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+                `;
+              }).join('')}
+            </table>
+          </div>
+        </div>`}
+    </div>
+
     <!-- ── ZONAS FC & CARGA ── -->
     <div id="panel-zonas" class="assessment-panel" style="display:none">
       <div class="grid-2">
@@ -658,6 +721,7 @@ export function initAssessments(navigateFn) {
               ['composicao','Composição Corporal','Peso, dobras, circunferências, IMC, % gordura'],
               ['forca',     'Força / 1RM Submax',  'Protocolo progressivo de estimativa do 1RM'],
               ['conconi',   'Conconi / VO₂max',    'FC pico, VMA, limiar anaeróbio'],
+              ['rockport','Rockport 1 milha (caminhada)','Submaximo - peso, tempo e FC final'],
             ].map(([id,label,desc])=>`
               <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;transition:all 0.15s" class="aval-type-opt">
                 <input type="radio" name="avalType" value="${id}" style="flex-shrink:0" />
@@ -1025,6 +1089,47 @@ export function initAssessments(navigateFn) {
           await db.put('assessments', updated);
           notify.success('Protocolo Conconi atualizado!');
         };
+      } else if (a.type === 'rockport') {
+        title = `Editar Rockport - ${st?.name || 'Aluno'}`;
+        content = `<form id="editAssForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="${a.date?.split('T')[0] || ''}" /></div>
+            <div class="form-group"><label class="form-label">Peso (kg)</label>
+              <input class="form-input" name="pesoKg" type="number" step="0.1" value="${a.pesoKg || ''}" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Tempo da Milha (min)</label>
+              <input class="form-input" name="tempoMin" type="number" step="0.01" value="${a.tempoMin || ''}" /></div>
+            <div class="form-group"><label class="form-label">FC Final (bpm)</label>
+              <input class="form-input" name="fcFinal" type="number" value="${a.fcFinal || ''}" /></div>
+          </div>
+          <div class="form-group"><label class="form-label">VO₂max (ml/kg/min) — override opcional</label>
+            <input class="form-input" name="vo2max" type="number" step="0.1" value="${a.vo2max || ''}" /></div>
+          <div class="form-group"><label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="2">${a.notes || ''}</textarea>
+          </div>
+        </form>`;
+        onSaveFn = async () => {
+          const fd = new FormData(document.getElementById('editAssForm'));
+          const vo2 = Calc.vo2maxRockport({
+            pesoKg: parseFloat(fd.get('pesoKg')),
+            idade: a.idade,
+            sexo: a.sexo,
+            tempoMin: parseFloat(fd.get('tempoMin')),
+            fcFinal: parseFloat(fd.get('fcFinal'))
+          });
+          const updated = {
+            ...a, date: fd.get('date') || a.date,
+            pesoKg: parseFloat(fd.get('pesoKg')) || null,
+            tempoMin: parseFloat(fd.get('tempoMin')) || null,
+            fcFinal: parseFloat(fd.get('fcFinal')) || null,
+            vo2max: parseFloat(fd.get('vo2max')) || vo2,
+            notes: fd.get('notes'),
+          };
+          await db.put('assessments', updated);
+          notify.success('Teste Rockport atualizado!');
+        };
       } else {
         content = `<form id="editAssForm">
           <div class="form-row">
@@ -1231,9 +1336,10 @@ function updateRM1Best() {
 
 // ── FORMULÁRIOS POR TIPO DE AVALIAÇÃO ─────────────────────────
 function openAssessmentForm(tipo, students, navigateFn) {
-  const titles = { composicao:'Composição Corporal', forca:'Força / 1RM', conconi:'Protocolo Conconi / VO₂max' };
+  const titles = { composicao:'Composição Corporal', forca:'Força / 1RM', conconi:'Protocolo Conconi / VO₂max', rockport:'Rockport 1 milha' };
   const content = tipo==='composicao' ? composicaoFormHTML(students) :
                   tipo==='forca'      ? forcaFormHTML(students) :
+                  tipo==='rockport'   ? rockportFormHTML(students) :
                   conconiFormHTML(students);
 
   openModal({
@@ -1269,6 +1375,18 @@ function openAssessmentForm(tipo, students, navigateFn) {
       const vma = parseFloat(e.target.value);
       const el  = document.querySelector('#assessForm [name="vo2max"]');
       if(vma&&el) el.value = Calc.vo2maxConconi(vma);
+    });
+
+    const recalcRock = () => {
+      const g = (val)=>parseFloat(document.querySelector(`#assessForm [name="${val}"]`)?.value)||null;
+      const sexo = document.querySelector('#assessForm [name="genero"]')?.value || 'F';
+      const idade = parseInt(document.querySelector('#assessForm [name="idadeCalc"]')?.value)||null;
+      const vo2 = Calc.vo2maxRockport({ pesoKg:g('pesoKg'), idade, sexo, tempoMin:g('tempoMin'), fcFinal:g('fcFinal') });
+      const el = document.querySelector('#assessForm [name="vo2max"]');
+      if (vo2 && el) el.value = vo2;
+    };
+    ['pesoKg','tempoMin','fcFinal'].forEach(n=>{
+      document.querySelector(`#assessForm [name="${n}"]`)?.addEventListener('input', recalcRock);
     });
 
     // Calculo bidirecional em tempo real: composicao corporal
@@ -1422,6 +1540,20 @@ async function saveAssessment(tipo, d, navigateFn) {
     });
     notify.success('Protocolo Conconi salvo!');
   }
+  else if(tipo==='rockport'){
+    const idade = parseInt(d.idadeCalc)||null;
+    const vo2 = Calc.vo2maxRockport({ pesoKg:parseFloat(d.pesoKg), idade, sexo:d.genero, tempoMin:parseFloat(d.tempoMin), fcFinal:parseFloat(d.fcFinal) });
+    await db.add('assessments',{...base,
+      pesoKg:  parseFloat(d.pesoKg)||null,
+      idade,
+      sexo:    d.genero||null,
+      tempoMin:parseFloat(d.tempoMin)||null,
+      fcFinal: parseFloat(d.fcFinal)||null,
+      vo2max:  parseFloat(d.vo2max)||vo2,
+      notes:   d.notes||'',
+    });
+    notify.success('Teste Rockport salvo!');
+  }
   closeModal();
   navigateFn('/avaliacoes');
 }
@@ -1562,6 +1694,38 @@ function conconiFormHTML(students) {
     </div>
     <div class="form-group"><label class="form-label">Observações</label>
       <textarea class="form-textarea" name="notes" rows="2" placeholder="Notas..."></textarea></div>
+  </form>`;
+}
+
+function rockportFormHTML(students) {
+  const today = new Date().toISOString().slice(0,10);
+  return `<form id="assessForm">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Aluno *</label>
+        <select class="form-select" name="studentId" required>${studentSelectOpts(students)}</select></div>
+      <div class="form-group"><label class="form-label">Data</label>
+        <input class="form-input" name="date" type="date" value="${today}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Idade (anos)</label>
+        <input class="form-input" name="idadeCalc" type="number" readonly style="background:var(--bg-secondary);color:var(--text-muted)" placeholder="Auto" /></div>
+      <div class="form-group"><label class="form-label">Sexo</label>
+        <input class="form-input" name="genero" type="text" readonly style="background:var(--bg-secondary);color:var(--text-muted)" placeholder="Auto" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Peso (kg)</label>
+        <input class="form-input" name="pesoKg" type="number" step="0.1" placeholder="Ex: 70.5" /></div>
+      <div class="form-group"><label class="form-label">Tempo da Milha (min)</label>
+        <input class="form-input" name="tempoMin" type="number" step="0.01" placeholder="Ex: 14.5" /></div>
+      <div class="form-group"><label class="form-label">FC Final (bpm)</label>
+        <input class="form-input" name="fcFinal" type="number" placeholder="145" /></div>
+    </div>
+    <div class="form-group"><label class="form-label">VO₂max Estimado (ml/kg/min)</label>
+      <input class="form-input" name="vo2max" type="number" step="0.1" readonly style="background:var(--bg-secondary);color:var(--accent);font-weight:bold" placeholder="Auto-calculado" />
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label>
+      <textarea class="form-textarea" name="notes" rows="2" placeholder="Ex: Feito na esteira a 1% de inclinação..."></textarea>
+    </div>
   </form>`;
 }
 
