@@ -484,9 +484,9 @@ export async function renderAssessments() {
           <p class="text-muted">Adicione os resultados do teste de 1 milha caminhada.</p>
         </div>
       ` : `
-        <div class="card p-0" style="overflow:hidden">
-          <div class="table-responsive">
-            <table class="table">
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table">
               <thead><tr>
                 <th>Aluno</th><th>Data</th><th>Peso</th><th>Tempo</th><th>FC Final</th><th>VO₂max</th><th></th>
               </tr></thead>
