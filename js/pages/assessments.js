@@ -129,6 +129,7 @@ export async function renderAssessments() {
   const forcaAss = assessments.filter(a=>a.type==='forca');
   const concAss  = assessments.filter(a=>a.type==='conconi');
   const rockAss  = assessments.filter(a=>a.type==='rockport');
+  const stepAss  = assessments.filter(a=>a.type==='step');
   const avalAlu  = [...new Set(assessments.map(a=>a.studentId))].length;
 
   // PRs por exercício para o badge
@@ -163,6 +164,7 @@ export async function renderAssessments() {
   const { sortedStudents: forcaStudents, groups: forcaGroups } = groupAssessmentsByStudent(forcaAss);
   const { sortedStudents: conconiStudents, groups: conconiGroups } = groupAssessmentsByStudent(concAss);
   const { sortedStudents: rockStudents, groups: rockGroups } = groupAssessmentsByStudent(rockAss);
+  const { sortedStudents: stepStudents, groups: stepGroups } = groupAssessmentsByStudent(stepAss);
 
   return `
     <div class="page-header">
@@ -184,7 +186,7 @@ export async function renderAssessments() {
       ${[
         ['COMPOSIÇÃO', compAss.length,  'text-gradient', 'avaliações'],
         ['FORÇA / 1RM', forcaAss.length, 'warning',       'registros'],
-        ['VO₂ / CARDIO', concAss.length + rockAss.length,'accent',        'testes'],
+        ['VO₂ / CARDIO', concAss.length + rockAss.length + stepAss.length,'accent',        'testes'],
         ['ALUNOS',        avalAlu,       'primary',        'avaliados'],
       ].map(([l,v,c,s])=>`
         <div class="stat-card" style="text-align:center;padding:12px">
@@ -200,6 +202,7 @@ export async function renderAssessments() {
       <button class="tab" data-type="forca">Força &amp; 1RM</button>
       <button class="tab" data-type="conconi">Conconi / VO₂</button>
       <button class="tab" data-type="rockport">Rockport</button>
+      <button class="tab" data-type="step">Step (Banco)</button>
       <button class="tab" data-type="zonas">Zonas FC &amp; Carga</button>
       <button class="tab" data-type="evolucao">Evolução</button>
       <button class="tab" data-type="ficha">Ficha do Aluno</button>
@@ -721,6 +724,7 @@ export function initAssessments(navigateFn) {
               ['forca',     'Força / 1RM Submax',  'Protocolo progressivo de estimativa do 1RM'],
               ['conconi',   'Conconi / VO₂max',    'FC pico, VMA, limiar anaeróbio'],
               ['rockport','Rockport 1 milha (caminhada)','Submaximo - peso, tempo e FC final'],
+              ['step','Queens College / McArdle (banco 41,3 cm)','Submaximo - sexo e FC de recuperacao'],
             ].map(([id,label,desc])=>`
               <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;transition:all 0.15s" class="aval-type-opt">
                 <input type="radio" name="avalType" value="${id}" style="flex-shrink:0" />
@@ -1129,8 +1133,42 @@ export function initAssessments(navigateFn) {
           await db.put('assessments', updated);
           notify.success('Teste Rockport atualizado!');
         };
+      } else if (a.type === 'step') {
+        title = \`Editar Step - \${st?.name || 'Aluno'}\`;
+        content = \`<form id="editAssForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="\${a.date?.split('T')[0] || ''}" /></div>
+            <div class="form-group"><label class="form-label">Sexo</label>
+              <input class="form-input" name="genero" type="text" readonly style="background:var(--bg-secondary);color:var(--text-muted)" value="\${a.sexo || 'F'}" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">FC Recuperação (bpm)</label>
+              <input class="form-input" name="fcRecuperacao" type="number" value="\${a.fcRecuperacao || ''}" /></div>
+            <div class="form-group"><label class="form-label">VO₂max (ml/kg/min) — override opcional</label>
+              <input class="form-input" name="vo2max" type="number" step="0.1" value="\${a.vo2max || ''}" /></div>
+          </div>
+          <div class="form-group"><label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="2">\${a.notes || ''}</textarea>
+          </div>
+        </form>\`;
+        onSaveFn = async () => {
+          const fd = new FormData(document.getElementById('editAssForm'));
+          const vo2 = Calc.vo2maxStepQueens({
+            sexo: a.sexo,
+            fcRecuperacao: parseFloat(fd.get('fcRecuperacao'))
+          });
+          const updated = {
+            ...a, date: fd.get('date') || a.date,
+            fcRecuperacao: parseFloat(fd.get('fcRecuperacao')) || null,
+            vo2max: parseFloat(fd.get('vo2max')) || vo2,
+            notes: fd.get('notes'),
+          };
+          await db.put('assessments', updated);
+          notify.success('Teste Step atualizado!');
+        };
       } else {
-        content = `<form id="editAssForm">
+        content = \`<form id="editAssForm">
           <div class="form-row">
             <div class="form-group"><label class="form-label">Data</label>
               <input class="form-input" name="date" type="date" value="${a.date ? a.date.slice(0,10) : ''}" />
@@ -1335,10 +1373,11 @@ function updateRM1Best() {
 
 // ── FORMULÁRIOS POR TIPO DE AVALIAÇÃO ─────────────────────────
 function openAssessmentForm(tipo, students, navigateFn) {
-  const titles = { composicao:'Composição Corporal', forca:'Força / 1RM', conconi:'Protocolo Conconi / VO₂max', rockport:'Rockport 1 milha' };
+  const titles = { composicao:'Composição Corporal', forca:'Força / 1RM', conconi:'Protocolo Conconi / VO₂max', rockport:'Rockport 1 milha', step:'Queens College (banco)' };
   const content = tipo==='composicao' ? composicaoFormHTML(students) :
                   tipo==='forca'      ? forcaFormHTML(students) :
                   tipo==='rockport'   ? rockportFormHTML(students) :
+                  tipo==='step'       ? stepFormHTML(students) :
                   conconiFormHTML(students);
 
   openModal({
@@ -1358,6 +1397,22 @@ function openAssessmentForm(tipo, students, navigateFn) {
 
   // Auto-preencher idade se aluno selecionado
   setTimeout(()=>{
+    const recalcStep = () => {
+      const sexo = document.querySelector('#assessForm [name="genero"]')?.value || 'F';
+      const fc = parseFloat(document.querySelector('#assessForm [name="fcRecuperacao"]')?.value)||null;
+      const vo2 = Calc.vo2maxStepQueens({ sexo, fcRecuperacao:fc });
+      const el = document.querySelector('#assessForm [name="vo2max"]');
+      if (vo2 && el) el.value = vo2;
+    };
+    const recalcRock = () => {
+      const g = (val)=>parseFloat(document.querySelector(`#assessForm [name="${val}"]`)?.value)||null;
+      const sexo = document.querySelector('#assessForm [name="genero"]')?.value || 'F';
+      const idade = parseInt(document.querySelector('#assessForm [name="idadeCalc"]')?.value)||null;
+      const vo2 = Calc.vo2maxRockport({ pesoKg:g('pesoKg'), idade, sexo, tempoMin:g('tempoMin'), fcFinal:g('fcFinal') });
+      const el = document.querySelector('#assessForm [name="vo2max"]');
+      if (vo2 && el) el.value = vo2;
+    };
+
     document.querySelector('#assessForm [name="studentId"]')?.addEventListener('change', async e=>{
       const st = students.find(s=>s.id===e.target.value);
       if(st?.birthDate){
@@ -1367,6 +1422,8 @@ function openAssessmentForm(tipo, students, navigateFn) {
         const gel = document.querySelector('#assessForm [name="genero"]');
         if(gel&&st.gender) gel.value = st.gender;
       }
+      if(tipo==='step') recalcStep();
+      if(tipo==='rockport') recalcRock();
     });
 
     // Conconi: auto-calcular VO2max ao digitar VMA
@@ -1376,17 +1433,10 @@ function openAssessmentForm(tipo, students, navigateFn) {
       if(vma&&el) el.value = Calc.vo2maxConconi(vma);
     });
 
-    const recalcRock = () => {
-      const g = (val)=>parseFloat(document.querySelector(`#assessForm [name="${val}"]`)?.value)||null;
-      const sexo = document.querySelector('#assessForm [name="genero"]')?.value || 'F';
-      const idade = parseInt(document.querySelector('#assessForm [name="idadeCalc"]')?.value)||null;
-      const vo2 = Calc.vo2maxRockport({ pesoKg:g('pesoKg'), idade, sexo, tempoMin:g('tempoMin'), fcFinal:g('fcFinal') });
-      const el = document.querySelector('#assessForm [name="vo2max"]');
-      if (vo2 && el) el.value = vo2;
-    };
     ['pesoKg','tempoMin','fcFinal'].forEach(n=>{
       document.querySelector(`#assessForm [name="${n}"]`)?.addEventListener('input', recalcRock);
     });
+    document.querySelector('#assessForm [name="fcRecuperacao"]')?.addEventListener('input', recalcStep);
 
     // Calculo bidirecional em tempo real: composicao corporal
     initComposicaoLiveCalc();
@@ -1552,6 +1602,16 @@ async function saveAssessment(tipo, d, navigateFn) {
       notes:   d.notes||'',
     });
     notify.success('Teste Rockport salvo!');
+  }
+  else if(tipo==='step'){
+    const vo2 = Calc.vo2maxStepQueens({ sexo:d.genero, fcRecuperacao:parseFloat(d.fcRecuperacao) });
+    await db.add('assessments',{...base,
+      sexo:          d.genero||null,
+      fcRecuperacao: parseFloat(d.fcRecuperacao)||null,
+      vo2max:        parseFloat(d.vo2max)||vo2,
+      notes:         d.notes||'',
+    });
+    notify.success('Teste Queens College salvo!');
   }
   closeModal();
   navigateFn('/avaliacoes');
@@ -1728,6 +1788,32 @@ function rockportFormHTML(students) {
   </form>`;
 }
 
+function stepFormHTML(students) {
+  const today = new Date().toISOString().slice(0,10);
+  return \`<form id="assessForm">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Aluno *</label>
+        <select class="form-select" name="studentId" required>\${studentSelectOpts(students)}</select></div>
+      <div class="form-group"><label class="form-label">Data</label>
+        <input class="form-input" name="date" type="date" value="\${today}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Sexo</label>
+        <input class="form-input" name="genero" type="text" readonly style="background:var(--bg-secondary);color:var(--text-muted)" placeholder="Auto" /></div>
+      <div class="form-group"><label class="form-label">FC Recuperação (bpm)</label>
+        <input class="form-input" name="fcRecuperacao" type="number" placeholder="Ex: 140" />
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Contar a FC por 15 s entre 5-20 s de recuperacao e multiplicar por 4.</div>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">VO₂max Estimado (ml/kg/min)</label>
+      <input class="form-input" name="vo2max" type="number" step="0.1" readonly style="background:var(--bg-secondary);color:var(--accent);font-weight:bold" placeholder="Auto-calculado" />
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label>
+      <textarea class="form-textarea" name="notes" rows="2" placeholder="Ex: Banco de 41,3 cm..."></textarea>
+    </div>
+  </form>\`;
+}
+
 // ── FICHA COMPLETA ────────────────────────────────────────────
 async function renderFichaCompleta(sid) {
   const el = document.getElementById('fichaContent');
@@ -1746,6 +1832,7 @@ async function renderFichaCompleta(sid) {
   const comp  = sAss.filter(a=>a.type==='composicao');
   const forca = sAss.filter(a=>a.type==='forca');
   const conc  = sAss.filter(a=>a.type==='conconi');
+  const step  = sAss.filter(a=>a.type==='step');
   const sBf   = biofeedback.filter(b=>b.studentId===sid).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
   const sSess = sessions.filter(s=>s.studentId===sid&&s.status==='completed');
   const ana   = anamnesis.find(a=>a.fullName===student?.name);
