@@ -1,7 +1,7 @@
 import { computeReadiness, computeLoad } from './readiness.js';
 
 export function buildTriage({ students, sessions, biofeedback, financial, allBf }) {
-  const activeStudents = (students || []).filter(s => s.status === 'active');
+  const activeStudents = (students || []).filter(s => s.status === 'Ativo');
   const signals = [];
   const now = new Date();
   

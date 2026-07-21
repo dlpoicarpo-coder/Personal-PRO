@@ -488,46 +488,45 @@ export async function renderAssessments() {
           <div class="table-responsive">
             <table class="table">
               <thead><tr>
-                <th>Aluno</th>
-                <th>Data</th>
-                <th>Peso</th>
-                <th>Tempo</th>
-                <th>FC final</th>
-                <th>VO₂max</th>
-                <th style="width:100px;text-align:right">Ações</th>
+                <th>Aluno</th><th>Data</th><th>Peso</th><th>Tempo</th><th>FC Final</th><th>VO₂max</th><th></th>
               </tr></thead>
               ${rockStudents.map(student => {
                 const studentAssessments = rockGroups[student.id] || [];
                 return `
-                <tbody class="student-group">
-                  ${studentAssessments.map((a, i) => `
-                    <tr>
-                      ${i === 0 ? `<td rowspan="${studentAssessments.length}">
-                        <div class="flex items-center gap-sm">
-                          <div class="avatar avatar-sm">${student.name.substring(0,2).toUpperCase()}</div>
-                          <div>
-                            <div style="font-weight:600">${student.name}</div>
+                  <tbody class="student-group" data-student="${student.id}">
+                    <tr class="group-header-row" style="background: rgba(255,255,255,0.015); cursor: pointer;">
+                      <td colspan="7">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding: 6px 8px;">
+                          <div class="flex items-center gap-sm">
+                            <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem; background: var(--accent); color: white;">${ini(student.name)}</div>
+                            <span style="font-weight:700; color: var(--text-primary);">${student.name}</span>
                           </div>
-                        </div>
-                      </td>` : ''}
-                      <td>${new Date(a.date).toLocaleDateString('pt-BR')}</td>
-                      <td>${a.pesoKg ? a.pesoKg+' kg' : '—'}</td>
-                      <td>${a.tempoMin ? a.tempoMin+' min' : '—'}</td>
-                      <td>${a.fcFinal ? a.fcFinal+' bpm' : '—'}</td>
-                      <td><strong style="color:var(--accent)">${a.vo2max ? Calc.formatNum(a.vo2max)+' ml/kg/min' : '—'}</strong></td>
-                      <td style="text-align:right">
-                        <div class="flex gap-xs" style="justify-content:flex-end">
-                          <button class="btn btn-ghost btn-sm btn-icon" onclick="window.editAssessment('${a.id}')" title="Editar">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                          </button>
-                          <button class="btn btn-ghost btn-sm btn-icon text-danger" onclick="window.deleteAssessment('${a.id}')" title="Excluir">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                          </button>
+                          <div style="display:flex; align-items:center; gap:8px">
+                            <span class="badge badge-accent" style="font-size:0.65rem">${studentAssessments.length} teste(s)</span>
+                            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+                          </div>
                         </div>
                       </td>
                     </tr>
-                  `).join('')}
-                </tbody>
+                    ${studentAssessments.map(a => {
+                      return `
+                        <tr class="student-row" data-student="${a.studentId}">
+                          <td style="padding-left:20px">
+                            <span class="text-muted" style="font-size:0.75rem">—</span>
+                          </td>
+                          <td style="font-size:0.82rem;white-space:nowrap">${Calc.formatDate(a.date)}</td>
+                          <td style="color:var(--text-primary);font-weight:600">${a.pesoKg?a.pesoKg+' kg':'—'}</td>
+                          <td style="color:var(--text-primary);font-weight:600">${a.tempoMin?a.tempoMin+' min':'—'}</td>
+                          <td style="color:var(--danger);font-weight:600">${a.fcFinal?a.fcFinal+' bpm':'—'}</td>
+                          <td style="color:var(--accent);font-weight:700">${a.vo2max?Calc.formatNum(a.vo2max)+' ml/kg/min':'—'}</td>
+                          <td style="display:flex;gap:3px">
+                            <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
+                            <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
                 `;
               }).join('')}
             </table>
