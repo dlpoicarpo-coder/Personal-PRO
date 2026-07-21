@@ -128,9 +128,10 @@ export async function renderAssessments() {
   const compAss  = assessments.filter(a=>a.type==='composicao');
   const forcaAss = assessments.filter(a=>a.type==='forca');
   const concAss  = assessments.filter(a=>a.type==='conconi');
-  const rockAss  = assessments.filter(a=>a.type==='rockport');
-  const stepAss  = assessments.filter(a=>a.type==='step');
-  const avalAlu  = [...new Set(assessments.map(a=>a.studentId))].length;
+  const rockAss   = assessments.filter(a=>a.type==='rockport');
+  const stepAss   = assessments.filter(a=>a.type==='step');
+  const cooperAss = assessments.filter(a=>a.type==='cooper');
+  const avalAlu   = [...new Set(assessments.map(a=>a.studentId))].length;
 
   // PRs por exercício para o badge
   const prs = {};
@@ -165,6 +166,7 @@ export async function renderAssessments() {
   const { sortedStudents: conconiStudents, groups: conconiGroups } = groupAssessmentsByStudent(concAss);
   const { sortedStudents: rockStudents, groups: rockGroups } = groupAssessmentsByStudent(rockAss);
   const { sortedStudents: stepStudents, groups: stepGroups } = groupAssessmentsByStudent(stepAss);
+  const { sortedStudents: cooperStudents, groups: cooperGroups } = groupAssessmentsByStudent(cooperAss);
 
   return `
     <div class="page-header">
@@ -186,7 +188,7 @@ export async function renderAssessments() {
       ${[
         ['COMPOSIÇÃO', compAss.length,  'text-gradient', 'avaliações'],
         ['FORÇA / 1RM', forcaAss.length, 'warning',       'registros'],
-        ['VO₂ / CARDIO', concAss.length + rockAss.length + stepAss.length,'accent',        'testes'],
+        ['VO₂ / CARDIO', concAss.length + rockAss.length + stepAss.length + cooperAss.length,'accent',        'testes'],
         ['ALUNOS',        avalAlu,       'primary',        'avaliados'],
       ].map(([l,v,c,s])=>`
         <div class="stat-card" style="text-align:center;padding:12px">
@@ -203,6 +205,7 @@ export async function renderAssessments() {
       <button class="tab" data-type="conconi">Conconi / VO₂</button>
       <button class="tab" data-type="rockport">Rockport</button>
       <button class="tab" data-type="step">Step (Banco)</button>
+      <button class="tab" data-type="cooper">Cooper 12min</button>
       <button class="tab" data-type="zonas">Zonas FC &amp; Carga</button>
       <button class="tab" data-type="evolucao">Evolução</button>
       <button class="tab" data-type="ficha">Ficha do Aluno</button>
@@ -537,6 +540,63 @@ export async function renderAssessments() {
         </div>`}
     </div>
 
+    <!-- ── COOPER ── -->
+    <div id="panel-cooper" class="assessment-panel" style="display:none">
+      ${!cooperAss.length ? `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <h3>Nenhum teste de Cooper registrado</h3>
+          <p class="text-muted">Adicione os resultados do teste de 12 minutos (distância percorrida).</p>
+        </div>
+      ` : `
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr>
+                <th>Aluno</th><th>Data</th><th>Distância</th><th>VO₂max</th><th></th>
+              </tr></thead>
+              ${cooperStudents.map(student => {
+                const studentAssessments = cooperGroups[student.id] || [];
+                return `
+                  <tbody class="student-group" data-student="${student.id}">
+                    <tr class="group-header-row" style="background: rgba(255,255,255,0.015); cursor: pointer;">
+                      <td colspan="5">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding: 6px 8px;">
+                          <div class="flex items-center gap-sm">
+                            <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem; background: var(--accent); color: white;">${ini(student.name)}</div>
+                            <span style="font-weight:700; color: var(--text-primary);">${student.name}</span>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:8px">
+                            <span class="badge badge-accent" style="font-size:0.65rem">${studentAssessments.length} teste(s)</span>
+                            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    ${studentAssessments.map(a => {
+                      return `
+                        <tr class="student-row" data-student="${a.studentId}">
+                          <td style="padding-left:20px">
+                            <span class="text-muted" style="font-size:0.75rem">—</span>
+                          </td>
+                          <td style="font-size:0.82rem;white-space:nowrap">${Calc.formatDate(a.date)}</td>
+                          <td style="color:var(--danger);font-weight:600">${a.distanciaM?a.distanciaM+' m':'—'}</td>
+                          <td style="color:var(--accent);font-weight:700">${a.vo2max?Calc.formatNum(a.vo2max)+' ml/kg/min':'—'}</td>
+                          <td style="display:flex;gap:3px">
+                            <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
+                            <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                `;
+              }).join('')}
+            </table>
+          </div>
+        </div>`}
+    </div>
+
     <!-- ── ZONAS FC & CARGA ── -->
     <div id="panel-zonas" class="assessment-panel" style="display:none">
       <div class="grid-2">
@@ -725,6 +785,7 @@ export function initAssessments(navigateFn) {
               ['conconi',   'Conconi / VO₂max',    'FC pico, VMA, limiar anaeróbio'],
               ['rockport','Rockport 1 milha (caminhada)','Submaximo - peso, tempo e FC final'],
               ['step','Queens College / McArdle (banco 41,3 cm)','Submaximo - sexo e FC de recuperacao'],
+              ['cooper','Teste de Cooper (12 min)','Maximo - distancia percorrida em 12 min'],
             ].map(([id,label,desc])=>`
               <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;transition:all 0.15s" class="aval-type-opt">
                 <input type="radio" name="avalType" value="${id}" style="flex-shrink:0" />
@@ -1167,6 +1228,35 @@ export function initAssessments(navigateFn) {
           await db.put('assessments', updated);
           notify.success('Teste Step atualizado!');
         };
+      } else if (a.type === 'cooper') {
+        title = `Editar Cooper - ${st?.name || 'Aluno'}`;
+        content = `<form id="editAssForm">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Data</label>
+              <input class="form-input" name="date" type="date" value="${a.date?.split('T')[0] || ''}" /></div>
+            <div class="form-group"><label class="form-label">Distância (m)</label>
+              <input class="form-input" name="distanciaM" type="number" value="${a.distanciaM || ''}" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">VO₂max (ml/kg/min) — override opcional</label>
+              <input class="form-input" name="vo2max" type="number" step="0.1" value="${a.vo2max || ''}" /></div>
+          </div>
+          <div class="form-group"><label class="form-label">Observações</label>
+            <textarea class="form-textarea" name="notes" rows="2">${a.notes || ''}</textarea>
+          </div>
+        </form>`;
+        onSaveFn = async () => {
+          const fd = new FormData(document.getElementById('editAssForm'));
+          const vo2 = Calc.vo2maxCooper(parseFloat(fd.get('distanciaM')));
+          const updated = {
+            ...a, date: fd.get('date') || a.date,
+            distanciaM: parseFloat(fd.get('distanciaM')) || null,
+            vo2max: parseFloat(fd.get('vo2max')) || vo2,
+            notes: fd.get('notes'),
+          };
+          await db.put('assessments', updated);
+          notify.success('Teste de Cooper atualizado!');
+        };
       } else {
         content = `<form id="editAssForm">
           <div class="form-row">
@@ -1373,11 +1463,12 @@ function updateRM1Best() {
 
 // ── FORMULÁRIOS POR TIPO DE AVALIAÇÃO ─────────────────────────
 function openAssessmentForm(tipo, students, navigateFn) {
-  const titles = { composicao:'Composição Corporal', forca:'Força / 1RM', conconi:'Protocolo Conconi / VO₂max', rockport:'Rockport 1 milha', step:'Queens College (banco)' };
+  const titles = { composicao:'Composição Corporal', forca:'Força / 1RM', conconi:'Protocolo Conconi / VO₂max', rockport:'Rockport 1 milha', step:'Queens College (banco)', cooper:'Teste de Cooper' };
   const content = tipo==='composicao' ? composicaoFormHTML(students) :
                   tipo==='forca'      ? forcaFormHTML(students) :
                   tipo==='rockport'   ? rockportFormHTML(students) :
                   tipo==='step'       ? stepFormHTML(students) :
+                  tipo==='cooper'     ? cooperFormHTML(students) :
                   conconiFormHTML(students);
 
   openModal({
@@ -1404,6 +1495,12 @@ function openAssessmentForm(tipo, students, navigateFn) {
       const el = document.querySelector('#assessForm [name="vo2max"]');
       if (vo2 && el) el.value = vo2;
     };
+    const recalcCooper = () => {
+      const dist = parseFloat(document.querySelector('#assessForm [name="distanciaM"]')?.value)||null;
+      const vo2 = Calc.vo2maxCooper(dist);
+      const el = document.querySelector('#assessForm [name="vo2max"]');
+      if (vo2 && el) el.value = vo2;
+    };
     const recalcRock = () => {
       const g = (val)=>parseFloat(document.querySelector(`#assessForm [name="${val}"]`)?.value)||null;
       const sexo = document.querySelector('#assessForm [name="genero"]')?.value || 'F';
@@ -1424,6 +1521,7 @@ function openAssessmentForm(tipo, students, navigateFn) {
       }
       if(tipo==='step') recalcStep();
       if(tipo==='rockport') recalcRock();
+      if(tipo==='cooper') recalcCooper();
     });
 
     // Conconi: auto-calcular VO2max ao digitar VMA
@@ -1437,6 +1535,7 @@ function openAssessmentForm(tipo, students, navigateFn) {
       document.querySelector(`#assessForm [name="${n}"]`)?.addEventListener('input', recalcRock);
     });
     document.querySelector('#assessForm [name="fcRecuperacao"]')?.addEventListener('input', recalcStep);
+    document.querySelector('#assessForm [name="distanciaM"]')?.addEventListener('input', recalcCooper);
 
     // Calculo bidirecional em tempo real: composicao corporal
     initComposicaoLiveCalc();
@@ -1612,6 +1711,16 @@ async function saveAssessment(tipo, d, navigateFn) {
       notes:         d.notes||'',
     });
     notify.success('Teste Queens College salvo!');
+  }
+  else if(tipo==='cooper'){
+    const dist = parseFloat(d.distanciaM);
+    const vo2 = Calc.vo2maxCooper(dist);
+    await db.add('assessments',{...base,
+      distanciaM: dist||null,
+      vo2max:     parseFloat(d.vo2max)||vo2,
+      notes:      d.notes||'',
+    });
+    notify.success('Teste de Cooper salvo!');
   }
   closeModal();
   navigateFn('/avaliacoes');
@@ -1814,6 +1923,30 @@ function stepFormHTML(students) {
   </form>`;
 }
 
+function cooperFormHTML(students) {
+  const today = new Date().toISOString().slice(0,10);
+  return `<form id="assessForm">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Aluno *</label>
+        <select class="form-select" name="studentId" required>${studentSelectOpts(students)}</select></div>
+      <div class="form-group"><label class="form-label">Data</label>
+        <input class="form-input" name="date" type="date" value="${today}" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Distância Percorrida (m)</label>
+        <input class="form-input" name="distanciaM" type="number" placeholder="Ex: 2400" />
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Distância máxima percorrida em 12 min (correndo/caminhando).</div>
+      </div>
+      <div class="form-group"><label class="form-label">VO₂max Estimado (ml/kg/min)</label>
+        <input class="form-input" name="vo2max" type="number" step="0.1" readonly style="background:var(--bg-secondary);color:var(--accent);font-weight:bold" placeholder="Auto-calculado" />
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label>
+      <textarea class="form-textarea" name="notes" rows="2" placeholder="Notas..."></textarea>
+    </div>
+  </form>`;
+}
+
 // ── FICHA COMPLETA ────────────────────────────────────────────
 async function renderFichaCompleta(sid) {
   const el = document.getElementById('fichaContent');
@@ -1832,7 +1965,8 @@ async function renderFichaCompleta(sid) {
   const comp  = sAss.filter(a=>a.type==='composicao');
   const forca = sAss.filter(a=>a.type==='forca');
   const conc  = sAss.filter(a=>a.type==='conconi');
-  const step  = sAss.filter(a=>a.type==='step');
+  const step   = sAss.filter(a=>a.type==='step');
+  const cooper = sAss.filter(a=>a.type==='cooper');
   const sBf   = biofeedback.filter(b=>b.studentId===sid).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
   const sSess = sessions.filter(s=>s.studentId===sid&&s.status==='completed');
   const ana   = anamnesis.find(a=>a.fullName===student?.name);
