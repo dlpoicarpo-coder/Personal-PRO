@@ -540,6 +540,63 @@ export async function renderAssessments() {
         </div>`}
     </div>
 
+    <!-- ── STEP (QUEENS COLLEGE) ── -->
+    <div id="panel-step" class="assessment-panel" style="display:none">
+      ${!stepAss.length ? `
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <h3>Nenhum teste de Step registrado</h3>
+          <p class="text-muted">Adicione os resultados do protocolo Queens College.</p>
+        </div>
+      ` : `
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead><tr>
+                <th>Aluno</th><th>Data</th><th>FC Recuperação</th><th>VO₂max</th><th></th>
+              </tr></thead>
+              ${stepStudents.map(student => {
+                const studentAssessments = stepGroups[student.id] || [];
+                return `
+                  <tbody class="student-group" data-student="${student.id}">
+                    <tr class="group-header-row" style="background: rgba(255,255,255,0.015); cursor: pointer;">
+                      <td colspan="5">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding: 6px 8px;">
+                          <div class="flex items-center gap-sm">
+                            <div class="avatar avatar-sm" style="width:22px;height:22px;font-size:0.6rem; background: var(--accent); color: white;">${ini(student.name)}</div>
+                            <span style="font-weight:700; color: var(--text-primary);">${student.name}</span>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:8px">
+                            <span class="badge badge-accent" style="font-size:0.65rem">${studentAssessments.length} teste(s)</span>
+                            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    ${studentAssessments.map(a => {
+                      return `
+                        <tr class="student-row" data-student="${a.studentId}">
+                          <td style="padding-left:20px">
+                            <span class="text-muted" style="font-size:0.75rem">—</span>
+                          </td>
+                          <td style="font-size:0.82rem;white-space:nowrap">${Calc.formatDate(a.date)}</td>
+                          <td style="color:var(--danger);font-weight:600">${a.fcRecuperacao?a.fcRecuperacao+' bpm':'—'}</td>
+                          <td style="color:var(--accent);font-weight:700">${a.vo2max?Calc.formatNum(a.vo2max)+' ml/kg/min':'—'}</td>
+                          <td style="display:flex;gap:3px">
+                            <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--text-muted)">${ICON_EDIT}</button>
+                            <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:4px 5px;color:var(--danger)">${ICON_DEL}</button>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                `;
+              }).join('')}
+            </table>
+          </div>
+        </div>`}
+    </div>
+
     <!-- ── COOPER ── -->
     <div id="panel-cooper" class="assessment-panel" style="display:none">
       ${!cooperAss.length ? `
