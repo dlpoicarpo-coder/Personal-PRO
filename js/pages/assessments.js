@@ -3,7 +3,7 @@
 // Clean · Força+Submax unificados · Ficha por aluno
 // ========================================
 import db from '../db.js';
-import { Calc } from '../utils/calculations.js';
+import { Calc, PROTOCOLOS_INFO } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 
@@ -424,6 +424,10 @@ export async function renderAssessments() {
 
     <!-- ── CONCONI / VO₂MAX ── -->
     <div id="panel-conconi" class="assessment-panel" style="display:none">
+      <button class="btn btn-ghost btn-sm" data-info="conconi"
+        style="float:right;color:var(--accent)" title="Como funciona este teste">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </button>
       ${!concAss.length ? `
         <div class="empty-state">
           <div class="empty-icon">—</div>
@@ -483,6 +487,10 @@ export async function renderAssessments() {
 
     <!-- ── ROCKPORT ── -->
     <div id="panel-rockport" class="assessment-panel" style="display:none">
+      <button class="btn btn-ghost btn-sm" data-info="rockport"
+        style="float:right;color:var(--accent)" title="Como funciona este teste">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </button>
       ${!rockAss.length ? `
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -542,6 +550,10 @@ export async function renderAssessments() {
 
     <!-- ── STEP (QUEENS COLLEGE) ── -->
     <div id="panel-step" class="assessment-panel" style="display:none">
+      <button class="btn btn-ghost btn-sm" data-info="step"
+        style="float:right;color:var(--accent)" title="Como funciona este teste">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </button>
       ${!stepAss.length ? `
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -599,6 +611,10 @@ export async function renderAssessments() {
 
     <!-- ── COOPER ── -->
     <div id="panel-cooper" class="assessment-panel" style="display:none">
+      <button class="btn btn-ghost btn-sm" data-info="cooper"
+        style="float:right;color:var(--accent)" title="Como funciona este teste">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </button>
       ${!cooperAss.length ? `
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -1100,6 +1116,32 @@ export function initAssessments(navigateFn) {
           ${a.notes?`<div class="text-sm text-muted mt-md"><strong>Obs:</strong> ${a.notes}</div>`:''}`
       });
     });
+  });
+
+  // ── ABRIR INFO PROTOCOLO ──
+  function abrirInfoProtocolo(chave){
+    const p = PROTOCOLOS_INFO[chave];
+    if(!p){ notify.error('Protocolo nao encontrado'); return; }
+    openModal({
+      title: p.nome,
+      size: 'md',
+      content: `
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:.9rem;line-height:1.5">
+          <div><span class="badge badge-accent">${p.tipo}</span></div>
+          <div><strong>Equipamento:</strong> ${p.equipamento}</div>
+          <div><strong>Como aplicar:</strong> ${p.protocolo}</div>
+          <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:10px 12px">
+            <strong>Formula:</strong> <code style="font-size:.82rem">${p.formula}</code>
+          </div>
+          <div style="color:var(--warning)"><strong>Cuidados:</strong> ${p.cuidados}</div>
+          <div class="text-xs text-muted"><strong>Fonte:</strong> ${p.fonte}</div>
+        </div>`,
+      actions:[{ label:'Fechar', class:'btn-primary', onClick:()=>closeModal() }],
+    });
+  }
+
+  document.querySelectorAll('[data-info]').forEach(b=>{
+    b.addEventListener('click', ()=>abrirInfoProtocolo(b.dataset.info));
   });
 
   // ── EDITAR AVALIAÇÃO (composição, força, conconi) ──────────
