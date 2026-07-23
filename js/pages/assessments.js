@@ -1054,6 +1054,54 @@ export function initAssessments(navigateFn) {
           </table>
         </div>
       </div>`:''}
+      ${(() => {
+        const cardioTipos = [
+          { key:'conconi',  label:'Conconi / VO2max',  campo:'vma',           unidade:'km/h' },
+          { key:'rockport', label:'Rockport 1 milha',  campo:'tempoMin',      unidade:'min'  },
+          { key:'step',     label:'Queens College',    campo:'fcRecuperacao', unidade:'bpm'  },
+          { key:'cooper',   label:'Cooper 12 min',     campo:'distanciaM',    unidade:'m'    },
+        ];
+        let html = '';
+        cardioTipos.forEach(t => {
+          const arr = sAss.filter(a => a.type === t.key);
+          if(!arr.length) return;
+          let resumo = '';
+          if(arr.length >= 2) {
+            const first = arr[0], last = arr[arr.length-1];
+            if(first.vo2max && last.vo2max) {
+              const ganho = last.vo2max - first.vo2max;
+              const pct = (ganho / first.vo2max) * 100;
+              const color = ganho === 0 ? 'inherit' : (ganho > 0 ? 'var(--success)' : 'var(--danger)');
+              const sig = ganho > 0 ? '+' : '';
+              resumo = '<div style="font-size:0.8rem;margin-bottom:8px">Primeiro: ' + Calc.formatNum(first.vo2max) + ' ml/kg/min (' + Calc.formatDate(first.date).slice(0,5) + ') → Último: ' + Calc.formatNum(last.vo2max) + ' ml/kg/min (' + Calc.formatDate(last.date).slice(0,5) + ') · Ganho: <span style="font-weight:700;color:' + color + '">' + sig + Calc.formatNum(ganho) + ' ml/kg/min (' + sig + Calc.formatNum(pct) + '%)</span></div>';
+            }
+          }
+          let tbody = '';
+          arr.forEach((a, i) => {
+            const prev = arr[i-1];
+            const delta = prev && a.vo2max && prev.vo2max ? (a.vo2max - prev.vo2max) : null;
+            const dColor = delta === null ? 'var(--text-muted)' : (delta > 0 ? 'var(--success)' : 'var(--danger)');
+            const dStr = delta === null ? '—' : (delta > 0 ? '+' : '') + Calc.formatNum(delta);
+            tbody += '<tr>' +
+              '<td style="font-size:0.78rem;white-space:nowrap">' + Calc.formatDate(a.date) + '</td>' +
+              '<td style="font-weight:600">' + (a[t.campo] ? a[t.campo] + ' ' + t.unidade : '—') + '</td>' +
+              '<td style="color:var(--accent);font-weight:700">' + (a.vo2max ? Calc.formatNum(a.vo2max) + ' ml/kg/min' : '—') + '</td>' +
+              '<td style="font-weight:600;color:' + dColor + '">' + dStr + '</td>' +
+            '</tr>';
+          });
+          html += '<div style="border-top:1px solid var(--border-color);padding-top:16px;margin-top:16px">' +
+            '<div class="text-xs text-muted mb-sm" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">' + t.label + '</div>' +
+            resumo +
+            '<div class="table-container">' +
+              '<table class="data-table" style="font-size:0.82rem">' +
+                '<thead><tr><th>Data</th><th>' + (t.label.includes('/') ? t.label.split(' /')[0] : t.label) + '</th><th>VO₂max</th><th>Δ VO₂max</th></tr></thead>' +
+                '<tbody>' + tbody + '</tbody>' +
+              '</table>' +
+            '</div>' +
+          '</div>';
+        });
+        return html;
+      })()}
     `;
 
     // Gráfico de evolução de peso
