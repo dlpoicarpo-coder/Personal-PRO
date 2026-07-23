@@ -424,10 +424,13 @@ export async function renderAssessments() {
 
     <!-- ── CONCONI / VO₂MAX ── -->
     <div id="panel-conconi" class="assessment-panel" style="display:none">
-      <button class="btn btn-ghost btn-sm" data-info="conconi"
-        style="float:right;color:var(--accent)" title="Como funciona este teste">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Conconi / VO2max</span>
+        <button class="btn btn-ghost btn-sm" data-info="conconi"
+          style="color:var(--accent)" title="Como funciona este teste">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+      </div>
       ${!concAss.length ? `
         <div class="empty-state">
           <div class="empty-icon">—</div>
@@ -487,10 +490,13 @@ export async function renderAssessments() {
 
     <!-- ── ROCKPORT ── -->
     <div id="panel-rockport" class="assessment-panel" style="display:none">
-      <button class="btn btn-ghost btn-sm" data-info="rockport"
-        style="float:right;color:var(--accent)" title="Como funciona este teste">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Rockport 1 milha</span>
+        <button class="btn btn-ghost btn-sm" data-info="rockport"
+          style="color:var(--accent)" title="Como funciona este teste">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+      </div>
       ${!rockAss.length ? `
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -550,10 +556,13 @@ export async function renderAssessments() {
 
     <!-- ── STEP (QUEENS COLLEGE) ── -->
     <div id="panel-step" class="assessment-panel" style="display:none">
-      <button class="btn btn-ghost btn-sm" data-info="step"
-        style="float:right;color:var(--accent)" title="Como funciona este teste">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Queens College (banco)</span>
+        <button class="btn btn-ghost btn-sm" data-info="step"
+          style="color:var(--accent)" title="Como funciona este teste">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+      </div>
       ${!stepAss.length ? `
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -611,10 +620,13 @@ export async function renderAssessments() {
 
     <!-- ── COOPER ── -->
     <div id="panel-cooper" class="assessment-panel" style="display:none">
-      <button class="btn btn-ghost btn-sm" data-info="cooper"
-        style="float:right;color:var(--accent)" title="Como funciona este teste">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Cooper 12 min</span>
+        <button class="btn btn-ghost btn-sm" data-info="cooper"
+          style="color:var(--accent)" title="Como funciona este teste">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </button>
+      </div>
       ${!cooperAss.length ? `
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
