@@ -424,7 +424,7 @@ export async function renderAssessments() {
 
     <!-- ── CONCONI / VO₂MAX ── -->
     <div id="panel-conconi" class="assessment-panel" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
         <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Conconi / VO2max</span>
         <button class="btn btn-ghost btn-sm" data-info="conconi"
           style="color:var(--accent)" title="Como funciona este teste">
@@ -490,7 +490,7 @@ export async function renderAssessments() {
 
     <!-- ── ROCKPORT ── -->
     <div id="panel-rockport" class="assessment-panel" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
         <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Rockport 1 milha</span>
         <button class="btn btn-ghost btn-sm" data-info="rockport"
           style="color:var(--accent)" title="Como funciona este teste">
@@ -556,7 +556,7 @@ export async function renderAssessments() {
 
     <!-- ── STEP (QUEENS COLLEGE) ── -->
     <div id="panel-step" class="assessment-panel" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
         <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Queens College (banco)</span>
         <button class="btn btn-ghost btn-sm" data-info="step"
           style="color:var(--accent)" title="Como funciona este teste">
@@ -620,7 +620,7 @@ export async function renderAssessments() {
 
     <!-- ── COOPER ── -->
     <div id="panel-cooper" class="assessment-panel" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
         <span class="text-xs text-muted" style="font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Cooper 12 min</span>
         <button class="btn btn-ghost btn-sm" data-info="cooper"
           style="color:var(--accent)" title="Como funciona este teste">
