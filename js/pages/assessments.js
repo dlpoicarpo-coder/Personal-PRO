@@ -687,7 +687,7 @@ export async function renderAssessments() {
       <div class="grid-2">
         <!-- Zonas de FC -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Zonas de FC — Karvonen</span></div>
+          <div class="card-header"><span class="card-title">Zonas de FC (Karvonen ou %FCmax)</span></div>
           <p class="text-xs text-muted mb-md">Selecione um aluno ou preencha manualmente</p>
           <div class="form-group">
             <label class="form-label">Aluno (opcional)</label>
@@ -702,8 +702,12 @@ export async function renderAssessments() {
               <input class="form-input" id="zonaIdade" type="number" placeholder="Ex: 30" />
             </div>
             <div class="form-group">
-              <label class="form-label">FC Repouso (bpm)</label>
-              <input class="form-input" id="zonaFcRep" type="number" placeholder="Ex: 65" />
+              <label class="form-label">FC Máx (bpm)</label>
+              <input class="form-input" id="zonaFcMax" type="number" placeholder="Auto" title="Calculada por Tanaka se vazio, ou puxada do Conconi" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">FC Repouso</label>
+              <input class="form-input" id="zonaFcRep" type="number" placeholder="Opcional" title="Deixe vazio para usar %FCmax" />
             </div>
           </div>
           <button class="btn btn-primary" id="calcZonas" style="width:100%">Calcular Zonas</button>
@@ -943,21 +947,49 @@ export function initAssessments(navigateFn) {
   });
 
   // ── ZONAS DE FC ────────────────────────────────────────────
-  document.getElementById('zonaStudentSel')?.addEventListener('change', e=>{
+  document.getElementById('zonaStudentSel')?.addEventListener('change', async e=>{
+    const sid = e.target.value;
     const birth = e.target.selectedOptions[0]?.dataset.birth;
-    if(birth){ const el=document.getElementById('zonaIdade'); if(el) el.value=Calc.calcularIdade(birth); }
+    
+    const elIdade = document.getElementById('zonaIdade');
+    const elFcMax = document.getElementById('zonaFcMax');
+    if (elIdade) elIdade.value = birth ? Calc.calcularIdade(birth) : '';
+    if (elFcMax) elFcMax.value = '';
+
+    if (sid && elFcMax) {
+      const all = await db.getAll('assessments');
+      const conconi = all.filter(a => a.studentId === sid && a.type === 'conconi' && a.fcPico)
+                         .sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+      if (conconi) {
+        elFcMax.value = conconi.fcPico;
+        notify.success('FC Máxima preenchida pelo último teste Conconi');
+      }
+    }
   });
 
   document.getElementById('calcZonas')?.addEventListener('click', ()=>{
     const idade = parseInt(document.getElementById('zonaIdade')?.value);
-    const fcRep = parseInt(document.getElementById('zonaFcRep')?.value);
-    if(!idade||!fcRep){ notify.warning('Preencha idade e FC repouso'); return; }
-    const fcMax = Calc.fcMax(idade);
+    const fcMaxInput = parseInt(document.getElementById('zonaFcMax')?.value);
+    const fcRep = parseInt(document.getElementById('zonaFcRep')?.value) || 0;
+    
+    if(!idade && !fcMaxInput){ notify.warning('Preencha a idade ou a FC Máxima'); return; }
+    
+    const fcMax = fcMaxInput || Calc.fcMax(idade);
+    const isConconi = !!fcMaxInput;
+    const isKarvonen = fcRep > 0;
+    
     const zonas = Calc.zonasTreino(fcMax, fcRep);
+    
     document.getElementById('zonasResult').innerHTML = `
       <div style="display:flex;gap:16px;margin-bottom:12px;padding:10px 14px;background:var(--bg-page);border-radius:8px">
-        <div><div class="text-xs text-muted">FC Máxima (Tanaka)</div><div style="font-size:1.4rem;font-weight:800;color:var(--danger)">${fcMax}<span style="font-size:0.8rem;font-weight:400"> bpm</span></div></div>
-        <div><div class="text-xs text-muted">FC Reserva</div><div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${fcMax-fcRep}<span style="font-size:0.8rem;font-weight:400"> bpm</span></div></div>
+        <div>
+          <div class="text-xs text-muted">FC Máxima ${isConconi ? '(Conconi/Manual)' : '(Tanaka)'}</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--danger)">${fcMax}<span style="font-size:0.8rem;font-weight:400"> bpm</span></div>
+        </div>
+        <div>
+          <div class="text-xs text-muted">Método: ${isKarvonen ? 'Karvonen' : '%FCmax'}</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${isKarvonen ? fcMax-fcRep : fcMax}<span style="font-size:0.8rem;font-weight:400"> ${isKarvonen ? 'bpm (Reserva)' : 'bpm (Máx)'}</span></div>
+        </div>
       </div>
       <table class="data-table" style="font-size:0.82rem">
         <thead><tr><th>Zona</th><th>Nome</th><th>FC Mín</th><th>FC Máx</th><th>Objetivo</th></tr></thead>
