@@ -40,6 +40,19 @@ export async function renderCalendar() {
 async function buildCalendarHTML() {
   const students = await db.getAll('students');
   const events = await db.getAll('schedules');
+  const sessions = (await db.getAll('sessions')).filter(s => s.status === 'completed');
+  
+  events.forEach(ev => {
+    if (ev.status === 'completed') return;
+    const didIt = sessions.some(s => {
+      if (s.studentId !== ev.studentId) return false;
+      if (!s.date || !ev.date) return false;
+      if (s.date.slice(0, 10) !== ev.date.slice(0, 10)) return false;
+      if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
+      return true;
+    });
+    if (didIt) ev.status = 'completed';
+  });
   const active = students.filter(s => s.status === 'Ativo');
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -306,6 +319,19 @@ export function initCalendar(navigateFn) {
     day.addEventListener('click', async () => {
       const date = day.dataset.date;
       const events = await db.getAll('schedules');
+      const sessions = (await db.getAll('sessions')).filter(s => s.status === 'completed');
+      
+      events.forEach(ev => {
+        if (ev.status === 'completed') return;
+        const didIt = sessions.some(s => {
+          if (s.studentId !== ev.studentId) return false;
+          if (!s.date || !ev.date) return false;
+          if (s.date.slice(0, 10) !== ev.date.slice(0, 10)) return false;
+          if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
+          return true;
+        });
+        if (didIt) ev.status = 'completed';
+      });
       const students = await db.getAll('students');
       const filtered = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
       const dayEvs = filtered.filter(e => e.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
@@ -575,6 +601,19 @@ export function initAutoReminders() {
 async function checkReminders() {
   try {
     const events   = await db.getAll('schedules');
+    const sessions = (await db.getAll('sessions')).filter(s => s.status === 'completed');
+    
+    events.forEach(ev => {
+      if (ev.status === 'completed') return;
+      const didIt = sessions.some(s => {
+        if (s.studentId !== ev.studentId) return false;
+        if (!s.date || !ev.date) return false;
+        if (s.date.slice(0, 10) !== ev.date.slice(0, 10)) return false;
+        if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
+        return true;
+      });
+      if (didIt) ev.status = 'completed';
+    });
     const students = await db.getAll('students');
     const settings = await db.get('settings','trainer').catch(()=>({}));
     const now      = Date.now();
