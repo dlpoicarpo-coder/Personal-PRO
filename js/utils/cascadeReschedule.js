@@ -195,3 +195,186 @@ export async function applyGrandfathering(dbInstance, rawSchedules, rawMacrocycl
   console.log('[FASE A APLICADA]', 'total marcado:', count);
   return count;
 }
+
+/**
+ * Live Cascade Rescheduling Engine for new missed schedules (excluding cascadeGrandfathered and cascadeProcessed).
+ * Migrates workout CONTENT (name, exercises, phase, intensityPct, etc.) across fixed slots.
+ *
+ * @param {Object} dbInstance 
+ * @param {Array} rawSchedules 
+ * @param {Array} rawWorkouts 
+ * @param {Array} rawMacrocycles 
+ * @param {string} todayStr 
+ * @param {boolean} dryRun - If true, logs actions without db.put / db.add writes
+ * @returns {Promise<Array>} List of reports per processed macrocycle
+ */
+export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, rawMacrocycles, todayStr, dryRun = true) {
+  const activeMacros = (rawMacrocycles || []).filter(m => m.status === 'active');
+  const activeMacroIds = new Set(activeMacros.map(m => String(m.id)));
+
+  // 1. Detect new missed schedules
+  const newMissedCandidates = (rawSchedules || []).filter(s =>
+    s.workoutId &&
+    s.macrocycleId &&
+    activeMacroIds.has(String(s.macrocycleId)) &&
+    (s.status === 'scheduled' || s.status === 'confirmed') &&
+    s.date && s.date < todayStr &&
+    !s.cascadeGrandfathered &&
+    !s.cascadeProcessed
+  ).sort((a, b) => a.date.localeCompare(b.date));
+
+  if (newMissedCandidates.length === 0) {
+    return [];
+  }
+
+  // 3. Group missed by macrocycle
+  const missedByMacro = {};
+  newMissedCandidates.forEach(s => {
+    const mid = String(s.macrocycleId);
+    if (!missedByMacro[mid]) missedByMacro[mid] = [];
+    missedByMacro[mid].push(s);
+  });
+
+  const reports = [];
+
+  for (const macroId of Object.keys(missedByMacro)) {
+    const macrocycle = activeMacros.find(m => String(m.id) === macroId);
+    if (!macrocycle) continue;
+
+    const missed = missedByMacro[macroId].sort((a, b) => a.date.localeCompare(b.date));
+
+    // Get future schedules of the same macrocycle with workoutId
+    const future = (rawSchedules || [])
+      .filter(s =>
+        String(s.macrocycleId) === macroId &&
+        s.workoutId &&
+        (s.status === 'scheduled' || s.status === 'confirmed') &&
+        s.date && s.date >= todayStr
+      )
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Content queue: array of workoutIds whose content will be migrated in order
+    const contentQueue = [...missed, ...future].map(s => s.workoutId);
+    const F = future.length;
+
+    const realocacoes = [];
+    const novosSlots = [];
+
+    // 3d. Reallocate content for the first F items
+    for (let i = 0; i < F; i++) {
+      const sourceWorkoutId = contentQueue[i];
+      const targetSchedule = future[i];
+      const targetWorkoutId = targetSchedule.workoutId;
+
+      const sourceWorkout = (rawWorkouts || []).find(w => String(w.id) === String(sourceWorkoutId));
+      const targetWorkout = (rawWorkouts || []).find(w => String(w.id) === String(targetWorkoutId));
+
+      if (sourceWorkout && targetWorkout) {
+        realocacoes.push({
+          targetScheduleId: targetSchedule.id,
+          targetDate: targetSchedule.date,
+          targetWorkoutId: targetWorkout.id,
+          conteudoAntigoName: targetWorkout.name,
+          conteudoNovoName: sourceWorkout.name,
+          sourceWorkoutId: sourceWorkout.id
+        });
+
+        if (!dryRun) {
+          // Mutate targetWorkout content only (never id, date, studentId, macrocycleId, etc.)
+          targetWorkout.name = sourceWorkout.name;
+          targetWorkout.exercises = JSON.parse(JSON.stringify(sourceWorkout.exercises || []));
+          targetWorkout.phase = sourceWorkout.phase;
+          targetWorkout.intensityPct = sourceWorkout.intensityPct;
+          targetWorkout.isDeload = sourceWorkout.isDeload;
+          targetWorkout.category = sourceWorkout.category;
+          targetWorkout.notes = sourceWorkout.notes;
+
+          await dbInstance.put('workouts', targetWorkout);
+
+          targetSchedule.workoutName = targetWorkout.name;
+          await dbInstance.put('schedules', targetSchedule);
+        }
+      }
+    }
+
+    // 3e. Create new slots for remaining content beyond F
+    let currentDate = (rawSchedules || [])
+      .filter(s => String(s.macrocycleId) === macroId)
+      .map(s => s.date)
+      .sort()
+      .pop() || todayStr;
+
+    const remainingWorkoutIds = contentQueue.slice(F);
+
+    for (const sourceId of remainingWorkoutIds) {
+      currentDate = getNextTrainingDate(currentDate, macrocycle.trainingDays || []);
+      const sourceWorkout = (rawWorkouts || []).find(w => String(w.id) === String(sourceId));
+
+      if (sourceWorkout) {
+        const newWorkoutPayload = {
+          studentId: macrocycle.studentId,
+          macrocycleId: macrocycle.id,
+          name: sourceWorkout.name,
+          date: currentDate,
+          exercises: JSON.parse(JSON.stringify(sourceWorkout.exercises || [])),
+          phase: sourceWorkout.phase,
+          intensityPct: sourceWorkout.intensityPct,
+          isDeload: sourceWorkout.isDeload,
+          category: sourceWorkout.category,
+          notes: sourceWorkout.notes,
+          _offline: true
+        };
+
+        novosSlots.push({
+          newDate: currentDate,
+          workoutName: sourceWorkout.name,
+          sourceWorkoutId: sourceWorkout.id
+        });
+
+        if (!dryRun) {
+          const savedWorkout = await dbInstance.add('workouts', newWorkoutPayload);
+          const newSchedulePayload = {
+            studentId: macrocycle.studentId,
+            workoutId: savedWorkout.id,
+            macrocycleId: macrocycle.id,
+            date: currentDate,
+            time: macrocycle.trainingTime || '07:00',
+            duration: macrocycle.sessionDuration || 60,
+            workoutName: savedWorkout.name,
+            status: 'scheduled',
+            repeat: 'none',
+            _offline: true
+          };
+          await dbInstance.add('schedules', newSchedulePayload);
+        }
+      }
+    }
+
+    // 3f. Mark original missed items
+    for (const missedItem of missed) {
+      if (!dryRun) {
+        missedItem.status = 'missed';
+        missedItem.cascadeProcessed = true;
+        await dbInstance.put('schedules', missedItem);
+      }
+    }
+
+    const report = {
+      macrocycleId: macrocycle.id,
+      studentId: macrocycle.studentId,
+      missedCount: missed.length,
+      realocadosCount: F,
+      novosSlotsCount: remainingWorkoutIds.length,
+      realocacoes,
+      novosSlots,
+      dryRun
+    };
+
+    reports.push(report);
+
+    // Audit Log
+    console.log('[CASCADE LIVE' + (dryRun ? ' DRY-RUN]' : ']'), JSON.stringify(report, null, 2));
+  }
+
+  return reports;
+}

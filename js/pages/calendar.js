@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { sendWhatsApp, reminderMsg, preFormMsg, postFormMsg } from '../utils/whatsapp.js';
-import { simulateCascade, dryRunGrandfathering, applyGrandfathering } from '../utils/cascadeReschedule.js';
+import { simulateCascade, dryRunGrandfathering, applyGrandfathering, applyLiveCascade } from '../utils/cascadeReschedule.js';
 
 const DURATIONS = [30, 45, 50, 60, 75, 90, 120];
 const WEEKDAYS = [
@@ -52,8 +52,12 @@ async function buildCalendarHTML() {
   try {
     const macros = await db.getAll('macrocycles');
     await applyGrandfathering(db, events, macros, today);
+    
+    // FASE B (DRY-RUN DE VALIDAÇÃO — SEM DB.PUT / SEM DB.ADD)
+    const workouts = await db.getAll('workouts');
+    await applyLiveCascade(db, events, workouts, macros, today, true);
   } catch (err) {
-    console.warn('[FASE A ERROR]', err);
+    console.warn('[CASCADE ERROR]', err);
   }
   
   // Apply student filter
