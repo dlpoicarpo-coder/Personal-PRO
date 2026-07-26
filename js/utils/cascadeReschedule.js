@@ -1,6 +1,6 @@
 /**
  * Cascade Rescheduling Simulation Module
- * Pure functions for calculating cascade shifts without DB side effects.
+ * Queue-based calculation for cascade shifts without DB side effects.
  */
 
 /**
@@ -24,7 +24,7 @@ function getNextTrainingDate(lastDateStr, trainingDays) {
 }
 
 /**
- * Pure simulation function for cascade rescheduling without DB side effects.
+ * Queue-based pure simulation function for cascade rescheduling without DB side effects.
  *
  * @param {Array} rawSchedules 
  * @param {Array} rawWorkouts 
@@ -37,115 +37,81 @@ export function simulateCascade(rawSchedules, rawWorkouts, macrocycle, todayStr)
     return { error: 'Macrociclo invalido' };
   }
 
-  const schedules = JSON.parse(JSON.stringify(rawSchedules || []));
-  const workouts = JSON.parse(JSON.stringify(rawWorkouts || []));
   const macroId = String(macrocycle.id);
   const studentId = String(macrocycle.studentId);
   const trainingDays = macrocycle.trainingDays || [];
 
-  // Filter schedules belonging to this macrocycle
-  let macroSchedules = schedules
+  // Step 1: Snapshot copies of schedules belonging to this macrocycle & student
+  const macroSchedules = (rawSchedules || [])
     .filter(s => String(s.macrocycleId) === macroId && String(s.studentId) === studentId)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  // Find missed candidate schedules:
-  // - workoutId present
-  // - status in ('scheduled', 'confirmed')
-  // - date < todayStr (string comparison)
-  // - !cascadeProcessed
-  const missedCandidates = macroSchedules.filter(s =>
+  const snapshot = macroSchedules.map(s => ({ ...s }));
+
+  // Step 2: Separate into missed and future (only schedules with workoutId present)
+  const missed = snapshot.filter(s =>
     s.workoutId &&
     (s.status === 'scheduled' || s.status === 'confirmed') &&
     s.date < todayStr &&
     !s.cascadeProcessed
-  );
+  ).sort((a, b) => a.date.localeCompare(b.date));
 
-  if (missedCandidates.length === 0) {
+  const future = snapshot.filter(s =>
+    s.workoutId &&
+    (s.status === 'scheduled' || s.status === 'confirmed') &&
+    s.date >= todayStr
+  ).sort((a, b) => a.date.localeCompare(b.date));
+
+  if (missed.length === 0) {
     return {
       message: 'Nenhum agendamento atrasado pendente para este macrociclo.',
-      missedFound: [],
-      shifts: [],
-      novosWorkoutsCriados: []
+      missedMarcados: [],
+      slotsFuturosRealocados: [],
+      novosSlotsACriar: []
     };
   }
 
-  const report = {
-    missedFound: [],
-    shifts: [],
-    novosWorkoutsCriados: []
+  // Step 3: Build content queue in original chronological order
+  const contentQueue = [...missed, ...future].map(s => ({
+    workoutId: s.workoutId,
+    workoutName: s.workoutName || ''
+  }));
+
+  // Step 4: Reallocate F future slots with first F content items
+  const slotsFuturosRealocados = future.map((slot, i) => {
+    const conteudoNovo = contentQueue[i];
+    return {
+      scheduleId: slot.id,
+      date: slot.date,
+      conteudoAntigo: slot.workoutName || '',
+      conteudoNovo: conteudoNovo ? conteudoNovo.workoutName : ''
+    };
+  });
+
+  // Step 5: Remaining M items in contentQueue (contentQueue[F] to contentQueue[M+F-1]) need M new slots
+  const novosSlotsACriar = [];
+  let currentDate = snapshot.length > 0 ? snapshot[snapshot.length - 1].date : todayStr;
+
+  const remainingContent = contentQueue.slice(future.length);
+  for (const content of remainingContent) {
+    currentDate = getNextTrainingDate(currentDate, trainingDays);
+    novosSlotsACriar.push({
+      date: currentDate,
+      workoutName: content.workoutName,
+      workoutId: content.workoutId
+    });
+  }
+
+  // Step 6: missedMarcados
+  const missedMarcados = missed.map(m => ({
+    scheduleId: m.id,
+    date: m.date,
+    workoutName: m.workoutName || ''
+  }));
+
+  return {
+    missedMarcados,
+    slotsFuturosRealocados,
+    novosSlotsACriar
   };
-
-  for (const missed of missedCandidates) {
-    report.missedFound.push({
-      scheduleId: missed.id,
-      date: missed.date,
-      workoutId: missed.workoutId,
-      workoutName: missed.workoutName || ''
-    });
-
-    // Step a: mark missed in memory
-    missed.status = 'missed';
-    missed.cascadeProcessed = true;
-
-    // Step b: get following active schedules for same student + macrocycle
-    const following = macroSchedules.filter(s =>
-      s.workoutId &&
-      (s.status === 'scheduled' || s.status === 'confirmed') &&
-      s.date > missed.date
-    ).sort((a, b) => a.date.localeCompare(b.date));
-
-    let contentToShift = {
-      workoutId: missed.workoutId,
-      workoutName: missed.workoutName || ''
-    };
-
-    // Step c: slide content one position forward
-    for (let i = 0; i < following.length; i++) {
-      const targetSched = following[i];
-      const oldWorkoutName = targetSched.workoutName || '';
-
-      const nextContent = {
-        workoutId: targetSched.workoutId,
-        workoutName: targetSched.workoutName || ''
-      };
-
-      // Assign shifted content to current target
-      targetSched.workoutId = contentToShift.workoutId;
-      targetSched.workoutName = contentToShift.workoutName;
-
-      report.shifts.push({
-        scheduleId: targetSched.id,
-        date: targetSched.date,
-        de: oldWorkoutName,
-        para: targetSched.workoutName
-      });
-
-      contentToShift = nextContent;
-    }
-
-    // Step d: Create new workout+schedule at the end for leftover shifted content
-    const lastDate = macroSchedules.length > 0 ? macroSchedules[macroSchedules.length - 1].date : missed.date;
-    const nextDate = getNextTrainingDate(lastDate, trainingDays);
-
-    report.novosWorkoutsCriados.push({
-      date: nextDate,
-      workoutName: contentToShift.workoutName,
-      workoutId: contentToShift.workoutId
-    });
-
-    // Append virtual schedule so subsequent iterations account for the new last date/schedule
-    const virtualSched = {
-      id: 'virtual_' + Math.random().toString(36).substring(2, 7),
-      studentId: studentId,
-      macrocycleId: macroId,
-      workoutId: contentToShift.workoutId,
-      workoutName: contentToShift.workoutName,
-      date: nextDate,
-      status: 'scheduled'
-    };
-    macroSchedules.push(virtualSched);
-    macroSchedules.sort((a, b) => a.date.localeCompare(b.date));
-  }
-
-  return report;
 }
