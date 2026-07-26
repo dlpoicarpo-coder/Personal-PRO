@@ -68,6 +68,14 @@ export async function navigateTo(path) {
     return;
   }
 
+  if (path.startsWith('/form/consentimento')) {
+    appContainer.className = '';
+    const { renderConsentForm, initConsentForm } = await import('./pages/consent-form.js');
+    appContainer.innerHTML = await renderConsentForm();
+    initConsentForm();
+    return;
+  }
+
   if (path.startsWith('/reset-password')) {
     appContainer.className = '';
     import('./pages/reset-password.js').then(({ renderResetPassword, initResetPassword }) => {
