@@ -52,48 +52,8 @@ async function buildCalendarHTML() {
   try {
     const macros = await db.getAll('macrocycles');
     await applyGrandfathering(db, events, macros, today);
-    
-    // TESTE SINTÉTICO DA FASE B (EM MEMÓRIA — SEM TOCAR BANCO REAL)
-    const fakeDb = {
-      put: async (store, obj) => { console.log('[FAKE PUT]', store, JSON.stringify(obj)); return obj; },
-      add: async (store, obj) => { const saved = {...obj, id: 'test-' + Math.random().toString(36).slice(2)}; console.log('[FAKE ADD]', store, JSON.stringify(saved)); return saved; }
-    };
-
-    const fakeMacro = { id: 'macro-test', studentId: 'aluno-test', status: 'active', trainingDays: [1,3,5], trainingTime: '07:00', sessionDuration: 60 };
-
-    const fakeWorkouts = [
-      { id: 'w-missed', studentId: 'aluno-test', macrocycleId: 'macro-test', date: '2026-07-20', name: 'Treino PERDIDO — Pernas', exercises: [{name:'Squat'}], phase: 'Hipertrofia', intensityPct: 70, isDeload: false, category: 'Musculacao', notes: 'teste' },
-      { id: 'w-future', studentId: 'aluno-test', macrocycleId: 'macro-test', date: '2026-07-29', name: 'Treino FUTURO — Peito', exercises: [{name:'Bench'}], phase: 'Hipertrofia', intensityPct: 65, isDeload: false, category: 'Musculacao', notes: 'original' }
-    ];
-
-    const fakeSchedules = [
-      { id: 'sch-missed', studentId: 'aluno-test', macrocycleId: 'macro-test', workoutId: 'w-missed', date: '2026-07-20', status: 'scheduled', workoutName: 'Treino PERDIDO — Pernas' },
-      { id: 'sch-future', studentId: 'aluno-test', macrocycleId: 'macro-test', workoutId: 'w-future', date: '2026-07-29', status: 'scheduled', workoutName: 'Treino FUTURO — Peito' }
-    ];
-
-    await applyLiveCascade(fakeDb, fakeSchedules, fakeWorkouts, [fakeMacro], '2026-07-26', false)
-      .then(r => console.log('[TESTE RESULT]', JSON.stringify(r, null, 2)));
-
-    // TESTE SINTÉTICO 2 DA FASE B (M=3, F=1 — EM MEMÓRIA — SEM TOCAR BANCO REAL)
-    const fakeMacro2 = { id: 'macro-test2', studentId: 'aluno-test2', status: 'active', trainingDays: [1,3,5], trainingTime: '07:00', sessionDuration: 60 };
-
-    const fakeWorkouts2 = [
-      { id: 'w1', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-13', name:'Treino 1 — Costas', exercises:[{name:'Remada'}], phase:'Hipertrofia', intensityPct:70, isDeload:false, category:'Musculacao', notes:'' },
-      { id: 'w2', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-15', name:'Treino 2 — Perna', exercises:[{name:'Leg Press'}], phase:'Hipertrofia', intensityPct:72, isDeload:false, category:'Musculacao', notes:'' },
-      { id: 'w3', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-17', name:'Treino 3 — Ombro', exercises:[{name:'Desenvolvimento'}], phase:'Hipertrofia', intensityPct:68, isDeload:false, category:'Musculacao', notes:'' },
-      { id: 'w4', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-29', name:'Treino 4 — Braço', exercises:[{name:'Rosca'}], phase:'Hipertrofia', intensityPct:65, isDeload:false, category:'Musculacao', notes:'' }
-    ];
-    const fakeSchedules2 = [
-      { id:'s1', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w1', date:'2026-07-13', status:'scheduled', workoutName:'Treino 1 — Costas' },
-      { id:'s2', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w2', date:'2026-07-15', status:'scheduled', workoutName:'Treino 2 — Perna' },
-      { id:'s3', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w3', date:'2026-07-17', status:'scheduled', workoutName:'Treino 3 — Ombro' },
-      { id:'s4', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w4', date:'2026-07-29', status:'scheduled', workoutName:'Treino 4 — Braço' }
-    ];
-
-    await applyLiveCascade(fakeDb, fakeSchedules2, fakeWorkouts2, [fakeMacro2], '2026-07-26', false)
-      .then(r => console.log('[TESTE2 RESULT]', JSON.stringify(r, null, 2)));
   } catch (err) {
-    console.warn('[CASCADE ERROR]', err);
+    console.warn('[FASE A ERROR]', err);
   }
   
   // Apply student filter
@@ -665,6 +625,15 @@ async function checkReminders() {
     }
 
     localStorage.setItem(storageKey, JSON.stringify(sent));
+
+    // Motor de Reagendamento em Cascata (Fase B Live Engine — Produção)
+    try {
+      const workouts = await db.getAll('workouts');
+      const macros = await db.getAll('macrocycles');
+      await applyLiveCascade(db, events, workouts, macros, today, false);
+    } catch (err) {
+      console.warn('[CASCADE LIVE ERROR]', err);
+    }
   } catch(_) {}
 }
 
