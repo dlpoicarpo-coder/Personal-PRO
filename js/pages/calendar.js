@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { sendWhatsApp, reminderMsg, preFormMsg, postFormMsg } from '../utils/whatsapp.js';
-import { simulateCascade } from '../utils/cascadeReschedule.js';
+import { simulateCascade, dryRunGrandfathering } from '../utils/cascadeReschedule.js';
 
 const DURATIONS = [30, 45, 50, 60, 75, 90, 120];
 const WEEKDAYS = [
@@ -47,6 +47,14 @@ async function buildCalendarHTML() {
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const today = new Date().toISOString().slice(0, 10);
+  
+  // FASE A: Dry-run do Grandfathering (SEM GRAVAÇÃO / SEM DB.PUT)
+  try {
+    const gfReport = dryRunGrandfathering(events, today);
+    console.log('[GRANDFATHERING DRY-RUN REPORT]', JSON.stringify(gfReport, null, 2));
+  } catch (err) {
+    console.warn('[GRANDFATHERING DRY-RUN ERROR]', err);
+  }
   
   // Phase 1: Pure simulation test for cascade rescheduling across ALL macrocycles
   try {

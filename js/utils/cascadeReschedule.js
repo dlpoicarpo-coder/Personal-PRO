@@ -124,3 +124,29 @@ export function simulateCascade(rawSchedules, rawWorkouts, macrocycle, todayStr)
     novosSlotsACriar
   };
 }
+
+/**
+ * Dry-run function for grandfathering past missed schedules without DB writes.
+ * @param {Array} rawSchedules 
+ * @param {string} todayStr 
+ * @returns {Object} Dry-run report
+ */
+export function dryRunGrandfathering(rawSchedules, todayStr) {
+  const candidates = (rawSchedules || []).filter(s =>
+    s.workoutId &&
+    (s.status === 'scheduled' || s.status === 'confirmed') &&
+    s.date && s.date < todayStr &&
+    !s.cascadeGrandfathered
+  ).sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    totalToGrandfather: candidates.length,
+    candidates: candidates.map(s => ({
+      id: s.id,
+      date: s.date,
+      studentId: s.studentId,
+      workoutName: s.workoutName || '',
+      status: s.status
+    }))
+  };
+}
