@@ -56,18 +56,33 @@ async function buildCalendarHTML() {
     // Log info for 44b12dfc
     const m44 = macros.find(m => m.studentId === '44b12dfc');
     if (m44) {
-      console.log('[MACRO INFO 44b12dfc]', { id: m44.id, studentId: m44.studentId, trainingDays: m44.trainingDays, totalWeeks: m44.totalWeeks, startDate: m44.startDate });
+      console.log('[MACRO INFO 44b12dfc]', JSON.stringify({ id: m44.id, studentId: m44.studentId, trainingDays: m44.trainingDays, totalWeeks: m44.totalWeeks, startDate: m44.startDate }, null, 2));
     }
+
+    let macrocyclesWithDelays = 0;
+    let sumSlotsFuturosRealocados = 0;
+    let sumNovosSlotsACriar = 0;
 
     macros.forEach(m => {
       const report = simulateCascade(events, workouts, m, today);
       if (report.missedMarcados && report.missedMarcados.length > 0) {
-        console.log(`[CASCADE REPORT - Macro ${m.id} (Aluno ${m.studentId})]`, {
+        macrocyclesWithDelays++;
+        sumSlotsFuturosRealocados += (report.slotsFuturosRealocados || []).length;
+        sumNovosSlotsACriar += (report.novosSlotsACriar || []).length;
+
+        console.log(`[CASCADE REPORT - Macro ${m.id} (Aluno ${m.studentId})]`, JSON.stringify({
           trainingDays: m.trainingDays,
           report
-        });
+        }, null, 2));
       }
     });
+
+    console.log('[CASCADE RESUMO GERAL]', JSON.stringify({
+      totalMacrociclos: macros.length,
+      macrociclosComAtraso: macrocyclesWithDelays,
+      totalSlotsFuturosRealocados: sumSlotsFuturosRealocados,
+      totalNovosSlotsACriar: sumNovosSlotsACriar
+    }, null, 2));
   } catch (err) {
     console.warn('[CASCADE SIMULATION ERROR]', err);
   }
