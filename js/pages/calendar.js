@@ -40,6 +40,11 @@ export async function renderCalendar() {
 async function buildCalendarHTML() {
   const students = await db.getAll('students');
   const events = await db.getAll('schedules', { enrich: true });
+  const target = events.find(e => e.id === '76e98363-27cd-4f52-8eef-8b7bf036afa8');
+  console.log('[TESTE] Schedule alvo status:', target?.status);
+  const julyCompleted = events.filter(e => e.date && e.date.startsWith('2026-07') && e.status==='completed').length;
+  const julyTotal = events.filter(e => e.date && e.date.startsWith('2026-07')).length;
+  console.log('[TESTE] Julho completed:', julyCompleted, '/ total:', julyTotal);
   
   const active = students.filter(s => s.status === 'Ativo');
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
