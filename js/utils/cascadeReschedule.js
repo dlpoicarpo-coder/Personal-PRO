@@ -253,45 +253,54 @@ export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, ra
       )
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Content queue: array of workoutIds whose content will be migrated in order
-    const contentQueue = [...missed, ...future].map(s => s.workoutId);
-    const F = future.length;
+    // Content queue: IMMUTABLE snapshot of workout content BEFORE any mutations
+    const contentQueue = [...missed, ...future].map(s => {
+      const w = (rawWorkouts || []).find(x => String(x.id) === String(s.workoutId));
+      return w ? {
+        name: w.name,
+        exercises: JSON.parse(JSON.stringify(w.exercises || [])),
+        phase: w.phase,
+        intensityPct: w.intensityPct,
+        isDeload: w.isDeload,
+        category: w.category,
+        notes: w.notes,
+        sourceWorkoutId: w.id
+      } : null;
+    }).filter(Boolean);
 
+    const F = future.length;
     const realocacoes = [];
     const novosSlots = [];
 
     // 3d. Reallocate content for the first F items
     for (let i = 0; i < F; i++) {
-      const sourceWorkoutId = contentQueue[i];
+      const newContent = contentQueue[i];
       const targetSchedule = future[i];
-      const targetWorkoutId = targetSchedule.workoutId;
+      const targetWorkout = (rawWorkouts || []).find(w => String(w.id) === String(targetSchedule.workoutId));
 
-      const sourceWorkout = (rawWorkouts || []).find(w => String(w.id) === String(sourceWorkoutId));
-      const targetWorkout = (rawWorkouts || []).find(w => String(w.id) === String(targetWorkoutId));
-
-      if (sourceWorkout && targetWorkout) {
+      if (newContent && targetWorkout) {
         realocacoes.push({
           targetScheduleId: targetSchedule.id,
           targetDate: targetSchedule.date,
           targetWorkoutId: targetWorkout.id,
           conteudoAntigoName: targetWorkout.name,
-          conteudoNovoName: sourceWorkout.name,
-          sourceWorkoutId: sourceWorkout.id
+          conteudoNovoName: newContent.name,
+          sourceWorkoutId: newContent.sourceWorkoutId
         });
 
         if (!dryRun) {
-          // Mutate targetWorkout content only (never id, date, studentId, macrocycleId, etc.)
-          targetWorkout.name = sourceWorkout.name;
-          targetWorkout.exercises = JSON.parse(JSON.stringify(sourceWorkout.exercises || []));
-          targetWorkout.phase = sourceWorkout.phase;
-          targetWorkout.intensityPct = sourceWorkout.intensityPct;
-          targetWorkout.isDeload = sourceWorkout.isDeload;
-          targetWorkout.category = sourceWorkout.category;
-          targetWorkout.notes = sourceWorkout.notes;
+          // Mutate targetWorkout content only
+          targetWorkout.name = newContent.name;
+          targetWorkout.exercises = JSON.parse(JSON.stringify(newContent.exercises || []));
+          targetWorkout.phase = newContent.phase;
+          targetWorkout.intensityPct = newContent.intensityPct;
+          targetWorkout.isDeload = newContent.isDeload;
+          targetWorkout.category = newContent.category;
+          targetWorkout.notes = newContent.notes;
 
           await dbInstance.put('workouts', targetWorkout);
 
-          targetSchedule.workoutName = targetWorkout.name;
+          targetSchedule.workoutName = newContent.name;
           await dbInstance.put('schedules', targetSchedule);
         }
       }
@@ -304,49 +313,46 @@ export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, ra
       .sort()
       .pop() || todayStr;
 
-    const remainingWorkoutIds = contentQueue.slice(F);
+    const remainingContent = contentQueue.slice(F);
 
-    for (const sourceId of remainingWorkoutIds) {
+    for (const newContent of remainingContent) {
       currentDate = getNextTrainingDate(currentDate, macrocycle.trainingDays || []);
-      const sourceWorkout = (rawWorkouts || []).find(w => String(w.id) === String(sourceId));
 
-      if (sourceWorkout) {
-        const newWorkoutPayload = {
+      const newWorkoutPayload = {
+        studentId: macrocycle.studentId,
+        macrocycleId: macrocycle.id,
+        name: newContent.name,
+        date: currentDate,
+        exercises: JSON.parse(JSON.stringify(newContent.exercises || [])),
+        phase: newContent.phase,
+        intensityPct: newContent.intensityPct,
+        isDeload: newContent.isDeload,
+        category: newContent.category,
+        notes: newContent.notes,
+        _offline: true
+      };
+
+      novosSlots.push({
+        newDate: currentDate,
+        workoutName: newContent.name,
+        sourceWorkoutId: newContent.sourceWorkoutId
+      });
+
+      if (!dryRun) {
+        const savedWorkout = await dbInstance.add('workouts', newWorkoutPayload);
+        const newSchedulePayload = {
           studentId: macrocycle.studentId,
+          workoutId: savedWorkout.id,
           macrocycleId: macrocycle.id,
-          name: sourceWorkout.name,
           date: currentDate,
-          exercises: JSON.parse(JSON.stringify(sourceWorkout.exercises || [])),
-          phase: sourceWorkout.phase,
-          intensityPct: sourceWorkout.intensityPct,
-          isDeload: sourceWorkout.isDeload,
-          category: sourceWorkout.category,
-          notes: sourceWorkout.notes,
+          time: macrocycle.trainingTime || '07:00',
+          duration: macrocycle.sessionDuration || 60,
+          workoutName: savedWorkout.name,
+          status: 'scheduled',
+          repeat: 'none',
           _offline: true
         };
-
-        novosSlots.push({
-          newDate: currentDate,
-          workoutName: sourceWorkout.name,
-          sourceWorkoutId: sourceWorkout.id
-        });
-
-        if (!dryRun) {
-          const savedWorkout = await dbInstance.add('workouts', newWorkoutPayload);
-          const newSchedulePayload = {
-            studentId: macrocycle.studentId,
-            workoutId: savedWorkout.id,
-            macrocycleId: macrocycle.id,
-            date: currentDate,
-            time: macrocycle.trainingTime || '07:00',
-            duration: macrocycle.sessionDuration || 60,
-            workoutName: savedWorkout.name,
-            status: 'scheduled',
-            repeat: 'none',
-            _offline: true
-          };
-          await dbInstance.add('schedules', newSchedulePayload);
-        }
+        await dbInstance.add('schedules', newSchedulePayload);
       }
     }
 
@@ -364,7 +370,7 @@ export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, ra
       studentId: macrocycle.studentId,
       missedCount: missed.length,
       realocadosCount: F,
-      novosSlotsCount: remainingWorkoutIds.length,
+      novosSlotsCount: remainingContent.length,
       realocacoes,
       novosSlots,
       dryRun
