@@ -54,11 +54,16 @@ async function buildCalendarHTML() {
   
   // Apply student filter
   let filteredEvents = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
+  console.log('[TESTE2] studentFilter:', studentFilter, '| modalityFilter:', modalityFilter, '| events.length:', events.length, '| filteredEvents.length (apos studentFilter):', filteredEvents.length);
   if (modalityFilter) {
+    console.log('[TESTE2] modalityFilter ATIVO, valor:', modalityFilter);
     filteredEvents = filteredEvents.filter(e => {
       const st = students.find(s => s.id === e.studentId);
       return st && st.modality === modalityFilter;
     });
+    console.log('[TESTE2] apos modality filter:', filteredEvents.length);
+  } else {
+    console.log('[TESTE2] modalityFilter vazio, pulando filtro');
   }
   const todayEvents = filteredEvents.filter(e => e.date === today).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   const statusColors = { scheduled: 'info', confirmed: 'primary', completed: 'success', missed: 'danger' };
@@ -82,6 +87,7 @@ async function buildCalendarHTML() {
     </div>
 
     ${(() => {
+      console.log('[TESTE2] filteredEvents ANTES de monthEvents:', filteredEvents.length, '| completed nele:', filteredEvents.filter(e=>e.status==='completed').length);
       const monthEvents = filteredEvents.filter(e => {
         const d = new Date(e.date);
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -90,6 +96,7 @@ async function buildCalendarHTML() {
       const done  = monthEvents.filter(e => e.status === 'completed').length;
       const missed = monthEvents.filter(e => e.status === 'missed').length;
       const rate  = total > 0 ? Math.round((done / total) * 100) : 0;
+      console.log('[TESTE2] monthEvents.length:', total, '| done:', done, '| missed:', missed, '| currentMonth:', currentMonth, '| currentYear:', currentYear);
       if (total === 0) return '';
       return `
       <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
