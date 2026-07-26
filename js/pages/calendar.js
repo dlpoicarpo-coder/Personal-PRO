@@ -7,6 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { sendWhatsApp, reminderMsg, preFormMsg, postFormMsg } from '../utils/whatsapp.js';
+import { simulateCascade } from '../utils/cascadeReschedule.js';
 
 const DURATIONS = [30, 45, 50, 60, 75, 90, 120];
 const WEEKDAYS = [
@@ -46,6 +47,19 @@ async function buildCalendarHTML() {
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const today = new Date().toISOString().slice(0, 10);
+  
+  // Phase 1: Pure simulation test for cascade rescheduling
+  try {
+    const macros = await db.getAll('macrocycles');
+    const targetMacro = macros.find(m => m.studentId === '44b12dfc') || macros[0];
+    if (targetMacro) {
+      const workouts = await db.getAll('workouts');
+      const simulationReport = simulateCascade(events, workouts, targetMacro, today);
+      console.log('[CASCADE SIMULATION REPORT]', JSON.stringify(simulationReport, null, 2));
+    }
+  } catch (err) {
+    console.warn('[CASCADE SIMULATION ERROR]', err);
+  }
   
   // Apply student filter
   let filteredEvents = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
