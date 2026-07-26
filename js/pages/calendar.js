@@ -48,15 +48,26 @@ async function buildCalendarHTML() {
   const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const today = new Date().toISOString().slice(0, 10);
   
-  // Phase 1: Pure simulation test for cascade rescheduling
+  // Phase 1: Pure simulation test for cascade rescheduling across ALL macrocycles
   try {
     const macros = await db.getAll('macrocycles');
-    const targetMacro = macros.find(m => m.studentId === '44b12dfc') || macros[0];
-    if (targetMacro) {
-      const workouts = await db.getAll('workouts');
-      const simulationReport = simulateCascade(events, workouts, targetMacro, today);
-      console.log('[CASCADE SIMULATION REPORT]', JSON.stringify(simulationReport, null, 2));
+    const workouts = await db.getAll('workouts');
+    
+    // Log info for 44b12dfc
+    const m44 = macros.find(m => m.studentId === '44b12dfc');
+    if (m44) {
+      console.log('[MACRO INFO 44b12dfc]', { id: m44.id, studentId: m44.studentId, trainingDays: m44.trainingDays, totalWeeks: m44.totalWeeks, startDate: m44.startDate });
     }
+
+    macros.forEach(m => {
+      const report = simulateCascade(events, workouts, m, today);
+      if (report.missedMarcados && report.missedMarcados.length > 0) {
+        console.log(`[CASCADE REPORT - Macro ${m.id} (Aluno ${m.studentId})]`, {
+          trainingDays: m.trainingDays,
+          report
+        });
+      }
+    });
   } catch (err) {
     console.warn('[CASCADE SIMULATION ERROR]', err);
   }
