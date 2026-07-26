@@ -53,6 +53,7 @@ async function buildCalendarHTML() {
     });
     if (didIt) ev.status = 'completed';
   });
+  console.log('[ENRICHMENT] buildCalendarHTML processados:', events.length, 'marcados completed:', events.filter(e=>e.status==='completed').length);
   const active = students.filter(s => s.status === 'Ativo');
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -332,6 +333,7 @@ export function initCalendar(navigateFn) {
         });
         if (didIt) ev.status = 'completed';
       });
+      console.log('[ENRICHMENT] dayClick processados:', events.length, 'marcados completed:', events.filter(e=>e.status==='completed').length);
       const students = await db.getAll('students');
       const filtered = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
       const dayEvs = filtered.filter(e => e.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
@@ -614,6 +616,7 @@ async function checkReminders() {
       });
       if (didIt) ev.status = 'completed';
     });
+    console.log('[ENRICHMENT] checkReminders processados:', events.length, 'marcados completed:', events.filter(e=>e.status==='completed').length);
     const students = await db.getAll('students');
     const settings = await db.get('settings','trainer').catch(()=>({}));
     const now      = Date.now();
