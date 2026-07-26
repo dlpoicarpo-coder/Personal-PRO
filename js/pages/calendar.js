@@ -53,9 +53,26 @@ async function buildCalendarHTML() {
     const macros = await db.getAll('macrocycles');
     await applyGrandfathering(db, events, macros, today);
     
-    // FASE B (DRY-RUN DE VALIDAÇÃO — SEM DB.PUT / SEM DB.ADD)
-    const workouts = await db.getAll('workouts');
-    await applyLiveCascade(db, events, workouts, macros, today, true);
+    // TESTE SINTÉTICO DA FASE B (EM MEMÓRIA — SEM TOCAR BANCO REAL)
+    const fakeDb = {
+      put: async (store, obj) => { console.log('[FAKE PUT]', store, JSON.stringify(obj)); return obj; },
+      add: async (store, obj) => { const saved = {...obj, id: 'test-' + Math.random().toString(36).slice(2)}; console.log('[FAKE ADD]', store, JSON.stringify(saved)); return saved; }
+    };
+
+    const fakeMacro = { id: 'macro-test', studentId: 'aluno-test', status: 'active', trainingDays: [1,3,5], trainingTime: '07:00', sessionDuration: 60 };
+
+    const fakeWorkouts = [
+      { id: 'w-missed', studentId: 'aluno-test', macrocycleId: 'macro-test', date: '2026-07-20', name: 'Treino PERDIDO — Pernas', exercises: [{name:'Squat'}], phase: 'Hipertrofia', intensityPct: 70, isDeload: false, category: 'Musculacao', notes: 'teste' },
+      { id: 'w-future', studentId: 'aluno-test', macrocycleId: 'macro-test', date: '2026-07-29', name: 'Treino FUTURO — Peito', exercises: [{name:'Bench'}], phase: 'Hipertrofia', intensityPct: 65, isDeload: false, category: 'Musculacao', notes: 'original' }
+    ];
+
+    const fakeSchedules = [
+      { id: 'sch-missed', studentId: 'aluno-test', macrocycleId: 'macro-test', workoutId: 'w-missed', date: '2026-07-20', status: 'scheduled', workoutName: 'Treino PERDIDO — Pernas' },
+      { id: 'sch-future', studentId: 'aluno-test', macrocycleId: 'macro-test', workoutId: 'w-future', date: '2026-07-29', status: 'scheduled', workoutName: 'Treino FUTURO — Peito' }
+    ];
+
+    await applyLiveCascade(fakeDb, fakeSchedules, fakeWorkouts, [fakeMacro], '2026-07-26', false)
+      .then(r => console.log('[TESTE RESULT]', JSON.stringify(r, null, 2)));
   } catch (err) {
     console.warn('[CASCADE ERROR]', err);
   }
