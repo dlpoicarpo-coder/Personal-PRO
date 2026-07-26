@@ -51,19 +51,15 @@ async function buildCalendarHTML() {
   // FASE A: Dry-run do Grandfathering (SEM GRAVAÇÃO / SEM DB.PUT)
   try {
     const macros = await db.getAll('macrocycles');
+    const activeMacros = macros.filter(m => m.status === 'active');
     const gfReport = dryRunGrandfathering(events, macros, today);
     console.log('[GRANDFATHERING DRY-RUN REPORT]', JSON.stringify(gfReport, null, 2));
-  } catch (err) {
-    console.warn('[GRANDFATHERING DRY-RUN ERROR]', err);
-  }
-  
-  // Phase 1: Pure simulation test for cascade rescheduling across ALL macrocycles
-  try {
-    const macros = await db.getAll('macrocycles');
+
+    // Phase 1: Pure simulation test for cascade rescheduling across ACTIVE macrocycles
     const workouts = await db.getAll('workouts');
     
     // Log info for 44b12dfc
-    const m44 = macros.find(m => m.studentId === '44b12dfc');
+    const m44 = activeMacros.find(m => m.studentId === '44b12dfc');
     if (m44) {
       console.log('[MACRO INFO 44b12dfc]', JSON.stringify({ id: m44.id, studentId: m44.studentId, trainingDays: m44.trainingDays, totalWeeks: m44.totalWeeks, startDate: m44.startDate }, null, 2));
     }
@@ -71,13 +67,15 @@ async function buildCalendarHTML() {
     let macrocyclesWithDelays = 0;
     let sumSlotsFuturosRealocados = 0;
     let sumNovosSlotsACriar = 0;
+    const cascadeMissedScheduleIds = new Set();
 
-    macros.forEach(m => {
+    activeMacros.forEach(m => {
       const report = simulateCascade(events, workouts, m, today);
       if (report.missedMarcados && report.missedMarcados.length > 0) {
         macrocyclesWithDelays++;
         sumSlotsFuturosRealocados += (report.slotsFuturosRealocados || []).length;
         sumNovosSlotsACriar += (report.novosSlotsACriar || []).length;
+        report.missedMarcados.forEach(item => cascadeMissedScheduleIds.add(item.scheduleId));
 
         console.log(`[CASCADE REPORT - Macro ${m.id} (Aluno ${m.studentId})]`, JSON.stringify({
           trainingDays: m.trainingDays,
@@ -86,8 +84,35 @@ async function buildCalendarHTML() {
       }
     });
 
+    // Detailed 1-item difference analysis
+    const gfCandidatesIds = new Set(gfReport.candidates.map(c => c.id));
+    const nonActiveMacros = macros.filter(m => m.status !== 'active');
+    const nonActiveMissed = [];
+    nonActiveMacros.forEach(m => {
+      const report = simulateCascade(events, workouts, m, today);
+      if (report.missedMarcados && report.missedMarcados.length > 0) {
+        report.missedMarcados.forEach(item => {
+          nonActiveMissed.push({
+            scheduleId: item.scheduleId,
+            macrocycleId: m.id,
+            macroStatus: m.status,
+            date: item.date,
+            workoutName: item.workoutName
+          });
+        });
+      }
+    });
+
+    console.log('[ANALISE DIFERENCA 1 ITEM]', JSON.stringify({
+      totalActiveMacros: activeMacros.length,
+      totalNonActiveMacros: nonActiveMacros.length,
+      dryRunActiveCount: gfReport.candidates.length,
+      cascadeActiveCount: cascadeMissedScheduleIds.size,
+      itemExtraEmMacroNaoAtivo: nonActiveMissed
+    }, null, 2));
+
     console.log('[CASCADE RESUMO GERAL]', JSON.stringify({
-      totalMacrociclos: macros.length,
+      totalMacrociclosAtivos: activeMacros.length,
       macrociclosComAtraso: macrocyclesWithDelays,
       totalSlotsFuturosRealocados: sumSlotsFuturosRealocados,
       totalNovosSlotsACriar: sumNovosSlotsACriar
