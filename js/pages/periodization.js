@@ -560,7 +560,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
       </label>`;
   }
 
-  const CAT_ORDER = ['Hipertrofia','Força','Resistência','Potência','Cardio Endurance','Cardio / Endurance'];
+  const CAT_ORDER = ['Adaptação','Hipertrofia','Força','Resistência','Potência','Cardio Endurance','Cardio / Endurance'];
   const builtInHTML = CAT_ORDER
     .filter(cat => tplByCategory[cat]?.length)
     .map(cat => `

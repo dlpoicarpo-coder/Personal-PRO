@@ -547,6 +547,67 @@ export const BUILT_IN_TEMPLATES = [
         { name: 'Prancha Lateral', sets: 3, reps: '30s', load: 'Corporal', rest: '90', method: '', loadType: 'time' }
       ]}
     ]
+  },
+  {
+    id: 'tpl_adaptacao_abc',
+    name: 'Adaptação ABC',
+    category: 'Adaptação',
+    goal: 'Adaptação Neuromuscular',
+    description: 'Fase inicial submáxima. Core baseado nos Big 3 de McGill (curl-up, prancha lateral, bird dog) em pirâmide descendente com holds isométricos. Padrões multiarticulares com progressão condicionada à técnica.',
+    daysPerWeek: 3,
+    builtIn: true,
+    periodizationTypes: ['linear', 'block'],
+    workouts: [
+      { name: 'Treino A - Membros Inferiores', exercises: [
+        { name: 'Agachamento goblet', sets: 3, reps: '12-15', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Levantamento terra romeno', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Split squat', sets: 2, reps: '10', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Elevação de panturrilha', sets: 2, reps: '12-15', load: '', rest: '45', method: '', intensity: 'RPE 6' },
+        { name: 'Prancha lateral', sets: 5, reps: '10s', load: '', rest: '45', method: 'Isometria', intensity: 'McGill 5-3-1' }
+      ]},
+      { name: 'Treino B - Empurrar', exercises: [
+        { name: 'Supino máquina', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Desenvolvimento com halteres', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Farmer carry', sets: 2, reps: '30s', load: '', rest: '60', method: 'Carregamento', intensity: 'RPE 6' },
+        { name: 'Curl-up McGill', sets: 5, reps: '10s', load: '', rest: '45', method: 'Isometria', intensity: 'McGill 5-3-1' }
+      ]},
+      { name: 'Treino C - Puxar e Integração', exercises: [
+        { name: 'Puxada frontal', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Remada baixa', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Face pull', sets: 2, reps: '12-15', load: '', rest: '45', method: '', intensity: 'RPE 6' },
+        { name: 'Step-up', sets: 2, reps: '10', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Pallof press', sets: 2, reps: '10', load: '', rest: '45', method: 'Anti-rotação', intensity: 'RPE 6' },
+        { name: 'Bird dog McGill', sets: 5, reps: '10s', load: '', rest: '45', method: 'Isometria', intensity: 'McGill 5-3-1' }
+      ]}
+    ]
+  },
+  {
+    id: 'tpl_adaptacao_ab',
+    name: 'Adaptação AB',
+    category: 'Adaptação',
+    goal: 'Adaptação Neuromuscular',
+    description: 'Divisão de 2 dias de corpo inteiro (AB) para fase inicial submáxima. Enfoque em padrões de movimento fundamentais e estabilidade de core McGill.',
+    daysPerWeek: 2,
+    builtIn: true,
+    periodizationTypes: ['linear', 'block'],
+    workouts: [
+      { name: 'Treino A - Inferiores + Empurrar + Core Anterior', exercises: [
+        { name: 'Agachamento goblet', sets: 3, reps: '12-15', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Levantamento terra romeno', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Flexão inclinada', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Desenvolvimento com halteres', sets: 2, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Curl-up McGill', sets: 3, reps: '10s', load: '', rest: '45', method: 'Isometria', intensity: 'McGill 5-3-1' },
+        { name: 'Prancha lateral', sets: 3, reps: '20s', load: '', rest: '45', method: 'Isometria', intensity: 'McGill 5-3-1' }
+      ]},
+      { name: 'Treino B - Puxar + Posterior + Core Rotacional', exercises: [
+        { name: 'Puxada frontal', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Remada baixa', sets: 3, reps: '10-12', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Afundo', sets: 2, reps: '10', load: '', rest: '60', method: '', intensity: 'RPE 5-6' },
+        { name: 'Face pull', sets: 2, reps: '12-15', load: '', rest: '45', method: '', intensity: 'RPE 6' },
+        { name: 'Pallof press', sets: 2, reps: '10', load: '', rest: '45', method: 'Anti-rotação', intensity: 'RPE 6' },
+        { name: 'Bird dog McGill', sets: 3, reps: '10s', load: '', rest: '45', method: 'Isometria', intensity: 'McGill 5-3-1' }
+      ]}
+    ]
   }
 ];
 
