@@ -126,17 +126,18 @@ const DEFAULT_EXERCISES = [
   // ADAPTAÇÃO & CORE (McGill / Padrões)
   { name: 'Agachamento goblet', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Halteres' },
   { name: 'Levantamento terra romeno', muscleGroup: 'Posterior', category: 'Musculação', equipment: 'Halteres' },
-  { name: 'Split squat', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Halteres' },
+  { name: 'Split squat', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Peso corporal' },
   { name: 'Elevação de panturrilha', muscleGroup: 'Panturrilha', category: 'Musculação', equipment: 'Peso corporal' },
   { name: 'Supino máquina', muscleGroup: 'Peito', category: 'Musculação', equipment: 'Máquina' },
   { name: 'Farmer carry', muscleGroup: 'Core', category: 'Funcional', equipment: 'Halteres' },
   { name: 'Curl-up McGill', muscleGroup: 'Core', category: 'Funcional', equipment: 'Peso corporal' },
   { name: 'Remada baixa', muscleGroup: 'Costas', category: 'Musculação', equipment: 'Cabo' },
-  { name: 'Step-up', muscleGroup: 'Quadríceps', category: 'Funcional', equipment: 'Banco' },
+  { name: 'Step-up', muscleGroup: 'Quadríceps', category: 'Funcional', equipment: 'Peso corporal' },
   { name: 'Pallof press', muscleGroup: 'Core', category: 'Funcional', equipment: 'Cabo' },
   { name: 'Bird dog McGill', muscleGroup: 'Core', category: 'Funcional', equipment: 'Peso corporal' },
   { name: 'Flexão inclinada', muscleGroup: 'Peito', category: 'Funcional', equipment: 'Peso corporal' },
   { name: 'Afundo', muscleGroup: 'Quadríceps', category: 'Musculação', equipment: 'Halteres' },
+  { name: 'Prancha lateral', muscleGroup: 'Core', category: 'Funcional', equipment: 'Peso corporal' },
 ];
 
 export { DEFAULT_EXERCISES, MUSCLE_GROUPS, CATEGORIES };
