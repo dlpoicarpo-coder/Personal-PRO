@@ -10,15 +10,24 @@
  * @returns {string} - 'YYYY-MM-DD'
  */
 function getNextTrainingDate(lastDateStr, trainingDays) {
-  const d = new Date(lastDateStr + 'T12:00:00');
+  const parts = lastDateStr.split('-').map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+
+  const formatDate = (dateObj) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   if (!trainingDays || !trainingDays.length) {
     d.setDate(d.getDate() + 2);
-    return d.toISOString().slice(0, 10);
+    return formatDate(d);
   }
   while (true) {
     d.setDate(d.getDate() + 1);
     if (trainingDays.includes(d.getDay())) {
-      return d.toISOString().slice(0, 10);
+      return formatDate(d);
     }
   }
 }
