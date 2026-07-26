@@ -616,7 +616,27 @@ class Database {
   ]);
 
 
-  async getAll(storeName) {
+  async getAll(storeName, options = {}) {
+    const res = await this._getAllRaw(storeName);
+    
+    if (storeName === 'schedules' && options.enrich) {
+      const sessions = (await this.getAll('sessions')).filter(s => s.status === 'completed');
+      res.forEach(ev => {
+        if (ev.status === 'completed') return;
+        const didIt = sessions.some(s => {
+          if (s.studentId !== ev.studentId) return false;
+          if (!s.date || !ev.date) return false;
+          if (s.date.slice(0, 10) !== ev.date.slice(0, 10)) return false;
+          if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
+          return true;
+        });
+        if (didIt) ev.status = 'completed';
+      });
+    }
+    return res;
+  }
+
+  async _getAllRaw(storeName) {
     const trainerId = await this._getTrainerId();
     let local       = this._getLocal(storeName, trainerId) || [];
 

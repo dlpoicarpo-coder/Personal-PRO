@@ -16,7 +16,7 @@ export async function renderDashboard() {
   const sessions = await db.getAll('sessions');
   const macrocycles = await db.getAll('macrocycles');
   const financial = await db.getAll('financial');
-  const schedules = await db.getAll('schedules');
+  const schedules = await db.getAll('schedules', { enrich: true });
   const settings = await db.get('settings', 'trainer') || {};
 
   const activeStudents = students.filter(s => s.status === 'Ativo');
