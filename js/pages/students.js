@@ -51,7 +51,7 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, gua
 
     if (result.viaEmail) {
       alert(`Convite e Termos de Consentimento LGPD enviados com segurança para o e-mail do Responsável: ${result.emailTo}.\n\nAguardando o aceite do responsável para ativar a conta do aluno.`);
-      btn.innerHTML = '✅ Enviado p/ Email';
+      btn.innerHTML = 'Enviado por Email';
       return;
     }
 
@@ -59,7 +59,7 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, gua
     
     // Atualizar badge instantaneamente no modal
     const badge = document.getElementById(`authStatus_${studentId}`);
-    if (badge && badge.innerHTML.includes('Sem conta')) badge.innerHTML = '🟡 Convite Gerado';
+    if (badge && badge.innerHTML.includes('Sem conta')) badge.innerHTML = 'Convite Gerado';
     
     const link = `${window.location.origin}${window.location.pathname}#/convite?t=${result.token}`;
     
@@ -69,13 +69,13 @@ window.inviteStudent = async (studentId, email, name, phone, btn, birthDate, gua
       const num = clean.length <= 11 ? '55' + clean : clean;
       const msg = `Olá ${name.split(' ')[0]}! Seu acesso ao portal Vetor: ${link}`;
       const waHref = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
-      waBtn = `<a href="${waHref}" target="_blank" class="btn btn-primary btn-sm" style="padding:4px 8px;background:#25d366;border-color:#25d366;color:white;text-decoration:none">💬 Enviar WhatsApp</a>`;
+      waBtn = `<a href="${waHref}" target="_blank" class="btn btn-primary btn-sm" style="padding:4px 8px;background:#25d366;border-color:#25d366;color:white;text-decoration:none;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar WhatsApp</a>`;
     }
 
     const container = document.getElementById(`inviteBox_${studentId}`);
     if (container) {
        container.innerHTML = `
-         <button class="btn btn-secondary btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${link}'); window.notify?.success ? window.notify.success('Link copiado!') : alert('Link copiado!')">📋 Copiar Link</button>
+         <button class="btn btn-secondary btn-sm" style="padding:4px 8px" onclick="navigator.clipboard.writeText('${link}'); window.notify?.success ? window.notify.success('Link copiado!') : alert('Link copiado!')">Copiar Link</button>
          ${waBtn}
        `;
     }
@@ -424,15 +424,15 @@ async function viewStudentHTML(student) {
           <span class="badge ${student.status === 'Ativo' ? 'badge-success' : 'badge-warning'}">${student.status}</span>
           ${student.goal ? `<span class="badge badge-info">${student.goal}</span>` : ''}
           <span class="badge" style="background:transparent;border:1px solid var(--border-color)" id="authStatus_${student.id}">
-             ${student.auth_user_id ? '✅ CONTA ATIVA' : '⚠️ SEM CONTA'}
+             ${student.auth_user_id ? 'CONTA ATIVA' : 'SEM CONTA'}
           </span>
         </div>
       </div>
       <div class="flex gap-sm" style="flex-wrap:wrap;align-items:center">
         ${showConsentBtn ? `<span id="consentBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#f59e0b;color:#f59e0b;display:inline-flex;align-items:center;gap:4px" onclick="window.generateConsentLink('${student.id}', '${student.phone || ''}', '${student.guardian?.email || ''}', '${student.name.replace(/'/g, "\\'")}', '${trainerId}', this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Termo de Consentimento</button></span>` : ''}
-        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this, '${student.birthDate || ''}', '${student.guardian?.email || ''}')">🚀 ${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
+        ${student.email ? `<span id="inviteBox_${student.id}"><button class="btn btn-secondary btn-sm" style="padding:4px 8px;border-color:#e2e8f0" onclick="window.inviteStudent('${student.id}', '${student.email}', '${student.name.replace(/'/g, "\\'")}', '${student.phone || ''}', this, '${student.birthDate || ''}', '${student.guardian?.email || ''}')">${student.auth_user_id ? 'Reenviar Convite' : 'Gerar Convite'}</button></span>` : `<span class="text-muted text-xs">Sem e-mail p/ convite</span>`}
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color:#25d366;border-color:#25d366;padding:4px 8px">WhatsApp</a>` : ''}
-        <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px">▶ Treino</a>
+        <a href="#/tracker" class="btn btn-primary btn-sm" style="padding:4px 8px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Treino</a>
       </div>
     </div>
 
