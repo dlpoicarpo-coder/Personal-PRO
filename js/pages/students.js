@@ -409,7 +409,36 @@ async function viewStudentHTML(student) {
   const phone = student.phone?.replace(/\D/g,'') || '';
   const waUrl = phone ? `https://wa.me/${phone.startsWith('55') ? phone : '55'+phone}` : null;
   const isMinorStudent = age !== '-' && typeof age === 'number' ? age < 18 : (student.birthDate ? Calc.calcularIdade(student.birthDate) < 18 : false);
+
+  if (isMinorStudent && !student.guardian?.ratified) {
+    try {
+      const { getSupabase } = await import('../utils/auth.js');
+      const supabase = getSupabase();
+      if (supabase) {
+        const { data: consents } = await supabase
+          .from('legal_consents')
+          .select('*')
+          .eq('student_id', student.id)
+          .eq('consented_by', 'guardian');
+
+        if (consents && consents.length > 0) {
+          const latest = consents.sort((a, b) => new Date(b.accepted_at) - new Date(a.accepted_at))[0];
+          student.guardian = {
+            ...(student.guardian || {}),
+            ratified: true,
+            ratifiedAt: latest.accepted_at,
+            ratifiedName: latest.guardian_name || student.guardian?.name || ''
+          };
+          await db.put('students', student);
+        }
+      }
+    } catch (errConsentCheck) {
+      console.warn('[CONSENT CHECK ERROR]', errConsentCheck);
+    }
+  }
+
   const showConsentBtn = isMinorStudent && !student.guardian?.ratified;
+  const isConsentOk = isMinorStudent && student.guardian?.ratified;
 
   return `
     <div class="flex items-center gap-lg mb-lg" style="flex-wrap:wrap">
@@ -423,6 +452,7 @@ async function viewStudentHTML(student) {
           ${window.getModalityBadge ? window.getModalityBadge(student.modality) : ''}
           <span class="badge ${student.status === 'Ativo' ? 'badge-success' : 'badge-warning'}">${student.status}</span>
           ${student.goal ? `<span class="badge badge-info">${student.goal}</span>` : ''}
+          ${isConsentOk ? `<span class="badge badge-success">Consentimento OK</span>` : ''}
           <span class="badge" style="background:transparent;border:1px solid var(--border-color)" id="authStatus_${student.id}">
              ${student.auth_user_id ? 'CONTA ATIVA' : 'SEM CONTA'}
           </span>
