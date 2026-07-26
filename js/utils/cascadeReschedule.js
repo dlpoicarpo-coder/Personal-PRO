@@ -126,14 +126,23 @@ export function simulateCascade(rawSchedules, rawWorkouts, macrocycle, todayStr)
 }
 
 /**
- * Dry-run function for grandfathering past missed schedules without DB writes.
+ * Dry-run function for grandfathering past missed schedules belonging to ACTIVE macrocycles without DB writes.
  * @param {Array} rawSchedules 
+ * @param {Array} rawMacrocycles 
  * @param {string} todayStr 
  * @returns {Object} Dry-run report
  */
-export function dryRunGrandfathering(rawSchedules, todayStr) {
+export function dryRunGrandfathering(rawSchedules, rawMacrocycles, todayStr) {
+  const activeMacroIds = new Set(
+    (rawMacrocycles || [])
+      .filter(m => m.status === 'active')
+      .map(m => String(m.id))
+  );
+
   const candidates = (rawSchedules || []).filter(s =>
     s.workoutId &&
+    s.macrocycleId &&
+    activeMacroIds.has(String(s.macrocycleId)) &&
     (s.status === 'scheduled' || s.status === 'confirmed') &&
     s.date && s.date < todayStr &&
     !s.cascadeGrandfathered
@@ -143,6 +152,7 @@ export function dryRunGrandfathering(rawSchedules, todayStr) {
     totalToGrandfather: candidates.length,
     candidates: candidates.map(s => ({
       id: s.id,
+      macrocycleId: s.macrocycleId,
       date: s.date,
       studentId: s.studentId,
       workoutName: s.workoutName || '',

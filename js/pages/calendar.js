@@ -50,7 +50,8 @@ async function buildCalendarHTML() {
   
   // FASE A: Dry-run do Grandfathering (SEM GRAVAÇÃO / SEM DB.PUT)
   try {
-    const gfReport = dryRunGrandfathering(events, today);
+    const macros = await db.getAll('macrocycles');
+    const gfReport = dryRunGrandfathering(events, macros, today);
     console.log('[GRANDFATHERING DRY-RUN REPORT]', JSON.stringify(gfReport, null, 2));
   } catch (err) {
     console.warn('[GRANDFATHERING DRY-RUN ERROR]', err);
