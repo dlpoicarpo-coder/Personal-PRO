@@ -73,6 +73,25 @@ async function buildCalendarHTML() {
 
     await applyLiveCascade(fakeDb, fakeSchedules, fakeWorkouts, [fakeMacro], '2026-07-26', false)
       .then(r => console.log('[TESTE RESULT]', JSON.stringify(r, null, 2)));
+
+    // TESTE SINTÉTICO 2 DA FASE B (M=3, F=1 — EM MEMÓRIA — SEM TOCAR BANCO REAL)
+    const fakeMacro2 = { id: 'macro-test2', studentId: 'aluno-test2', status: 'active', trainingDays: [1,3,5], trainingTime: '07:00', sessionDuration: 60 };
+
+    const fakeWorkouts2 = [
+      { id: 'w1', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-13', name:'Treino 1 — Costas', exercises:[{name:'Remada'}], phase:'Hipertrofia', intensityPct:70, isDeload:false, category:'Musculacao', notes:'' },
+      { id: 'w2', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-15', name:'Treino 2 — Perna', exercises:[{name:'Leg Press'}], phase:'Hipertrofia', intensityPct:72, isDeload:false, category:'Musculacao', notes:'' },
+      { id: 'w3', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-17', name:'Treino 3 — Ombro', exercises:[{name:'Desenvolvimento'}], phase:'Hipertrofia', intensityPct:68, isDeload:false, category:'Musculacao', notes:'' },
+      { id: 'w4', studentId:'aluno-test2', macrocycleId:'macro-test2', date:'2026-07-29', name:'Treino 4 — Braço', exercises:[{name:'Rosca'}], phase:'Hipertrofia', intensityPct:65, isDeload:false, category:'Musculacao', notes:'' }
+    ];
+    const fakeSchedules2 = [
+      { id:'s1', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w1', date:'2026-07-13', status:'scheduled', workoutName:'Treino 1 — Costas' },
+      { id:'s2', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w2', date:'2026-07-15', status:'scheduled', workoutName:'Treino 2 — Perna' },
+      { id:'s3', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w3', date:'2026-07-17', status:'scheduled', workoutName:'Treino 3 — Ombro' },
+      { id:'s4', studentId:'aluno-test2', macrocycleId:'macro-test2', workoutId:'w4', date:'2026-07-29', status:'scheduled', workoutName:'Treino 4 — Braço' }
+    ];
+
+    await applyLiveCascade(fakeDb, fakeSchedules2, fakeWorkouts2, [fakeMacro2], '2026-07-26', false)
+      .then(r => console.log('[TESTE2 RESULT]', JSON.stringify(r, null, 2)));
   } catch (err) {
     console.warn('[CASCADE ERROR]', err);
   }
