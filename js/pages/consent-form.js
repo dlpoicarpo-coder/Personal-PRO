@@ -233,25 +233,51 @@ export async function initConsentForm() {
   });
   checkbox.addEventListener('change', checkValidation);
 
+async function computeConsentHash(text) {
+  try {
+    const msgUint8 = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (err) {
+    console.warn('[CONSENT] SHA-256 computation fallback', err);
+    return 'hash_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+  }
+}
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     submitBtn.disabled = true;
     submitBtn.textContent = 'Enviando...';
 
     const nowISO = new Date().toISOString();
+    const sName = sNameInput.value.trim();
+    const gName = gNameInput.value.trim();
+    const gCpf = gCpfInput.value.trim();
+    const gRel = gRelInput.value.trim();
+    const termoEl = document.getElementById('termoText');
+    const rawText = (termoEl?.innerText || termoEl?.textContent || '') + '|' + sName + '|' + gName + '|' + gCpf;
 
-    const consentPayload = {
+    const consentHash = await computeConsentHash(rawText);
+
+    const baseRow = {
       student_id: studentId || null,
-      role: 'responsavel',
-      consent_type: 'health_data',
+      role: 'guardian',
       consented_by: 'guardian',
-      guardian_name: gNameInput.value.trim(),
-      guardian_cpf: gCpfInput.value.trim(),
-      guardian_relationship: gRelInput.value.trim(),
+      guardian_name: gName,
+      guardian_cpf: gCpf,
+      guardian_relationship: gRel,
       terms_version: 'v1-menor',
+      accepted_at: nowISO,
+      consent_hash: consentHash,
       ip_address: '0.0.0.0',
       user_agent: navigator.userAgent
     };
+
+    const consentPayload = [
+      { ...baseRow, consent_type: 'terms' },
+      { ...baseRow, consent_type: 'health_data' }
+    ];
 
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/legal_consents`, {
