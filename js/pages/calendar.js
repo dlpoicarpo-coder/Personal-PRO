@@ -132,14 +132,24 @@ async function buildCalendarHTML() {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const dayEvs = filteredEvents.filter(e => e.date === dateStr);
     const isToday = dateStr === today;
+    const modalityColors = {
+      'Presencial': 'var(--primary)',
+      'Consultoria Online': '#a855f7',
+      'Híbrido': 'var(--success)'
+    };
     const evDots = dayEvs.slice(0, 3).map(ev => {
       const st = students.find(s => s.id === ev.studentId);
-      return `<div class="cal-ev-mini" style="background:var(--${statusColors[ev.status] || 'info'})" title="${ev.time || ''} ${st ? st.name : ''}">${ev.time ? ev.time.slice(0, 5) : ''}</div>`;
+      const modColor = st?.modality ? (modalityColors[st.modality] || 'transparent') : 'transparent';
+      const modLabel = st?.modality ? ` [${st.modality}]` : '';
+      const borderStyle = modColor !== 'transparent' ? `border-left:2.5px solid ${modColor};` : '';
+      return `<div class="cal-ev-mini" style="background:var(--${statusColors[ev.status] || 'info'});${borderStyle}" title="${ev.time || ''} ${st ? st.name : ''}${modLabel}">${ev.time ? ev.time.slice(0, 5) : ''}</div>`;
     }).join('');
     return `<div class="cal-day ${isToday ? 'cal-today' : ''} ${dayEvs.length ? 'cal-has-events' : ''}" data-date="${dateStr}">
               <span class="cal-day-num">${d}</span>
-              ${evDots}
-              ${dayEvs.length > 3 ? `<span class="cal-more">+${dayEvs.length - 3}</span>` : ''}
+              <div class="cal-dots">
+                ${evDots}
+                ${dayEvs.length > 3 ? `<span class="cal-more">+${dayEvs.length - 3}</span>` : ''}
+              </div>
             </div>`;
   }).join('')}
         </div>
@@ -217,11 +227,22 @@ function renderDayEvents(dayEvents, students, statusColors, statusLabels) {
     const st = students.find(s => s.id === ev.studentId);
     const statusColor = statusColors[ev.status] || 'info';
     const missed = ev.status === 'missed';
+
+    // Fundo sutil por modalidade (vermelho de missed tem prioridade)
+    let cardBg = 'var(--bg-page)';
+    if (missed) {
+      cardBg = 'rgba(239,68,68,0.04)';
+    } else if (st?.modality === 'Consultoria Online') {
+      cardBg = 'rgba(168,85,247,0.05)';
+    } else if (st?.modality === 'Híbrido') {
+      cardBg = 'rgba(34,197,94,0.05)';
+    }
+
     return `
     <div class="event-card" style="
-      border-left:3px solid var(--${statusColor});
+      border-left:3.5px solid var(--${statusColor});
       margin-bottom:10px;padding:12px;border-radius:0 8px 8px 0;
-      background:${missed ? 'rgba(239,68,68,0.04)' : 'var(--bg-page)'};
+      background:${cardBg};
       opacity:${missed ? 0.85 : 1}">
       <div class="flex items-center justify-between mb-sm">
         <div class="flex items-center gap-sm">
