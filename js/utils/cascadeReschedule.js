@@ -160,3 +160,38 @@ export function dryRunGrandfathering(rawSchedules, rawMacrocycles, todayStr) {
     }))
   };
 }
+
+/**
+ * Applies cascadeGrandfathered flag to past missed schedules belonging to ACTIVE macrocycles via db.put.
+ * @param {Object} dbInstance 
+ * @param {Array} rawSchedules 
+ * @param {Array} rawMacrocycles 
+ * @param {string} todayStr 
+ * @returns {Promise<number>} Count of marked schedules
+ */
+export async function applyGrandfathering(dbInstance, rawSchedules, rawMacrocycles, todayStr) {
+  const activeMacroIds = new Set(
+    (rawMacrocycles || [])
+      .filter(m => m.status === 'active')
+      .map(m => String(m.id))
+  );
+
+  const candidates = (rawSchedules || []).filter(s =>
+    s.workoutId &&
+    s.macrocycleId &&
+    activeMacroIds.has(String(s.macrocycleId)) &&
+    (s.status === 'scheduled' || s.status === 'confirmed') &&
+    s.date && s.date < todayStr &&
+    !s.cascadeGrandfathered
+  );
+
+  let count = 0;
+  for (const schedule of candidates) {
+    schedule.cascadeGrandfathered = true;
+    await dbInstance.put('schedules', schedule);
+    count++;
+  }
+
+  console.log('[FASE A APLICADA]', 'total marcado:', count);
+  return count;
+}

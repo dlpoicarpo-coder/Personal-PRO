@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { sendWhatsApp, reminderMsg, preFormMsg, postFormMsg } from '../utils/whatsapp.js';
-import { simulateCascade, dryRunGrandfathering } from '../utils/cascadeReschedule.js';
+import { simulateCascade, dryRunGrandfathering, applyGrandfathering } from '../utils/cascadeReschedule.js';
 
 const DURATIONS = [30, 45, 50, 60, 75, 90, 120];
 const WEEKDAYS = [
@@ -48,77 +48,12 @@ async function buildCalendarHTML() {
   const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const today = new Date().toISOString().slice(0, 10);
   
-  // FASE A: Dry-run do Grandfathering (SEM GRAVAÇÃO / SEM DB.PUT)
+  // FASE A: Aplicação do Grandfathering no acumulado (db.put)
   try {
     const macros = await db.getAll('macrocycles');
-    const activeMacros = macros.filter(m => m.status === 'active');
-    const gfReport = dryRunGrandfathering(events, macros, today);
-    console.log('[GRANDFATHERING DRY-RUN REPORT]', JSON.stringify(gfReport, null, 2));
-
-    // Phase 1: Pure simulation test for cascade rescheduling across ACTIVE macrocycles
-    const workouts = await db.getAll('workouts');
-    
-    // Log info for 44b12dfc
-    const m44 = activeMacros.find(m => m.studentId === '44b12dfc');
-    if (m44) {
-      console.log('[MACRO INFO 44b12dfc]', JSON.stringify({ id: m44.id, studentId: m44.studentId, trainingDays: m44.trainingDays, totalWeeks: m44.totalWeeks, startDate: m44.startDate }, null, 2));
-    }
-
-    let macrocyclesWithDelays = 0;
-    let sumSlotsFuturosRealocados = 0;
-    let sumNovosSlotsACriar = 0;
-    const cascadeMissedScheduleIds = new Set();
-
-    activeMacros.forEach(m => {
-      const report = simulateCascade(events, workouts, m, today);
-      if (report.missedMarcados && report.missedMarcados.length > 0) {
-        macrocyclesWithDelays++;
-        sumSlotsFuturosRealocados += (report.slotsFuturosRealocados || []).length;
-        sumNovosSlotsACriar += (report.novosSlotsACriar || []).length;
-        report.missedMarcados.forEach(item => cascadeMissedScheduleIds.add(item.scheduleId));
-
-        console.log(`[CASCADE REPORT - Macro ${m.id} (Aluno ${m.studentId})]`, JSON.stringify({
-          trainingDays: m.trainingDays,
-          report
-        }, null, 2));
-      }
-    });
-
-    // Detailed 1-item difference analysis
-    const gfCandidatesIds = new Set(gfReport.candidates.map(c => c.id));
-    const nonActiveMacros = macros.filter(m => m.status !== 'active');
-    const nonActiveMissed = [];
-    nonActiveMacros.forEach(m => {
-      const report = simulateCascade(events, workouts, m, today);
-      if (report.missedMarcados && report.missedMarcados.length > 0) {
-        report.missedMarcados.forEach(item => {
-          nonActiveMissed.push({
-            scheduleId: item.scheduleId,
-            macrocycleId: m.id,
-            macroStatus: m.status,
-            date: item.date,
-            workoutName: item.workoutName
-          });
-        });
-      }
-    });
-
-    console.log('[ANALISE DIFERENCA 1 ITEM]', JSON.stringify({
-      totalActiveMacros: activeMacros.length,
-      totalNonActiveMacros: nonActiveMacros.length,
-      dryRunActiveCount: gfReport.candidates.length,
-      cascadeActiveCount: cascadeMissedScheduleIds.size,
-      itemExtraEmMacroNaoAtivo: nonActiveMissed
-    }, null, 2));
-
-    console.log('[CASCADE RESUMO GERAL]', JSON.stringify({
-      totalMacrociclosAtivos: activeMacros.length,
-      macrociclosComAtraso: macrocyclesWithDelays,
-      totalSlotsFuturosRealocados: sumSlotsFuturosRealocados,
-      totalNovosSlotsACriar: sumNovosSlotsACriar
-    }, null, 2));
+    await applyGrandfathering(db, events, macros, today);
   } catch (err) {
-    console.warn('[CASCADE SIMULATION ERROR]', err);
+    console.warn('[FASE A ERROR]', err);
   }
   
   // Apply student filter
