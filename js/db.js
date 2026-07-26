@@ -620,10 +620,7 @@ class Database {
     const res = await this._getAllRaw(storeName);
     
     if (storeName === 'schedules' && options.enrich) {
-      console.log('[DB ENRICH] rodando para schedules, enrich=', options.enrich, 'total schedules=', res.length);
       const sessions = (await this.getAll('sessions')).filter(s => s.status === 'completed');
-      console.log('[DB ENRICH] sessions completed encontradas:', sessions.length);
-      let marcados = 0;
       res.forEach(ev => {
         if (ev.status === 'completed') return;
         const didIt = sessions.some(s => {
@@ -633,9 +630,8 @@ class Database {
           if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
           return true;
         });
-        if (didIt) { ev.status = 'completed'; marcados++; }
+        if (didIt) ev.status = 'completed';
       });
-      console.log('[DB ENRICH] marcados NOVOS:', marcados, 'total completed apos enrich:', res.filter(e => e.status === 'completed').length);
     }
     return res;
   }
