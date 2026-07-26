@@ -42,18 +42,34 @@ async function buildCalendarHTML() {
   const events = await db.getAll('schedules');
   const sessions = (await db.getAll('sessions')).filter(s => s.status === 'completed');
   
+  let marcadosNovos = 0;
   events.forEach(ev => {
     if (ev.status === 'completed') return;
+    
+    const isAlvo = (ev.id === '76e98363-27cd-4f52-8eef-8b7bf036afa8');
+    if (isAlvo) console.log('>> TENTANDO ENRIQUECER SCHEDULE ALVO:', ev);
+
     const didIt = sessions.some(s => {
+      if (isAlvo && s.studentId === ev.studentId) {
+        console.log(`- Comparando session ${s.id}`);
+        console.log(`  studentId: ${s.studentId} (${typeof s.studentId}) === ${ev.studentId} (${typeof ev.studentId}) => ${s.studentId === ev.studentId}`);
+        console.log(`  date: ${s.date} vs ${ev.date} => ${s.date?.slice(0,10) === ev.date?.slice(0,10)}`);
+        console.log(`  workoutId: ${JSON.stringify(s.workoutId)} (${typeof s.workoutId}) === ${JSON.stringify(ev.workoutId)} (${typeof ev.workoutId}) => ${s.workoutId === ev.workoutId}`);
+      }
+
       if (s.studentId !== ev.studentId) return false;
       if (!s.date || !ev.date) return false;
       if (s.date.slice(0, 10) !== ev.date.slice(0, 10)) return false;
       if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
       return true;
     });
-    if (didIt) ev.status = 'completed';
+    
+    if (didIt) {
+      ev.status = 'completed';
+      marcadosNovos++;
+    }
   });
-  console.log('[ENRICHMENT] buildCalendarHTML processados:', events.length, 'marcados completed:', events.filter(e=>e.status==='completed').length);
+  console.log('[ENRICHMENT] buildCalendarHTML marcados NOVOS:', marcadosNovos);
   const active = students.filter(s => s.status === 'Ativo');
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -322,18 +338,29 @@ export function initCalendar(navigateFn) {
       const events = await db.getAll('schedules');
       const sessions = (await db.getAll('sessions')).filter(s => s.status === 'completed');
       
+      let marcadosNovos = 0;
       events.forEach(ev => {
         if (ev.status === 'completed') return;
+        
+        const isAlvo = (ev.id === '76e98363-27cd-4f52-8eef-8b7bf036afa8');
+        if (isAlvo) console.log('>> TENTANDO ENRIQUECER SCHEDULE ALVO:', ev);
+
         const didIt = sessions.some(s => {
+          if (isAlvo && s.studentId === ev.studentId) {
+            console.log(`- Comparando session ${s.id}`);
+            console.log(`  studentId: ${s.studentId} (${typeof s.studentId}) === ${ev.studentId} (${typeof ev.studentId}) => ${s.studentId === ev.studentId}`);
+            console.log(`  date: ${s.date} vs ${ev.date} => ${s.date?.slice(0,10) === ev.date?.slice(0,10)}`);
+            console.log(`  workoutId: ${JSON.stringify(s.workoutId)} (${typeof s.workoutId}) === ${JSON.stringify(ev.workoutId)} (${typeof ev.workoutId}) => ${s.workoutId === ev.workoutId}`);
+          }
           if (s.studentId !== ev.studentId) return false;
           if (!s.date || !ev.date) return false;
           if (s.date.slice(0, 10) !== ev.date.slice(0, 10)) return false;
           if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
           return true;
         });
-        if (didIt) ev.status = 'completed';
+        if (didIt) { ev.status = 'completed'; marcadosNovos++; }
       });
-      console.log('[ENRICHMENT] dayClick processados:', events.length, 'marcados completed:', events.filter(e=>e.status==='completed').length);
+      console.log('[ENRICHMENT] dayClick marcados NOVOS:', marcadosNovos);
       const students = await db.getAll('students');
       const filtered = studentFilter ? events.filter(e => e.studentId === studentFilter) : events;
       const dayEvs = filtered.filter(e => e.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
@@ -605,18 +632,29 @@ async function checkReminders() {
     const events   = await db.getAll('schedules');
     const sessions = (await db.getAll('sessions')).filter(s => s.status === 'completed');
     
+    let marcadosNovos = 0;
     events.forEach(ev => {
       if (ev.status === 'completed') return;
+      
+      const isAlvo = (ev.id === '76e98363-27cd-4f52-8eef-8b7bf036afa8');
+      if (isAlvo) console.log('>> TENTANDO ENRIQUECER SCHEDULE ALVO:', ev);
+
       const didIt = sessions.some(s => {
+        if (isAlvo && s.studentId === ev.studentId) {
+          console.log(`- Comparando session ${s.id}`);
+          console.log(`  studentId: ${s.studentId} (${typeof s.studentId}) === ${ev.studentId} (${typeof ev.studentId}) => ${s.studentId === ev.studentId}`);
+          console.log(`  date: ${s.date} vs ${ev.date} => ${s.date?.slice(0,10) === ev.date?.slice(0,10)}`);
+          console.log(`  workoutId: ${JSON.stringify(s.workoutId)} (${typeof s.workoutId}) === ${JSON.stringify(ev.workoutId)} (${typeof ev.workoutId}) => ${s.workoutId === ev.workoutId}`);
+        }
         if (s.studentId !== ev.studentId) return false;
         if (!s.date || !ev.date) return false;
         if (s.date.slice(0, 10) !== ev.date.slice(0, 10)) return false;
         if (ev.workoutId && s.workoutId) return s.workoutId === ev.workoutId;
         return true;
       });
-      if (didIt) ev.status = 'completed';
+      if (didIt) { ev.status = 'completed'; marcadosNovos++; }
     });
-    console.log('[ENRICHMENT] checkReminders processados:', events.length, 'marcados completed:', events.filter(e=>e.status==='completed').length);
+    console.log('[ENRICHMENT] checkReminders marcados NOVOS:', marcadosNovos);
     const students = await db.getAll('students');
     const settings = await db.get('settings','trainer').catch(()=>({}));
     const now      = Date.now();
