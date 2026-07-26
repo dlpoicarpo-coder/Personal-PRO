@@ -212,6 +212,8 @@ export async function initConsentForm() {
   const studentId = params.get('student') || '';
   const trainerId = params.get('t') || '';
 
+  console.log('[CONSENT DEBUG] studentId da URL:', studentId);
+
   const loadingEl = document.getElementById('consentLoading');
   const contentEl = document.getElementById('consentContent');
 
@@ -240,6 +242,8 @@ export async function initConsentForm() {
       student = await db.get('students', studentId);
     } catch (_) {}
   }
+
+  console.log('[CONSENT DEBUG] student encontrado:', JSON.stringify(student));
 
   if (!student) {
     if (loadingEl) loadingEl.textContent = 'Erro: Registro do aluno não encontrado.';
