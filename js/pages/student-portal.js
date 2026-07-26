@@ -513,6 +513,8 @@ function showLgpdRatificationPopup(studentId) {
           // Registra no legal_consents (permitido via RLS)
           await supabase.from('legal_consents').insert([{
             auth_user_id: user.id,
+            role: 'aluno',
+            consent_type: 'terms',
             consented_by: 'self',
             terms_version: '1.0',
             ip_address: '0.0.0.0', // Cliente via client

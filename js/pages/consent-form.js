@@ -241,20 +241,16 @@ export async function initConsentForm() {
     const nowISO = new Date().toISOString();
 
     const consentPayload = {
-      id: 'consent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       student_id: studentId || null,
-      trainer_id: trainerId || null,
+      role: 'responsavel',
+      consent_type: 'health_data',
       consented_by: 'guardian',
-      student_name: sNameInput.value.trim(),
       guardian_name: gNameInput.value.trim(),
       guardian_cpf: gCpfInput.value.trim(),
-      guardian_email: gEmailInput.value.trim(),
-      relationship: gRelInput.value.trim(),
+      guardian_relationship: gRelInput.value.trim(),
       terms_version: 'v1-menor',
-      signature_name: typedSig.value.trim(),
       ip_address: '0.0.0.0',
-      user_agent: navigator.userAgent,
-      created_at: nowISO
+      user_agent: navigator.userAgent
     };
 
     try {
