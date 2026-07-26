@@ -24,9 +24,16 @@ import { renderPlans, initPlans } from './pages/plans.js';
 // Global UI Helpers
 window.getModalityBadge = function(modality) {
   if (!modality) return '';
-  if (modality === 'Presencial') return '<span class="badge badge-primary">Presencial</span>';
-  if (modality === 'Consultoria Online') return '<span class="badge badge-purple">Online</span>';
-  if (modality === 'Híbrido') return '<span class="badge badge-success">Híbrido</span>';
+  const iconStyle = 'display:inline-block;vertical-align:-1px;margin-right:4px;';
+  if (modality === 'Presencial') {
+    return `<span class="badge badge-primary" style="display:inline-flex;align-items:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="${iconStyle}"><path d="M12 22s8-7.5 8-13a8 8 0 1 0-16 0c0 5.5 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>Presencial</span>`;
+  }
+  if (modality === 'Consultoria Online') {
+    return `<span class="badge badge-purple" style="display:inline-flex;align-items:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="${iconStyle}"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/></svg>Online</span>`;
+  }
+  if (modality === 'Híbrido') {
+    return `<span class="badge badge-success" style="display:inline-flex;align-items:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="${iconStyle}"><path d="M17 2l4 4-4 4M3 12v-2a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 12v2a4 4 0 0 1-4 4H3"/></svg>Híbrido</span>`;
+  }
   return '';
 };
 

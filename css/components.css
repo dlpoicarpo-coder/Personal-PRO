@@ -806,35 +806,36 @@
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 3px;
 }
 
 .cal-header {
   text-align: center;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   color: var(--text-muted);
   padding: 8px 0;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .cal-day {
   text-align: center;
-  padding: 6px 2px;
+  padding: 8px 3px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
-  min-height: 64px;
+  min-height: 80px;
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   align-items: center;
 }
 
 .cal-day:hover {
   background: var(--bg-card);
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
 .cal-empty {
@@ -857,7 +858,8 @@
 }
 
 .cal-day-num {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .cal-dots {

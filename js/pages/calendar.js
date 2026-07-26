@@ -137,12 +137,18 @@ async function buildCalendarHTML() {
       'Consultoria Online': '#a855f7',
       'Híbrido': 'var(--success)'
     };
+    const modalityIcons = {
+      'Presencial': `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-1px;margin-right:3px"><path d="M12 22s8-7.5 8-13a8 8 0 1 0-16 0c0 5.5 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>`,
+      'Consultoria Online': `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-1px;margin-right:3px"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/></svg>`,
+      'Híbrido': `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-1px;margin-right:3px"><path d="M17 2l4 4-4 4M3 12v-2a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 12v2a4 4 0 0 1-4 4H3"/></svg>`
+    };
     const evDots = dayEvs.slice(0, 3).map(ev => {
       const st = students.find(s => s.id === ev.studentId);
       const modColor = st?.modality ? (modalityColors[st.modality] || 'transparent') : 'transparent';
+      const modIcon = st?.modality ? (modalityIcons[st.modality] || '') : '';
       const modLabel = st?.modality ? ` [${st.modality}]` : '';
       const borderStyle = modColor !== 'transparent' ? `border-left:2.5px solid ${modColor};` : '';
-      return `<div class="cal-ev-mini" style="background:var(--${statusColors[ev.status] || 'info'});${borderStyle}" title="${ev.time || ''} ${st ? st.name : ''}${modLabel}">${ev.time ? ev.time.slice(0, 5) : ''}</div>`;
+      return `<div class="cal-ev-mini" style="background:var(--${statusColors[ev.status] || 'info'});${borderStyle}" title="${ev.time || ''} ${st ? st.name : ''}${modLabel}">${modIcon}${ev.time ? ev.time.slice(0, 5) : ''}</div>`;
     }).join('');
     return `<div class="cal-day ${isToday ? 'cal-today' : ''} ${dayEvs.length ? 'cal-has-events' : ''}" data-date="${dateStr}">
               <span class="cal-day-num">${d}</span>
@@ -231,11 +237,11 @@ function renderDayEvents(dayEvents, students, statusColors, statusLabels) {
     // Fundo sutil por modalidade (vermelho de missed tem prioridade)
     let cardBg = 'var(--bg-page)';
     if (missed) {
-      cardBg = 'rgba(239,68,68,0.04)';
+      cardBg = 'rgba(239,68,68,0.06)';
     } else if (st?.modality === 'Consultoria Online') {
-      cardBg = 'rgba(168,85,247,0.05)';
+      cardBg = 'rgba(168,85,247,0.09)';
     } else if (st?.modality === 'Híbrido') {
-      cardBg = 'rgba(34,197,94,0.05)';
+      cardBg = 'rgba(34,197,94,0.09)';
     }
 
     return `
