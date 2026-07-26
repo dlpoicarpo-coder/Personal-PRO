@@ -57,7 +57,7 @@ async function buildCalendarHTML() {
   }
   const todayEvents = filteredEvents.filter(e => e.date === today).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   const statusColors = { scheduled: 'info', confirmed: 'primary', completed: 'success', missed: 'danger' };
-  const statusLabels = { scheduled: 'Agendado', confirmed: 'Confirmado', completed: 'Realizado', missed: 'Faltou' };
+  const statusLabels = { scheduled: 'Agendado', confirmed: 'Não realizado', completed: 'Realizado', missed: 'Faltou' };
 
   return `
     <div class="page-header"><div><h1>Agenda de Treinos</h1><p class="subtitle">Agende sessões e envie lembretes automáticos</p></div>
@@ -149,7 +149,7 @@ async function buildCalendarHTML() {
       <div class="card-header">
         <span class="card-title">Próximas Sessões</span>
         <div class="flex gap-md text-xs text-muted">
-          <span style="color:var(--success)">● Confirmado</span>
+          <span style="color:var(--primary)">● Não realizado</span>
           <span style="color:var(--info)">● Agendado</span>
           <span style="color:var(--danger)">● Faltou</span>
         </div>
@@ -314,7 +314,7 @@ export function initCalendar(navigateFn) {
       const d = new Date(date + 'T12:00:00');
       if (title) title.textContent = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
       const sc = { scheduled: 'info', confirmed: 'primary', completed: 'success', missed: 'danger' };
-      const sl = { scheduled: 'Agendado', confirmed: 'Confirmado', completed: 'Realizado', missed: 'Faltou' };
+      const sl = { scheduled: 'Agendado', confirmed: 'Não realizado', completed: 'Realizado', missed: 'Faltou' };
       if (list) { list.innerHTML = renderDayEvents(dayEvs, students, sc, sl); bindDayActions(navigateFn); }
       document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('cal-selected'));
       day.classList.add('cal-selected');
@@ -396,7 +396,7 @@ function bindDayActions(navigateFn) {
               <label class="form-label">Status</label>
               <select class="form-select" name="status">
                 <option value="scheduled" ${ev.status==='scheduled'?'selected':''}>Agendado</option>
-                <option value="confirmed" ${ev.status==='confirmed'?'selected':''}>Confirmado</option>
+                <option value="confirmed" ${ev.status==='confirmed'?'selected':''}>Não realizado</option>
                 <option value="completed" ${ev.status==='completed'?'selected':''}>Realizado</option>
                 <option value="missed" ${ev.status==='missed'?'selected':''}>Faltou</option>
               </select>
