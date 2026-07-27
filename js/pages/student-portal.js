@@ -3192,22 +3192,6 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     const w = workouts.find(w => w.id === wid);
     buildExerciseLog(w);
     startMainTimer();
-  };
-
-  document.getElementById('soloStartBtn')?.addEventListener('click', async () => {
-    const _d = new Date();
-    const todayYMD = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
-    const allBf = await db.getAll('biofeedback');
-    const checkedIn = allBf.some(b => b.studentId === sid && b.date?.startsWith(todayYMD) && b.formType === 'pre');
-
-    if (checkedIn) {
-      await startActualWorkout();
-    } else {
-      openCheckinGateModal(async () => {
-        await startActualWorkout();
-      });
-    }
-  });
 
     // Create active running session in DB
     const localDate = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000); return l.toISOString().split('T')[0]; })();
@@ -3247,6 +3231,21 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
     // Trigger immediate autosave to save exercises structure
     await autoSaveSoloSession();
+  };
+
+  document.getElementById('soloStartBtn')?.addEventListener('click', async () => {
+    const _d = new Date();
+    const todayYMD = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+    const allBf = await db.getAll('biofeedback');
+    const checkedIn = allBf.some(b => b.studentId === sid && b.date?.startsWith(todayYMD) && b.formType === 'pre');
+
+    if (checkedIn) {
+      await startActualWorkout();
+    } else {
+      openCheckinGateModal(async () => {
+        await startActualWorkout();
+      });
+    }
   });
 
   document.getElementById('soloFinishBtn')?.addEventListener('click', async (e) => {
