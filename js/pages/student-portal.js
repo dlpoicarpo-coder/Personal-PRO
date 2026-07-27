@@ -593,10 +593,6 @@ function renderPortalShell(student) {
             <svg class="portal-fab-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>
           </span>
         </button>
-        <button class="portal-nav-btn" data-section="bio">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span>Check-in</span>
-        </button>
         <button class="portal-nav-btn" data-section="avaliacoes">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           <span>Avaliações</span>
@@ -1109,7 +1105,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         </div>`
       : `<div class="portal-reminder portal-reminder-info" id="checkinBanner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Você tem treino hoje às ${todaySched.time || '—'}! <button onclick="document.querySelector('[data-section=bio]').click()" class="portal-reminder-btn">Fazer check-in</button>
+          Você tem treino hoje às ${todaySched.time || '—'}! <button onclick="document.querySelector('[data-section=treinar]').click()" class="portal-reminder-btn">Fazer check-in</button>
         </div>`;
   }
 
@@ -3038,7 +3034,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
     const modal = document.createElement('div');
     modal.id = 'checkinGateModal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
 
     const isWomanUnder40 = (() => {
       const student = portalState.student;
@@ -3048,32 +3044,32 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     })();
 
     modal.innerHTML = `
-      <div class="glass-card" style="width:100%;max-width:440px;max-height:90vh;overflow-y:auto;padding:24px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:var(--portal-bg-card, #1e1b4b)">
+      <div class="glass-card" style="width:100%;max-width:440px;max-height:90vh;overflow-y:auto;padding:24px;border-radius:20px;border:1px solid var(--portal-border);background:var(--portal-surface);color:var(--portal-text);box-shadow:0 20px 50px rgba(0,0,0,0.3)">
         <div style="font-size:1.2rem;font-weight:700;margin-bottom:4px;color:var(--portal-text)">Como você está hoje?</div>
         <div style="font-size:0.8rem;color:var(--portal-text-muted);margin-bottom:16px">Responda o check-in pré-treino para ajustarmos seu monitoramento de prontidão.</div>
 
         <form id="checkinGateForm">
-          <div style="margin-bottom:12px">
+          <div class="glass-card" style="margin-bottom:12px;padding:12px;border-radius:14px;background:var(--portal-surface-hover);border:1px solid var(--portal-border)">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_MOON} Qualidade do Sono</label>
             ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
           </div>
 
-          <div style="margin-bottom:12px">
+          <div class="glass-card" style="margin-bottom:12px;padding:12px;border-radius:14px;background:var(--portal-surface-hover);border:1px solid var(--portal-border)">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Recuperação (TQR)</label>
             ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
           </div>
 
-          <div style="margin-bottom:12px">
+          <div class="glass-card" style="margin-bottom:12px;padding:12px;border-radius:14px;background:var(--portal-surface-hover);border:1px solid var(--portal-border)">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_BRAIN} Estresse</label>
             ${renderInlineCardSelector('stress', ESTRESSE_OPTIONS, 5)}
           </div>
 
-          <div style="margin-bottom:12px">
+          <div class="glass-card" style="margin-bottom:12px;padding:12px;border-radius:14px;background:var(--portal-surface-hover);border:1px solid var(--portal-border)">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FOOD} Alimentação (24h)</label>
             ${renderInlineCardSelector('food', ALIMENTACAO_OPTIONS, 5)}
           </div>
 
-          <div style="margin-bottom:12px">
+          <div class="glass-card" style="margin-bottom:12px;padding:12px;border-radius:14px;background:var(--portal-surface-hover);border:1px solid var(--portal-border)">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_PAIN} Dor ou Desconforto Articular</label>
             ${renderInlineCardSelector('pain', DOR_OPTIONS, 1, 'window.onGatePainChange')}
             <div id="gatePainGrp" style="display:none;margin-top:10px">
@@ -3089,15 +3085,15 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             </div>
           </div>
 
-          <div style="margin-bottom:12px">
+          <div class="glass-card" style="margin-bottom:12px;padding:12px;border-radius:14px;background:var(--portal-surface-hover);border:1px solid var(--portal-border)">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FIRE} Motivação para Treinar</label>
             ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 8)}
           </div>
 
           ${isWomanUnder40 ? `
-          <div style="margin-bottom:12px">
+          <div class="glass-card" style="margin-bottom:12px;padding:12px;border-radius:14px;background:var(--portal-surface-hover);border:1px solid var(--portal-border)">
             <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual</label>
-            <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
+            <select name="menstrualCycle" class="portal-textarea" style="background:var(--portal-surface);color:var(--portal-text);border:1px solid var(--portal-border);font-size:0.85rem">
               <option value="" selected>Não se aplica / Prefiro não informar</option>
               <option value="Menstruacao">Menstruação</option>
               <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
