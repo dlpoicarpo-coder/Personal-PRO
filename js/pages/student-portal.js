@@ -3031,7 +3031,156 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     }, 1000);
   }
 
-  document.getElementById('soloStartBtn')?.addEventListener('click', async () => {
+  async function openCheckinGateModal(onProceed) {
+    const root = document.querySelector('.portal-root') || document.body;
+    const oldModal = document.getElementById('checkinGateModal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'checkinGateModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+
+    const isWomanUnder40 = (() => {
+      const student = portalState.student;
+      const birth = student?.birthDate ? new Date(student.birthDate) : null;
+      const age = birth ? new Date().getFullYear() - birth.getFullYear() : parseInt(student?.age) || null;
+      return student && (student.gender === 'F' || student.gender === 'Feminino') && age !== null && age < 40;
+    })();
+
+    modal.innerHTML = `
+      <div class="glass-card" style="width:100%;max-width:440px;max-height:90vh;overflow-y:auto;padding:24px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);background:var(--portal-bg-card, #1e1b4b)">
+        <div style="font-size:1.2rem;font-weight:700;margin-bottom:4px;color:var(--portal-text)">Como você está hoje?</div>
+        <div style="font-size:0.8rem;color:var(--portal-text-muted);margin-bottom:16px">Responda o check-in pré-treino para ajustarmos seu monitoramento de prontidão.</div>
+
+        <form id="checkinGateForm">
+          <div style="margin-bottom:12px">
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_MOON} Qualidade do Sono</label>
+            ${renderInlineCardSelector('sleep', SONO_OPTIONS, 8)}
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_ZAP} Recuperação (TQR)</label>
+            ${renderInlineCardSelector('tqr', TQR_OPTIONS, 5)}
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_BRAIN} Estresse</label>
+            ${renderInlineCardSelector('stress', ESTRESSE_OPTIONS, 5)}
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FOOD} Alimentação (24h)</label>
+            ${renderInlineCardSelector('food', ALIMENTACAO_OPTIONS, 5)}
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_PAIN} Dor ou Desconforto Articular</label>
+            ${renderInlineCardSelector('pain', DOR_OPTIONS, 1, 'window.onGatePainChange')}
+            <div id="gatePainGrp" style="display:none;margin-top:10px">
+              <div id="gatePainRegionsGrid" style="display:flex;flex-wrap:wrap;gap:5px">
+                ${PAIN_REGIONS.map(r => `
+                  <button type="button" class="portal-pain-chip gate-pain-chip" data-region="${r.id}"
+                    style="padding:4px 10px;border-radius:16px;border:1px solid var(--portal-border);background:transparent;color:var(--portal-text-muted);font-size:0.72rem;cursor:pointer">
+                    <span>${r.label}</span>
+                    <input type="checkbox" name="painRegions" value="${r.id}" style="display:none" />
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_FIRE} Motivação para Treinar</label>
+            ${renderInlineCardSelector('motivation', MOTIVACAO_OPTIONS, 8)}
+          </div>
+
+          ${isWomanUnder40 ? `
+          <div style="margin-bottom:12px">
+            <label class="portal-bio-label" style="display:inline-flex;align-items:center;gap:6px">${ICON_DROP} Ciclo Menstrual</label>
+            <select name="menstrualCycle" class="portal-textarea" style="background:rgba(255,255,255,0.05);color:var(--portal-text);font-size:0.85rem">
+              <option value="" selected>Não se aplica / Prefiro não informar</option>
+              <option value="Menstruacao">Menstruação</option>
+              <option value="Folicular">Fase Folicular (Pós-menstruação)</option>
+              <option value="Ovulatoria">Fase Ovulatória</option>
+              <option value="Lutea">Fase Lútea (Pré-menstrual / TPM)</option>
+            </select>
+          </div>` : ''}
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;text-align:center">
+            <button type="submit" class="portal-submit-btn" style="margin:0">Continuar e Treinar</button>
+            <button type="button" id="skipCheckinGateBtn" style="background:none;border:none;color:var(--portal-text-muted);font-size:0.8rem;cursor:pointer;padding:6px;text-decoration:underline">Pular por agora</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    root.appendChild(modal);
+
+    window.onGatePainChange = (val) => {
+      const p = parseInt(val) || 1;
+      const grp = document.getElementById('gatePainGrp');
+      if (grp) grp.style.display = p >= 3 ? 'block' : 'none';
+    };
+
+    modal.querySelectorAll('#gatePainRegionsGrid .gate-pain-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cb = btn.querySelector('input[type="checkbox"]');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        btn.style.borderColor = cb.checked ? '#ef4444' : 'var(--portal-border)';
+        btn.style.background  = cb.checked ? 'rgba(239,68,68,0.12)' : 'transparent';
+        btn.style.color       = cb.checked ? '#ef4444' : 'var(--portal-text-muted)';
+      });
+    });
+
+    document.getElementById('skipCheckinGateBtn')?.addEventListener('click', () => {
+      modal.remove();
+      if (typeof onProceed === 'function') onProceed();
+    });
+
+    document.getElementById('checkinGateForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const painVal = parseInt(fd.get('pain')) || 1;
+
+      const _d = new Date();
+      const todayYMD = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+      const bfId = `bf_${portalState.studentId}_${todayYMD}`;
+      let existingBf = {};
+      try { existingBf = await db.get('biofeedback', bfId) || {}; } catch(_) {}
+
+      const tzoffset = _d.getTimezoneOffset() * 60000;
+      const localISO = new Date(_d.getTime() - tzoffset).toISOString().slice(0, -1);
+
+      const data = {
+        ...existingBf,
+        id: bfId,
+        studentId: portalState.studentId,
+        trainerId: portalState.trainerId,
+        trainer_id: portalState.trainerId,
+        formType: existingBf.formType === 'complete' ? 'complete' : 'pre',
+        date: existingBf.date || localISO,
+        sleep: parseInt(fd.get('sleep')) || 7,
+        tqr: parseInt(fd.get('tqr')) || 5,
+        stress: parseInt(fd.get('stress')) || 5,
+        pain: painVal,
+        painRegions: painVal >= 3 ? fd.getAll('painRegions') : [],
+        food: parseInt(fd.get('food')) || 5,
+        motivation: parseInt(fd.get('motivation')) || 7,
+        menstrualCycle: fd.get('menstrualCycle') || '',
+        submittedAt: localISO,
+        submittedByStudent: true
+      };
+      data.mood = data.tqr;
+      data.energy = data.tqr;
+
+      await db.put('biofeedback', data);
+      modal.remove();
+      if (typeof onProceed === 'function') onProceed();
+    });
+  }
+
+  const startActualWorkout = async () => {
     document.getElementById('soloActiveSession').style.display = 'block';
     document.getElementById('soloStartBtn').style.display = 'none';
     document.getElementById('soloExercisesBlock').style.display = 'none';
@@ -3043,6 +3192,22 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     const w = workouts.find(w => w.id === wid);
     buildExerciseLog(w);
     startMainTimer();
+  };
+
+  document.getElementById('soloStartBtn')?.addEventListener('click', async () => {
+    const _d = new Date();
+    const todayYMD = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+    const allBf = await db.getAll('biofeedback');
+    const checkedIn = allBf.some(b => b.studentId === sid && b.date?.startsWith(todayYMD) && b.formType === 'pre');
+
+    if (checkedIn) {
+      await startActualWorkout();
+    } else {
+      openCheckinGateModal(async () => {
+        await startActualWorkout();
+      });
+    }
+  });
 
     // Create active running session in DB
     const localDate = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000); return l.toISOString().split('T')[0]; })();
@@ -3192,6 +3357,9 @@ function initTreinar(workouts, schedules, student, sessions = []) {
           b.classList.toggle('active', b.dataset.section === 'home');
         });
         await loadSection('home');
+        if (typeof window.showPortalCheckoutById === 'function') {
+          window.showPortalCheckoutById(sessionData.id);
+        }
       }, 1500);
 
     } catch(e) {
@@ -5812,13 +5980,14 @@ function showPortalCheckoutModal(session) {
         </div>
 
         <button id="chkModalSubmitBtn" class="portal-checkout-submit">Salvar Checkout</button>
+        <div style="text-align:center;margin-top:10px">
+          <button type="button" id="chkModalLaterBtn" style="background:none;border:none;color:var(--portal-text-muted);font-size:0.8rem;cursor:pointer;padding:6px;text-decoration:underline">Responder depois</button>
+        </div>
       </div>
     </div>
   `;
 
   container.appendChild(overlay);
-
-
 
   const closeSheet = () => {
     overlay.style.animation = 'portalFadeIn 0.2s ease-in reverse';
@@ -5826,6 +5995,8 @@ function showPortalCheckoutModal(session) {
     if (sheet) sheet.style.animation = 'portalSlideUp 0.2s cubic-bezier(0.3, 0, 1, 1) reverse';
     setTimeout(() => overlay.remove(), 180);
   };
+
+  document.getElementById('chkModalLaterBtn')?.addEventListener('click', closeSheet);
 
   let isMouseDownOnOverlay = false;
   overlay.addEventListener('mousedown', (e) => {
