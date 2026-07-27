@@ -21,17 +21,10 @@ export async function renderDashboard() {
 
   const activeStudents = students.filter(s => s.status === 'Ativo');
   const now = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear = now.getFullYear();
-  const monthWorkouts = workouts.filter(w => {
-    const d = new Date(w.date);
-    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-  });
+  const thisMonthStr = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const monthWorkouts = workouts.filter(w => w.date && w.date.startsWith(thisMonthStr));
   const completedSessions = sessions.filter(s => s.status === 'completed');
-  const monthSessions = completedSessions.filter(s => {
-    const d = new Date(s.date);
-    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-  });
+  const monthSessions = completedSessions.filter(s => s.date && s.date.startsWith(thisMonthStr));
 
   // Recent biofeedback alerts
   const recentBf = biofeedback

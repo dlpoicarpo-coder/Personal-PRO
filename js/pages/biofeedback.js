@@ -54,8 +54,11 @@ export async function renderBiofeedback() {
   const allBf    = await db.getAll('biofeedback');
   allBf.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const today     = new Date().toDateString();
-  const todayBf   = allBf.filter(e => new Date(e.date).toDateString() === today);
+  const nowLocal  = new Date();
+  const todayStr  = nowLocal.getFullYear() + '-' +
+    String(nowLocal.getMonth() + 1).padStart(2, '0') + '-' +
+    String(nowLocal.getDate()).padStart(2, '0');
+  const todayBf   = allBf.filter(e => e.date && e.date.slice(0, 10) === todayStr);
   const recent30  = allBf.slice(0, 30);
   const avgSleep  = recent30.length ? ((recent30.reduce((t,e)=>t+(e.sleep||0),0)/recent30.length)/2).toFixed(1) : '-';
   const avgTqr    = recent30.length ? (recent30.reduce((t,e)=>t+((e.tqr||e.energy)||0),0)/recent30.length).toFixed(1) : '-';
@@ -134,13 +137,13 @@ export async function renderBiofeedback() {
 
 async function renderBfContent(entries, students, filterStudentId, limitOverride = 30, periodFilter = 'month') {
   const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   const last30Start = new Date(now.getTime() - 30 * 86400000);
 
   const filtered = filterStudentId ? entries.filter(e => e.studentId === filterStudentId) : entries;
   let periodFiltered = [...filtered];
   if (periodFilter === 'month') {
-    periodFiltered = filtered.filter(e => new Date(e.date) >= thisMonthStart);
+    periodFiltered = filtered.filter(e => e.date && e.date.startsWith(thisMonthStr));
     // If no records this month, fall back to show last 30 records (don't show empty)
     if (periodFiltered.length === 0) periodFiltered = [...filtered];
   } else if (periodFilter === '30d') {
