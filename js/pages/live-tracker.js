@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
-import { METHOD_PROGRESSIONS, METHOD_CARDIO_META, COMBINED_METHODS } from './workouts.js';
+import { METHOD_PROGRESSIONS, METHOD_CARDIO_META, COMBINED_METHODS, buildExecutionQueue } from './workouts.js';
 
 const isNumeric = (val) => {
   if (val === undefined || val === null || val === '') return true;

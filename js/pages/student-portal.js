@@ -9,6 +9,7 @@ import { Calc } from '../utils/calculations.js';
 import { PAIN_REGIONS } from '../utils/alerts.js';
 import { generateAlgorithmicInsight } from '../insights.js';
 import { openModal, closeModal } from '../components/modal.js';
+import { buildExecutionQueue } from './workouts.js';
 
 const ICON_MOON   = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
 const ICON_ZAP    = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
@@ -2787,7 +2788,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     }
 
     // Bind done buttons
-    const COMBINED_SET = new Set(['Bi-set','Super-série Agonista','Super-série Antagonista','Tri-set','Série Gigante','Pré-exaustão']);
+    const execQueue = buildExecutionQueue(w?.exercises || []);
 
     exLogEl.querySelectorAll('.portal-solo-done-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2797,31 +2798,40 @@ function initTreinar(workouts, schedules, student, sessions = []) {
           row.classList.toggle('set-done', isDone);
           if (isDone) {
             const ei = parseInt(btn.dataset.ei);
-            const ex = w?.exercises?.[ei];
-            const isCombined = COMBINED_SET.has(ex?.method);
-            const nextEx = w?.exercises?.[ei + 1];
-            // Usar groupId se disponível
-            const isLastOfGroup = !nextEx
-              || (ex?.groupId ? nextEx?.groupId !== ex?.groupId : (!COMBINED_SET.has(nextEx?.method) || nextEx?.method !== ex?.method));
-
-            let restSec = parseInt(btn.dataset.rest) || 60;
-            // Métodos combinados: descanso=0 se não é o último do grupo
-            if (isCombined && !isLastOfGroup) restSec = 0;
+            const si = parseInt(btn.dataset.si);
+            const qItem = execQueue.find(q => q.exIdx === ei && q.setIdx === si);
+            const nextItem = qItem ? execQueue[qItem.queueIdx + 1] : null;
+            const restSec = qItem ? qItem.rest : (parseInt(btn.dataset.rest) || 60);
 
             const overlay = document.getElementById('restTimerOverlay');
             if (overlay) row.after(overlay);
             activeRestingRowId = row.id;
 
             if (restSec === 0) {
-              // Avança visualmente para o próximo exercício sem descanso
-              const nextCard = document.getElementById(`excard_${ei + 1}`);
-              if (nextCard) {
-                nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                nextCard.style.boxShadow = '0 0 0 2px #f59e0b';
-                setTimeout(() => { nextCard.style.boxShadow = ''; }, 1200);
+              if (nextItem) {
+                const nextRow = document.getElementById(`setrow_${nextItem.exIdx}_${nextItem.setIdx}`);
+                const nextCard = document.getElementById(`excard_${nextItem.exIdx}`);
+                const targetEl = nextRow || nextCard;
+                if (targetEl) {
+                  targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  targetEl.style.boxShadow = '0 0 0 2px #f59e0b';
+                  setTimeout(() => { targetEl.style.boxShadow = ''; }, 1200);
+                }
               }
             } else {
               startRestTimer(restSec);
+              if (nextItem) {
+                setTimeout(() => {
+                  const nextRow = document.getElementById(`setrow_${nextItem.exIdx}_${nextItem.setIdx}`);
+                  const nextCard = document.getElementById(`excard_${nextItem.exIdx}`);
+                  const targetEl = nextRow || nextCard;
+                  if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.style.boxShadow = '0 0 0 2px #3b82f6';
+                    setTimeout(() => { targetEl.style.boxShadow = ''; }, 1500);
+                  }
+                }, 300);
+              }
             }
             playBeep(440, 0.1, 1);
           } else {
