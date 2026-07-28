@@ -44,6 +44,8 @@ const state = {
   _uiInterval:  null,
   exIdx:    0,
   setIdx:   0,
+  queueIdx: 0,
+  executionQueue: [],
   setLog:   [],
   workSec:  0,
   isResting: false,
@@ -70,7 +72,7 @@ function resetState() {
     state.onBeforeUnload = null;
   }
 
-  state.session = null; state.exIdx = 0; state.setIdx = 0;
+  state.session = null; state.exIdx = 0; state.setIdx = 0; state.queueIdx = 0; state.executionQueue = [];
   state.setLog = []; state.workSec = 0; state.isResting = false; state.tempSets = {};
 }
 
@@ -303,6 +305,17 @@ function renderLiveView(students) {
   const st     = students.find(x => x.id === s.studentId);
   const exs    = s.exercises || [];
   const exs_all = exs; // alias para uso nos combined-method badges
+
+  state.executionQueue = buildExecutionQueue(exs);
+  if (state.queueIdx === undefined || state.queueIdx === null || state.queueIdx < 0 || state.queueIdx >= state.executionQueue.length) {
+    state.queueIdx = Math.min(state.setLog.length, Math.max(0, state.executionQueue.length - 1));
+  }
+  const currentStep = state.executionQueue[state.queueIdx] || state.executionQueue[0];
+  if (currentStep) {
+    state.exIdx = currentStep.exIdx;
+    state.setIdx = currentStep.setIdx;
+  }
+
   const ex     = exs[state.exIdx] || {};
   const totalSets = exs.reduce((sum, e) => {
     if (isCardioExercise(e)) {
@@ -407,7 +420,7 @@ function renderLiveView(students) {
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);background:var(--bg-page);padding:2px 8px;border-radius:6px;text-transform:uppercase">
-                  Ex ${state.exIdx + 1}/${exs.length}
+                  Passo ${state.queueIdx + 1}/${(state.executionQueue || []).length || 1}
                 </span>
                 ${COMBINED_METHODS?.has(ex.method) ? (() => {
                   const grpExs = exs_all.filter(e => e.groupId && e.groupId === ex.groupId);
@@ -421,8 +434,8 @@ function renderLiveView(students) {
                 <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar" style="padding:3px 6px">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 </button>
-                <button class="btn btn-ghost btn-sm" id="prevEx" ${state.exIdx === 0 ? 'disabled' : ''} style="padding:3px 8px">←</button>
-                <button class="btn btn-ghost btn-sm" id="nextEx" ${state.exIdx >= exs.length - 1 ? 'disabled' : ''} style="padding:3px 8px">→</button>
+                <button class="btn btn-ghost btn-sm" id="prevEx" ${state.queueIdx <= 0 ? 'disabled' : ''} style="padding:3px 8px">←</button>
+                <button class="btn btn-ghost btn-sm" id="nextEx" ${state.queueIdx >= (state.executionQueue || []).length - 1 ? 'disabled' : ''} style="padding:3px 8px">→</button>
               </div>
             </div>
 
@@ -1384,36 +1397,9 @@ export function initTracker(navigateFn) {
   const curEx   = (state.session.exercises || [])[state.exIdx] || {};
   const exs_all = state.session.exercises || [];
 
-  // ── Lógica de descanso para métodos combinados ──────────────────────────
-  // Bi-set/Tri-set/Super-série: descanso=0 no exercício atual (vai pro próximo imediatamente)
-  // O descanso real dispara apenas no ÚLTIMO exercício do grupo
-  const isCombinedEx  = COMBINED_METHODS?.has(curEx.method);
-  const nextEx        = exs_all[state.exIdx + 1];
-  // Usar groupId se disponível, fallback para método consecutivo
-  const isLastOfGroup = !nextEx
-    || (curEx.groupId ? nextEx.groupId !== curEx.groupId : (nextEx.method !== curEx.method || !COMBINED_METHODS?.has(nextEx.method)));
-  // restDur efetivo: 0 se combinado e não é o último, senão usa o rest configurado
-  let restDur = isCombinedEx && !isLastOfGroup ? 0 : (parseInt(curEx.rest) || 60);
-
-  let progression = curEx.seriesProgression;
-  if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
-    const progDef = METHOD_PROGRESSIONS[curEx.method];
-    const baseLoad = parseFloat(curEx.load) || 0;
-    progression = progDef.series.map((s, si) => ({
-      set: si + 1,
-      reps: s.reps,
-      load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-      rest: (isCombinedEx && s.rest === 0) ? 0 : (s.rest != null ? s.rest : parseInt(curEx.rest || 60)),
-      label: s.label || `Série ${si + 1}`
-    }));
-  }
-
-  if (progression && progression[state.setIdx]) {
-    const sRest = progression[state.setIdx].rest;
-    if (sRest != null) restDur = parseInt(sRest);
-    // Override: se combinado e não-último, forçar 0
-    if (isCombinedEx && !isLastOfGroup) restDur = 0;
-  }
+  // ── Lógica de descanso para métodos combinados e fila de execução ──────
+  const currentStepInfo = (state.executionQueue || [])[state.queueIdx] || {};
+  let restDur = currentStepInfo.rest !== undefined ? currentStepInfo.rest : (parseInt(curEx.rest) || 60);
 
   if (!state.restTimer) {
     // Criar pela primeira vez
@@ -1786,9 +1772,14 @@ export function initTracker(navigateFn) {
       const loadDisplay = isNumeric(load) ? `${load}kg` : load;
       notify.info(`Série ${i+1} ✓ — ${reps}×${loadDisplay} PSE ${pse}${rirTxt}`);
 
-      // Avançar para próxima série
-      state.setIdx = i + 1;
-      const nr = document.querySelector(`[data-si="${i+1}"]`);
+      // Avançar para próxima passo na fila de execução
+      state.queueIdx = (state.queueIdx || 0) + 1;
+      const nextStep = (state.executionQueue || [])[state.queueIdx];
+      if (nextStep) {
+        state.exIdx = nextStep.exIdx;
+        state.setIdx = nextStep.setIdx;
+      }
+      const nr = document.querySelector(`[data-si="${state.setIdx}"]`);
       if (nr) { nr.classList.add('set-active'); nr.style.background = 'rgba(16,185,129,0.08)'; }
 
       // Atualizar volume e progresso
@@ -1853,8 +1844,24 @@ export function initTracker(navigateFn) {
     const content  = document.getElementById('pageContent');
     if (content && state.session) { content.innerHTML = renderLiveView(students); initTracker(navigateFn); }
   };
-  document.getElementById('prevEx')?.addEventListener('click', () => { saveCurrentInputs(); if (state.exIdx > 0) { state.exIdx--; state.setIdx = 0; refreshLive(); } });
-  document.getElementById('nextEx')?.addEventListener('click', () => { saveCurrentInputs(); if (state.exIdx < (state.session.exercises||[]).length-1) { state.exIdx++; state.setIdx = 0; refreshLive(); } });
+  document.getElementById('prevEx')?.addEventListener('click', () => {
+    saveCurrentInputs();
+    if (state.queueIdx > 0) {
+      state.queueIdx--;
+      const item = (state.executionQueue || [])[state.queueIdx];
+      if (item) { state.exIdx = item.exIdx; state.setIdx = item.setIdx; }
+      refreshLive();
+    }
+  });
+  document.getElementById('nextEx')?.addEventListener('click', () => {
+    saveCurrentInputs();
+    if (state.queueIdx < (state.executionQueue || []).length - 1) {
+      state.queueIdx++;
+      const item = (state.executionQueue || [])[state.queueIdx];
+      if (item) { state.exIdx = item.exIdx; state.setIdx = item.setIdx; }
+      refreshLive();
+    }
+  });
   document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { saveCurrentInputs(); state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
 
   document.getElementById('editExLiveBtn')?.addEventListener('click', () => {

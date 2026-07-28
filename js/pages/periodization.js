@@ -704,7 +704,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               </div>
               <div class="form-group" style="margin:0">
                 <label class="form-label">Data de início *</label>
-                <input class="form-input" name="startDate" type="date" value="${macroToEdit ? macroToEdit.startDate : new Date().toISOString().slice(0,10)}" required />
+                <input class="form-input" name="startDate" type="date" value="${macroToEdit ? macroToEdit.startDate : Calc.hojeLocal()}" required />
               </div>
             </div>
 
@@ -949,7 +949,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
           const existingSchedules = macroToEdit ? (await db.getAll('schedules')).filter(s => String(s.macrocycleId) === String(macroToEdit.id)) : [];
           const completedSessions = (await db.getAll('sessions')).filter(s => s.studentId === d.studentId && s.status === 'completed');
           const completedWorkoutIds = new Set(completedSessions.map(s => s.workoutId));
-          const todayStr = new Date().toISOString().slice(0,10);
+          const todayStr = Calc.hojeLocal();
 
           let generatedCount = 0;
           const newGeneratedWorkouts = [];

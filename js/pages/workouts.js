@@ -240,7 +240,7 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Data</label>
-          <input class="form-input" name="date" type="date" value="${workout.date||new Date().toISOString().slice(0,10)}" />
+          <input class="form-input" name="date" type="date" value="${workout.date||Calc.hojeLocal()}" />
         </div>
         <div class="form-group">
           <label class="form-label">Ciclo</label>
@@ -1866,7 +1866,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       const reps   = opt?.dataset.reps;
       const rest   = opt?.dataset.rest;
 
-      if (sets && setsEl) setsEl.value = sets.replace(/[^0-9]/g, '') || '3';
+      if (sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
       if (reps && repsEl) repsEl.value = reps;
       if (rest && restEl) {
         const match = rest.match(/(\d+)/);

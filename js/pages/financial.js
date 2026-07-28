@@ -490,7 +490,7 @@ export function initFinancial(navigateFn) {
         preventBackdropClose: true,
         content: `<div class="form-group">
           <label class="form-label">Data do pagamento</label>
-          <input class="form-input" id="paidDateInput" type="date" value="${new Date().toISOString().slice(0,10)}" />
+          <input class="form-input" id="paidDateInput" type="date" value="${Calc.hojeLocal()}" />
         </div>
         <div class="form-group">
           <label class="form-label">Método utilizado</label>
@@ -502,7 +502,7 @@ export function initFinancial(navigateFn) {
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: '✓ Confirmar Pagamento', class: 'btn-primary', onClick: async () => {
             r.status      = 'paid';
-            r.paidDate    = document.getElementById('paidDateInput')?.value || new Date().toISOString().slice(0,10);
+            r.paidDate    = document.getElementById('paidDateInput')?.value || Calc.hojeLocal();
             r.paymentMethod = document.getElementById('paidMethodInput')?.value || r.paymentMethod;
             await db.put('financial', r);
             notify.success('Pagamento confirmado!');
