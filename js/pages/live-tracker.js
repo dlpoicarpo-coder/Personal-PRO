@@ -1773,6 +1773,7 @@ export function initTracker(navigateFn) {
       notify.info(`Série ${i+1} ✓ — ${reps}×${loadDisplay} PSE ${pse}${rirTxt}`);
 
       // Avançar para próxima passo na fila de execução
+      const prevExIdx = state.exIdx;
       state.queueIdx = (state.queueIdx || 0) + 1;
       const nextStep = (state.executionQueue || [])[state.queueIdx];
       if (nextStep) {
@@ -1796,7 +1797,10 @@ export function initTracker(navigateFn) {
       if (fill) fill.style.width = Math.round((state.setLog.length/totalS)*100)+'%';
 
       state.session.setLog = state.setLog;
-      renderProgress();
+      autoSaveSession();
+      if (nextStep && nextStep.exIdx !== prevExIdx) {
+        refreshLive();
+      }
   }
 
   // Initialize embedded cardio chart if current exercise is cardio
