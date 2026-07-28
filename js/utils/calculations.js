@@ -197,6 +197,11 @@ export const Calc = {
     return Math.round((smm / peso) * 100 * 10) / 10;
   },
 
+  nowISO() {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1);
+  },
+
   hojeLocal() {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
