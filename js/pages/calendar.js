@@ -45,8 +45,7 @@ async function buildCalendarHTML() {
   const active = students.filter(s => s.status === 'Ativo');
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const today = new Date().toISOString().slice(0, 10);
+  const today = Calc.hojeLocal();
   
   // FASE A: Aplicação do Grandfathering no acumulado (db.put)
   try {
@@ -518,7 +517,7 @@ function bindAddEvent(navigateFn) {
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Data Início *</label><input class="form-input" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required /></div>
+          <div class="form-group"><label class="form-label">Data Início *</label><input class="form-input" name="date" type="date" value="${Calc.hojeLocal()}" required /></div>
           <div class="form-group"><label class="form-label">Horário</label><input class="form-input" name="time" type="time" step="900" value="07:00" /></div>
           <div class="form-group"><label class="form-label">Duração (min)</label><select class="form-select" name="duration">${DURATIONS.map(d => `<option ${d === 60 ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
         </div>
@@ -616,7 +615,7 @@ async function checkReminders() {
     const settings = await db.get('settings','trainer').catch(()=>({}));
     const now      = Date.now();
 
-    const today      = new Date().toISOString().slice(0,10);
+    const today      = Calc.hojeLocal();
     const storageKey = `pp_reminders_${today}`;
     let sent = {};
     try { sent = JSON.parse(localStorage.getItem(storageKey)||'{}'); } catch(_) {}
@@ -637,15 +636,15 @@ async function checkReminders() {
       // ── 10h antes ──────────────────────────────────────────
       const id10h = `${ev.id}_10h`;
       if (!sent[id10h] && diffMin >= 590 && diffMin <= 600) {
-        sent[id10h] = new Date().toISOString();
+        sent[id10h] = Calc.nowISO();
         const msg = buildMsg10h(st.name, ev, preLink, settings?.trainerName);
-        autoSendWA(st.phone, msg, `Lembrete 10h — ${st.name}`, id10h);
+        autoSendWA(st.phone, msg, `Lembrete 10h - ${st.name}`, id10h);
       }
 
       // ── 30min antes ────────────────────────────────────────
       const id30m = `${ev.id}_30m`;
       if (!sent[id30m] && diffMin >= 29 && diffMin <= 31) {
-        sent[id30m] = new Date().toISOString();
+        sent[id30m] = Calc.nowISO();
         const msg = buildMsg30m(st.name, ev, preLink, settings?.trainerName);
         autoSendWA(st.phone, msg, `Lembrete 30min — ${st.name}`, id30m);
       }
