@@ -1110,7 +1110,7 @@ function renderHome(student, sessions, workouts, schedules, macrocycles, finance
         </div>`
       : `<div class="portal-reminder portal-reminder-info" id="checkinBanner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Você tem treino hoje às ${todaySched.time || '—'}! <button onclick="document.querySelector('[data-section=treinar]').click()" class="portal-reminder-btn">Fazer check-in</button>
+          Você tem treino hoje às ${todaySched.time || '—'}! <button onclick="document.querySelector('[data-section=bio]').click()" class="portal-reminder-btn">Fazer check-in</button>
         </div>`;
   }
 
