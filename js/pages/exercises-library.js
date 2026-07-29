@@ -6,8 +6,9 @@ import db from '../db.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { BUILT_IN_TEMPLATES, getTemplatesByCategory } from '../utils/workout-templates.js';
-import { METHOD_PROGRESSIONS } from './workouts.js';
+import { METHOD_PROGRESSIONS, COMBINED_METHODS, renderCombinedBanner } from './workouts.js';
 import { isAdmin } from '../utils/roles.js';
+import { Calc } from '../utils/calculations.js';
 
 // ── Proteção admin/personal ───────────────────────────────────
 // is_default=true  → somente admin edita/exclui
@@ -1222,7 +1223,7 @@ function bindTplEvents(allMethods = [], allEx = []) {
       cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods, null, allEx));
       bindRemoveTplEx();
       const lastRow = cnt.lastElementChild;
-      bindMethodAutoFill(lastRow);
+      bindMethodAutoFill(lastRow, allMethods, allEx);
       bindExSelectListener(lastRow);
     };
   });
@@ -1231,7 +1232,7 @@ function bindTplEvents(allMethods = [], allEx = []) {
   });
   bindRemoveTplEx();
   document.querySelectorAll('#tplWorkouts .tpl-ex-row').forEach(row => {
-    bindMethodAutoFill(row);
+    bindMethodAutoFill(row, allMethods, allEx);
     bindExSelectListener(row);
   });
 }
@@ -1258,7 +1259,7 @@ async function showApplyTemplateModal(tpl, navigateFn) {
         <input class="form-input" name="cycle" value="${tpl.name}" />
       </div>
       <div class="form-group"><label class="form-label">Data de Início</label>
-        <input class="form-input" name="date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+        <input class="form-input" name="date" type="date" value="${Calc.hojeLocal()}" />
       </div>
       <div style="padding:10px;background:var(--bg-page);border-radius:8px;font-size:0.82rem;color:var(--text-muted)">
         ${(tpl.workouts||[]).length} treino(s) serão criados para o aluno.
@@ -1283,16 +1284,15 @@ async function showApplyTemplateModal(tpl, navigateFn) {
   });
 }
 
-function bindMethodAutoFill(row) {
+function bindMethodAutoFill(row, allMethods = [], allEx = []) {
   const methodSelect = row.querySelector('select[name*="_method_"]');
   if (!methodSelect) return;
   methodSelect.addEventListener('change', () => {
     const opt = methodSelect.selectedOptions[0];
     const methodName = opt?.value || '';
 
-    // Remove previous panels/tips
-    row.querySelectorAll('.method-series-panel').forEach(p => p.remove());
-    row.querySelectorAll('.method-tip').forEach(p => p.remove());
+    // Remove previous panels/tips/banners
+    row.querySelectorAll('.method-series-panel,.method-tip,.combined-banner').forEach(p => p.remove());
 
     const setsEl = row.querySelector('input[name*="_sets_"]');
     const repsEl = row.querySelector('input[name*="_reps_"]');
@@ -1306,11 +1306,45 @@ function bindMethodAutoFill(row) {
     const reps = opt?.dataset.reps;
     const rest = opt?.dataset.rest;
 
-    if (sets && setsEl) setsEl.value = sets.replace(/[^0-9]/g, '') || '3';
+    if (sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
     if (reps && repsEl) repsEl.value = reps;
     if (rest && restEl) {
       const match = rest.match(/(\d+)/);
       if (match) restEl.value = match[1];
+    }
+
+    // ── MÉTODO COMBINADO (Bi-set, Tri-set, etc.) ──────────────
+    const isCombinedMethod = typeof COMBINED_METHODS !== 'undefined' && COMBINED_METHODS.has(methodName);
+    if (isCombinedMethod) {
+      if (restEl) restEl.value = '0';
+      renderCombinedBanner(row, methodName, () => {
+        const tplWorkout = row.closest('.tpl-workout');
+        if (!tplWorkout) return;
+        const wi = tplWorkout.dataset.wi;
+        const cnt = tplWorkout.querySelector('.tpl-exercises');
+        if (!cnt) return;
+
+        const rows = Array.from(cnt.querySelectorAll('.tpl-ex-row'));
+        const curIdx = rows.indexOf(row);
+        const ei = rows.length;
+
+        const newRowHTML = buildTplExRowHTML(wi, ei, allMethods, { method: methodName, rest: '0' }, allEx);
+
+        let insertAfter = row;
+        for (let j = curIdx + 1; j < rows.length; j++) {
+          const mSelect = rows[j].querySelector('select[name*="_method_"]');
+          if (mSelect && mSelect.value === methodName) insertAfter = rows[j];
+          else break;
+        }
+        insertAfter.insertAdjacentHTML('afterend', newRowHTML);
+        bindRemoveTplEx();
+        const addedRow = insertAfter.nextElementSibling;
+        if (addedRow) {
+          bindMethodAutoFill(addedRow, allMethods, allEx);
+          bindExSelectListener(addedRow);
+        }
+      });
+      return;
     }
 
     // ── Verificar se o método tem progressão definida ────────

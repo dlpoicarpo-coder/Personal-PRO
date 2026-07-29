@@ -1139,6 +1139,38 @@ export const COMBINED_METHODS = new Set([
   'Tri-set','Série Gigante','Pré-exaustão'
 ]);
 
+export const COMBINED_DESC = {
+  'Bi-set': 'Execute com o próximo exercício sem descanso. Descanse apenas após completar o par.',
+  'Super-série Agonista': 'Mesmo grupo muscular em sequência sem pausa. Descanse após o par.',
+  'Super-série Antagonista': 'Grupos opostos (ex: Bíceps → Tríceps) sem pausa. Descanse após o par.',
+  'Tri-set': '3 exercícios consecutivos sem pausa. Descanse após o terceiro.',
+  'Série Gigante': '4+ exercícios consecutivos sem pausa. Cargas reduzidas ~60%. Descanse após o último.',
+  'Pré-exaustão': 'Isolamento → Composto sem pausa. Fatiga o músculo-alvo primeiro.',
+};
+
+export function renderCombinedBanner(row, methodName, onAddPairClick) {
+  row?.querySelectorAll('.method-series-panel,.method-tip,.combined-banner').forEach(p => p.remove());
+  const banner = document.createElement('div');
+  banner.className = 'combined-banner';
+  banner.style.cssText = 'grid-column:1/-1;margin-top:4px;padding:8px 12px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:8px';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div>
+        <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${methodName}</span>
+        <span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px">${COMBINED_DESC[methodName] || ''}</span>
+      </div>
+      <button type="button" class="btn-add-pair btn btn-ghost btn-sm" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);font-size:0.7rem;white-space:nowrap;flex-shrink:0">
+        + Adicionar par
+      </button>
+    </div>`;
+  row?.appendChild(banner);
+
+  if (onAddPairClick) {
+    banner.querySelector('.btn-add-pair').onclick = onAddPairClick;
+  }
+  return banner;
+}
+
 export function buildExecutionQueue(rawExercises = []) {
   const exs = (rawExercises || []).map(e => ({ ...e }));
   let groupCounter = 0;
@@ -1880,33 +1912,8 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
 
       // ── MÉTODO COMBINADO: banner + auto-adicionar exercício par ──
       if (isCombinedMethod) {
-        row?.querySelectorAll('.method-series-panel,.method-tip,.combined-banner').forEach(p => p.remove());
         if (restEl) restEl.value = '0';
-
-        const COMBINED_DESC = {
-          'Bi-set': 'Execute com o próximo exercício sem descanso. Descanse apenas após completar o par.',
-          'Super-série Agonista': 'Mesmo grupo muscular em sequência sem pausa. Descanse após o par.',
-          'Super-série Antagonista': 'Grupos opostos (ex: Bíceps → Tríceps) sem pausa. Descanse após o par.',
-          'Tri-set': '3 exercícios consecutivos sem pausa. Descanse após o terceiro.',
-          'Série Gigante': '4+ exercícios consecutivos sem pausa. Cargas reduzidas ~60%. Descanse após o último.',
-          'Pré-exaustão': 'Isolamento → Composto sem pausa. Fatiga o músculo-alvo primeiro.',
-        };
-        const banner = document.createElement('div');
-        banner.className = 'combined-banner';
-        banner.style.cssText = 'grid-column:1/-1;margin-top:4px;padding:8px 12px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:8px';
-        banner.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <div>
-              <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${methodName}</span>
-              <span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px">${COMBINED_DESC[methodName] || ''}</span>
-            </div>
-            <button type="button" class="btn-add-pair btn btn-ghost btn-sm" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);font-size:0.7rem;white-space:nowrap;flex-shrink:0">
-              + Adicionar par
-            </button>
-          </div>`;
-        row?.appendChild(banner);
-
-        banner.querySelector('.btn-add-pair').onclick = () => {
+        renderCombinedBanner(row, methodName, () => {
           const container = document.getElementById('exerciseRows');
           if (!container) return;
           const rows = Array.from(container.querySelectorAll('.exercise-row'));
@@ -1923,7 +1930,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
           insertAfter.insertAdjacentHTML('afterend', newHTML);
           bindExerciseRowHandlers(allExercises, allMethods);
           refreshCombinedVisuals();
-        };
+        });
 
         refreshCombinedVisuals();
         return;
