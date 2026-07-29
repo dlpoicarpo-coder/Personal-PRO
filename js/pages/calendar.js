@@ -45,6 +45,7 @@ async function buildCalendarHTML() {
   const active = students.filter(s => s.status === 'Ativo');
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const monthName = new Date(currentYear, currentMonth).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const today = Calc.hojeLocal();
   
   // FASE A: Aplicação do Grandfathering no acumulado (db.put)
