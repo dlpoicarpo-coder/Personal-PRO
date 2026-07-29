@@ -1842,6 +1842,7 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       const i        = sel.dataset.index;
       const row      = sel.closest('.exercise-row');
       const methodName = opt?.value || '';
+      console.log('[DEBUG BISET] onchange disparou, method:', methodName, 'isCombined:', typeof COMBINED_METHODS !== 'undefined' && COMBINED_METHODS.has(methodName));
 
       // Remover painel de sub-séries anterior
       row?.querySelectorAll('.method-series-panel').forEach(p => p.remove());

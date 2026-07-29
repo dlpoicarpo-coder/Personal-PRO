@@ -32,7 +32,9 @@ export const Calc = {
     if (!dateStr) return '—';
     const d = new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));
     if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('pt-BR');
+    const result = d.toLocaleDateString('pt-BR');
+    console.log('[DEBUG DATE] formatDate input:', dateStr, 'length:', dateStr.length, 'parsed:', d.toString(), 'result:', result);
+    return result;
   },
 
   formatNum(n, decimals = 1) {
