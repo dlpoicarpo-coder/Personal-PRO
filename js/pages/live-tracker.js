@@ -976,7 +976,7 @@ export function initTracker(navigateFn) {
                   trainingLoad: trainingLoad,
                   sessionId: session.id,
                   formType: 'complete',
-                  submittedAt: new Date().toISOString()
+                  submittedAt: Calc.nowISO()
                 };
                 await db.put('biofeedback', newBf);
               }
@@ -1062,8 +1062,7 @@ export function initTracker(navigateFn) {
       // Usar getAllForStudent para pegar também formulários públicos
       const allBf = await db.getAllForStudent('biofeedback', sid);
       // Data local YYYY-MM-DD (sem UTC offset)
-      const _d = new Date();
-      const todayStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+      const todayStr = Calc.hojeLocal();
       const todayPre = allBf.find(f =>
         f.studentId === sid &&
         (f.formType === 'pre' || f.formType == null) && // formType null = registro antigo
@@ -1179,8 +1178,7 @@ export function initTracker(navigateFn) {
       notes: ''
     }; // defaults neutros
     // Carregar check-in do aluno via getAllForStudent (pega formulários públicos)
-    const _d2 = new Date();
-    const todayStr2 = `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2,'0')}-${String(_d2.getDate()).padStart(2,'0')}`;
+    const todayStr2 = Calc.hojeLocal();
     const allBf = await db.getAllForStudent('biofeedback', wk.studentId);
     const todayPre = allBf.find(f =>
       f.studentId === wk.studentId &&
@@ -1354,7 +1352,7 @@ export function initTracker(navigateFn) {
         currentExIdx:  state.exIdx,
         workSec:       state.workSec,
         tempSets:      currentTempSets,
-        lastAutoSave:  new Date().toISOString(),
+        lastAutoSave:  Calc.nowISO(),
         status: 'running',
         isResting:     state.isResting,
         stateChangedAt: state.session.stateChangedAt || state.session.startTime,
@@ -1850,23 +1848,48 @@ export function initTracker(navigateFn) {
   };
   document.getElementById('prevEx')?.addEventListener('click', () => {
     saveCurrentInputs();
-    if (state.queueIdx > 0) {
-      state.queueIdx--;
-      const item = (state.executionQueue || [])[state.queueIdx];
-      if (item) { state.exIdx = item.exIdx; state.setIdx = item.setIdx; }
+    const queue = state.executionQueue || [];
+    const curExIdx = state.exIdx;
+    let i = state.queueIdx;
+    while (i > 0 && queue[i].exIdx === curExIdx) { i--; }
+    if (i !== state.queueIdx && queue[i]) {
+      // Encontrar a PRIMEIRA posicao desse exercicio anterior
+      const prevExId = queue[i].exIdx;
+      while (i > 0 && queue[i - 1].exIdx === prevExId) { i--; }
+      state.queueIdx = i;
+      state.exIdx = queue[i].exIdx;
+      state.setIdx = queue[i].setIdx;
       refreshLive();
     }
   });
   document.getElementById('nextEx')?.addEventListener('click', () => {
     saveCurrentInputs();
-    if (state.queueIdx < (state.executionQueue || []).length - 1) {
-      state.queueIdx++;
-      const item = (state.executionQueue || [])[state.queueIdx];
-      if (item) { state.exIdx = item.exIdx; state.setIdx = item.setIdx; }
+    const queue = state.executionQueue || [];
+    const curExIdx = state.exIdx;
+    let i = state.queueIdx;
+    while (i < queue.length - 1 && queue[i].exIdx === curExIdx) { i++; }
+    if (i !== state.queueIdx && queue[i]) {
+      state.queueIdx = i;
+      state.exIdx = queue[i].exIdx;
+      state.setIdx = queue[i].setIdx;
       refreshLive();
     }
   });
-  document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => { saveCurrentInputs(); state.exIdx = parseInt(el.dataset.g); state.setIdx = 0; refreshLive(); }));
+  document.querySelectorAll('.go-ex').forEach(el => el.addEventListener('click', () => {
+    saveCurrentInputs();
+    const targetExIdx = parseInt(el.dataset.g);
+    const targetQueueIdx = (state.executionQueue || []).findIndex(step => step.exIdx === targetExIdx);
+    if (targetQueueIdx >= 0) {
+      state.queueIdx = targetQueueIdx;
+      const item = state.executionQueue[targetQueueIdx];
+      state.exIdx = item.exIdx;
+      state.setIdx = item.setIdx;
+    } else {
+      state.exIdx = targetExIdx;
+      state.setIdx = 0;
+    }
+    refreshLive();
+  }));
 
   document.getElementById('editExLiveBtn')?.addEventListener('click', () => {
     saveCurrentInputs();
