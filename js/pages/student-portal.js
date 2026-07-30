@@ -1585,6 +1585,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   let soloStartTime = null;
   let workSeconds = 0, restSeconds = 0;
   let isResting = false;
+  let backgroundedAt = null;
+  let totalBackgroundedSeconds = 0;
   let soundEnabled = true;
   let restTimer = null;
   let restTotal = 60;
@@ -1638,8 +1640,13 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
   function handleVisibilityChange() {
     if (document.visibilityState === 'hidden') {
+      backgroundedAt = Date.now();
       autoSaveSoloSession();
     } else if (document.visibilityState === 'visible') {
+      if (backgroundedAt) {
+        totalBackgroundedSeconds += Math.floor((Date.now() - backgroundedAt) / 1000);
+        backgroundedAt = null;
+      }
       handleForeground();
     }
   }
@@ -1877,6 +1884,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       restRemaining,
       restTotal,
       activeRestingRowId,
+      totalBackgroundedSeconds,
       lastSavedTime: new Date().toISOString(),
       exercises: data.exercises,
       setLog: data.setLog,
@@ -2121,6 +2129,9 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       isResting = false;
       activeRestingRowId = null;
     }
+
+    totalBackgroundedSeconds = saved.totalBackgroundedSeconds || 0;
+    backgroundedAt = null;
 
     // Shift start time by uncounted gap to keep total duration accurate
     const originalStart = new Date(saved.startTime).getTime();
@@ -3018,6 +3029,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   }
   function startMainTimer() {
     soloStartTime = new Date();
+    backgroundedAt = null;
+    totalBackgroundedSeconds = 0;
     lastTickTime = Date.now();
     soloTimerInterval = setInterval(() => {
       const now = Date.now();
@@ -3269,7 +3282,13 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     clearInterval(soloTimerInterval);
     stopRestTimer();
     
-    let durationMin = soloStartTime ? Math.round((new Date() - soloStartTime) / 60000) : 0;
+    if (backgroundedAt) {
+      totalBackgroundedSeconds += Math.floor((Date.now() - backgroundedAt) / 1000);
+      backgroundedAt = null;
+    }
+    const rawElapsedMs = soloStartTime ? (new Date() - soloStartTime) : 0;
+    const activeMs = Math.max(0, rawElapsedMs - (totalBackgroundedSeconds * 1000));
+    let durationMin = Math.round(activeMs / 60000);
     const durationCapped = durationMin > 180;
     if (durationCapped) durationMin = 180;
 
@@ -3290,6 +3309,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       isSolo: true,
       durationMin,
       durationCapped,
+      totalBackgroundedSeconds,
       totalDuration: durationMin * 60,
       totalVolume,
       totalSets,
