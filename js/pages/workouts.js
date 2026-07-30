@@ -1899,7 +1899,9 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       const reps   = opt?.dataset.reps;
       const rest   = opt?.dataset.rest;
 
-      if (sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
+      const isCombinedMethod = COMBINED_METHODS.has(methodName);
+
+      if (!isCombinedMethod && sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
       if (reps && repsEl) repsEl.value = reps;
       if (rest && restEl) {
         const match = rest.match(/(\d+)/);
@@ -1907,7 +1909,6 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
       }
 
       // ── Verificar se o método tem progressão definida ────────
-      const isCombinedMethod = COMBINED_METHODS.has(methodName);
       const progression = !isCombinedMethod ? METHOD_PROGRESSIONS[methodName] : null;
 
       // ── MÉTODO COMBINADO: banner + auto-adicionar exercício par ──

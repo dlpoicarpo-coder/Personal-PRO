@@ -1306,7 +1306,9 @@ function bindMethodAutoFill(row, allMethods = [], allEx = []) {
     const reps = opt?.dataset.reps;
     const rest = opt?.dataset.rest;
 
-    if (sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
+    const isCombinedMethod = typeof COMBINED_METHODS !== 'undefined' && COMBINED_METHODS.has(methodName);
+
+    if (!isCombinedMethod && sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
     if (reps && repsEl) repsEl.value = reps;
     if (rest && restEl) {
       const match = rest.match(/(\d+)/);
@@ -1314,7 +1316,6 @@ function bindMethodAutoFill(row, allMethods = [], allEx = []) {
     }
 
     // ── MÉTODO COMBINADO (Bi-set, Tri-set, etc.) ──────────────
-    const isCombinedMethod = typeof COMBINED_METHODS !== 'undefined' && COMBINED_METHODS.has(methodName);
     if (isCombinedMethod) {
       if (restEl) restEl.value = '0';
       renderCombinedBanner(row, methodName, () => {
