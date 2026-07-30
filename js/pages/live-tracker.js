@@ -1014,8 +1014,22 @@ export function initTracker(navigateFn) {
         resetPreBioStatus();
         return;
       }
+      const allMacros = await db.getAll('macrocycles');
+      const studentMacros = allMacros.filter(m => m.studentId === sid);
+
+      const eligibleMacros = studentMacros.filter(m => {
+        if (m.status !== 'active') return false;
+        const st = Calc.getMacrocycleStatus(m);
+        return st.daysLeft >= -7; // tolerância de 1 semana
+      });
+
+      // se houver mais de um elegível, pegar o mais recente por startDate
+      const currentMacro = eligibleMacros.sort((a, b) =>
+        new Date(b.startDate) - new Date(a.startDate))[0];
+
       const wks = (await db.getAll('workouts'))
         .filter(w => w.studentId === sid)
+        .filter(w => !w.macrocycleId || (currentMacro && w.macrocycleId === currentMacro.id))
         .sort((a, b) => new Date(b.date) - new Date(a.date));
       wSel.disabled = false;
       wSel.innerHTML = '<option value="">Selecione o treino</option>' +
