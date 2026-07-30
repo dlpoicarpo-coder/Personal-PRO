@@ -113,7 +113,13 @@ export async function renderTracker() {
   const sessions = await db.getAll('sessions');
 
   if (!state.session) {
-    const running = sessions.find(s => s.status === 'running' && !s.isSolo && !(s.data && s.data.isSolo));
+    const running = sessions.find(s => {
+      if (s.status !== 'running' || s.isSolo || (s.data && s.data.isSolo)) return false;
+      if (!s.lastAutoSave) return false; // nunca progrediu, é lixo
+      const startedAt = s.startTime || 0;
+      const horasDesde = (Date.now() - startedAt) / 3600000;
+      return horasDesde < 4; // só retoma sessão recente
+    });
     if (running) {
       state.session  = running;
       state.setLog   = running.setLog || [];
