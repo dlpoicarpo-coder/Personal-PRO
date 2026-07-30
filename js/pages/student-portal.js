@@ -3269,7 +3269,10 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     clearInterval(soloTimerInterval);
     stopRestTimer();
     
-    const durationMin = soloStartTime ? Math.round((new Date() - soloStartTime) / 60000) : 0;
+    let durationMin = soloStartTime ? Math.round((new Date() - soloStartTime) / 60000) : 0;
+    const durationCapped = durationMin > 180;
+    if (durationCapped) durationMin = 180;
+
     const collected = collectSoloSessionData();
     const totalVolume = collected.setLog.reduce((t, x) => t + (x.load || 0) * (x.reps || 0), 0);
     const totalSets = collected.setLog.length;
@@ -3286,6 +3289,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       status: 'completed',
       isSolo: true,
       durationMin,
+      durationCapped,
       totalDuration: durationMin * 60,
       totalVolume,
       totalSets,
