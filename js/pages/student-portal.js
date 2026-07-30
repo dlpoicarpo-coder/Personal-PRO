@@ -6390,9 +6390,14 @@ window.showWorkoutSheet = function(w) {
     if (w.exercises[i].groupId) continue;
     const gid = `grp_${++gc}`;
     w.exercises[i].groupId = gid;
+    let membersInGroup = 1;
+    const maxGroupSize = (w.exercises[i].method === 'Bi-set') ? 2 : Infinity;
     for (let j = i + 1; j < w.exercises.length; j++) {
-      if (w.exercises[j].method === w.exercises[i].method) w.exercises[j].groupId = gid;
-      else break;
+      if (membersInGroup >= maxGroupSize) break;
+      if (w.exercises[j].method === w.exercises[i].method) {
+        w.exercises[j].groupId = gid;
+        membersInGroup++;
+      } else break;
     }
   }
 

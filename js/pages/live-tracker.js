@@ -339,9 +339,14 @@ function renderLiveView(students) {
       if (exs[i].groupId) continue;
       const gid = `grp_${++grpCounter}`;
       exs[i].groupId = gid;
+      let membersInGroup = 1;
+      const maxGroupSize = (exs[i].method === 'Bi-set') ? 2 : Infinity;
       for (let j = i + 1; j < exs.length; j++) {
-        if (exs[j].method === exs[i].method) exs[j].groupId = gid;
-        else break;
+        if (membersInGroup >= maxGroupSize) break;
+        if (exs[j].method === exs[i].method) {
+          exs[j].groupId = gid;
+          membersInGroup++;
+        } else break;
       }
     }
   })();

@@ -1180,9 +1180,13 @@ export function buildExecutionQueue(rawExercises = []) {
     if (ex.groupId) continue;
     const groupId = `grp_${++groupCounter}`;
     ex.groupId = groupId;
+    let membersInGroup = 1;
+    const maxGroupSize = (ex.method === 'Bi-set') ? 2 : Infinity;
     for (let j = i + 1; j < exs.length; j++) {
+      if (membersInGroup >= maxGroupSize) break;
       if (exs[j].method === ex.method) {
         exs[j].groupId = groupId;
+        membersInGroup++;
       } else {
         break;
       }
@@ -1316,9 +1320,13 @@ function collectExercises() {
     // Agrupar todos os consecutivos com mesmo método
     const groupId = `grp_${++groupCounter}`;
     ex.groupId = groupId;
+    let membersInGroup = 1;
+    const maxGroupSize = (ex.method === 'Bi-set') ? 2 : Infinity;
     for (let j = i + 1; j < exercises.length; j++) {
+      if (membersInGroup >= maxGroupSize) break;
       if (exercises[j].method === ex.method) {
         exercises[j].groupId = groupId;
+        membersInGroup++;
       } else {
         break; // para na primeira quebra de sequência
       }
