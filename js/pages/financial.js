@@ -228,7 +228,8 @@ export async function renderFinancial() {
       </div>
 
       ${records.length ? `
-      <div class="table-container">
+      <!-- Desktop Table (>= 769px) -->
+      <div class="table-container financial-desktop-table">
         <table class="data-table" id="finTable">
           <thead><tr>
             <th>Aluno</th><th>Descrição</th><th>Valor</th><th>Vencimento</th>
@@ -274,7 +275,63 @@ export async function renderFinancial() {
             }).join('')}
           </tbody>
         </table>
-      </div>` : `
+      </div>
+
+      <!-- Mobile Stacked Cards (<= 768px) -->
+      <div class="financial-mobile-cards">
+        ${records.map(r => {
+          const st = students.find(s => s.id === r.studentId);
+          const due = parseLocalDate(r.dueDate);
+          const isOverdue = r.status==='pending' && due < now;
+          const statusLabel = r.status==='paid' ? 'Pago' : isOverdue ? 'Vencido' : 'Pendente';
+          const statusBadge = r.status==='paid' ? 'success' : isOverdue ? 'danger' : 'warning';
+          const rMonth = due.getMonth(); const rYear = due.getFullYear();
+          const isInSelMonth = rMonth === selMonth && rYear === selYear;
+          return `
+            <div class="card financial-card-mobile" data-status="${isOverdue?'overdue':r.status}" data-student-id="${r.studentId}" data-name="${(st?.name||'').toLowerCase()}" data-in-month="${isInSelMonth?'1':'0'}">
+              <!-- Topo: Aluno + Status Badge -->
+              <div class="card-header" style="padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border-color);justify-content:space-between;align-items:center">
+                <div class="flex items-center gap-sm">
+                  <div class="avatar avatar-sm" style="width:26px;height:26px;font-size:0.68rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+                  <span style="font-weight:600;font-size:0.9rem;color:var(--text-primary)">${st?.name||'?'}</span>
+                </div>
+                <span class="badge badge-${statusBadge}">${statusLabel}</span>
+              </div>
+
+              <!-- Destaque: Valor + Descrição -->
+              <div style="margin-bottom:8px">
+                <div style="font-size:1.1rem;font-weight:800;color:${r.status==='paid'?'var(--success)':isOverdue?'var(--danger)':'var(--text-primary)'}">
+                  ${fmtBRL(r.amount)}
+                </div>
+                ${r.description ? `<div class="text-xs text-muted" style="margin-top:2px">${r.description}</div>` : ''}
+              </div>
+
+              <!-- Meta info chips -->
+              <div class="flex items-center gap-xs flex-wrap text-xs text-muted" style="margin-bottom:12px">
+                <span style="${isOverdue?'color:var(--danger);font-weight:600':''}">Venc: ${Calc.formatDate(r.dueDate)}</span>
+                ${r.paidDate ? `<span>· Pago em: ${Calc.formatDate(r.paidDate)}</span>` : ''}
+                ${r.paymentMethod ? `<span>· ${r.paymentMethod}</span>` : ''}
+              </div>
+
+              <!-- Rodapé com ações -->
+              <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:10px;margin-top:4px">
+                ${r.status!=='paid' ? `
+                  <button class="btn btn-secondary btn-sm mark-paid" data-id="${r.id}" title="Marcar como pago"
+                    style="padding:6px 12px;min-height:38px;color:var(--success);font-weight:600;gap:4px">
+                    ${ICON_CHECK} <span>Pago</span>
+                  </button>
+                  ${st?.phone ? `<button class="btn btn-ghost btn-sm wa-remind" data-id="${r.id}" data-student="${r.studentId}" data-amount="${r.amount}" data-due="${r.dueDate}"
+                    title="Cobrar via WhatsApp" style="padding:6px 10px;min-height:38px;color:#25d366">${ICON_WA}</button>` : ''}
+                ` : ''}
+                <button class="btn btn-ghost btn-sm edit-fin" data-id="${r.id}" title="Editar"
+                  style="padding:6px 10px;min-height:38px;color:var(--text-muted)">${ICON_EDIT}</button>
+                <button class="btn btn-ghost btn-sm delete-fin" data-id="${r.id}" title="Excluir"
+                  style="padding:6px 10px;min-height:38px;color:var(--danger)">${ICON_DEL}</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>`` : `
       <div class="empty-state" style="padding:40px">
         <div class="empty-icon">—</div>
         <h3>Nenhum registro financeiro</h3>
@@ -400,7 +457,7 @@ export function initFinancial(navigateFn) {
   let activeStudent   = '';
 
   function applyFinFilters() {
-    document.querySelectorAll('#finTable tbody tr').forEach(row => {
+    document.querySelectorAll('#finTable tbody tr, .financial-card-mobile').forEach(row => {
       const st      = row.dataset.status    || '';
       const nm      = row.dataset.name      || '';
       const sid     = row.dataset.studentId || '';

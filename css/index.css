@@ -484,7 +484,16 @@ h4 {
   border: 1px solid var(--border-color);
 }
 
-.workouts-mobile-cards {
+.workouts-mobile-cards,
+.financial-mobile-cards,
+.biofeedback-mobile-cards,
+.assessments-mobile-cards,
+.exercises-mobile-cards,
+.anamnesis-mobile-cards,
+.reports-mobile-cards,
+.calendar-mobile-cards,
+.weekly-mobile-cards,
+.mobile-cards-container {
   display: none;
 }
 
@@ -1442,17 +1451,38 @@ h4 {
     min-width: 580px;
   }
 
-  .workouts-desktop-table {
+  .desktop-table-container,
+  .workouts-desktop-table,
+  .financial-desktop-table,
+  .biofeedback-desktop-table,
+  .assessments-desktop-table,
+  .exercises-desktop-table,
+  .anamnesis-desktop-table,
+  .reports-desktop-table {
     display: none !important;
   }
 
-  .workouts-mobile-cards {
+  .mobile-cards-container,
+  .workouts-mobile-cards,
+  .financial-mobile-cards,
+  .biofeedback-mobile-cards,
+  .assessments-mobile-cards,
+  .exercises-mobile-cards,
+  .anamnesis-mobile-cards,
+  .reports-mobile-cards {
     display: flex !important;
     flex-direction: column;
     gap: 12px;
   }
 
-  .workout-card-mobile {
+  .responsive-card-mobile,
+  .workout-card-mobile,
+  .financial-card-mobile,
+  .biofeedback-card-mobile,
+  .assessments-card-mobile,
+  .exercises-card-mobile,
+  .anamnesis-card-mobile,
+  .reports-card-mobile {
     padding: 14px 16px;
     margin-bottom: 0;
   }

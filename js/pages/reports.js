@@ -350,7 +350,9 @@ async function renderStudentReport(studentId, cycleFilter = '') {
         <span class="text-xs text-muted">${progressionItems.length} exercícios com dados suficientes</span>
       </div>
       <p class="text-xs text-muted mb-md">Evolução da carga utilizada ao longo das sessões registradas. Verde = progresso, vermelho = regressão.</p>
-      <div class="table-container">
+      
+      <!-- Desktop Table (>= 769px) -->
+      <div class="table-container reports-desktop-table">
         <table class="data-table">
           <thead><tr>
             <th>Exercício</th>
@@ -378,18 +380,45 @@ async function renderStudentReport(studentId, cycleFilter = '') {
                 <td style="text-align:center;min-width:100px">
                   <div style="display:flex;align-items:center;gap:6px;justify-content:center">
                     <div style="width:60px;height:6px;background:var(--border-color);border-radius:3px;overflow:hidden">
-                      <div style="height:100%;width:${barWidth}%;background:${deltaColor};border-radius:3px"></div>
+                      <div style="width:${barWidth}%;height:100%;background:${deltaColor};border-radius:3px"></div>
                     </div>
-                    <span style="color:${deltaColor};font-weight:700;font-size:0.8rem">${arrow} ${Math.abs(p.pct)}%</span>
+                    <span style="color:${deltaColor};font-weight:700;font-size:0.8rem">${arrow} ${p.pct > 0 ? '+' : ''}${Math.abs(p.pct)}%</span>
                   </div>
                 </td>
-                <td style="text-align:center;font-size:0.82rem" class="hide-mobile">${(p.totalVol/1000).toFixed(1)}t</td>
-                <td style="text-align:center;color:var(--text-muted);font-size:0.82rem" class="hide-mobile">${p.sessions}</td>
+                <td style="text-align:center;font-size:0.82rem" class="hide-mobile">${p.totalVolume}kg</td>
+                <td style="text-align:center;color:var(--text-muted);font-size:0.82rem" class="hide-mobile">${p.totalSets}</td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>
       </div>
+
+      <!-- Mobile Stacked Cards (<= 768px) -->
+      <div class="reports-mobile-cards">
+        ${progressionItems.map(p => {
+          const deltaColor = p.delta > 0 ? 'var(--success)' : p.delta < 0 ? 'var(--danger)' : 'var(--text-muted)';
+          const arrow      = p.delta > 0 ? '↑' : p.delta < 0 ? '↓' : '=';
+          return `
+            <div class="card reports-card-mobile" style="padding:12px 14px; margin-bottom: 8px">
+              <div class="card-header" style="padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid var(--border-color);justify-content:space-between;align-items:center">
+                <strong style="font-size:0.9rem;color:var(--text-primary)">${p.name}</strong>
+                <span style="font-size:0.8rem;color:${deltaColor};font-weight:700">${arrow} ${p.pct > 0 ? '+' : ''}${Math.abs(p.pct)}%</span>
+              </div>
+              <div class="flex items-center gap-md mb-xs" style="font-size:0.82rem">
+                <div>Inicial: <span style="color:var(--text-muted)">${p.first.load}kg</span></div>
+                <div>Última: <strong style="color:var(--text-primary)">${p.last.load}kg</strong></div>
+                <div>Máx: <strong style="color:var(--warning)">${p.maxLoad}kg</strong></div>
+              </div>
+              <div class="flex items-center gap-xs flex-wrap text-xs text-muted">
+                <span>Δ Carga: <strong style="color:${deltaColor}">${p.delta > 0 ? '+' : ''}${p.delta}kg</strong></span>
+                <span>· Vol: ${p.totalVolume}kg</span>
+                <span>· Séries: ${p.totalSets}</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
       <div class="mt-sm" style="height:200px;position:relative">
         <canvas id="loadProgressChart"></canvas>
       </div>

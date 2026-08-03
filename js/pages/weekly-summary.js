@@ -96,7 +96,8 @@ export async function renderWeeklySummary() {
       <div class="flex flex-col gap-lg">
         <div class="card" style="padding:0">
           <div class="card-header" style="padding:16px"><span class="card-title" style="color:var(--primary)">Atividade por Aluno</span></div>
-          <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+          <!-- Desktop Table (>= 769px) -->
+          <div class="table-container weekly-desktop-table" style="max-height: 500px; overflow-y: auto;">
             <table class="data-table" style="width:100%; font-size:0.85rem">
               <thead>
                 <tr>
@@ -122,6 +123,28 @@ export async function renderWeeklySummary() {
                 `).join('')}
               </tbody>
             </table>
+          </div>
+
+          <!-- Mobile Stacked Cards (<= 768px) -->
+          <div class="weekly-mobile-cards" style="padding:12px">
+            ${studentMetrics.length === 0 ? '<p class="text-muted text-center" style="padding:12px">Nenhum aluno ativo.</p>' : ''}
+            ${studentMetrics.map(s => `
+              <div class="card weekly-card-mobile" style="padding:12px 14px">
+                <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin-bottom:8px">
+                  ${s.name}
+                </div>
+                <div class="flex items-center gap-xs flex-wrap text-xs" style="margin-bottom:6px">
+                  <span style="color:var(--success);font-weight:600">Concluídas: ${s.completedCount}</span>
+                  <span>·</span>
+                  <span style="color:${s.missedCount > 0 ? 'var(--danger)' : 'var(--text-muted)'}">Faltas: ${s.missedCount}</span>
+                </div>
+                <div class="flex items-center gap-xs flex-wrap text-xs text-muted">
+                  <span>Vol: ${s.volume ? (s.volume/1000).toFixed(1)+'t' : '-'}</span>
+                  <span>· Cal: ${s.kcal ? Math.round(s.kcal) + ' kcal' : '-'}</span>
+                  <span>· Dens: ${s.density ? Math.round(s.density) + ' kg/min' : '-'}</span>
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
       </div>

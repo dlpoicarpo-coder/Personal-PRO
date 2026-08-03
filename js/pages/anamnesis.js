@@ -136,7 +136,8 @@ export async function renderAnamnesis() {
         <span class="card-title">Formulários Recebidos</span>
         <span class="text-xs text-muted">${submissions.length} registro(s)</span>
       </div>
-      <div class="table-container">
+      <!-- Desktop Table (>= 769px) -->
+      <div class="table-container anamnesis-desktop-table">
         <table class="data-table">
           <thead><tr><th>Aluno</th><th>Recebido</th><th>Objetivo</th><th>Experiência</th><th>Status</th><th></th></tr></thead>
           <tbody>
@@ -165,6 +166,40 @@ export async function renderAnamnesis() {
             </tr>`).join('')}
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile Stacked Cards (<= 768px) -->
+      <div class="anamnesis-mobile-cards">
+        ${submissions.map(s => `
+          <div class="card anamnesis-card-mobile">
+            <!-- Topo: Aluno + Status -->
+            <div class="card-header" style="padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border-color);justify-content:space-between;align-items:center">
+              <div class="flex items-center gap-sm">
+                <div class="avatar avatar-sm">${initials(s.fullName)}</div>
+                <div>
+                  <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary)">${s.fullName || '—'}</div>
+                  ${s.phone ? `<div class="text-xs text-muted">${s.phone}</div>` : ''}
+                </div>
+              </div>
+              ${s._converted ? `<span class="badge badge-success">Cadastrado</span>` : `<span class="badge badge-warning">Pendente</span>`}
+            </div>
+
+            <!-- Chips Meta: Objetivo | Experiência | Data -->
+            <div class="flex items-center gap-xs flex-wrap text-xs text-muted" style="margin-bottom:12px">
+              ${s.mainGoal ? `<span class="badge badge-info">${s.mainGoal}</span>` : ''}
+              <span>Recebido: ${s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('pt-BR') : '—'}</span>
+              ${s.experience ? `<span>· Exp: ${s.experience}</span>` : ''}
+            </div>
+
+            <!-- Rodapé: Ações -->
+            <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:10px;margin-top:4px">
+              ${!s._converted ? `<button class="btn btn-primary btn-sm convert-anamnese" data-id="${s.id}" style="padding:6px 12px;min-height:38px;display:flex;align-items:center;gap:4px;font-size:0.8rem">${ICON_USER} <span>Cadastrar</span></button>` : ''}
+              <button class="btn btn-ghost btn-sm view-anamnese" data-id="${s.id}" title="Ver" style="padding:6px 10px;min-height:38px;color:var(--accent)">${ICON_EYE}</button>
+              ${s.phone ? `<a href="https://wa.me/${(s.phone||'').replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-sm" style="padding:6px 10px;min-height:38px;color:#25d366">${ICON_WA}</a>` : ''}
+              <button class="btn btn-ghost btn-sm del-anamnese" data-id="${s.id}" style="padding:6px 10px;min-height:38px;color:var(--danger)">${ICON_DEL}</button>
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>` : `
     <div class="empty-state">

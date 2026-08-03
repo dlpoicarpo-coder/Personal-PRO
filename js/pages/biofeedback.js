@@ -217,7 +217,8 @@ async function renderBfContent(entries, students, filterStudentId, limitOverride
         <span class="text-xs text-muted">${recent.length}/${filtered.length}</span>
       </div>
       ${recent.length ? `
-      <div class="table-container">
+      <!-- Desktop Table (>= 769px) -->
+      <div class="table-container biofeedback-desktop-table">
         <table class="data-table">
           <thead><tr>
             <th>Data</th>
@@ -265,6 +266,61 @@ async function renderBfContent(entries, students, filterStudentId, limitOverride
             </tr>`;
           }).join('')}</tbody>
         </table>
+      </div>
+
+      <!-- Mobile Stacked Cards (<= 768px) -->
+      <div class="biofeedback-mobile-cards">
+        ${recent.map(e => {
+          const st     = students.find(s => s.id === e.studentId);
+          const status = overallStatus(e);
+          const rec    = trainingRecommendation(e);
+          const painLabel = Array.isArray(e.painRegions) && e.painRegions.length > 0
+            ? e.painRegions.slice(0,2).join(', ') + (e.painRegions.length > 2 ? ` +${e.painRegions.length-2}` : '')
+            : e.painRegion || '';
+          const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+          return `
+            <div class="card biofeedback-card-mobile">
+              <!-- Topo: Aluno/Data + Status Badge -->
+              <div class="card-header" style="padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border-color);justify-content:space-between;align-items:center">
+                <div>
+                  <div class="flex items-center gap-sm">
+                    ${st ? `<div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem">${st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>` : ''}
+                    <span style="font-weight:700;font-size:0.9rem;color:var(--text-primary)">${st?.name || 'Registro'}</span>
+                  </div>
+                  <div class="text-xs text-muted" style="margin-top:2px">${Calc.formatDate(e.date)}</div>
+                </div>
+                <span class="badge badge-${status.color}" style="font-size:0.75rem">${status.label}</span>
+              </div>
+
+              <!-- Destaque: Recomendação -->
+              <div style="font-size:0.82rem;font-weight:600;color:var(--primary);margin-bottom:8px">
+                Rec: ${rec.label}
+              </div>
+
+              <!-- Chips Meta: Sono | TQR | Alim | Estresse | Dor | PSE -->
+              <div class="flex items-center gap-xs flex-wrap text-xs" style="margin-bottom:12px">
+                <span style="color:${colorForVal(e.sleep,false)}">Sono: ${e.sleep ? `${Math.round(e.sleep / 2)}/5` : '-'}</span>
+                <span>·</span>
+                <span style="color:${colorForVal(e.tqr ?? e.energy,false)}">TQR: ${e.tqr ?? e.energy ?? '-'}</span>
+                <span>·</span>
+                <span style="color:${colorForFood(e.food)}">Alim: ${e.food ? e.food+'/5' : '-'}</span>
+                <span>·</span>
+                <span style="color:${colorForVal(e.stress,true)}">Estresse: ${e.stress||'-'}</span>
+                <span>·</span>
+                <span style="color:${(e.pse||0)>8?'var(--danger)':(e.pse||0)>6?'var(--warning)':'var(--success)'}">PSE: ${e.pse||'-'}</span>
+                ${painLabel ? `<span>· <span style="color:var(--warning)">Dor: ${painLabel}</span></span>` : ''}
+              </div>
+
+              <!-- Rodapé: Ações -->
+              <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:10px;margin-top:4px">
+                <button class="btn btn-ghost btn-sm view-bf" data-id="${e.id}" title="Visualizar" style="padding:6px 10px;min-height:38px;color:var(--accent)">${ICON_EYE}</button>
+                <button class="btn btn-ghost btn-sm edit-bf" data-id="${e.id}" title="Editar" style="padding:6px 10px;min-height:38px;color:var(--text-muted)">${ICON_EDIT}</button>
+                ${st?.phone ? `<button class="btn btn-ghost btn-sm wa-bf" data-student="${e.studentId}" title="WhatsApp" style="padding:6px 10px;min-height:38px;color:#25d366">${ICON_WA}</button>` : ''}
+                <button class="btn btn-ghost btn-sm delete-bf" data-id="${e.id}" title="Excluir" style="padding:6px 10px;min-height:38px;color:var(--danger)">${ICON_DEL}</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
       ${hasMore ? `
       <div style="text-align:center;margin-top:12px">

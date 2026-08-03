@@ -185,35 +185,72 @@ async function buildCalendarHTML() {
           .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
           .slice(0, 20);
         if (!upcoming.length) return '<p class="text-muted text-center" style="padding:20px">Nenhuma sessão futura agendada</p>';
-        return `<div class="table-container" style="max-height: 400px; overflow-y: auto; border-radius: var(--radius-md);"><table class="data-table"><thead>
-          <tr><th>Data</th><th>Hora</th><th>Aluno</th><th>Treino</th><th>Dur.</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>${upcoming.map(ev => {
-          const st = students.find(s => s.id === ev.studentId);
-          const sc = statusColors[ev.status] || 'info';
-          const isPast = ev.date < today;
-          return `<tr style="${isPast ? 'opacity:0.6' : ''}">
-            <td>${Calc.formatDate(ev.date)}</td>
-            <td>${ev.time || '—'}</td>
-            <td>
-              <div class="flex items-center gap-sm">
-                <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
-                ${st?.name || '?'}
+        return `<!-- Desktop Table (>= 769px) -->
+        <div class="table-container calendar-desktop-table" style="max-height: 400px; overflow-y: auto; border-radius: var(--radius-md);">
+          <table class="data-table"><thead>
+            <tr><th>Data</th><th>Hora</th><th>Aluno</th><th>Treino</th><th>Dur.</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>${upcoming.map(ev => {
+            const st = students.find(s => s.id === ev.studentId);
+            const sc = statusColors[ev.status] || 'info';
+            const isPast = ev.date < today;
+            return `<tr style="${isPast ? 'opacity:0.6' : ''}">
+              <td>${Calc.formatDate(ev.date)}</td>
+              <td>${ev.time || '—'}</td>
+              <td>
+                <div class="flex items-center gap-sm">
+                  <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+                  ${st?.name || '?'}
+                </div>
+              </td>
+              <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.workoutName || '-'}</td>
+              <td>${ev.duration || 60}min</td>
+              <td><span class="badge badge-${sc}">${statusLabels[ev.status] || ev.status}</span></td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-primary btn-sm start-tracker" data-id="${ev.id}" data-student="${ev.studentId}" data-workout="${ev.workoutId || ''}" style="padding:4px 8px;font-size:0.75rem">▶</button>
+                  <button class="btn btn-ghost btn-sm wa-reminder" data-id="${ev.id}" title="WhatsApp" style="padding:4px 6px;color:#25d366">${ICON_WA}</button>
+                  <button class="btn btn-ghost btn-sm edit-event" data-id="${ev.id}" title="Editar" style="padding:4px 6px;color:var(--text-muted)">${ICON_EDIT}</button>
+                  <button class="btn btn-ghost btn-sm del-event" data-id="${ev.id}" title="Excluir" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
+                </div>
+              </td>
+            </tr>`;
+          }).join('')}</tbody></table>
+        </div>
+
+        <!-- Mobile Stacked Cards (<= 768px) -->
+        <div class="calendar-mobile-cards">
+          ${upcoming.map(ev => {
+            const st = students.find(s => s.id === ev.studentId);
+            const sc = statusColors[ev.status] || 'info';
+            const isPast = ev.date < today;
+            return `
+              <div class="card calendar-card-mobile" style="${isPast ? 'opacity:0.7' : ''}">
+                <div class="card-header" style="padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border-color);justify-content:space-between;align-items:center">
+                  <div class="flex items-center gap-sm">
+                    <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+                    <span style="font-weight:700;font-size:0.9rem;color:var(--text-primary)">${st?.name || '?'}</span>
+                  </div>
+                  <span class="badge badge-${sc}">${statusLabels[ev.status] || ev.status}</span>
+                </div>
+                <div style="font-weight:600;font-size:0.85rem;color:var(--primary);margin-bottom:6px">
+                  ${ev.workoutName || 'Sessão de Treino'}
+                </div>
+                <div class="flex items-center gap-xs flex-wrap text-xs text-muted" style="margin-bottom:12px">
+                  <span>Data: ${Calc.formatDate(ev.date)}</span>
+                  <span>· Hora: ${ev.time || '—'}</span>
+                  <span>· Duração: ${ev.duration || 60}min</span>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:10px;margin-top:4px">
+                  <button class="btn btn-primary btn-sm start-tracker" data-id="${ev.id}" data-student="${ev.studentId}" data-workout="${ev.workoutId || ''}" style="padding:6px 12px;min-height:38px;font-size:0.8rem;gap:4px">▶ <span>Iniciar</span></button>
+                  <button class="btn btn-ghost btn-sm wa-reminder" data-id="${ev.id}" title="WhatsApp" style="padding:6px 10px;min-height:38px;color:#25d366">${ICON_WA}</button>
+                  <button class="btn btn-ghost btn-sm edit-event" data-id="${ev.id}" title="Editar" style="padding:6px 10px;min-height:38px;color:var(--text-muted)">${ICON_EDIT}</button>
+                  <button class="btn btn-ghost btn-sm del-event" data-id="${ev.id}" title="Excluir" style="padding:6px 10px;min-height:38px;color:var(--danger)">${ICON_DEL}</button>
+                </div>
               </div>
-            </td>
-            <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.workoutName || '-'}</td>
-            <td>${ev.duration || 60}min</td>
-            <td><span class="badge badge-${sc}">${statusLabels[ev.status] || ev.status}</span></td>
-            <td>
-              <div style="display:flex;gap:4px">
-                <button class="btn btn-primary btn-sm start-tracker" data-id="${ev.id}" data-student="${ev.studentId}" data-workout="${ev.workoutId || ''}" style="padding:4px 8px;font-size:0.75rem">▶</button>
-                <button class="btn btn-ghost btn-sm wa-reminder" data-id="${ev.id}" title="WhatsApp" style="padding:4px 6px;color:#25d366">${ICON_WA}</button>
-                <button class="btn btn-ghost btn-sm edit-event" data-id="${ev.id}" title="Editar" style="padding:4px 6px;color:var(--text-muted)">${ICON_EDIT}</button>
-                <button class="btn btn-ghost btn-sm del-event" data-id="${ev.id}" title="Excluir" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
-              </div>
-            </td>
-          </tr>`;
-        }).join('')}</tbody></table></div>`;
+            `;
+          }).join('')}
+        </div>`;
       })()}
     </div>
   `;

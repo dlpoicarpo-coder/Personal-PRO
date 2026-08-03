@@ -220,7 +220,8 @@ export async function renderAssessments() {
           <p>Clique em "+ Nova Avaliação" para registrar</p>
         </div>` : `
         <div class="card mb-lg">
-          <div class="table-container">
+          <!-- Desktop Table (>= 769px) -->
+          <div class="table-container assessments-desktop-table">
             <table class="data-table">
               <thead><tr>
                 <th>Aluno</th><th>Data</th><th>Peso</th><th>Altura</th><th>IMC</th>
@@ -282,6 +283,63 @@ export async function renderAssessments() {
                 `;
               }).join('')}
             </table>
+          </div>
+
+          <!-- Mobile Stacked Cards (<= 768px) -->
+          <div class="assessments-mobile-cards">
+            ${compStudents.map(student => {
+              const studentAssessments = compGroups[student.id] || [];
+              return studentAssessments.map(a => {
+                const imc  = a.peso&&a.altura?Calc.imc(a.peso,a.altura):null;
+                const imcC = imc?Calc.imcClassificacao(imc):null;
+                const pctColor = (a.percentualGordura||0)>25?'var(--warning)':'var(--success)';
+                return `
+                  <div class="card assessments-card-mobile" data-student="${a.studentId}">
+                    <!-- Topo: Aluno + Data -->
+                    <div class="card-header" style="padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border-color);justify-content:space-between;align-items:center">
+                      <div class="flex items-center gap-sm">
+                        <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.65rem; background: var(--primary); color: white;">${ini(student.name)}</div>
+                        <span style="font-weight:700;font-size:0.9rem;color:var(--text-primary)">${student.name}</span>
+                      </div>
+                      <span class="text-xs text-muted">${Calc.formatDate(a.date)}</span>
+                    </div>
+
+                    <!-- Destaque: Peso | % Gordura | M. Magra -->
+                    <div class="flex items-center gap-md" style="margin-bottom:8px">
+                      <div>
+                        <div class="text-xs text-muted">Peso</div>
+                        <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">${a.peso?a.peso+'kg':'—'}</div>
+                      </div>
+                      <div>
+                        <div class="text-xs text-muted">% Gordura</div>
+                        <div style="font-size:1rem;font-weight:700;color:${pctColor}">
+                          ${a.percentualGordura?Calc.formatNum(a.percentualGordura)+'%':(a.massaGorda?Calc.formatNum(a.massaGorda)+'kg':'—')}
+                        </div>
+                      </div>
+                      <div>
+                        <div class="text-xs text-muted">M. Magra</div>
+                        <div style="font-size:1rem;font-weight:700;color:var(--primary)">${a.massaMagra?Calc.formatNum(a.massaMagra)+'kg':'—'}</div>
+                      </div>
+                    </div>
+
+                    <!-- Meta Chips: IMC | Altura | Cintura | RCQ -->
+                    <div class="flex items-center gap-xs flex-wrap text-xs text-muted" style="margin-bottom:12px">
+                      ${imc ? `<span>IMC: <span class="badge badge-${imcC.color}" style="font-size:0.65rem">${Calc.formatNum(imc)}</span></span>` : ''}
+                      ${a.altura ? `<span>· Altura: ${a.altura}cm</span>` : ''}
+                      ${a.cintura ? `<span>· Cintura: ${a.cintura}cm</span>` : ''}
+                      ${a.rcq ? `<span>· RCQ: ${Calc.formatNum(a.rcq,2)}</span>` : ''}
+                    </div>
+
+                    <!-- Rodapé de Ações -->
+                    <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;border-top:1px solid var(--border-color);padding-top:10px;margin-top:4px">
+                      <button class="btn btn-ghost btn-sm view-assessment" data-id="${a.id}" style="padding:6px 10px;min-height:38px;color:var(--accent)">${ICON_EYE}</button>
+                      <button class="btn btn-ghost btn-sm edit-assessment" data-id="${a.id}" style="padding:6px 10px;min-height:38px;color:var(--text-muted)">${ICON_EDIT}</button>
+                      <button class="btn btn-ghost btn-sm delete-assessment" data-id="${a.id}" style="padding:6px 10px;min-height:38px;color:var(--danger)">${ICON_DEL}</button>
+                    </div>
+                  </div>
+                `;
+              }).join('');
+            }).join('')}
           </div>
         </div>
 
