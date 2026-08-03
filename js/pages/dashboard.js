@@ -31,9 +31,8 @@ export async function renderDashboard() {
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 10);
 
-  // 4. Aderência (semana atual)
+  // 4. Aderência (semana atual e semana passada)
   const activeMacros = macrocycles.filter(m => m.status === 'active');
-  const studentAdherences = [];
   
   const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
@@ -45,27 +44,46 @@ export async function renderDashboard() {
   const weekStartStr = new Date(weekStart.getTime() - weekStart.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const weekEndStr = new Date(weekEnd.getTime() - weekEnd.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-  activeMacros.forEach(m => {
-    const previstos_semana = workouts.filter(w =>
-      w.macrocycleId === m.id &&
-      w.date >= weekStartStr && w.date <= weekEndStr
-    );
-    
-    if (previstos_semana.length > 0) {
-      const realizados_semana = completedSessions.filter(s => 
-        previstos_semana.some(p => p.id === s.workoutId)
-      );
-      
-      let aderencia = realizados_semana.length / previstos_semana.length;
-      if (aderencia > 1) aderencia = 1;
-      studentAdherences.push(aderencia);
-    }
-  });
+  const prevWeekStart = new Date(weekStart);
+  prevWeekStart.setDate(weekStart.getDate() - 7);
+  const prevWeekEnd = new Date(prevWeekStart);
+  prevWeekEnd.setDate(prevWeekStart.getDate() + 6);
 
-  let aderenciaGeral = null;
-  if (studentAdherences.length > 0) {
-    const sum = studentAdherences.reduce((acc, curr) => acc + curr, 0);
-    aderenciaGeral = Math.round((sum / studentAdherences.length) * 100);
+  const prevWeekStartStr = new Date(prevWeekStart.getTime() - prevWeekStart.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const prevWeekEndStr = new Date(prevWeekEnd.getTime() - prevWeekEnd.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+  function getAdherenceForRange(startStr, endStr) {
+    const adherences = [];
+    activeMacros.forEach(m => {
+      const previstos = workouts.filter(w =>
+        w.macrocycleId === m.id &&
+        w.date >= startStr && w.date <= endStr
+      );
+      if (previstos.length > 0) {
+        const realizados = completedSessions.filter(s => 
+          previstos.some(p => p.id === s.workoutId)
+        );
+        let val = realizados.length / previstos.length;
+        if (val > 1) val = 1;
+        adherences.push(val);
+      }
+    });
+    if (!adherences.length) return null;
+    const sum = adherences.reduce((acc, curr) => acc + curr, 0);
+    return Math.round((sum / adherences.length) * 100);
+  }
+
+  const aderenciaGeral = getAdherenceForRange(weekStartStr, weekEndStr);
+  const aderenciaPassada = getAdherenceForRange(prevWeekStartStr, prevWeekEndStr);
+
+  let aderenciaChangeHtml = 'sessões realizadas vs. previstas';
+  if (aderenciaGeral !== null && aderenciaPassada !== null) {
+    const diff = aderenciaGeral - aderenciaPassada;
+    if (diff > 0) {
+      aderenciaChangeHtml = `<span style="color:var(--success);font-weight:600">▲ +${diff}% vs semana passada</span>`;
+    } else if (diff < 0) {
+      aderenciaChangeHtml = `<span style="color:var(--danger);font-weight:600">▼ ${diff}% vs semana passada</span>`;
+    }
   }
 
   // 5. Agenda de hoje
@@ -144,6 +162,23 @@ export async function renderDashboard() {
     .filter(({ status }) => status.daysLeft > 0 && status.daysLeft <= 14)
     .sort((a,b) => a.status.daysLeft - b.status.daysLeft);
 
+  // 7. Reavaliações Pendentes (> 90 dias ou nunca avaliado)
+  const pendingReassessments = activeStudents.map(st => {
+    const studentAss = assessments.filter(a => a.studentId === st.id);
+    const lastAss = studentAss.sort((a, b) => new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0))[0];
+    const daysSince = lastAss
+      ? Math.floor((now.getTime() - new Date(lastAss.date || lastAss.createdAt).getTime()) / 86400000)
+      : null;
+    return { student: st, lastAss, daysSince };
+  })
+  .filter(item => item.daysSince === null || item.daysSince > 90)
+  .sort((a, b) => {
+    if (a.daysSince === null && b.daysSince !== null) return -1;
+    if (a.daysSince !== null && b.daysSince === null) return 1;
+    if (a.daysSince === null && b.daysSince === null) return 0;
+    return b.daysSince - a.daysSince;
+  });
+
 
   return `
     <div class="page-header">
@@ -175,82 +210,135 @@ export async function renderDashboard() {
       <div class="stat-card">
         <div class="stat-value ${aderenciaGeral === null ? 'text-gradient' : ''}" ${aderenciaGeral !== null ? `style="color: ${aderenciaGeral >= 80 ? 'var(--success)' : aderenciaGeral >= 50 ? 'var(--warning)' : 'var(--danger)'};"` : ''}>${aderenciaGeral !== null ? aderenciaGeral + '%' : '—'}</div>
         <div class="stat-label">Aderência (semana)</div>
-        <div class="stat-change">sessões realizadas vs. previstas</div>
+        <div class="stat-change">${aderenciaStatChange}</div>
       </div>
     </div>
 
     <h3 class="mb-sm mt-lg" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Resumo Operacional</h3>
     <div class="grid-3 mb-lg stagger-children" style="align-items: start;">
       
-      <!-- Card 1: Precisa de atenção hoje -->
-      <div class="card" style="padding: 16px;">
-        <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
-          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4v.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-            Precisa de atenção hoje ${triageDangerWarningCount > 0 ? `<span class="text-xs" style="color:var(--text-muted);font-weight:500;">(${triageDangerWarningCount})</span>` : ''}
-          </span>
-          <a href="#/alunos" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver alunos</a>
+      <!-- Coluna 1: Precisa de atenção + Ações Rápidas -->
+      <div class="flex flex-col gap-md">
+        <!-- Card 1: Precisa de atenção hoje -->
+        <div class="card" style="padding: 16px;">
+          <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
+            <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4v.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              Precisa de atenção hoje ${triageDangerWarningCount > 0 ? `<span class="text-xs" style="color:var(--text-muted);font-weight:500;">(${triageDangerWarningCount})</span>` : ''}
+            </span>
+            <a href="#/alunos" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver alunos</a>
+          </div>
+          <div class="flex flex-col gap-xs">
+            ${triageItems.length > 0 ? triageItems.map(item => {
+              const color = item.level === 'danger' ? 'var(--danger)' : item.level === 'warning' ? 'var(--warning)' : 'var(--text-muted)';
+              const bgClass = item.level === 'danger' ? 'var(--danger)' : item.level === 'warning' ? 'var(--warning)' : 'var(--text-muted)';
+              return `
+                <a href="#/biofeedback?sid=${item.studentId}" class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem; text-decoration: none; color: inherit;">
+                  <div class="flex items-center gap-sm" style="min-width: 0; flex: 1;">
+                    <div class="avatar avatar-sm" style="width: 26px; height: 26px; font-size: 0.7rem; flex-shrink: 0;">
+                      ${item.studentName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                      <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.studentName.split(' ')[0]}</div>
+                      <div class="text-xs" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.reason}</div>
+                    </div>
+                  </div>
+                  <span class="badge" style="background:${bgClass}15; color:${color}; font-size: 0.68rem; padding: 2px 8px; text-transform: uppercase;">${item.signal}</span>
+                </a>
+              `;
+            }).join('') : '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum alerta hoje</p>'}
+            ${triageItems.length === 0 && maturingStudentsCount > 0 ? `
+              <div class="text-center mt-xs pt-xs" style="border-top: 1px dashed var(--border-color);">
+                <span class="text-muted text-xs">${maturingStudentsCount} aluno(s) com base em maturação.</span>
+              </div>
+            ` : ''}
+          </div>
         </div>
-        <div class="flex flex-col gap-xs">
-          ${triageItems.length > 0 ? triageItems.map(item => {
-            const color = item.level === 'danger' ? 'var(--danger)' : item.level === 'warning' ? 'var(--warning)' : 'var(--text-muted)';
-            const bgClass = item.level === 'danger' ? 'var(--danger)' : item.level === 'warning' ? 'var(--warning)' : 'var(--text-muted)';
-            return `
-              <a href="#/biofeedback?sid=${item.studentId}" class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem; text-decoration: none; color: inherit;">
-                <div class="flex items-center gap-sm" style="min-width: 0; flex: 1;">
-                  <div class="avatar avatar-sm" style="width: 26px; height: 26px; font-size: 0.7rem; flex-shrink: 0;">
-                    ${item.studentName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
-                  </div>
-                  <div style="min-width: 0; flex: 1;">
-                    <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.studentName.split(' ')[0]}</div>
-                    <div class="text-xs" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.reason}</div>
-                  </div>
-                </div>
-                <span class="badge" style="background:${bgClass}15; color:${color}; font-size: 0.68rem; padding: 2px 8px; text-transform: uppercase;">${item.signal}</span>
-              </a>
-            `;
-          }).join('') : '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum alerta hoje</p>'}
-          ${triageItems.length === 0 && maturingStudentsCount > 0 ? `
-            <div class="text-center mt-xs pt-xs" style="border-top: 1px dashed var(--border-color);">
-              <span class="text-muted text-xs">${maturingStudentsCount} aluno(s) com base em maturação.</span>
-            </div>
-          ` : ''}
+
+        <!-- Card: Ações Rápidas -->
+        <div class="card" style="padding: 16px;">
+          <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px;">
+            <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Ações Rápidas
+            </span>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <a href="#/agenda" class="btn btn-ghost btn-sm" style="padding: 8px 10px; font-size: 0.8rem; justify-content: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; text-decoration: none; color: var(--text-primary); font-weight: 600;">Agendar treino</a>
+            <a href="#/avaliacoes" class="btn btn-ghost btn-sm" style="padding: 8px 10px; font-size: 0.8rem; justify-content: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; text-decoration: none; color: var(--text-primary); font-weight: 600;">Nova avaliação</a>
+            <a href="#/financeiro" class="btn btn-ghost btn-sm" style="padding: 8px 10px; font-size: 0.8rem; justify-content: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; text-decoration: none; color: var(--text-primary); font-weight: 600;">Financeiro</a>
+            <a href="#/tracker" class="btn btn-ghost btn-sm" style="padding: 8px 10px; font-size: 0.8rem; justify-content: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; text-decoration: none; color: var(--text-primary); font-weight: 600;">Treino ao vivo</a>
+          </div>
         </div>
       </div>
 
-      <!-- Card 2: Agenda de hoje -->
-      <div class="card" style="padding: 16px;">
-        <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
-          <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Agenda de hoje
-          </span>
-          <a href="#/calendario" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver calendário</a>
+      <!-- Coluna 2: Agenda de hoje + Reavaliação pendente -->
+      <div class="flex flex-col gap-md">
+        <!-- Card 2: Agenda de hoje -->
+        <div class="card" style="padding: 16px;">
+          <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
+            <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Agenda de hoje
+            </span>
+            <a href="#/calendario" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver calendário</a>
+          </div>
+          <div class="flex flex-col gap-xs">
+            ${todayWorkouts.length > 0 ? todayWorkouts.map(tw => {
+              const timeText = tw.time || 'Horário a confirmar';
+              const checkinBadge = tw.checkin 
+                ? `<span class="badge badge-success" style="font-size:0.65rem; padding: 2px 6px;">Check-in feito</span>`
+                : `<span class="badge" style="background:var(--bg-secondary); color:var(--text-muted); font-size:0.65rem; padding: 2px 6px;">Aguardando</span>`;
+              return `
+                <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
+                  <div class="flex items-center gap-sm" style="min-width: 0; flex: 1;">
+                    <div class="avatar avatar-sm" style="width: 26px; height: 26px; font-size: 0.7rem; flex-shrink: 0;">
+                      ${tw.student ? tw.student.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '?'}
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                      <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tw.student ? tw.student.name.split(' ')[0] : 'Aluno'}</div>
+                      <div class="text-xs" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tw.workout.name}</div>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-end gap-xs" style="flex-shrink: 0; margin-left: 8px;">
+                    <span style="font-weight: 500; font-size: 0.8rem;">${timeText}</span>
+                    ${checkinBadge}
+                  </div>
+                </div>
+              `;
+            }).join('') : '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum treino agendado para hoje</p>'}
+          </div>
         </div>
-        <div class="flex flex-col gap-xs">
-          ${todayWorkouts.length > 0 ? todayWorkouts.map(tw => {
-            const timeText = tw.time || 'Horário a confirmar';
-            const checkinBadge = tw.checkin 
-              ? `<span class="badge badge-success" style="font-size:0.65rem; padding: 2px 6px;">Check-in feito</span>`
-              : `<span class="badge" style="background:var(--bg-secondary); color:var(--text-muted); font-size:0.65rem; padding: 2px 6px;">Aguardando</span>`;
-            return `
-              <div class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
-                <div class="flex items-center gap-sm" style="min-width: 0; flex: 1;">
-                  <div class="avatar avatar-sm" style="width: 26px; height: 26px; font-size: 0.7rem; flex-shrink: 0;">
-                    ${tw.student ? tw.student.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '?'}
+
+        <!-- Card: Reavaliação pendente -->
+        <div class="card" style="padding: 16px;">
+          <div class="card-header" style="padding-bottom: 8px; margin-bottom: 8px; justify-content: space-between;">
+            <span class="card-title" style="font-size: 0.9rem; font-weight: 700; gap: 6px; display:flex; align-items:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Reavaliação pendente ${pendingReassessments.length > 0 ? `<span class="text-xs" style="color:var(--text-muted);font-weight:500;">(${pendingReassessments.length})</span>` : ''}
+            </span>
+            <a href="#/avaliacoes" class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;">Ver todas</a>
+          </div>
+          <div class="flex flex-col gap-xs">
+            ${pendingReassessments.length > 0 ? pendingReassessments.slice(0, 5).map(item => {
+              const timeLabel = item.daysSince === null ? 'Nunca avaliado' : `há ${item.daysSince} dias`;
+              const badgeColor = item.daysSince === null || item.daysSince > 120 ? 'var(--danger)' : 'var(--warning)';
+              return `
+                <a href="#/avaliacoes?sid=${item.student.id}" class="flex items-center justify-between" style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.82rem; text-decoration: none; color: inherit;">
+                  <div class="flex items-center gap-sm" style="min-width: 0; flex: 1;">
+                    <div class="avatar avatar-sm" style="width: 26px; height: 26px; font-size: 0.7rem; flex-shrink: 0;">
+                      ${item.student.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                      <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.student.name.split(' ')[0]}</div>
+                      <div class="text-xs" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.student.name}</div>
+                    </div>
                   </div>
-                  <div style="min-width: 0; flex: 1;">
-                    <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tw.student ? tw.student.name.split(' ')[0] : 'Aluno'}</div>
-                    <div class="text-xs" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${tw.workout.name}</div>
-                  </div>
-                </div>
-                <div class="flex flex-col items-end gap-xs" style="flex-shrink: 0; margin-left: 8px;">
-                  <span style="font-weight: 500; font-size: 0.8rem;">${timeText}</span>
-                  ${checkinBadge}
-                </div>
-              </div>
-            `;
-          }).join('') : '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhum treino agendado para hoje</p>'}
+                  <span class="badge" style="background:${badgeColor}15; color:${badgeColor}; font-size: 0.68rem; padding: 2px 8px; white-space: nowrap;">${timeLabel}</span>
+                </a>
+              `;
+            }).join('') : '<p class="text-muted text-xs text-center" style="padding: 10px 0;">Nenhuma reavaliação pendente</p>'}
+          </div>
         </div>
       </div>
 
