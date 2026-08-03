@@ -1576,6 +1576,10 @@ function renderTreinar(workouts, schedules, sessions = []) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           Finalizar & Salvar Sessão
         </button>
+
+        <button id="soloCancelBtn" type="button" style="width:100%;margin-top:10px;padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;color:#ef4444;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s ease;box-shadow:none">
+          Sair do Treino
+        </button>
       </div>
     </div>`;
 }
@@ -3402,6 +3406,38 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       btn.style.pointerEvents = '';
       btn.innerHTML = '! Erro — Tentar novamente';
       btn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+    }
+  });
+
+  document.getElementById('soloCancelBtn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (btn.disabled) return;
+
+    if (confirm('Sair sem salvar? O progresso deste treino será perdido.')) {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.style.pointerEvents = 'none';
+      btn.textContent = 'Saindo...';
+
+      cleanupAutoSaveListeners();
+
+      if (soloSessionId) {
+        try {
+          await db.delete('sessions', soloSessionId, tid);
+        } catch (err) {
+          console.warn('Erro ao deletar sessão descartada:', err);
+        }
+      }
+
+      soloSessionId = null;
+      soloStartTime = null;
+      backgroundedAt = null;
+      totalBackgroundedSeconds = 0;
+      workSeconds = 0;
+      restSeconds = 0;
+      isResting = false;
+
+      await loadSection('treinar');
     }
   });
 
