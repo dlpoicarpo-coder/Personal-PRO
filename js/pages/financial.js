@@ -331,7 +331,7 @@ export async function renderFinancial() {
             </div>
           `;
         }).join('')}
-      </div>`` : `
+      </div>` : `
       <div class="empty-state" style="padding:40px">
         <div class="empty-icon">—</div>
         <h3>Nenhum registro financeiro</h3>
