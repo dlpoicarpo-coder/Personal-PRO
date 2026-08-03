@@ -58,6 +58,10 @@ const routes = {
 };
 
 export async function navigateTo(path) {
+  document.getElementById('sidebar')?.classList.remove('mobile-open');
+  const ov = document.getElementById('sidebarOverlay');
+  if (ov) ov.style.display = 'none';
+
   const appContainer = document.getElementById('app');
   
 
@@ -228,9 +232,6 @@ export async function navigateTo(path) {
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         </button>
       </div>
-
-      <!-- Sidebar overlay -->
-      <div id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:299" onclick="document.getElementById('sidebar').classList.remove('mobile-open');this.style.display='none'"></div>
 
       <main class="main-content" id="pageContent">
         <div class="page-loading"><div class="spinner"></div></div>

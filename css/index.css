@@ -1130,7 +1130,7 @@ h4 {
     padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
-    z-index: 200;
+    z-index: 350;
     align-items: stretch;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
     backdrop-filter: blur(12px);
@@ -1328,7 +1328,7 @@ h4 {
     border-top: 1px solid var(--border-color);
     align-items: center;
     justify-content: space-around;
-    z-index: 150;
+    z-index: 350;
     padding: 0 4px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
