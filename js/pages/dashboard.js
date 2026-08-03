@@ -76,13 +76,13 @@ export async function renderDashboard() {
   const aderenciaGeral = getAdherenceForRange(weekStartStr, weekEndStr);
   const aderenciaPassada = getAdherenceForRange(prevWeekStartStr, prevWeekEndStr);
 
-  let aderenciaChangeHtml = 'sessões realizadas vs. previstas';
+  let aderenciaStatChange = 'sessões realizadas vs. previstas';
   if (aderenciaGeral !== null && aderenciaPassada !== null) {
     const diff = aderenciaGeral - aderenciaPassada;
     if (diff > 0) {
-      aderenciaChangeHtml = `<span style="color:var(--success);font-weight:600">▲ +${diff}% vs semana passada</span>`;
+      aderenciaStatChange = `<span style="color:var(--success);font-weight:600">▲ +${diff}% vs semana passada</span>`;
     } else if (diff < 0) {
-      aderenciaChangeHtml = `<span style="color:var(--danger);font-weight:600">▼ ${diff}% vs semana passada</span>`;
+      aderenciaStatChange = `<span style="color:var(--danger);font-weight:600">▼ ${diff}% vs semana passada</span>`;
     }
   }
 
