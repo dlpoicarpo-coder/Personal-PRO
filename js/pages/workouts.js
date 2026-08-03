@@ -126,7 +126,8 @@ export async function renderWorkouts() {
 
     <div id="workoutsList">
       ${workouts.length ? `
-        <div class="table-container">
+        <!-- Desktop Table (>= 769px) -->
+        <div class="table-container workouts-desktop-table">
           <table class="data-table">
             <thead><tr>
               <th>Aluno</th><th>Treino</th><th>Data</th><th>Fase</th><th>Exercícios</th><th>Semana</th><th></th>
@@ -195,6 +196,80 @@ export async function renderWorkouts() {
               }).join('')}
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Stacked Cards (<= 768px) -->
+        <div class="workouts-mobile-cards">
+          ${workouts.map(w => {
+            const st = students.find(s => s.id === w.studentId);
+            const macro = macros.find(m => m.id === w.macrocycleId);
+            const doneSessions = sessions.filter(s => {
+              if (s.status !== 'completed') return false;
+              if (s.studentId !== w.studentId) return false;
+              const sw = workouts.find(xw => xw.id === s.workoutId);
+              if (!sw) return false;
+              return sw.name === w.name && sw.macrocycleId === w.macrocycleId;
+            });
+            const isRealizado = doneSessions.length > 0;
+            const isDeload = w.isDeload;
+            const intensityColor = !w.intensityPct ? '' :
+              w.intensityPct >= 85 ? 'var(--danger)' :
+              w.intensityPct >= 75 ? 'var(--warning)' :
+              w.intensityPct >= 65 ? 'var(--accent)' : 'var(--success)';
+            const weekStr = getWorkoutWeek(w);
+            const baseNameStr = getWorkoutBaseName(w.name);
+            return `
+              <div class="card workout-card-mobile" data-student="${w.studentId}" data-macroid="${w.macrocycleId || ''}" data-name="${(w.name||'').toLowerCase()}" data-week="${weekStr}" data-basename="${baseNameStr}">
+                <!-- Topo: Nome do treino + Badge de Fase -->
+                <div class="card-header" style="padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border-color);justify-content:space-between;align-items:flex-start">
+                  <div>
+                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                      ${w.name || 'Treino'}
+                      ${isRealizado ? `<span class="badge badge-success" style="font-size:0.6rem;padding:2px 6px;text-transform:none">✓ Realizado (${doneSessions.length})</span>` : ''}
+                    </div>
+                    ${w.cycle ? `<div class="text-xs text-muted" style="margin-top:2px">${w.cycle}</div>` : ''}
+                    ${macro ? `<div class="text-xs" style="color:var(--primary);margin-top:1px">${macro.name}</div>` : ''}
+                  </div>
+                  <div style="flex-shrink:0">
+                    ${isDeload
+                      ? `<span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">Deload</span>`
+                      : w.phase
+                        ? `<span class="badge badge-info" style="font-size:0.7rem">${w.phase}</span>`
+                        : ''}
+                  </div>
+                </div>
+
+                <!-- Linha 2: Avatar + Nome do Aluno + Modalidade -->
+                <div class="flex items-center gap-sm mb-xs" style="font-size:0.85rem">
+                  <div class="avatar avatar-sm" style="width:24px;height:24px;font-size:0.68rem;flex-shrink:0">${st ? st.name.split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() : '?'}</div>
+                  <span style="font-weight:600;color:var(--text-primary)">${st?.name || '?'}</span>
+                  ${st && window.getModalityBadge ? window.getModalityBadge(st.modality) : ''}
+                </div>
+
+                <!-- Linha 3: Chips discretos (Data | Exercícios | Intensidade) -->
+                <div class="flex items-center gap-xs flex-wrap text-xs text-muted" style="margin-bottom:12px">
+                  <span>Data: ${Calc.formatDate(w.date)}</span>
+                  <span>·</span>
+                  <span class="badge badge-info" style="font-size:0.68rem;padding:1px 6px">${(w.exercises||[]).length} exerc.</span>
+                  ${w.intensityPct ? `
+                    <span>·</span>
+                    <span style="font-weight:700;color:${intensityColor}">${w.intensityPct}% int.</span>
+                  ` : ''}
+                </div>
+
+                <!-- Rodapé: 5 botões de ação -->
+                <div style="display:flex;gap:6px;align-items:center;justify-content:space-between;border-top:1px solid var(--border-color);padding-top:10px;margin-top:4px">
+                  <button class="btn btn-secondary btn-sm start-workout" data-id="${w.id}" data-student="${w.studentId}" title="Iniciar treino" style="flex:1.5;min-height:40px;justify-content:center;color:var(--primary);font-weight:600;gap:4px">
+                    ${ICON_PLAY} <span>Iniciar</span>
+                  </button>
+                  <button class="btn btn-ghost btn-sm view-workout" data-id="${w.id}" title="Ver" style="min-height:40px;padding:8px 10px;color:var(--accent)">${ICON_EYE}</button>
+                  <button class="btn btn-ghost btn-sm pdf-workout" data-id="${w.id}" title="PDF" style="min-height:40px;padding:8px 10px;color:var(--text-muted)">${ICON_PDF}</button>
+                  <button class="btn btn-ghost btn-sm edit-workout" data-id="${w.id}" title="Editar" style="min-height:40px;padding:8px 10px;color:var(--text-muted)">${ICON_EDIT}</button>
+                  <button class="btn btn-ghost btn-sm delete-workout" data-id="${w.id}" title="Excluir" style="min-height:40px;padding:8px 10px;color:var(--danger)">${ICON_DEL}</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       ` : `
         <div class="empty-state">
@@ -1395,7 +1470,7 @@ export function initWorkouts(navigateFn) {
 
   function applyFilters() {
     const q = document.getElementById('workoutSearch')?.value.toLowerCase() || '';
-    document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+    document.querySelectorAll('#workoutsList tbody tr, #workoutsList .workout-card-mobile').forEach(row => {
       const matchStudent = activeStudentFilter === 'all' || row.dataset.student === activeStudentFilter;
       const matchCycle   = !activeCycleFilter || row.dataset.macro === activeCycleFilter || row.dataset.macro === 'active_match';
       const matchSearch  = !q || (row.dataset.name || '').includes(q);
@@ -1421,12 +1496,12 @@ export function initWorkouts(navigateFn) {
       if (val === 'active') {
         const macros = await db.getAll('macrocycles');
         const ids = new Set(macros.filter(m => m.status === 'active').map(m => m.id));
-        document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+        document.querySelectorAll('#workoutsList tbody tr, #workoutsList .workout-card-mobile').forEach(row => {
           row.dataset.macro = ids.has(row.dataset.macroid) ? 'active_match' : '';
         });
         activeCycleFilter = 'active_match';
       } else {
-        document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+        document.querySelectorAll('#workoutsList tbody tr, #workoutsList .workout-card-mobile').forEach(row => {
           row.dataset.macro = val ? (row.dataset.macroid === val ? val : '') : val;
         });
         activeCycleFilter = val;
@@ -1457,11 +1532,11 @@ export function initWorkouts(navigateFn) {
     if (cycleVal === 'active') {
       const macros = await db.getAll('macrocycles');
       const ids = new Set(macros.filter(m => m.status === 'active').map(m => m.id));
-      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+      document.querySelectorAll('#workoutsList tbody tr, #workoutsList .workout-card-mobile').forEach(row => {
         row.dataset.macro = ids.has(row.dataset.macroid) ? 'active_match' : '';
       });
     } else {
-      document.querySelectorAll('#workoutsList tbody tr').forEach(row => {
+      document.querySelectorAll('#workoutsList tbody tr, #workoutsList .workout-card-mobile').forEach(row => {
         row.dataset.macro = cycleVal ? (row.dataset.macroid === cycleVal ? cycleVal : '') : '';
       });
     }

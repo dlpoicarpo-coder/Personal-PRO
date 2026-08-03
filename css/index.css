@@ -484,6 +484,10 @@ h4 {
   border: 1px solid var(--border-color);
 }
 
+.workouts-mobile-cards {
+  display: none;
+}
+
 .data-table {
   width: 100%;
   border-collapse: separate;
@@ -1436,6 +1440,21 @@ h4 {
 
   .data-table {
     min-width: 580px;
+  }
+
+  .workouts-desktop-table {
+    display: none !important;
+  }
+
+  .workouts-mobile-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .workout-card-mobile {
+    padding: 14px 16px;
+    margin-bottom: 0;
   }
 
   .hide-mobile {
