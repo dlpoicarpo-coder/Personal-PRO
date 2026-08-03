@@ -343,69 +343,39 @@ export async function renderDashboard() {
     </div>      </div>
     </div>
 
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Alunos Recentes</span>
-          <a href="#/alunos" class="btn btn-ghost btn-sm">Ver todos</a>
-        </div>
-        ${activeStudents.length ? `
-          <div class="student-list">
-            ${activeStudents.slice(0, 5).map(s => `
-              <div class="student-row flex items-center gap-md" style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
-                <div class="avatar">${s.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}</div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Biofeedback Recente</span>
+        <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos</a>
+      </div>
+      ${recentBf.length ? `
+        <div>
+          ${recentBf.slice(0, 5).map(b => {
+            const student = students.find(s => s.id === b.studentId);
+            const sleepColor = (b.sleep || 0) < 5 ? 'var(--danger)' : (b.sleep || 0) < 7 ? 'var(--warning)' : 'var(--success)';
+            return `
+              <div class="flex items-center gap-md" style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <div class="avatar avatar-sm">${student ? student.name[0] : '?'}</div>
                 <div style="flex:1">
-                  <div style="font-weight: 600; font-size: 0.9rem;">${s.name}</div>
-                  <div class="text-muted text-xs">${s.code} · ${s.goal || 'Sem objetivo definido'}</div>
+                  <div style="font-weight:500; font-size:0.85rem;">${student ? student.name : 'Desconhecido'}</div>
+                  <div class="text-muted text-xs">${Calc.formatDate(b.date)}</div>
                 </div>
-                <span class="badge badge-success">Ativo</span>
+                <div class="flex gap-sm text-xs">
+                  <span title="Sono" style="color:${sleepColor}">Sono: ${b.sleep ? `${Math.round(b.sleep / 2)}/5` : '-'}</span>
+                  <span title="Humor">Hum: ${b.mood || '-'}</span>
+                  <span title="Estresse">Est: ${b.stress || '-'}</span>
+                </div>
               </div>
-            `).join('')}
-          </div>
-        ` : `
-          <div class="empty-state">
-            <div class="empty-icon" style="font-size:2rem">—</div>
-            <h3>Nenhum aluno cadastrado</h3>
-            <p>Adicione seu primeiro aluno para começar</p>
-            <a href="#/alunos" class="btn btn-primary">+ Novo Aluno</a>
-          </div>
-        `}
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Biofeedback Recente</span>
-          <a href="#/biofeedback" class="btn btn-ghost btn-sm">Ver todos</a>
+            `;
+          }).join('')}
         </div>
-        ${recentBf.length ? `
-          <div>
-            ${recentBf.slice(0, 5).map(b => {
-              const student = students.find(s => s.id === b.studentId);
-              const sleepColor = (b.sleep || 0) < 5 ? 'var(--danger)' : (b.sleep || 0) < 7 ? 'var(--warning)' : 'var(--success)';
-              return `
-                <div class="flex items-center gap-md" style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
-                  <div class="avatar avatar-sm">${student ? student.name[0] : '?'}</div>
-                  <div style="flex:1">
-                    <div style="font-weight:500; font-size:0.85rem;">${student ? student.name : 'Desconhecido'}</div>
-                    <div class="text-muted text-xs">${Calc.formatDate(b.date)}</div>
-                  </div>
-                  <div class="flex gap-sm text-xs">
-                    <span title="Sono" style="color:${sleepColor}">Sono: ${b.sleep ? `${Math.round(b.sleep / 2)}/5` : '-'}</span>
-                    <span title="Humor">Hum: ${b.mood || '-'}</span>
-                    <span title="Estresse">Est: ${b.stress || '-'}</span>
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        ` : `
-          <div class="empty-state">
-            <div class="empty-icon" style="font-size:2rem">—</div>
-            <h3>Sem registros</h3>
-            <p>Os check-ins de biofeedback aparecerão aqui</p>
-          </div>
-        `}
-      </div>
+      ` : `
+        <div class="empty-state">
+          <div class="empty-icon" style="font-size:2rem">—</div>
+          <h3>Sem registros</h3>
+          <p>Os check-ins de biofeedback aparecerão aqui</p>
+        </div>
+      `}
     </div>
 
     <div class="card mt-lg">
