@@ -39,7 +39,7 @@ export function renderInviteScreen() {
 
               <div class="form-group" style="text-align: left; margin-bottom: 20px">
                 <label class="form-label" style="color:var(--text-primary)">Nova Senha de Acesso *</label>
-                <input type="password" id="invitePassword" class="form-input" required minlength="6" placeholder="Mínimo 6 caracteres" style="background:var(--bg-body); border-color:var(--border-color); color:var(--text-primary)"/>
+                <input type="password" id="invitePassword" class="form-input" required minlength="8" placeholder="Mínimo 8 caracteres" style="background:var(--bg-body); border-color:var(--border-color); color:var(--text-primary)"/>
               </div>
               
               <div class="portal-consent-group">
@@ -137,6 +137,11 @@ export async function initInviteScreen() {
       const pwd = document.getElementById('invitePassword').value;
       const btn = document.getElementById('inviteSubmitBtn');
       
+      if (!pwd || pwd.length < 8) {
+        notify.error('A senha deve ter no mínimo 8 caracteres.');
+        return;
+      }
+
       btn.disabled = true;
       btn.innerHTML = 'Salvando...';
 

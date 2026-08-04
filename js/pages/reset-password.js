@@ -89,6 +89,12 @@ export async function initResetPassword() {
     errorEl.style.display = 'none';
     successEl.style.display = 'none';
 
+    if (newPassword.length < 8) {
+      errorEl.textContent = 'A senha deve ter no mínimo 8 caracteres.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       errorEl.textContent = 'As senhas não coincidem.';
       errorEl.style.display = 'block';
