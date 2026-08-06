@@ -528,10 +528,10 @@ class Database {
     // Initial sync
     this.syncBothWays(trainerId).catch(err => console.warn('Initial sync failed:', err));
     
-    // Periodic sync every 30 seconds
+    // Periodic sync every 5 minutes (300,000 ms)
     this._autoSyncInterval = setInterval(() => {
       this.syncBothWays(trainerId).catch(err => console.warn('Periodic sync failed:', err));
-    }, 30_000);
+    }, 300_000);
     
     // Sync on online event
     if (!this._onlineListenerBound) {
@@ -666,15 +666,17 @@ class Database {
     try {
       let data, error;
 
-      // exercises e methods: buscar trainer_id OU is_default=true
+      // exercises e methods: buscar trainer_id OU is_default=true em query única
       if (storeName === 'exercises' || storeName === 'methods') {
-        const q1 = trainerId
-          ? this.supabase.from(storeName).select('*').eq('trainer_id', trainerId)
-          : this.supabase.from(storeName).select('*').eq('is_default', true);
-        const q2 = this.supabase.from(storeName).select('*').eq('is_default', true);
-        const [r1, r2] = await Promise.all([q1, q2]);
+        let q = this.supabase.from(storeName).select('*');
+        if (trainerId) {
+          q = q.or(`trainer_id.eq.${trainerId},is_default.eq.true`);
+        } else {
+          q = q.eq('is_default', true);
+        }
+        const { data: qData, error: qError } = await q;
         const prefix = storeName === 'methods' ? 'met_' : 'ex_';
-        const sortedAll = [...(r1.data||[]), ...(r2.data||[])].sort((a, b) => {
+        const sortedAll = [...(qData || [])].sort((a, b) => {
           const aPrefix = a.id && a.id.startsWith(prefix);
           const bPrefix = b.id && b.id.startsWith(prefix);
           if (aPrefix && !bPrefix) return -1;
@@ -692,7 +694,7 @@ class Database {
           if (rName) seenName.add(rName);
           return true; 
         });
-        error = r1.error;
+        error = qError;
       } else {
         let q = this.supabase.from(storeName).select('*');
         if (trainerId) q = q.eq('trainer_id', trainerId);
@@ -956,290 +958,291 @@ async seedTemplates() {
     // Sempre verificar métodos independente do seed de exercícios
     await this.seedMethods();
 
-    // ── MIGRATION: VINCULAR IMAGENS E VÍDEOS DE EXERCÍCIOS LOCALMENTE ──
+    // ── MIGRATION: VINCULAR IMAGENS E VÍDEOS DE EXERCÍCIOS LOCALMENTE (ONE-TIME) ──
     try {
-      const existing = await this.getAll('exercises');
-      let updatedAny = false;
-      for (const ex of existing) {
-        if (!ex.is_default || ex.media_customized) continue;
-        if (ex.name) {
-          const nameLower = ex.name.trim().toLowerCase();
-          let imageUrl = null;
-          let videoUrl = null;
-          const slugKey = slugify(ex.name);
-          
-          const mediaMap = {
+      const mediaMigratedKey = 'pp_exerciseMediaMigrated_v2';
+      if (!localStorage.getItem(mediaMigratedKey)) {
+        const existing = await this.getAll('exercises');
+        let updatedAny = false;
+        for (const ex of existing) {
+          if (!ex.is_default || ex.media_customized) continue;
+          if (ex.name) {
+            const nameLower = ex.name.trim().toLowerCase();
+            let imageUrl = null;
+            let videoUrl = null;
+            const slugKey = slugify(ex.name);
+            
+            const mediaMap = {
+              // Abdômen / Core
+              'abdominal_infra': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
+              'crunch_no_cabo': { imageUrl: 'assets/exercises/cable_crunch.png', videoUrl: 'https://www.youtube.com/shorts/HlX1oFEt2a4' },
+              'abdominal_no_cabo_rope_crunch': { imageUrl: 'assets/exercises/cable_crunch.png', videoUrl: 'https://www.youtube.com/shorts/HlX1oFEt2a4' },
+              'prancha_frontal': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'prancha_lateral': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/pWGhRO5grqs' },
+              'prancha_com_toque_no_ombro': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'russian_twist': { imageUrl: 'assets/exercises/russian_twist.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
+              'dead_bug': { imageUrl: 'assets/exercises/dead_bug.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
+              'bird_dog': { imageUrl: 'assets/exercises/dead_bug.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
+              'rollout_com_roda': { imageUrl: 'assets/exercises/ab_wheel_rollout.png', videoUrl: 'https://www.youtube.com/shorts/t2yXQq6sfhA' },
+              'abdominal_na_roda': { imageUrl: 'assets/exercises/ab_wheel_rollout.png', videoUrl: 'https://www.youtube.com/shorts/t2yXQq6sfhA' },
+              'rotacao_com_cabo': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
+              'abdominal_crunch': { imageUrl: 'assets/exercises/abdominal_crunch.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
+              'prancha': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              
+              // Bíceps
+              'rosca_21': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/Lz1gT6dI2Yw' },
+              'rosca_alternada_com_halteres': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
+              'rosca_alternada': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
+              'rosca_direta_no_cross': { imageUrl: 'assets/exercises/cable_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
+              'rosca_no_cabo': { imageUrl: 'assets/exercises/cable_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
+              'rosca_direta_com_barra': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
+              'rosca_direta': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
+              'rosca_martelo': { imageUrl: 'assets/exercises/dumbbell_hammer_curl.png', videoUrl: 'https://www.youtube.com/shorts/c2D17Ld2424' },
+              'rosca_scott': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
+              'rosca_concentrada': { imageUrl: 'assets/exercises/concentration_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
+              
+              // Costas
+              'barra_fixa_pull_up': { imageUrl: 'assets/exercises/pullup.png', videoUrl: 'https://www.youtube.com/shorts/3wz97y0-8fI' },
+              'barra_fixa': { imageUrl: 'assets/exercises/pullup.png', videoUrl: 'https://www.youtube.com/shorts/3wz97y0-8fI' },
+              'levantamento_terra_romeno': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/eYpGZkX7w2g' },
+              'pullover_com_halter': { imageUrl: 'assets/exercises/dumbbell_pullover.png', videoUrl: 'https://www.youtube.com/shorts/N2_yB9m15j4' },
+              'pullover': { imageUrl: 'assets/exercises/dumbbell_pullover.png', videoUrl: 'https://www.youtube.com/shorts/N2_yB9m15j4' },
+              'pullover_no_cabo': { imageUrl: 'assets/exercises/dumbbell_pullover.png', videoUrl: 'https://www.youtube.com/shorts/J1-yJ9bOqLo' },
+              'puxada_fechada': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
+              'puxada_frontal': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
+              'remada_baixa_sentado': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
+              'remada_baixa': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
+              'remada_cavalinho': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/2K3d2V1OqLc' },
+              'remada_curvada_com_barra': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
+              'remada_curvada': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
+              'remada_unilateral_com_halter': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
+              'remada_unilateral': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
+              'levantamento_terra': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
+              'terra': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
+              
+              // Glúteos
+              'elevacao_pelvica': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
+              'hip_thrust': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
+              'hip_thrust_com_halteres': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/F2_8L2J4C0c' },
+              'ponte_de_gluteos': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/G2_8L2J4C0c' },
+              'coice_no_cabo': { imageUrl: 'assets/exercises/glute_kickback.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
+              'extensao_de_quadril_no_cabo': { imageUrl: 'assets/exercises/glute_kickback.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
+              'abducao_na_maquina': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
+              'cadeira_abdutora': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
+              'cadeira_abdultora': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
+              'abertura_de_quadril_com_haltere': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
+              'abertura_de_quadril': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
+              'agachamento_sumo': { imageUrl: 'assets/exercises/sumo_squat.png', videoUrl: 'https://www.youtube.com/shorts/-4mbprALquk' },
+              'agachamento_sumo_com_halter': { imageUrl: 'assets/exercises/sumo_squat.png', videoUrl: 'https://www.youtube.com/shorts/-4mbprALquk' },
+              'pelvica_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
+              'hip_thrust_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
+              'elevacao_pelvica_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
+              'elevacao_de_pelve': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
+              
+              // Ombros
+              'arnold_press': { imageUrl: 'assets/exercises/arnold_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
+              'crucifixo_invertido': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'desenvolvimento_com_barra': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
+              'desenvolvimento_com_halteres': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
+              'desenvolvimento': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
+              'elevacao_frontal': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'elevacao_frontal_polia': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'encolhimento_de_ombros': { imageUrl: 'assets/exercises/dumbbell_shrug.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'encolhimento': { imageUrl: 'assets/exercises/dumbbell_shrug.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'elevacao_lateral': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'elevacao_lateral_no_cabo': { imageUrl: 'assets/exercises/cable_lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'face_pull': { imageUrl: 'assets/exercises/face_pull.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              
+              // Panturrilha
+              'panturrilha_no_leg_press': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'panturrilha_sentado': { imageUrl: 'assets/exercises/seated_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              'panturrilha_em_pe': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              'panturrilha_em_pe_na_maquina': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              
+              // Peito
+              'cross_over': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
+              'crossover': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
+              'cross_over_alto': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
+              'cross_over_baixo': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
+              'crucifixo_inclinado': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'crucifixo_reto': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'flexao_de_bracos': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'flexao_diamante': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'supino_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'supino_declinado_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
+              'supino_reto_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
+              'supino_reto': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
+              'supino_inclinado_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'peck_deck_voador': { imageUrl: 'assets/exercises/peck_deck.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'crucifixo_maquina': { imageUrl: 'assets/exercises/peck_deck.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'supino_reto_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              
+              // Posterior / Quadríceps
+              'stiff_unilateral': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
+              'stiff_com_barra': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
+              'stiff': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
+              'agachamento_livre_com_barra': { imageUrl: 'assets/exercises/barbell_squat.png', videoUrl: 'https://www.youtube.com/shorts/Fpens-iRVmI' },
+              'agachamento_livre': { imageUrl: 'assets/exercises/barbell_squat.png', videoUrl: 'https://www.youtube.com/shorts/Fpens-iRVmI' },
+              'cadeira_extensora': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/PzIfB9MiiX8' },
+              'extensora': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/PzIfB9MiiX8' },
+              'leg_press_45': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'leg_press': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'agachamento_bulgaro': { imageUrl: 'assets/exercises/bulgarian_split_squat.png', videoUrl: 'https://www.youtube.com/shorts/blmW6LTufL4' },
+              'afundo_com_barra': { imageUrl: 'assets/exercises/barbell_lunge.png', videoUrl: 'https://www.youtube.com/shorts/rltJymhFtHg' },
+              'afundo': { imageUrl: 'assets/exercises/barbell_lunge.png', videoUrl: 'https://www.youtube.com/shorts/rltJymhFtHg' },
+              'passada_avanco': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'passada': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'agachamento_frontal': { imageUrl: 'assets/exercises/front_squat.png', videoUrl: 'https://www.youtube.com/shorts/wPwUGaHapkw' },
+              'hack_squat': { imageUrl: 'assets/exercises/hack_squat.png', videoUrl: 'https://www.youtube.com/shorts/USv0A4xLQKs' },
+              'goblet_squat': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'cadeira_flexora': { imageUrl: 'assets/exercises/seated_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              'mesa_flexora': { imageUrl: 'assets/exercises/lying_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/IXg1PQ_5gmw' },
+              'good_morning': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
+              'bom_dia': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
+              'passada_avanco_com_halteres': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              
+              // Tríceps
+              'extensao_de_triceps_no_cabo': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
+              'mergulho_nas_paralelas': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
+              'mergulho_nas_barras_paralelas': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
+              'triceps_coice': { imageUrl: 'assets/exercises/tricep_kickback.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'triceps_corda': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
+              'triceps_pulley': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
+              'triceps_testa': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'triceps_frances': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'mergulho': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
+              'supino_fechado': { imageUrl: 'assets/exercises/close_grip_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
+              
+              // Mobilidade / Alongamento
+              'rotacao_toracica': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
+              'alongamento_de_quadril': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
+              'hip_90_90': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
+              'abertura_de_quadril_com_haltere': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
+              
+              // Cardio
+              'esteira_corrida': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'esteira_caminhada': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'esteira_intervalado_hiit': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'corrida_ao_ar_livre': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'caminhada_ao_ar_livre': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'fartlek': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'corrida_de_limiar_tempo_run': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'corrida_longa_lsd': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'corrida_em_pista_intervalado': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'ciclismo_ao_ar_livre': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'bicicleta_ergometrica': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'bicicleta_ergometrica_hiit': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'spinning': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'assault_bike': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
+              'eliptico': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'remo_ergometrico': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
+              'remo_ergometrico_sprint': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
+              'pular_corda': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'pular_corda_dupla_entrada': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'jumping_jack': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'burpee': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'escalador_de_montanha': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'kettlebell_swing': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'box_jump': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'salto_na_caixa_box_jump': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'agachamento_com_salto': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'battle_rope_ondas_alternadas': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
+              'ski_erg': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
+              'air_runner': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'natacao_nado_livre': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'natacao_intervalado': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'hiit_tabata': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'hiit_30_30': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'hiit_piramide': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'aquecimento_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'treino_continuo_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'desaquecimento_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'tiro_sprint_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'recuperacao_ativa_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'step_aerobico': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              
+              // LPO / Potência / Funcionais
+              'arranco_snatch': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
+              'arremesso_clean_jerk': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
+              'arremesso_de_medicine_ball': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'slam_ball': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'flexao_de_braco_com_salto': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'turkish_get_up': { imageUrl: 'assets/exercises/dumbbell_hammer_curl.png', videoUrl: 'https://www.youtube.com/shorts/c2D17Ld2424' },
+              'farmer_walk': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
+              
+              // Novos Mapeamentos (Variações)
+              'supino_inclinado_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
+              'supino_declinado_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'flexao_de_bracos_inclinada': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'flexao_de_bracos_declinada': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
+              'crucifixo_de_pe_no_cabo': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
+              'puxada_frontal_com_triangulo': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
+              'puxada_frontal_pegada_inversa': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
+              'remada_curvada_com_halteres': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
+              'remada_supinada_com_barra': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
+              'crucifixo_invertido_na_maquina': { imageUrl: 'assets/exercises/peck_deck.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
+              'meio_terra_rack_pull': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
+              'elevacao_lateral_sentado': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'elevacao_frontal_com_barra': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'elevacao_frontal_com_anilha': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'crucifixo_invertido_no_cabo': { imageUrl: 'assets/exercises/cable_lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
+              'rosca_scott_com_halteres': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
+              'rosca_direta_com_barra_w': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
+              'rosca_inclinada_com_halteres': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
+              'rosca_spider': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
+              'rosca_martelo_no_cabo': { imageUrl: 'assets/exercises/cable_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
+               stream_inversa_com_barra: { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
+              'triceps_testa_com_barra_w': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'triceps_testa_com_halteres': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'triceps_frances_unilateral': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'triceps_frances_no_cabo': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'triceps_coice_no_cabo': { imageUrl: 'assets/exercises/tricep_kickback.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
+              'agachamento_livre_com_halteres': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
+              'agachamento_no_smith': { imageUrl: 'assets/exercises/hack_squat.png', videoUrl: 'https://www.youtube.com/shorts/USv0A4xLQKs' },
+              'agachamento_hack': { imageUrl: 'assets/exercises/hack_squat.png', videoUrl: 'https://www.youtube.com/shorts/USv0A4xLQKs' },
+              'passada_lateral': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
+              'stiff_com_halteres': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
+              'mesa_flexora_unilateral': { imageUrl: 'assets/exercises/lying_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/IXg1PQ_5gmw' },
+              'cadeira_flexora_unilateral': { imageUrl: 'assets/exercises/seated_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              'coice_de_gluteo_no_solo': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
+              'panturrilha_sentado_na_maquina': { imageUrl: 'assets/exercises/seated_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              'panturrilha_em_pe_com_halteres': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              'panturrilha_unilateral_em_pe': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
+              'abdominal_obliquo_no_solo': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
+              'abdominal_infra_na_barra': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
+              'abdominal_canivete_v_up': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
+              'abdominal_remador': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
+              'alongamento_de_gluteo_pigeon': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
+              'alongamento_gato_camelo': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' }
+            };
+            
+            let matched = mediaMap[slugKey];
+            if (!matched) {
+              const foundKey = Object.keys(mediaMap).find(key => 
+                slugKey.includes(key) || key.includes(slugKey)
+              );
+              if (foundKey) {
+                matched = mediaMap[foundKey];
+              }
+            }
+            
+            if (matched) {
+              imageUrl = matched.imageUrl;
+              videoUrl = matched.videoUrl;
+            }
 
-            // Abdômen / Core
-            'abdominal_infra': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
-            'crunch_no_cabo': { imageUrl: 'assets/exercises/cable_crunch.png', videoUrl: 'https://www.youtube.com/shorts/HlX1oFEt2a4' },
-            'abdominal_no_cabo_rope_crunch': { imageUrl: 'assets/exercises/cable_crunch.png', videoUrl: 'https://www.youtube.com/shorts/HlX1oFEt2a4' },
-            'prancha_frontal': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'prancha_lateral': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/pWGhRO5grqs' },
-            'prancha_com_toque_no_ombro': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'russian_twist': { imageUrl: 'assets/exercises/russian_twist.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            'dead_bug': { imageUrl: 'assets/exercises/dead_bug.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            'bird_dog': { imageUrl: 'assets/exercises/dead_bug.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            'rollout_com_roda': { imageUrl: 'assets/exercises/ab_wheel_rollout.png', videoUrl: 'https://www.youtube.com/shorts/t2yXQq6sfhA' },
-            'abdominal_na_roda': { imageUrl: 'assets/exercises/ab_wheel_rollout.png', videoUrl: 'https://www.youtube.com/shorts/t2yXQq6sfhA' },
-            'rotacao_com_cabo': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/qzoJJuL-3-c' },
-            'abdominal_crunch': { imageUrl: 'assets/exercises/abdominal_crunch.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
-            'prancha': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            
-            // Bíceps
-            'rosca_21': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/Lz1gT6dI2Yw' },
-            'rosca_alternada_com_halteres': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
-            'rosca_alternada': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
-            'rosca_direta_no_cross': { imageUrl: 'assets/exercises/cable_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
-            'rosca_no_cabo': { imageUrl: 'assets/exercises/cable_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
-            'rosca_direta_com_barra': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
-            'rosca_direta': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
-            'rosca_martelo': { imageUrl: 'assets/exercises/dumbbell_hammer_curl.png', videoUrl: 'https://www.youtube.com/shorts/c2D17Ld2424' },
-            'rosca_scott': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
-            'rosca_concentrada': { imageUrl: 'assets/exercises/concentration_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
-            
-            // Costas
-            'barra_fixa_pull_up': { imageUrl: 'assets/exercises/pullup.png', videoUrl: 'https://www.youtube.com/shorts/3wz97y0-8fI' },
-            'barra_fixa': { imageUrl: 'assets/exercises/pullup.png', videoUrl: 'https://www.youtube.com/shorts/3wz97y0-8fI' },
-            'levantamento_terra_romeno': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/eYpGZkX7w2g' },
-            'pullover_com_halter': { imageUrl: 'assets/exercises/dumbbell_pullover.png', videoUrl: 'https://www.youtube.com/shorts/N2_yB9m15j4' },
-            'pullover': { imageUrl: 'assets/exercises/dumbbell_pullover.png', videoUrl: 'https://www.youtube.com/shorts/N2_yB9m15j4' },
-            'pullover_no_cabo': { imageUrl: 'assets/exercises/dumbbell_pullover.png', videoUrl: 'https://www.youtube.com/shorts/J1-yJ9bOqLo' },
-            'puxada_fechada': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
-            'puxada_frontal': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
-            'remada_baixa_sentado': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
-            'remada_baixa': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
-            'remada_cavalinho': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/2K3d2V1OqLc' },
-            'remada_curvada_com_barra': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
-            'remada_curvada': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
-            'remada_unilateral_com_halter': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
-            'remada_unilateral': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
-            'levantamento_terra': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
-            'terra': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
-            
-            // Glúteos
-            'elevacao_pelvica': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
-            'hip_thrust': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
-            'hip_thrust_com_halteres': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/F2_8L2J4C0c' },
-            'ponte_de_gluteos': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/G2_8L2J4C0c' },
-            'coice_no_cabo': { imageUrl: 'assets/exercises/glute_kickback.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
-            'extensao_de_quadril_no_cabo': { imageUrl: 'assets/exercises/glute_kickback.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
-            'abducao_na_maquina': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
-            'cadeira_abdutora': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
-            'cadeira_abdultora': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/nabhYLtz8Gg' },
-            'abertura_de_quadril_com_haltere': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
-            'abertura_de_quadril': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
-            'agachamento_sumo': { imageUrl: 'assets/exercises/sumo_squat.png', videoUrl: 'https://www.youtube.com/shorts/-4mbprALquk' },
-            'agachamento_sumo_com_halter': { imageUrl: 'assets/exercises/sumo_squat.png', videoUrl: 'https://www.youtube.com/shorts/-4mbprALquk' },
-            'pelvica_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
-            'hip_thrust_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
-            'elevacao_pelvica_na_maquina': { imageUrl: 'assets/exercises/hip_thrust_machine.png', videoUrl: 'https://www.youtube.com/shorts/DzGn0Igti5g' },
-            'elevacao_de_pelve': { imageUrl: 'assets/exercises/hip_thrust.png', videoUrl: 'https://www.youtube.com/shorts/AM8sOtlgKjo' },
-            
-            // Ombros
-            'arnold_press': { imageUrl: 'assets/exercises/arnold_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'crucifixo_invertido': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'desenvolvimento_com_barra': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'desenvolvimento_com_halteres': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'desenvolvimento': { imageUrl: 'assets/exercises/dumbbell_shoulder_press.png', videoUrl: 'https://www.youtube.com/shorts/5I7ogOjvdnc' },
-            'elevacao_frontal': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'elevacao_frontal_polia': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'encolhimento_de_ombros': { imageUrl: 'assets/exercises/dumbbell_shrug.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'encolhimento': { imageUrl: 'assets/exercises/dumbbell_shrug.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'elevacao_lateral': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'elevacao_lateral_no_cabo': { imageUrl: 'assets/exercises/cable_lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'face_pull': { imageUrl: 'assets/exercises/face_pull.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            
-            // Panturrilha
-            'panturrilha_no_leg_press': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'panturrilha_sentado': { imageUrl: 'assets/exercises/seated_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'panturrilha_em_pe': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'panturrilha_em_pe_na_maquina': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            
-            // Peito
-            'cross_over': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'crossover': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'cross_over_alto': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'cross_over_baixo': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'crucifixo_inclinado': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'crucifixo_reto': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'flexao_de_bracos': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'flexao_diamante': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'supino_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'supino_declinado_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
-            'supino_reto_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
-            'supino_reto': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
-            'supino_inclinado_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'peck_deck_voador': { imageUrl: 'assets/exercises/peck_deck.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'crucifixo_maquina': { imageUrl: 'assets/exercises/peck_deck.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'supino_reto_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            
-            // Posterior / Quadríceps
-            'stiff_unilateral': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
-            'stiff_com_barra': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
-            'stiff': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
-            'agachamento_livre_com_barra': { imageUrl: 'assets/exercises/barbell_squat.png', videoUrl: 'https://www.youtube.com/shorts/Fpens-iRVmI' },
-            'agachamento_livre': { imageUrl: 'assets/exercises/barbell_squat.png', videoUrl: 'https://www.youtube.com/shorts/Fpens-iRVmI' },
-            'cadeira_extensora': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/PzIfB9MiiX8' },
-            'extensora': { imageUrl: 'assets/exercises/leg_extension.png', videoUrl: 'https://www.youtube.com/shorts/PzIfB9MiiX8' },
-            'leg_press_45': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'leg_press': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'agachamento_bulgaro': { imageUrl: 'assets/exercises/bulgarian_split_squat.png', videoUrl: 'https://www.youtube.com/shorts/blmW6LTufL4' },
-            'afundo_com_barra': { imageUrl: 'assets/exercises/barbell_lunge.png', videoUrl: 'https://www.youtube.com/shorts/rltJymhFtHg' },
-            'afundo': { imageUrl: 'assets/exercises/barbell_lunge.png', videoUrl: 'https://www.youtube.com/shorts/rltJymhFtHg' },
-            'passada_avanco': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'passada': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'agachamento_frontal': { imageUrl: 'assets/exercises/front_squat.png', videoUrl: 'https://www.youtube.com/shorts/wPwUGaHapkw' },
-            'hack_squat': { imageUrl: 'assets/exercises/hack_squat.png', videoUrl: 'https://www.youtube.com/shorts/USv0A4xLQKs' },
-            'goblet_squat': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'cadeira_flexora': { imageUrl: 'assets/exercises/seated_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'mesa_flexora': { imageUrl: 'assets/exercises/lying_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/IXg1PQ_5gmw' },
-            'good_morning': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'bom_dia': { imageUrl: 'assets/exercises/good_morning.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'passada_avanco_com_halteres': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            
-            // Tríceps
-            'extensao_de_triceps_no_cabo': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
-            'mergulho_nas_paralelas': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
-            'mergulho_nas_barras_paralelas': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
-            'triceps_coice': { imageUrl: 'assets/exercises/tricep_kickback.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_corda': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
-            'triceps_pulley': { imageUrl: 'assets/exercises/tricep_pushdown.png', videoUrl: 'https://www.youtube.com/shorts/_dXIovzZ5sk' },
-            'triceps_testa': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_frances': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'mergulho': { imageUrl: 'assets/exercises/tricep_dips.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
-            'supino_fechado': { imageUrl: 'assets/exercises/close_grip_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/p_DeBmkbCUc' },
-            
-            // Mobilidade / Alongamento
-            'rotacao_toracica': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'alongamento_de_quadril': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'hip_90_90': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'abertura_de_quadril_com_haltere': { imageUrl: 'assets/exercises/hip_abductor.png', videoUrl: 'https://www.youtube.com/shorts/A2_7L2N4C2c' },
-            
-            // Cardio
-            'esteira_corrida': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'esteira_caminhada': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'esteira_intervalado_hiit': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'corrida_ao_ar_livre': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'caminhada_ao_ar_livre': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'fartlek': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'corrida_de_limiar_tempo_run': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'corrida_longa_lsd': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'corrida_em_pista_intervalado': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'ciclismo_ao_ar_livre': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'bicicleta_ergometrica': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'bicicleta_ergometrica_hiit': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'spinning': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'assault_bike': { imageUrl: 'assets/exercises/leg_press_45.png', videoUrl: 'https://www.youtube.com/shorts/yuIdTWl3oJ8' },
-            'eliptico': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'remo_ergometrico': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
-            'remo_ergometrico_sprint': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
-            'pular_corda': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'pular_corda_dupla_entrada': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'jumping_jack': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'burpee': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'escalador_de_montanha': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'kettlebell_swing': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'box_jump': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'salto_na_caixa_box_jump': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'agachamento_com_salto': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'battle_rope_ondas_alternadas': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'ski_erg': { imageUrl: 'assets/exercises/seated_cable_row.png', videoUrl: 'https://www.youtube.com/shorts/T3_9O4o0y8Y' },
-            'air_runner': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'natacao_nado_livre': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'natacao_intervalado': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'hiit_tabata': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'hiit_30_30': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'hiit_piramide': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'aquecimento_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'treino_continuo_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'desaquecimento_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'tiro_sprint_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'recuperacao_ativa_cardio': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'step_aerobico': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            
-            // LPO / Potência / Funcionais
-            'arranco_snatch': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
-            'arremesso_clean_jerk': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
-            'arremesso_de_medicine_ball': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'slam_ball': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'flexao_de_braco_com_salto': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'turkish_get_up': { imageUrl: 'assets/exercises/dumbbell_hammer_curl.png', videoUrl: 'https://www.youtube.com/shorts/c2D17Ld2424' },
-            'farmer_walk': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
-            
-            // Novos Mapeamentos (Variações)
-            'supino_inclinado_com_barra': { imageUrl: 'assets/exercises/barbell_bench_press.png', videoUrl: 'https://www.youtube.com/shorts/YiP-Zhk5YMk' },
-            'supino_declinado_com_halteres': { imageUrl: 'assets/exercises/incline_dumbbell_press.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'flexao_de_bracos_inclinada': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'flexao_de_bracos_declinada': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/H9cXPIL8nds' },
-            'crucifixo_de_pe_no_cabo': { imageUrl: 'assets/exercises/cable_crossover.png', videoUrl: 'https://www.youtube.com/shorts/YyFaD_mt8kQ' },
-            'puxada_frontal_com_triangulo': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
-            'puxada_frontal_pegada_inversa': { imageUrl: 'assets/exercises/lat_pulldown.png', videoUrl: 'https://www.youtube.com/shorts/_2MfZAj98tk' },
-            'remada_curvada_com_halteres': { imageUrl: 'assets/exercises/dumbbell_row.png', videoUrl: 'https://www.youtube.com/shorts/OhQTM6Mkq-E' },
-            'remada_supinada_com_barra': { imageUrl: 'assets/exercises/barbell_row.png', videoUrl: 'https://www.youtube.com/shorts/E2_1f3w0fCc' },
-            'crucifixo_invertido_na_maquina': { imageUrl: 'assets/exercises/peck_deck.png', videoUrl: 'https://www.youtube.com/shorts/wkUemXl4vFI' },
-            'meio_terra_rack_pull': { imageUrl: 'assets/exercises/barbell_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/DjsLHZ4jxTU' },
-            'elevacao_lateral_sentado': { imageUrl: 'assets/exercises/lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'elevacao_frontal_com_barra': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'elevacao_frontal_com_anilha': { imageUrl: 'assets/exercises/dumbbell_front_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'crucifixo_invertido_no_cabo': { imageUrl: 'assets/exercises/cable_lateral_raise.png', videoUrl: 'https://www.youtube.com/shorts/Cwcs5h5Sgh0' },
-            'rosca_scott_com_halteres': { imageUrl: 'assets/exercises/preacher_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/90_d-DsrOkE' },
-            'rosca_direta_com_barra_w': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
-            'rosca_inclinada_com_halteres': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
-            'rosca_spider': { imageUrl: 'assets/exercises/alternating_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/q2Z0hLhWwR8' },
-            'rosca_martelo_no_cabo': { imageUrl: 'assets/exercises/cable_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/3iV7L_kE2s0' },
-            'rosca_inversa_com_barra': { imageUrl: 'assets/exercises/barbell_bicep_curl.png', videoUrl: 'https://www.youtube.com/shorts/R2_8Bv9Zkco' },
-            'triceps_testa_com_barra_w': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_testa_com_halteres': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_frances_unilateral': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_frances_no_cabo': { imageUrl: 'assets/exercises/tricep_overhead.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'triceps_coice_no_cabo': { imageUrl: 'assets/exercises/tricep_kickback.png', videoUrl: 'https://www.youtube.com/shorts/Cd0-tP9utgM' },
-            'agachamento_livre_com_halteres': { imageUrl: 'assets/exercises/goblet_squat.png', videoUrl: 'https://www.youtube.com/shorts/XBsOmtbLlYQ' },
-            'agachamento_no_smith': { imageUrl: 'assets/exercises/hack_squat.png', videoUrl: 'https://www.youtube.com/shorts/USv0A4xLQKs' },
-            'agachamento_hack': { imageUrl: 'assets/exercises/hack_squat.png', videoUrl: 'https://www.youtube.com/shorts/USv0A4xLQKs' },
-            'passada_lateral': { imageUrl: 'assets/exercises/walking_lunge.png', videoUrl: 'https://www.youtube.com/shorts/nFWardGq1Uo' },
-            'stiff_com_halteres': { imageUrl: 'assets/exercises/stiff_deadlift.png', videoUrl: 'https://www.youtube.com/shorts/KtP2EMfyiuw' },
-            'mesa_flexora_unilateral': { imageUrl: 'assets/exercises/lying_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/IXg1PQ_5gmw' },
-            'cadeira_flexora_unilateral': { imageUrl: 'assets/exercises/seated_leg_curl.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'coice_de_gluteo_no_solo': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/bJ8KLIqvlfw' },
-            'panturrilha_sentado_na_maquina': { imageUrl: 'assets/exercises/seated_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'panturrilha_em_pe_com_halteres': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'panturrilha_unilateral_em_pe': { imageUrl: 'assets/exercises/standing_calf_raise.png', videoUrl: 'https://www.youtube.com/shorts/T46yKiz8laY' },
-            'abdominal_obliquo_no_solo': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
-            'abdominal_infra_na_barra': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
-            'abdominal_canivete_v_up': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
-            'abdominal_remador': { imageUrl: 'assets/exercises/abdominal_infra.png', videoUrl: 'https://www.youtube.com/shorts/52431jS1yS4' },
-            'alongamento_de_gluteo_pigeon': { imageUrl: 'assets/exercises/side_plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' },
-            'alongamento_gato_camelo': { imageUrl: 'assets/exercises/plank.png', videoUrl: 'https://www.youtube.com/shorts/4YMQB-STHkg' }
-          };
-          
-          let matched = mediaMap[slugKey];
-          if (!matched) {
-            // Seletor de busca flexível por substring
-            const foundKey = Object.keys(mediaMap).find(key => 
-              slugKey.includes(key) || key.includes(slugKey)
-            );
-            if (foundKey) {
-              matched = mediaMap[foundKey];
+            if (imageUrl !== ex.imageUrl || videoUrl !== ex.videoUrl) {
+              if (imageUrl) ex.imageUrl = imageUrl;
+              if (videoUrl) ex.videoUrl = videoUrl;
+              ex._synced = true;
+              updatedAny = true;
             }
           }
-          
-          if (matched) {
-            imageUrl = matched.imageUrl;
-            videoUrl = matched.videoUrl;
-          }
-
-          if (imageUrl !== ex.imageUrl || videoUrl !== ex.videoUrl) {
-            if (imageUrl) ex.imageUrl = imageUrl;
-            if (videoUrl) ex.videoUrl = videoUrl;
-            delete ex._synced;
-            await this.put('exercises', ex);
-            updatedAny = true;
-          }
         }
-      }
-      if (updatedAny) {
-        console.log('Exercícios atualizados localmente com imagens e vídeos.');
+        if (updatedAny) {
+          this._saveLocal('exercises', existing, trainerId);
+        }
+        localStorage.setItem(mediaMigratedKey, '1');
       }
     } catch (err) {
       console.warn('Erro na migração de imagens de exercícios:', err);
