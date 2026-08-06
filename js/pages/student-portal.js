@@ -1587,7 +1587,8 @@ function renderTreinar(workouts, schedules, sessions = []) {
 function initTreinar(workouts, schedules, student, sessions = []) {
   let soloTimerInterval = null;
   let soloStartTime = null;
-  let workSeconds = 0, restSeconds = 0;
+  let restSecondsAccumulated = 0;
+  let currentRestStartedAt = null;
   let isResting = false;
   let backgroundedAt = null;
   let totalBackgroundedSeconds = 0;
@@ -1596,6 +1597,29 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   let restTotal = 60;
   let restRemaining = 60;
   let activeRestingRowId = null;
+
+  function getActiveRestSeconds() {
+    let currentRest = 0;
+    if (currentRestStartedAt) {
+      const elapsedRest = Math.floor((Date.now() - currentRestStartedAt) / 1000);
+      currentRest = Math.min(elapsedRest, restTotal);
+    }
+    return restSecondsAccumulated + Math.max(0, currentRest);
+  }
+
+  function getTotalElapsedSeconds() {
+    if (!soloStartTime) return 0;
+    const now = Date.now();
+    const rawElapsed = Math.floor((now - soloStartTime.getTime()) / 1000);
+    const activeBg = backgroundedAt ? Math.floor((now - backgroundedAt) / 1000) : 0;
+    return Math.max(0, rawElapsed - (totalBackgroundedSeconds + activeBg));
+  }
+
+  function getActiveWorkSeconds() {
+    const total = getTotalElapsedSeconds();
+    const rest = getActiveRestSeconds();
+    return Math.max(0, total - rest);
+  }
   const sid = portalState.studentId;
   const tid = portalState.trainerId;
   const selInput = document.getElementById('soloWorkoutSel');
@@ -1675,33 +1699,14 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   }
 
   function catchUpTimers(elapsed) {
-    let timeResting = 0;
-    let timeWorking = 0;
-
-    if (elapsed > 1800) {
-      // Long inactivity gap (> 30 min)
-      if (isResting) {
-        timeResting = Math.min(elapsed, restRemaining);
-      }
-      // timeWorking is 0
-    } else {
-      // Normal catchup
-      if (isResting) {
-        timeResting = Math.min(elapsed, restRemaining);
-        timeWorking = elapsed - timeResting;
-      } else {
-        timeWorking = elapsed;
-      }
-    }
-
-    // Apply active increments
-    restSeconds += timeResting;
-    workSeconds += timeWorking;
-
-    if (isResting) {
-      restRemaining -= timeResting;
+    if (isResting && currentRestStartedAt) {
+      const elapsedRest = Math.floor((Date.now() - currentRestStartedAt) / 1000);
+      restRemaining = Math.max(0, restTotal - elapsedRest);
       if (restRemaining <= 0) {
-        clearInterval(restTimer);
+        if (restTimer) clearInterval(restTimer);
+        restTimer = null;
+        restSecondsAccumulated += Math.min(elapsedRest, restTotal);
+        currentRestStartedAt = null;
         isResting = false;
         activeRestingRowId = null;
         const overlay = document.getElementById('restTimerOverlay');
@@ -1716,21 +1721,21 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         if (bar) bar.style.width = `${(restRemaining / restTotal) * 100}%`;
       }
     }
-
-    const counted = timeResting + timeWorking;
-    const gap = elapsed - counted;
-    return gap;
+    updateTimerDisplays();
+    return 0;
   }
 
   function updateTimerDisplays() {
-    const total = workSeconds + restSeconds;
+    const rest = getActiveRestSeconds();
+    const work = getActiveWorkSeconds();
+    const total = work + rest;
     const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
     const el = document.getElementById('liveTotal');
     const ew = document.getElementById('liveWork');
     const er = document.getElementById('liveRest');
     if (el) el.textContent = fmt(total);
-    if (ew) ew.textContent = fmt(workSeconds);
-    if (er) er.textContent = fmt(restSeconds);
+    if (ew) ew.textContent = fmt(work);
+    if (er) er.textContent = fmt(rest);
   }
 
   function collectSoloSessionData() {
@@ -1882,8 +1887,10 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       status: 'running',
       isSolo: true,
       startTime: soloStartTime ? soloStartTime.toISOString() : new Date().toISOString(),
-      workSeconds,
-      restSeconds,
+      workSeconds: getActiveWorkSeconds(),
+      restSeconds: getActiveRestSeconds(),
+      restSecondsAccumulated,
+      currentRestStartedAt,
       isResting,
       restRemaining,
       restTotal,
@@ -2080,39 +2087,16 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       }
     }
 
-    const elapsedSinceLastSave = saved.lastSavedTime 
-      ? Math.max(0, Math.floor((new Date() - new Date(saved.lastSavedTime)) / 1000))
-      : 0;
+    soloSessionId = saved.id;
+    soloStartTime = new Date(saved.startTime);
+    restSecondsAccumulated = saved.restSecondsAccumulated !== undefined ? saved.restSecondsAccumulated : (saved.restSeconds || 0);
+    currentRestStartedAt = saved.currentRestStartedAt || null;
+    totalBackgroundedSeconds = saved.totalBackgroundedSeconds || 0;
+    backgroundedAt = null;
 
-    workSeconds = saved.workSeconds || 0;
-    restSeconds = saved.restSeconds || 0;
-    let timeResting = 0;
-    let timeWorking = 0;
-
-    if (elapsedSinceLastSave > 1800) {
-      // Long inactivity gap (> 30 min)
-      if (saved.isResting) {
-        timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
-      }
-      // timeWorking is 0
-    } else {
-      // Normal catchup
-      if (saved.isResting) {
-        timeResting = Math.min(elapsedSinceLastSave, saved.restRemaining || 0);
-        timeWorking = elapsedSinceLastSave - timeResting;
-      } else {
-        timeWorking = elapsedSinceLastSave;
-      }
-    }
-
-    restSeconds += timeResting;
-    workSeconds += timeWorking;
-
-    const counted = timeResting + timeWorking;
-    const gap = elapsedSinceLastSave - counted;
-
-    if (saved.isResting) {
-      const newRestRemaining = (saved.restRemaining || 0) - elapsedSinceLastSave;
+    if (saved.isResting && currentRestStartedAt) {
+      const elapsedRest = Math.floor((Date.now() - currentRestStartedAt) / 1000);
+      const newRestRemaining = (saved.restTotal || 60) - elapsedRest;
       if (newRestRemaining > 0) {
         isResting = true;
         restTotal = saved.restTotal || 60;
@@ -2126,6 +2110,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
         }
         startRestTimer(newRestRemaining);
       } else {
+        restSecondsAccumulated += Math.min(elapsedRest, saved.restTotal || 60);
+        currentRestStartedAt = null;
         isResting = false;
         activeRestingRowId = null;
       }
@@ -2134,34 +2120,7 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       activeRestingRowId = null;
     }
 
-    totalBackgroundedSeconds = saved.totalBackgroundedSeconds || 0;
-    backgroundedAt = null;
-
-    // Shift start time by uncounted gap to keep total duration accurate
-    const originalStart = new Date(saved.startTime).getTime();
-    soloStartTime = new Date(originalStart + gap * 1000);
-
-    lastTickTime = Date.now();
-    soloTimerInterval = setInterval(() => {
-      const now = Date.now();
-      const actualElapsed = Math.floor((now - lastTickTime) / 1000);
-      lastTickTime = now;
-
-      if (actualElapsed > 1) {
-        const tickGap = catchUpTimers(actualElapsed);
-        if (tickGap > 0 && soloStartTime) {
-          soloStartTime = new Date(soloStartTime.getTime() + tickGap * 1000);
-        }
-      } else {
-        if (isResting) {
-          restSeconds++;
-        } else {
-          workSeconds++;
-        }
-      }
-
-      updateTimerDisplays();
-    }, 1000);
+    startMainTimer();
 
     autoSaveInterval = setInterval(autoSaveSoloSession, 20000);
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -2288,8 +2247,13 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   // Rest timer
   function startRestTimer(seconds) {
     if (restTimer) clearInterval(restTimer);
+    if (currentRestStartedAt) {
+      const elapsedRest = Math.floor((Date.now() - currentRestStartedAt) / 1000);
+      restSecondsAccumulated += Math.min(elapsedRest, restTotal);
+    }
     restTotal = seconds;
     restRemaining = seconds;
+    currentRestStartedAt = Date.now();
     isResting = true;
 
     const overlay = document.getElementById('restTimerOverlay');
@@ -2299,15 +2263,16 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     overlay.style.display = 'block';
     
     const updateUI = () => {
+      if (currentRestStartedAt) {
+        const elapsedRest = Math.floor((Date.now() - currentRestStartedAt) / 1000);
+        restRemaining = Math.max(0, restTotal - elapsedRest);
+      }
       if (cd) cd.textContent = restRemaining;
       if (bar) bar.style.width = `${(restRemaining / restTotal) * 100}%`;
     };
     updateUI();
     
     restTimer = setInterval(() => {
-      restRemaining--;
-      // NOTE: restSeconds is incremented by soloTimerInterval (single source of truth)
-      // restTimer only manages the countdown UI + beeps + overlay state
       updateUI();
       if (restRemaining <= 5 && restRemaining > 0) {
         playBeep(800, 0.06, 1);
@@ -2315,17 +2280,29 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       if (restRemaining <= 0) {
         clearInterval(restTimer);
         restTimer = null;
+        if (currentRestStartedAt) {
+          const elapsedRest = Math.floor((Date.now() - currentRestStartedAt) / 1000);
+          restSecondsAccumulated += Math.min(elapsedRest, restTotal);
+          currentRestStartedAt = null;
+        }
         overlay.style.display = 'none';
         isResting = false;
         activeRestingRowId = null;
         playBeep(1000, 0.25, 3);
         sendLocalNotification("Descanso Concluído!", "Hora de começar a próxima série!");
+        triggerAutoSave();
       }
     }, 1000);
   }
 
   function stopRestTimer() {
     if (restTimer) clearInterval(restTimer);
+    restTimer = null;
+    if (currentRestStartedAt) {
+      const elapsedRest = Math.floor((Date.now() - currentRestStartedAt) / 1000);
+      restSecondsAccumulated += Math.min(elapsedRest, restTotal);
+      currentRestStartedAt = null;
+    }
     isResting = false;
     activeRestingRowId = null;
     const overlay = document.getElementById('restTimerOverlay');
@@ -3032,26 +3009,17 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     }
   }
   function startMainTimer() {
-    soloStartTime = new Date();
+    if (!soloStartTime) soloStartTime = new Date();
     backgroundedAt = null;
-    totalBackgroundedSeconds = 0;
     lastTickTime = Date.now();
+    if (soloTimerInterval) clearInterval(soloTimerInterval);
     soloTimerInterval = setInterval(() => {
       const now = Date.now();
       const actualElapsed = Math.floor((now - lastTickTime) / 1000);
       lastTickTime = now;
 
       if (actualElapsed > 1) {
-        const tickGap = catchUpTimers(actualElapsed);
-        if (tickGap > 0 && soloStartTime) {
-          soloStartTime = new Date(soloStartTime.getTime() + tickGap * 1000);
-        }
-      } else {
-        if (isResting) {
-          restSeconds++;
-        } else {
-          workSeconds++;
-        }
+        catchUpTimers(actualElapsed);
       }
 
       updateTimerDisplays();
@@ -3301,6 +3269,9 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     const totalSets = collected.setLog.length;
     const localDate = (()=>{ const d=new Date(),o=d.getTimezoneOffset(),l=new Date(d.getTime()-o*60000); return l.toISOString().split('T')[0]; })();
 
+    const finalWork = getActiveWorkSeconds();
+    const finalRest = getActiveRestSeconds();
+
     const sessionData = {
       id: soloSessionId,
       studentId: sid,
@@ -3315,6 +3286,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       durationCapped,
       totalBackgroundedSeconds,
       totalDuration: durationMin * 60,
+      workSeconds: finalWork,
+      restSeconds: finalRest,
       totalVolume,
       totalSets,
       exercises: collected.exercises,
@@ -3433,8 +3406,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
       soloStartTime = null;
       backgroundedAt = null;
       totalBackgroundedSeconds = 0;
-      workSeconds = 0;
-      restSeconds = 0;
+      restSecondsAccumulated = 0;
+      currentRestStartedAt = null;
       isResting = false;
 
       await loadSection('treinar');
@@ -3456,6 +3429,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
   const running = sessions.find(s => s.status === 'running' && s.isSolo === true);
   if (running) {
     resumeSoloSession(running);
+  } else if (soloSessionId && !soloTimerInterval) {
+    startMainTimer();
   }
 }
 
