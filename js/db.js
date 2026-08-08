@@ -146,11 +146,17 @@ class Database {
     return user?.id || null;
   }
 
-  async syncBothWays(trainerId) {
+  async syncBothWays(trainerId, options = {}) {
     if (!this.supabase || !trainerId) return;
     if (this._syncing) return;
     this._syncing = true;
-    console.log(`[Sync] Starting two-way database sync for trainer: ${trainerId}`);
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const catalogKey = `pp_catalogSync_${todayStr}`;
+    const hasSyncedCatalogToday = !!localStorage.getItem(catalogKey);
+    const shouldSyncCatalog = options.includeCatalog || !hasSyncedCatalogToday;
+
+    console.log(`[Sync] Starting two-way database sync for trainer: ${trainerId} (includeCatalog: ${shouldSyncCatalog})`);
     try {
       // 0. Prune old tombstones
       this._pruneTombstones(trainerId);
@@ -175,6 +181,10 @@ class Database {
       this._saveTombstones(remainingTombstones, trainerId);
 
       for (const storeName of this.SUPABASE_TABLES) {
+        if ((storeName === 'exercises' || storeName === 'methods') && !shouldSyncCatalog) {
+          continue;
+        }
+
         const localItems = this._getLocal(storeName, trainerId) || [];
         const currentStoreTombstones = new Set(
           this._getTombstones(trainerId)
@@ -309,6 +319,9 @@ class Database {
             }
           }
         }
+      }
+      if (shouldSyncCatalog) {
+        localStorage.setItem(catalogKey, '1');
       }
       console.log(`[Sync] Two-way sync completed successfully!`);
     } catch (err) {
@@ -880,7 +893,8 @@ class Database {
       if (sid) {
         setTimeout(() => this.syncStudentData(sid, trainerId).catch(() => {}), 500);
       } else {
-        setTimeout(() => this.syncBothWays(trainerId).catch(() => {}), 500);
+        const opts = (storeName === 'exercises' || storeName === 'methods') ? { includeCatalog: true } : {};
+        setTimeout(() => this.syncBothWays(trainerId, opts).catch(() => {}), 500);
       }
     }
 
@@ -919,8 +933,10 @@ class Database {
       console.warn(`Supabase delete exception:`, err.message);
       // Tombstone permanece para retry
     }
-    // NÃO disparar syncBothWays aqui — evita race condition onde o item
-    // recém-excluído ainda aparece no Supabase e é re-importado
+    
+    if ((storeName === 'exercises' || storeName === 'methods') && resolvedTrainerId) {
+      setTimeout(() => this.syncBothWays(resolvedTrainerId, { includeCatalog: true }).catch(() => {}), 500);
+    }
   }
 
   // ── CLEAR ──
