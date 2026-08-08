@@ -3328,6 +3328,16 @@ function initTreinar(workouts, schedules, student, sessions = []) {
             console.warn('Erro ao atualizar status na agenda:', err);
           }
           saved = true;
+          // Forced immediate sync to push 'completed' status to Supabase without waiting
+          try {
+            if (typeof db.syncStudentData === 'function' && sid) {
+              await db.syncStudentData(sid, tid);
+            } else if (typeof db.syncBothWays === 'function' && tid) {
+              await db.syncBothWays(tid);
+            }
+          } catch (syncErr) {
+            console.warn('Sync imediato pos-finalizacao falhou (offline):', syncErr);
+          }
           break;
         } catch (err) {
           console.error(`Tentativa ${attempt} falhou:`, err);
@@ -3425,8 +3435,28 @@ function initTreinar(workouts, schedules, student, sessions = []) {
     stopRestTimer();
   };
 
-  // Auto-resume if there is an active running session
-  const running = sessions.find(s => s.status === 'running' && s.isSolo === true);
+  // Cleanup orphan 'running' solo sessions older than 12 hours
+  const now = Date.now();
+  for (const s of sessions) {
+    if (s.status === 'running' && s.isSolo === true) {
+      const startedAt = s.startTime ? new Date(s.startTime).getTime() : 0;
+      if (startedAt && (now - startedAt) > 12 * 3600 * 1000) {
+        s.status = 'abandoned';
+        s.abandonedAt = new Date().toISOString();
+        db.put('sessions', s).catch(err => console.warn('Erro ao marcar sessao orfa como abandoned:', err));
+      }
+    }
+  }
+
+  // Auto-resume if there is a recent active running session (< 4 hours)
+  const running = sessions.find(s => {
+    if (s.status !== 'running' || s.isSolo !== true) return false;
+    const startedAt = s.startTime ? new Date(s.startTime).getTime() : 0;
+    if (!startedAt) return false;
+    const horasDesde = (Date.now() - startedAt) / 3600000;
+    return horasDesde < 4;
+  });
+
   if (running) {
     resumeSoloSession(running);
   } else if (soloSessionId && !soloTimerInterval) {
