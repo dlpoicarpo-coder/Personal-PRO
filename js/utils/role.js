@@ -19,22 +19,49 @@ export async function getUserRole() {
   if (!sb) return null;
 
   try {
-    const { data, error } = await sb
+    // 1. Checar se e aluno vinculado
+    const { data: student, error: studentErr } = await sb
       .from('students')
       .select('id')
       .eq('auth_user_id', user.id)
       .limit(1)
       .maybeSingle();
 
-    cachedUserId = user.id;
-    if (data) {
-      cachedRole = 'student';
-    } else {
-      cachedRole = 'trainer';
+    if (studentErr) {
+      console.warn('[Role] Erro ao consultar tabela students:', studentErr.message);
     }
-    return cachedRole;
+
+    if (student) {
+      cachedUserId = user.id;
+      cachedRole = 'student';
+      return cachedRole;
+    }
+
+    // 2. Checar se e treinador autorizado (prova positiva)
+    const { data: trainer, error: trainerErr } = await sb
+      .from('trainers')
+      .select('id, status')
+      .eq('id', user.id)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+
+    if (trainerErr) {
+      console.warn('[Role] Erro ao consultar tabela trainers:', trainerErr.message);
+    }
+
+    if (trainer) {
+      cachedUserId = user.id;
+      cachedRole = 'trainer';
+      return cachedRole;
+    }
+
+    // 3. Sem papel definido / nao autorizado (falha fechada)
+    cachedUserId = user.id;
+    cachedRole = null;
+    return null;
   } catch (err) {
-    console.error('Erro ao verificar papel do usuário:', err);
+    console.error('[Role] Excecao ao verificar papel do usuario:', err);
     return null;
   }
 }

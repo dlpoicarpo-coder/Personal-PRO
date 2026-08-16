@@ -37,6 +37,25 @@ window.getModalityBadge = function(modality) {
   return '';
 };
 
+function renderUnauthorizedScreen() {
+  return `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg-page);box-sizing:border-box">
+      <div style="max-width:420px;width:100%;text-align:center;background:var(--bg-card);border:1px solid var(--border-color);border-radius:16px;padding:32px 24px;box-shadow:0 8px 24px rgba(0,0,0,0.12)">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,0.12);color:var(--danger);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:8px;color:var(--text-primary)">Acesso Não Autorizado</h2>
+        <p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.5;margin-bottom:24px">
+          Sua conta ainda não possui permissão de treinador nem vínculo ativo de aluno. Se você é aluno, solicite um novo convite ao seu treinador.
+        </p>
+        <button id="unauthorizedLogoutBtn" class="btn btn-outline" style="width:100%;padding:10px">
+          Sair da Conta
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 // Central Router
 const routes = {
   '/': { render: renderDashboard, init: initDashboardCharts },
@@ -180,9 +199,17 @@ export async function navigateTo(path) {
   }
 
   if (role !== 'trainer') {
-    console.error('[Guard] papel indeterminado, bloqueando');
-    appContainer.innerHTML = renderLogin();
-    initLogin(() => navigateTo('/'));
+    console.warn('[Guard] papel não autorizado ou indeterminado, bloqueando acesso.');
+    appContainer.className = '';
+    appContainer.innerHTML = renderUnauthorizedScreen();
+    document.getElementById('unauthorizedLogoutBtn')?.addEventListener('click', async () => {
+      const { signOut } = await import('./utils/auth.js');
+      const { clearRoleCache } = await import('./utils/role.js');
+      clearRoleCache();
+      await signOut();
+      window.location.hash = '#/';
+      window.location.reload();
+    });
     return;
   }
 
@@ -356,8 +383,6 @@ function initApp() {
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
     }).catch(() => {});
-
-    db.seedTemplates().catch(console.error);
 
     // Database deduplication and methods repair
     setTimeout(async () => {
