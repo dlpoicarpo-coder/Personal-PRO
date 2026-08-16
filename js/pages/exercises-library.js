@@ -657,7 +657,11 @@ export function initExercisesLibrary(navigateFn) {
       const _adminMode = await isAdmin();
       if (ex.is_default && !_adminMode) { notify.warning('Apenas admins podem excluir exercícios padrão.'); return; }
       if (!window.confirm('Excluir ' + ex.name + '?' + (ex.is_default ? ' Este exercício é PADRÃO — sumirá para todos.' : ''))) return;
-      await db.delete('exercises', btn.dataset.id);
+      const res = await db.delete('exercises', btn.dataset.id);
+      if (res && res.error) {
+        notify.error('Não foi possível excluir: ' + res.error);
+        return;
+      }
       notify.success('Excluído.'); navigateFn('/exercicios');
     });
   });
@@ -699,7 +703,11 @@ export function initExercisesLibrary(navigateFn) {
       const _am = await isAdmin();
       if (m.is_default && !_am) { notify.warning('Apenas admins podem excluir métodos padrão.'); return; }
       if (!window.confirm(`Excluir método "${m.name}"?`)) return;
-      await db.delete('methods', btn.dataset.id);
+      const res = await db.delete('methods', btn.dataset.id);
+      if (res && res.error) {
+        notify.error('Não foi possível excluir: ' + res.error);
+        return;
+      }
       notify.success('Método excluído.'); navigateFn('/exercicios');
     });
   });
@@ -752,7 +760,11 @@ export function initExercisesLibrary(navigateFn) {
   document.querySelectorAll('.delete-custom-tpl').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!window.confirm('Excluir este modelo?')) return;
-      await db.delete('cycles', btn.dataset.id);
+      const res = await db.delete('cycles', btn.dataset.id);
+      if (res && res.error) {
+        notify.error('Não foi possível excluir: ' + res.error);
+        return;
+      }
       notify.success('Modelo excluído.'); navigateFn('/exercicios');
     });
   });

@@ -169,9 +169,11 @@ class Database {
         try {
           let q = this.supabase.from(tomb.storeName).delete().eq('id', tomb.id);
           if (trainerId) q = q.eq('trainer_id', trainerId);
-          const { error } = await q;
-          if (error) {
-            console.warn(`[Sync] Failed to retry remote delete for ${tomb.storeName} ID ${tomb.id}:`, error.message);
+          const { data, error } = await q.select();
+          const count = Array.isArray(data) ? data.length : 0;
+          if (error || count === 0) {
+            if (error) console.warn(`[Sync] Failed to retry remote delete for ${tomb.storeName} ID ${tomb.id}:`, error.message);
+            else console.warn(`[Sync] Retry remote delete affected 0 rows for ${tomb.storeName} ID ${tomb.id}`);
             remainingTombstones.push(tomb);
           }
         } catch (err) {
@@ -351,9 +353,11 @@ class Database {
         try {
           let q = this.supabase.from(tomb.storeName).delete().eq('id', tomb.id);
           if (trainerId) q = q.eq('trainer_id', trainerId);
-          const { error } = await q;
-          if (error) {
-            console.warn(`[Student Sync] Failed to retry remote delete for ${tomb.storeName} ID ${tomb.id}:`, error.message);
+          const { data, error } = await q.select();
+          const count = Array.isArray(data) ? data.length : 0;
+          if (error || count === 0) {
+            if (error) console.warn(`[Student Sync] Failed to retry remote delete for ${tomb.storeName} ID ${tomb.id}:`, error.message);
+            else console.warn(`[Student Sync] Retry remote delete affected 0 rows for ${tomb.storeName} ID ${tomb.id}`);
             remainingTombstones.push(tomb);
           }
         } catch (err) {
@@ -916,7 +920,8 @@ class Database {
   // ── DELETE ──
   async delete(storeName, id, trainerId = null) {
     const resolvedTrainerId = trainerId || await this._getTrainerId() || (typeof portalState !== 'undefined' ? portalState.trainerId : null);
-    const all = this._getLocal(storeName, resolvedTrainerId).filter(i => i.id !== id);
+    const prevItems = this._getLocal(storeName, resolvedTrainerId);
+    const all = prevItems.filter(i => i.id !== id);
     this._saveLocal(storeName, all, resolvedTrainerId);
 
     // Save tombstone local log
@@ -924,19 +929,34 @@ class Database {
       this._addTombstone(storeName, id, resolvedTrainerId);
     }
 
-    if (!this.supabase) return;
+    if (!this.supabase) return { success: true, count: 1 };
+
+    let remoteSuccess = false;
+    let remoteCount = 0;
+    let remoteError = null;
+
     try {
       let q = this.supabase.from(storeName).delete().eq('id', id);
       if (resolvedTrainerId) q = q.eq('trainer_id', resolvedTrainerId);
-      const { error } = await q;
-      if (!error) {
-        this._removeTombstone(storeName, id, resolvedTrainerId);
-        console.log(`[Delete] Remote delete OK for ${storeName} ID ${id}`);
-      } else {
+      const { data, error } = await q.select();
+
+      if (error) {
+        remoteError = error.message;
         console.warn(`Supabase delete error (${storeName}):`, error.message);
-        // Tombstone permanece para retry no próximo syncBothWays
+      } else {
+        remoteCount = Array.isArray(data) ? data.length : 0;
+        if (remoteCount > 0) {
+          remoteSuccess = true;
+          this._removeTombstone(storeName, id, resolvedTrainerId);
+          console.log(`[Delete] Remote delete OK for ${storeName} ID ${id} (${remoteCount} linha(s) afetada(s))`);
+        } else {
+          remoteError = 'Nenhum registro excluído no banco (bloqueado por RLS ou ID não encontrado)';
+          console.warn(`[Delete] Remote delete affected 0 rows for ${storeName} ID ${id}`);
+          // Tombstone permanece para retry no próximo syncBothWays
+        }
       }
     } catch (err) {
+      remoteError = err.message || 'Exceção na exclusão remota';
       console.warn(`Supabase delete exception:`, err.message);
       // Tombstone permanece para retry
     }
@@ -944,6 +964,8 @@ class Database {
     if (this.DAILY_SYNC_TABLES.has(storeName) && resolvedTrainerId) {
       setTimeout(() => this.syncBothWays(resolvedTrainerId, { includeDaily: true }).catch(() => {}), 500);
     }
+
+    return { success: remoteSuccess, count: remoteCount, error: remoteError };
   }
 
   // ── CLEAR ──
