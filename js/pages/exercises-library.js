@@ -286,7 +286,14 @@ export async function renderExercisesLibrary() {
   `;
 }
 
-function exerciseFormHTML(ex = {}) {
+function exerciseFormHTML(ex = {}, adminMode = false) {
+  const globalToggle = adminMode ? `
+    <div class="form-group" style="margin-top:8px;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;background:rgba(239,68,68,0.04)">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
+        <input type="checkbox" id="exFormGlobal" ${ex.is_default ? 'checked' : ''} style="width:16px;height:16px" />
+        <span>Exercicio global <span style="color:var(--text-muted);font-size:0.75rem">(visivel para todos os treinadores)</span></span>
+      </label>
+    </div>` : '';
   return `<form id="exForm">
     <div class="form-group"><label class="form-label">Nome *</label>
       <input class="form-input" name="name" value="${ex.name||''}" required placeholder="Ex: Supino Reto com Barra" />
@@ -311,22 +318,22 @@ function exerciseFormHTML(ex = {}) {
           <option value="time"       ${ex.loadType==='time'?'selected':''}>Tempo / Intensidade</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Reps/Tempo padrão</label>
+      <div class="form-group"><label class="form-label">Reps/Tempo padrao</label>
         <input class="form-input" name="defaultReps" value="${ex.defaultReps||''}" placeholder="Ex: 12 ou 30s" />
       </div>
     </div>
     <div class="form-group"><label class="form-label">Equipamento</label>
-      <input class="form-input" name="equipment" value="${ex.equipment||''}" placeholder="Ex: Barra, Halteres, Máquina" />
+      <input class="form-input" name="equipment" value="${ex.equipment||''}" placeholder="Ex: Barra, Halteres, Maquina" />
     </div>
-    <div class="form-group"><label class="form-label">Descrição / Execução</label>
+    <div class="form-group"><label class="form-label">Descricao / Execucao</label>
       <textarea class="form-textarea" name="description" rows="2">${ex.description||''}</textarea>
     </div>
-    <div class="form-group"><label class="form-label">Link do Vídeo (YouTube)</label>
+    <div class="form-group"><label class="form-label">Link do Video (YouTube)</label>
       <input class="form-input" name="videoUrl" value="${ex.videoUrl||''}" placeholder="https://youtube.com/watch?v=..." />
     </div>
     <div class="form-group"><label class="form-label">Imagem de Capa (Foto)</label>
       <div style="display:flex;gap:10px;align-items:center">
-        <input class="form-input" id="exFormImageUrl" name="imageUrl" value="${ex.imageUrl||''}" placeholder="https://... ou faça upload" style="flex:1" />
+        <input class="form-input" id="exFormImageUrl" name="imageUrl" value="${ex.imageUrl||''}" placeholder="https://... ou faca upload" style="flex:1" />
         <label class="btn btn-outline" style="margin:0;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 12px;height:38px;box-sizing:border-box;flex-shrink:0">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Upload
@@ -335,9 +342,46 @@ function exerciseFormHTML(ex = {}) {
       </div>
       <div id="exFormImagePreviewContainer" style="display:${ex.imageUrl?'block':'none'};margin-top:10px;position:relative;width:100px;height:60px;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)">
         <img id="exFormImagePreview" src="${ex.imageUrl||''}" style="width:100%;height:100%;object-fit:cover" />
-        <button type="button" id="exFormRemoveImage" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px">×</button>
+        <button type="button" id="exFormRemoveImage" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px">x</button>
+      </div>
+    </div>${globalToggle}
+  </form>`;
+}
+
+function methodFormHTML(m = {}, adminMode = false) {
+  const globalToggle = adminMode ? `
+    <div class="form-group" style="margin-top:8px;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;background:rgba(239,68,68,0.04)">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
+        <input type="checkbox" id="methodFormGlobal" ${m.is_default ? 'checked' : ''} style="width:16px;height:16px" />
+        <span>Método global <span style="color:var(--text-muted);font-size:0.75rem">(visível para todos os treinadores)</span></span>
+      </label>
+    </div>` : '';
+  return `<form id="methodForm">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nome *</label>
+        <input class="form-input" name="name" value="${m.name||''}" required placeholder="Ex: Cluster Avançado" />
+      </div>
+      <div class="form-group"><label class="form-label">Categoria</label>
+        <select class="form-select" name="category">
+          ${['Hipertrofia','Força','Cardio','Resistência','Funcional','Geral'].map(c=>`<option ${(m.category||'Hipertrofia')===c?'selected':''}>${c}</option>`).join('')}
+        </select>
       </div>
     </div>
+    <div class="form-group"><label class="form-label">Descrição / Como executar *</label>
+      <textarea class="form-textarea" name="description" rows="3" required
+        placeholder="Explique como o método funciona e quando usar...">${m.description||''}</textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Séries recomendadas</label>
+        <input class="form-input" name="sets" value="${m.sets||''}" placeholder="Ex: 3-4 ou 7" />
+      </div>
+      <div class="form-group"><label class="form-label">Reps / Tempo recomendado</label>
+        <input class="form-input" name="repsHint" value="${m.repsHint||''}" placeholder="Ex: 8-12 ou 20s esforço" />
+      </div>
+      <div class="form-group"><label class="form-label">Descanso recomendado</label>
+        <input class="form-input" name="restHint" value="${m.restHint||''}" placeholder="Ex: 90-120s" />
+      </div>
+    </div>${globalToggle}
   </form>`;
 }
 
@@ -496,44 +540,20 @@ export function initExercisesLibrary(navigateFn) {
   });
 
   // Adicionar método
-  document.getElementById('addMethodBtn')?.addEventListener('click', () => {
+  document.getElementById('addMethodBtn')?.addEventListener('click', async () => {
+    const _am = await isAdmin();
     openModal({
       title: '+ Novo Método de Treinamento', size: 'md',
       preventBackdropClose: true,
-      content: `<form id="methodForm">
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Nome *</label>
-            <input class="form-input" name="name" required placeholder="Ex: Cluster Avançado" />
-          </div>
-          <div class="form-group"><label class="form-label">Categoria</label>
-            <select class="form-select" name="category">
-              <option>Hipertrofia</option><option>Força</option><option>Cardio</option>
-              <option>Resistência</option><option>Funcional</option><option>Geral</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group"><label class="form-label">Descrição / Como executar *</label>
-          <textarea class="form-textarea" name="description" rows="3" required
-            placeholder="Explique como o método funciona e quando usar..."></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Séries recomendadas</label>
-            <input class="form-input" name="sets" placeholder="Ex: 3-4 ou 7" />
-          </div>
-          <div class="form-group"><label class="form-label">Reps / Tempo recomendado</label>
-            <input class="form-input" name="repsHint" placeholder="Ex: 8-12 ou 20s esforço" />
-          </div>
-          <div class="form-group"><label class="form-label">Descanso recomendado</label>
-            <input class="form-input" name="restHint" placeholder="Ex: 90-120s" />
-          </div>
-        </div>
-      </form>`,
+      content: methodFormHTML({}, _am),
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
         { label: 'Salvar Método', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('methodForm'));
           const d  = Object.fromEntries(fd);
           if (!d.name || !d.description) { notify.error('Nome e descrição são obrigatórios'); return; }
+          const globalCheck = document.getElementById('methodFormGlobal');
+          d.is_default = (_am && globalCheck && globalCheck.checked) ? true : false;
           await db.add('methods', d);
           notify.success('Método criado!');
           closeModal();
@@ -543,25 +563,28 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
-  const openAddEx = () => {
+  const openAddEx = async () => {
+    const _am = await isAdmin();
     openModal({
-      title: '+ Novo Exercício', size: 'md',
+      title: '+ Novo Exercicio', size: 'md',
       preventBackdropClose: true,
-      content: exerciseFormHTML(),
+      content: exerciseFormHTML({}, _am),
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
         { label: 'Salvar', class: 'btn-primary', onClick: async () => {
           const fd = new FormData(document.getElementById('exForm'));
           const d = Object.fromEntries(fd);
-          if (!d.name) { notify.error('Nome obrigatório'); return; }
+          if (!d.name) { notify.error('Nome obrigatorio'); return; }
           const allEx = await db.getAll('exercises');
           const cleanName = d.name.toLowerCase().trim();
           if (allEx.some(ex => ex.name.toLowerCase().trim() === cleanName)) {
-            notify.error('Já existe um exercício com este nome nesta biblioteca.');
+            notify.error('Ja existe um exercicio com este nome nesta biblioteca.');
             return;
           }
+          const globalCheck = document.getElementById('exFormGlobal');
+          d.is_default = (_am && globalCheck && globalCheck.checked) ? true : false;
           await db.add('exercises', d);
-          notify.success('Exercício criado!');
+          notify.success('Exercicio criado!');
           closeModal(); navigateFn('/exercicios');
         }}
       ]
@@ -599,11 +622,10 @@ export function initExercisesLibrary(navigateFn) {
       if (!ex) return;
       const _adminMode = await isAdmin();
       if (ex.is_default && !_adminMode) { notify.warning('Apenas admins podem editar exercícios padrão.'); return; }
-      if (!ex) return;
       openModal({
         title: 'Editar Exercício', size: 'md',
         preventBackdropClose: true,
-        content: exerciseFormHTML(ex),
+        content: exerciseFormHTML(ex, _adminMode),
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: 'Salvar', class: 'btn-primary', onClick: async () => {
@@ -616,7 +638,9 @@ export function initExercisesLibrary(navigateFn) {
               notify.error('Já existe outro exercício com este nome nesta biblioteca.');
               return;
             }
-            await db.put('exercises', { ...ex, ...d, media_customized: true });
+            const globalCheck = document.getElementById('exFormGlobal');
+            const is_default = (_adminMode && globalCheck) ? globalCheck.checked : (ex.is_default === true);
+            await db.put('exercises', { ...ex, ...d, is_default, media_customized: true });
             notify.success('Atualizado!'); closeModal(); navigateFn('/exercicios');
           }}
         ]
@@ -635,10 +659,37 @@ export function initExercisesLibrary(navigateFn) {
       if (!window.confirm('Excluir ' + ex.name + '?' + (ex.is_default ? ' Este exercício é PADRÃO — sumirá para todos.' : ''))) return;
       await db.delete('exercises', btn.dataset.id);
       notify.success('Excluído.'); navigateFn('/exercicios');
-      notify.success('Excluído.'); navigateFn('/exercicios');
     });
   });
 
+  // Editar método
+  document.querySelectorAll('.edit-method').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const m = await db.get('methods', btn.dataset.id);
+      if (!m) return;
+      const _am = await isAdmin();
+      if (m.is_default && !_am) { notify.warning('Apenas admins podem editar métodos padrão.'); return; }
+      openModal({
+        title: 'Editar Método de Treinamento', size: 'md',
+        preventBackdropClose: true,
+        content: methodFormHTML(m, _am),
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Salvar Método', class: 'btn-primary', onClick: async () => {
+            const fd = new FormData(document.getElementById('methodForm'));
+            const d  = Object.fromEntries(fd);
+            if (!d.name || !d.description) { notify.error('Nome e descrição são obrigatórios'); return; }
+            const globalCheck = document.getElementById('methodFormGlobal');
+            const is_default = (_am && globalCheck) ? globalCheck.checked : (m.is_default === true);
+            await db.put('methods', { ...m, ...d, is_default });
+            notify.success('Método atualizado!');
+            closeModal();
+            navigateFn('/exercicios');
+          }}
+        ]
+      });
+    });
+  });
 
   // Excluir método — com verificação admin
   document.querySelectorAll('.delete-method').forEach(btn => {
