@@ -152,11 +152,12 @@ class Database {
     this._syncing = true;
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const catalogKey = `pp_catalogSync_${todayStr}`;
-    const hasSyncedCatalogToday = !!localStorage.getItem(catalogKey);
-    const shouldSyncCatalog = options.includeCatalog || !hasSyncedCatalogToday;
+    const dailySyncKey = `pp_dailySync_${todayStr}`;
+    const hasSyncedDailyToday = !!localStorage.getItem(dailySyncKey);
+    // includeCatalog kept for backward compat; includeDaily is the canonical name
+    const shouldSyncDaily = options.includeDaily || options.includeCatalog || !hasSyncedDailyToday;
 
-    console.log(`[Sync] Starting two-way database sync for trainer: ${trainerId} (includeCatalog: ${shouldSyncCatalog})`);
+    console.log(`[Sync] Starting two-way database sync for trainer: ${trainerId} (includeDaily: ${shouldSyncDaily})`);
     try {
       // 0. Prune old tombstones
       this._pruneTombstones(trainerId);
@@ -181,7 +182,7 @@ class Database {
       this._saveTombstones(remainingTombstones, trainerId);
 
       for (const storeName of this.SUPABASE_TABLES) {
-        if ((storeName === 'exercises' || storeName === 'methods') && !shouldSyncCatalog) {
+        if (this.DAILY_SYNC_TABLES.has(storeName) && !shouldSyncDaily) {
           continue;
         }
 
@@ -320,8 +321,8 @@ class Database {
           }
         }
       }
-      if (shouldSyncCatalog) {
-        localStorage.setItem(catalogKey, '1');
+      if (shouldSyncDaily) {
+        localStorage.setItem(dailySyncKey, '1');
       }
       console.log(`[Sync] Two-way sync completed successfully!`);
     } catch (err) {
@@ -628,6 +629,12 @@ class Database {
     'events','prescriptions','anamnesis','settings','exercises','methods',
   ]);
 
+  // Tabelas sincronizadas 1x/dia + sob demanda apos escrita (reduz egress).
+  // As demais continuam no ciclo de 5min para propagacao rapida entre dispositivos.
+  DAILY_SYNC_TABLES = new Set([
+    'exercises', 'methods', 'financial', 'assessments', 'cycles',
+  ]);
+
 
   async getAll(storeName, options = {}) {
     const res = await this._getAllRaw(storeName);
@@ -893,7 +900,7 @@ class Database {
       if (sid) {
         setTimeout(() => this.syncStudentData(sid, trainerId).catch(() => {}), 500);
       } else {
-        const opts = (storeName === 'exercises' || storeName === 'methods') ? { includeCatalog: true } : {};
+        const opts = this.DAILY_SYNC_TABLES.has(storeName) ? { includeDaily: true } : {};
         setTimeout(() => this.syncBothWays(trainerId, opts).catch(() => {}), 500);
       }
     }
@@ -934,8 +941,8 @@ class Database {
       // Tombstone permanece para retry
     }
     
-    if ((storeName === 'exercises' || storeName === 'methods') && resolvedTrainerId) {
-      setTimeout(() => this.syncBothWays(resolvedTrainerId, { includeCatalog: true }).catch(() => {}), 500);
+    if (this.DAILY_SYNC_TABLES.has(storeName) && resolvedTrainerId) {
+      setTimeout(() => this.syncBothWays(resolvedTrainerId, { includeDaily: true }).catch(() => {}), 500);
     }
   }
 
