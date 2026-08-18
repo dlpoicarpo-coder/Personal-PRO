@@ -7,7 +7,6 @@ import { Calc } from '../utils/calculations.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { sendWhatsApp, reminderMsg, preFormMsg, postFormMsg } from '../utils/whatsapp.js';
-import { simulateCascade, dryRunGrandfathering, applyGrandfathering, applyLiveCascade } from '../utils/cascadeReschedule.js';
 
 const DURATIONS = [30, 45, 50, 60, 75, 90, 120];
 const WEEKDAYS = [
@@ -689,20 +688,6 @@ async function checkReminders() {
     }
 
     localStorage.setItem(storageKey, JSON.stringify(sent));
-
-    // Motor de Reagendamento em Cascata (Fase B Live Engine)
-    // DESATIVADO TEMPORARIAMENTE: o motor esta duplicando treinos (bug de idempotencia).
-    // Reativar somente apos corrigir a logica de cascadeProcessed.
-    const CASCADE_ENABLED = false;
-    if (CASCADE_ENABLED) {
-      try {
-        const workouts = await db.getAll('workouts');
-        const macros = await db.getAll('macrocycles');
-        await applyLiveCascade(db, events, workouts, macros, today, false);
-      } catch (err) {
-        console.warn('[CASCADE LIVE ERROR]', err);
-      }
-    }
   } catch(_) {}
 }
 

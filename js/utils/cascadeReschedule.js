@@ -62,7 +62,9 @@ export function simulateCascade(rawSchedules, rawWorkouts, macrocycle, todayStr)
     s.workoutId &&
     (s.status === 'scheduled' || s.status === 'confirmed') &&
     s.date < todayStr &&
-    !s.cascadeProcessed
+    !s.cascadeGrandfathered &&
+    !s.cascadeProcessed &&
+    !s.cascadeGenerated
   ).sort((a, b) => a.date.localeCompare(b.date));
 
   const future = snapshot.filter(s =>
@@ -220,7 +222,8 @@ export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, ra
     (s.status === 'scheduled' || s.status === 'confirmed') &&
     s.date && s.date < todayStr &&
     !s.cascadeGrandfathered &&
-    !s.cascadeProcessed
+    !s.cascadeProcessed &&
+    !s.cascadeGenerated
   ).sort((a, b) => a.date.localeCompare(b.date));
 
   if (newMissedCandidates.length === 0) {
@@ -272,7 +275,16 @@ export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, ra
     const realocacoes = [];
     const novosSlots = [];
 
-    // 3d. Reallocate content for the first F items
+    // 3a. Mark original missed items FIRST (prevents duplicate generation if subsequent writes fail)
+    for (const missedItem of missed) {
+      if (!dryRun) {
+        missedItem.status = 'missed';
+        missedItem.cascadeProcessed = true;
+        await dbInstance.put('schedules', missedItem);
+      }
+    }
+
+    // 3b. Reallocate content for the first F items
     for (let i = 0; i < F; i++) {
       const newContent = contentQueue[i];
       const targetSchedule = future[i];
@@ -306,7 +318,7 @@ export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, ra
       }
     }
 
-    // 3e. Create new slots for remaining content beyond F
+    // 3c. Create new slots for remaining content beyond F
     let currentDate = (rawSchedules || [])
       .filter(s => String(s.macrocycleId) === macroId)
       .map(s => s.date)
@@ -350,19 +362,16 @@ export async function applyLiveCascade(dbInstance, rawSchedules, rawWorkouts, ra
           workoutName: savedWorkout.name,
           status: 'scheduled',
           repeat: 'none',
+          cascadeGenerated: true,
           _offline: true
         };
         await dbInstance.add('schedules', newSchedulePayload);
       }
     }
 
-    // 3f. Mark original missed items
-    for (const missedItem of missed) {
-      if (!dryRun) {
-        missedItem.status = 'missed';
-        missedItem.cascadeProcessed = true;
-        await dbInstance.put('schedules', missedItem);
-      }
+    if (!dryRun && novosSlots.length > 0) {
+      macrocycle.generatedWorkouts = (macrocycle.generatedWorkouts || 0) + novosSlots.length;
+      await dbInstance.put('macrocycles', macrocycle);
     }
 
     const report = {

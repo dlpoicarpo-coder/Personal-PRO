@@ -9,6 +9,7 @@ import { notify } from '../components/toast.js';
 import { PERIODIZATION_MODELS, generateProgression } from '../utils/periodization-engine.js';
 import { BUILT_IN_TEMPLATES } from '../utils/workout-templates.js';
 import { METHOD_PROGRESSIONS, METHOD_CARDIO_META } from './workouts.js';
+import { simulateCascade, applyLiveCascade } from '../utils/cascadeReschedule.js';
 
 function isCardioExercise(name, method) {
   const nameLower = String(name || '').toLowerCase();
@@ -248,6 +249,7 @@ const ICON_DEL = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
 const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const ICON_EYE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const ICON_EDIT = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+const ICON_CASCADE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`;
 
 function renderMacroCard(m, students) {
   const st = students.find(s => s.id === m.studentId);
@@ -283,6 +285,7 @@ function renderMacroCard(m, students) {
         <div class="flex gap-xs items-center" style="flex-shrink:0">
           <span class="badge badge-${isActive ? 'success' : 'warning'}">${isActive ? 'Ativo' : 'Finalizado'}</span>
           <a href="#/treinos" class="btn btn-ghost btn-sm" title="Ver treinos" style="padding:4px 6px;color:var(--accent)">${ICON_EYE}</a>
+          ${isActive ? `<button class="btn btn-ghost btn-sm cascade-macro" data-id="${m.id}" title="Reorganizar treinos (Cascata)" style="padding:4px 6px;color:var(--warning)">${ICON_CASCADE}</button>` : ''}
           ${isActive ? `<button class="btn btn-ghost btn-sm edit-macro" data-id="${m.id}" title="Editar macrociclo" style="padding:4px 6px;color:var(--primary)">${ICON_EDIT}</button>` : ''}
           ${isActive ? `<button class="btn btn-ghost btn-sm finish-macro" data-id="${m.id}" title="Finalizar macrociclo" style="padding:4px 6px;color:var(--success)">${ICON_CHECK}</button>` : ''}
           <button class="btn btn-ghost btn-sm delete-macro" data-id="${m.id}" title="Excluir macrociclo" style="padding:4px 6px;color:var(--danger)">${ICON_DEL}</button>
@@ -424,6 +427,141 @@ const macroId = btn.dataset.id;
       if (macro) {
         openMacroModal(macro, navigateFn);
       }
+    });
+  });
+
+  // Reorganizar treinos (Cascata manual com preview)
+  document.querySelectorAll('.cascade-macro').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const macroId = btn.dataset.id;
+      const macro = await db.get('macrocycles', macroId);
+      if (!macro) return;
+
+      const st = await db.get('students', macro.studentId);
+      const schedules = await db.getAll('schedules');
+      const workouts = await db.getAll('workouts');
+      const today = Calc.hojeLocal();
+
+      const sim = simulateCascade(schedules, workouts, macro, today);
+      if (!sim || sim.error || (!sim.missedMarcados?.length && !sim.slotsFuturosRealocados?.length && !sim.novosSlotsACriar?.length)) {
+        notify.info('Nenhum treino atrasado pendente para este macrociclo.');
+        return;
+      }
+
+      if (!sim.missedMarcados?.length) {
+        notify.info('Nenhum treino atrasado pendente para reorganizar.');
+        return;
+      }
+
+      openModal({
+        title: `Reorganizar Treinos — ${st?.name || 'Aluno'}`,
+        size: 'lg',
+        preventBackdropClose: true,
+        content: `
+          <div style="margin-bottom:16px">
+            <p class="text-sm text-muted" style="margin-bottom:12px">
+              O motor de cascata reorganiza a sequência de treinos movendo os treinos não realizados para as próximas datas, garantindo a continuidade pedagógica da periodização.
+            </p>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+              <div style="text-align:center;padding:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px">
+                <div style="font-size:0.65rem;text-transform:uppercase;color:var(--danger);font-weight:700">Treinos Perdidos</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--danger)">${sim.missedMarcados.length}</div>
+                <div style="font-size:0.65rem;color:var(--text-muted)">marcados como não realizados</div>
+              </div>
+              <div style="text-align:center;padding:10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px">
+                <div style="font-size:0.65rem;text-transform:uppercase;color:var(--accent);font-weight:700">Slots Reorganizados</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--accent)">${sim.slotsFuturosRealocados.length}</div>
+                <div style="font-size:0.65rem;color:var(--text-muted)">conteúdo adiantado</div>
+              </div>
+              <div style="text-align:center;padding:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px">
+                <div style="font-size:0.65rem;text-transform:uppercase;color:var(--success);font-weight:700">Novos Slots</div>
+                <div style="font-size:1.3rem;font-weight:800;color:var(--success)">${sim.novosSlotsACriar.length}</div>
+                <div style="font-size:0.65rem;color:var(--text-muted)">criados ao final do ciclo</div>
+              </div>
+            </div>
+
+            <!-- Treinos Atrasados -->
+            <div style="margin-bottom:14px">
+              <h4 style="font-size:0.85rem;font-weight:700;color:var(--danger);margin-bottom:6px">
+                Treinos perdidos (marcados como não realizados)
+              </h4>
+              <table class="data-table" style="font-size:0.78rem">
+                <thead><tr><th>Data</th><th>Treino</th></tr></thead>
+                <tbody>
+                  ${sim.missedMarcados.map(m => `
+                    <tr>
+                      <td style="font-weight:600;color:var(--text-muted)">${Calc.formatDate(m.date)}</td>
+                      <td>${m.workoutName || '—'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Realocações Futuras -->
+            ${sim.slotsFuturosRealocados.length ? `
+            <div style="margin-bottom:14px">
+              <h4 style="font-size:0.85rem;font-weight:700;color:var(--accent);margin-bottom:6px">
+                Slots futuros com conteúdo reorganizado
+              </h4>
+              <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border-color);border-radius:8px">
+                <table class="data-table" style="font-size:0.78rem;margin:0">
+                  <thead><tr><th>Data</th><th>Conteúdo Original</th><th></th><th>Novo Conteúdo</th></tr></thead>
+                  <tbody>
+                    ${sim.slotsFuturosRealocados.map(r => `
+                      <tr>
+                        <td style="font-weight:600">${Calc.formatDate(r.date)}</td>
+                        <td style="color:var(--text-muted);text-decoration:line-through">${r.conteudoAntigo || '—'}</td>
+                        <td style="color:var(--accent);font-weight:700">→</td>
+                        <td style="color:var(--primary);font-weight:600">${r.conteudoNovo || '—'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>` : ''}
+
+            <!-- Novos Slots ao Final -->
+            ${sim.novosSlotsACriar.length ? `
+            <div style="margin-bottom:14px">
+              <h4 style="font-size:0.85rem;font-weight:700;color:var(--success);margin-bottom:6px">
+                Novos treinos adicionados ao final do ciclo
+              </h4>
+              <table class="data-table" style="font-size:0.78rem">
+                <thead><tr><th>Nova Data</th><th>Treino</th></tr></thead>
+                <tbody>
+                  ${sim.novosSlotsACriar.map(n => `
+                    <tr>
+                      <td style="font-weight:600;color:var(--success)">${Calc.formatDate(n.date)}</td>
+                      <td style="font-weight:600">${n.workoutName || '—'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>` : ''}
+          </div>
+        `,
+        actions: [
+          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
+          { label: 'Aplicar Reorganização', class: 'btn-primary', onClick: async (e) => {
+            const btnApp = e?.target;
+            if (btnApp) { btnApp.disabled = true; btnApp.textContent = 'Aplicando...'; }
+            try {
+              const freshSchedules = await db.getAll('schedules');
+              const freshWorkouts = await db.getAll('workouts');
+              await applyLiveCascade(db, freshSchedules, freshWorkouts, [macro], today, false);
+              notify.success('Treinos reorganizados com sucesso!');
+              closeModal();
+              navigateFn('/periodizacao');
+            } catch(err) {
+              console.error('[CASCADE APPLY ERROR]', err);
+              notify.error('Erro ao aplicar reorganização: ' + (err?.message || 'tente novamente'));
+              if (btnApp) { btnApp.disabled = false; btnApp.textContent = 'Aplicar Reorganização'; }
+            }
+          }}
+        ]
+      });
     });
   });
 
