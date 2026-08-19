@@ -908,6 +908,8 @@ async function loadSection(section) {
 
   portalState.student = student;
 
+  switch (section) {
+    case 'home': content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks); break;
     case 'treinar': {
       // Filtrar treinos do macrociclo ATIVO mais recente + treinos avulsos
       const studentMacros = (macrocycles || []).filter(m => m.studentId === sid);
@@ -927,6 +929,7 @@ async function loadSection(section) {
       initTreinar(activeWorkouts, activeSchedules, student, sessions);
       break;
     }
+    case 'progresso':
       content.innerHTML = await renderProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
       initProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
       break;
