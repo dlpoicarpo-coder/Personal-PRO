@@ -908,10 +908,25 @@ async function loadSection(section) {
 
   portalState.student = student;
 
-  switch (section) {
-    case 'home': content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks); break;
-    case 'treinar': content.innerHTML = renderTreinar(workouts, schedules, sessions); initTreinar(workouts, schedules, student, sessions); break;
-    case 'progresso': 
+    case 'treinar': {
+      // Filtrar treinos do macrociclo ATIVO mais recente + treinos avulsos
+      const studentMacros = (macrocycles || []).filter(m => m.studentId === sid);
+      const eligibleMacros = studentMacros.filter(m => {
+        if (m.status !== 'active') return false;
+        const st = Calc.getMacrocycleStatus(m);
+        return st.daysLeft >= -7;
+      });
+      const currentMacro = eligibleMacros.sort((a, b) =>
+        new Date(b.startDate) - new Date(a.startDate))[0];
+
+      const activeWorkouts = workouts.filter(w => !w.macrocycleId || (currentMacro && w.macrocycleId === currentMacro.id));
+      const activeWorkoutIds = new Set(activeWorkouts.map(w => w.id));
+      const activeSchedules = (schedules || []).filter(s => !s.workoutId || activeWorkoutIds.has(s.workoutId));
+
+      content.innerHTML = renderTreinar(activeWorkouts, activeSchedules, sessions);
+      initTreinar(activeWorkouts, activeSchedules, student, sessions);
+      break;
+    }
       content.innerHTML = await renderProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
       initProgresso(student, sessions, schedules, assessments, biofeedbacks, macrocycles); 
       break;
