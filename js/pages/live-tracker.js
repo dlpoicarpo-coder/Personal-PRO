@@ -1016,16 +1016,19 @@ export function initTracker(navigateFn) {
       }
       const allMacros = await db.getAll('macrocycles');
       const studentMacros = allMacros.filter(m => m.studentId === sid);
+      const activeMacros = studentMacros.filter(m => m.status === 'active');
 
-      const eligibleMacros = studentMacros.filter(m => {
-        if (m.status !== 'active') return false;
-        const st = Calc.getMacrocycleStatus(m);
-        return st.daysLeft >= -7; // tolerância de 1 semana
-      });
+      // 1a tentativa: macrociclo dentro da janela normal
+      let currentMacro = activeMacros
+        .filter(m => Calc.getMacrocycleStatus(m).daysLeft >= -7)
+        .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
 
-      // se houver mais de um elegível, pegar o mais recente por startDate
-      const currentMacro = eligibleMacros.sort((a, b) =>
-        new Date(b.startDate) - new Date(a.startDate))[0];
+      // fallback: se nenhum estiver na janela, usar o ativo mais recente
+      // (mesmo vencido) para o aluno nunca ficar sem treino
+      if (!currentMacro) {
+        currentMacro = activeMacros
+          .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
+      }
 
       const wks = (await db.getAll('workouts'))
         .filter(w => w.studentId === sid)

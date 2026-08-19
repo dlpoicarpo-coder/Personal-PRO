@@ -913,13 +913,19 @@ async function loadSection(section) {
     case 'treinar': {
       // Filtrar treinos do macrociclo ATIVO mais recente + treinos avulsos
       const studentMacros = (macrocycles || []).filter(m => m.studentId === sid);
-      const eligibleMacros = studentMacros.filter(m => {
-        if (m.status !== 'active') return false;
-        const st = Calc.getMacrocycleStatus(m);
-        return st.daysLeft >= -7;
-      });
-      const currentMacro = eligibleMacros.sort((a, b) =>
-        new Date(b.startDate) - new Date(a.startDate))[0];
+      const activeMacros = studentMacros.filter(m => m.status === 'active');
+
+      // 1a tentativa: macrociclo dentro da janela normal
+      let currentMacro = activeMacros
+        .filter(m => Calc.getMacrocycleStatus(m).daysLeft >= -7)
+        .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
+
+      // fallback: se nenhum estiver na janela, usar o ativo mais recente
+      // (mesmo vencido) para o aluno nunca ficar sem treino
+      if (!currentMacro) {
+        currentMacro = activeMacros
+          .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
+      }
 
       const activeWorkouts = workouts.filter(w => !w.macrocycleId || (currentMacro && w.macrocycleId === currentMacro.id));
       const activeWorkoutIds = new Set(activeWorkouts.map(w => w.id));
