@@ -1248,81 +1248,25 @@ export function renderCombinedBanner(row, methodName, onAddPairClick) {
 
 export function buildExecutionQueue(rawExercises = []) {
   const exs = (rawExercises || []).map(e => ({ ...e }));
-  let groupCounter = 0;
+  const queue = [];
+
   for (let i = 0; i < exs.length; i++) {
     const ex = exs[i];
-    if (!COMBINED_METHODS.has(ex.method || '')) continue;
-    if (ex.groupId) continue;
-    const groupId = `grp_${++groupCounter}`;
-    ex.groupId = groupId;
-    let membersInGroup = 1;
-    const maxGroupSize = (ex.method === 'Bi-set') ? 2 : Infinity;
-    for (let j = i + 1; j < exs.length; j++) {
-      if (membersInGroup >= maxGroupSize) break;
-      if (exs[j].method === ex.method) {
-        exs[j].groupId = groupId;
-        membersInGroup++;
-      } else {
-        break;
-      }
-    }
-  }
-
-  const queue = [];
-  let i = 0;
-  while (i < exs.length) {
-    const ex = exs[i];
-    const isCombined = COMBINED_METHODS.has(ex.method || '') && !!ex.groupId;
-
-    if (!isCombined) {
-      const numSets = parseInt(ex.sets) || 3;
-      const baseRest = parseInt(ex.rest) || 60;
-      for (let s = 0; s < numSets; s++) {
-        queue.push({
-          queueIdx: queue.length,
-          exIdx: i,
-          exerciseName: ex.name,
-          setIdx: s,
-          setLabel: `Série ${s + 1}`,
-          method: ex.method || '',
-          groupId: '',
-          isCombined: false,
-          isLastOfRound: false,
-          rest: baseRest
-        });
-      }
-      i++;
-    } else {
-      const currentGroupId = ex.groupId;
-      const groupExs = [];
-      while (i < exs.length && exs[i].groupId === currentGroupId) {
-        groupExs.push({ ex: exs[i], exIdx: i });
-        i++;
-      }
-
-      const maxSets = Math.max(...groupExs.map(g => parseInt(g.ex.sets) || 3));
-
-      for (let s = 0; s < maxSets; s++) {
-        const activeMembers = groupExs.filter(g => s < (parseInt(g.ex.sets) || 3));
-        activeMembers.forEach((member, mIdx) => {
-          const isLastInRound = (mIdx === activeMembers.length - 1);
-          const memberRest = parseInt(member.ex.rest) || 90;
-          const rest = isLastInRound ? memberRest : 0;
-
-          queue.push({
-            queueIdx: queue.length,
-            exIdx: member.exIdx,
-            exerciseName: member.ex.name,
-            setIdx: s,
-            setLabel: `S${s + 1} (${member.ex.name})`,
-            method: member.ex.method || '',
-            groupId: currentGroupId,
-            isCombined: true,
-            isLastOfRound: isLastInRound,
-            rest: rest
-          });
-        });
-      }
+    const numSets = parseInt(ex.sets) || 3;
+    const baseRest = parseInt(ex.rest) || 60;
+    for (let s = 0; s < numSets; s++) {
+      queue.push({
+        queueIdx: queue.length,
+        exIdx: i,
+        exerciseName: ex.name,
+        setIdx: s,
+        setLabel: `Série ${s + 1}`,
+        method: ex.method || '',
+        groupId: '',
+        isCombined: false,
+        isLastOfRound: false,
+        rest: baseRest
+      });
     }
   }
 

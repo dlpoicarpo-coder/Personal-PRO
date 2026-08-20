@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
-import { METHOD_PROGRESSIONS, METHOD_CARDIO_META, COMBINED_METHODS, buildExecutionQueue } from './workouts.js';
+import { METHOD_PROGRESSIONS, METHOD_CARDIO_META, buildExecutionQueue } from './workouts.js';
 
 const isNumeric = (val) => {
   if (val === undefined || val === null || val === '') return true;
@@ -336,27 +336,6 @@ function renderLiveView(students) {
   const segments  = isExCardio ? getCardioSegments(ex) : [];
   const exSets    = (isExCardio && segments.length > 0) ? segments.length : (parseInt(ex.sets) || 3);
 
-  // Garantir groupId para métodos combinados que foram salvos antes dessa feature
-  // Atribuir dinamicamente se não existir
-  (() => {
-    let grpCounter = 0;
-    for (let i = 0; i < exs.length; i++) {
-      if (!COMBINED_METHODS?.has(exs[i].method)) continue;
-      if (exs[i].groupId) continue;
-      const gid = `grp_${++grpCounter}`;
-      exs[i].groupId = gid;
-      let membersInGroup = 1;
-      const maxGroupSize = (exs[i].method === 'Bi-set') ? 2 : Infinity;
-      for (let j = i + 1; j < exs.length; j++) {
-        if (membersInGroup >= maxGroupSize) break;
-        if (exs[j].method === exs[i].method) {
-          exs[j].groupId = gid;
-          membersInGroup++;
-        } else break;
-      }
-    }
-  })();
-
   return `
     <div class="tracker-live">
       <div id="macroBanner" style="display:none;margin-bottom:10px"></div>
@@ -433,13 +412,7 @@ function renderLiveView(students) {
                 <span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);background:var(--bg-page);padding:2px 8px;border-radius:6px;text-transform:uppercase">
                   Passo ${state.queueIdx + 1}/${(state.executionQueue || []).length || 1}
                 </span>
-                ${COMBINED_METHODS?.has(ex.method) ? (() => {
-                  const grpExs = exs_all.filter(e => e.groupId && e.groupId === ex.groupId);
-                  const pos    = grpExs.findIndex(e => e === ex);
-                  const total  = grpExs.length;
-                  const label  = total > 1 ? `${ex.method} (${pos + 1}/${total})` : ex.method;
-                  return `<span style="font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);display:inline-flex;align-items:center;gap:3px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> ${label}</span>`;
-                })() : ex.method ? `<span class="badge badge-info" style="font-size:0.65rem">${ex.method}</span>` : ''}
+                ${ex.method ? `<span class="badge badge-info" style="font-size:0.65rem">${ex.method}</span>` : ''}
               </div>
               <div class="flex gap-xs">
                 <button class="btn btn-ghost btn-sm" id="editExLiveBtn" title="Editar" style="padding:3px 6px">
@@ -457,9 +430,7 @@ function renderLiveView(students) {
               <span>${ex.reps || '12'} reps</span>
               ${ex.load ? `<span style="color:var(--accent);font-weight:600">${formatLoadWithBpm(ex, st, 'short')}</span>` : ''}
               ${ex.oneRM ? `<span style="color:var(--text-muted)">1RM: ${ex.oneRM}kg</span>` : ''}
-              ${COMBINED_METHODS?.has(ex.method)
-                ? `<span style="color:var(--warning);font-weight:600;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg> sem descanso</span>`
-                : `<span>${ex.rest || 60}s descanso</span>`}
+              <span>${ex.rest || 60}s descanso</span>
               ${(() => {
                 const cm = METHOD_CARDIO_META?.[ex.method];
                 return cm ? `<span style="color:var(--accent);font-weight:600">${cm.fcPct[0]}-${cm.fcPct[1]}% FCmáx · RPE ${cm.rpe}</span>` : '';
@@ -650,14 +621,13 @@ function renderLiveView(students) {
             ${exs.map((e, i) => {
               const done   = state.setLog.filter(l => l.exIdx === i).length >= (parseInt(e.sets) || 3);
               const isCur  = i === state.exIdx;
-              const isCombo = COMBINED_METHODS?.has(e.method);
               return `<div class="go-ex" data-g="${i}" style="
                 display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;margin-bottom:2px;
                 background:${isCur ? 'rgba(16,185,129,0.08)' : 'transparent'};
                 color:${done ? 'var(--success)' : isCur ? 'var(--primary)' : 'var(--text-secondary)'}">
                 <span style="font-size:0.7rem;min-width:14px">${done ? '✓' : isCur ? '●' : '○'}</span>
                 <span style="font-size:0.8rem;font-weight:${isCur ? 600 : 400};flex:1">${e.name}</span>
-                ${isCombo ? `<span style="font-size:0.58rem;color:#f59e0b;background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:4px">${e.method.replace('Super-série ','SS ').replace('Série Gigante','GS')}</span>` : ''}
+                ${e.method ? `<span class="badge badge-info" style="font-size:0.58rem;padding:1px 5px">${e.method}</span>` : ''}
                 ${e.load ? `<span style="font-size:0.68rem;color:var(--text-muted)">${isNumeric(e.load) ? e.load + 'kg' : e.load}</span>` : ''}
               </div>`;
             }).join('')}
@@ -1242,12 +1212,7 @@ export function initTracker(navigateFn) {
   // Recovery of work and rest timers
   {
     const curEx = (state.session.exercises || [])[state.exIdx] || {};
-    const exs_all = state.session.exercises || [];
-    const isCombinedEx = COMBINED_METHODS?.has(curEx.method);
-    const nextEx = exs_all[state.exIdx + 1];
-    const isLastOfGroup = !nextEx
-      || (curEx.groupId ? nextEx.groupId !== curEx.groupId : (nextEx.method !== curEx.method || !COMBINED_METHODS?.has(nextEx.method)));
-    let curRestDur = isCombinedEx && !isLastOfGroup ? 0 : (parseInt(curEx.rest) || 60);
+    let curRestDur = parseInt(curEx.rest) || 60;
 
     let progression = curEx.seriesProgression;
     if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
@@ -1257,7 +1222,7 @@ export function initTracker(navigateFn) {
         set: si + 1,
         reps: s.reps,
         load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-        rest: (isCombinedEx && s.rest === 0) ? 0 : (s.rest != null ? s.rest : parseInt(curEx.rest || 60)),
+        rest: s.rest != null ? s.rest : parseInt(curEx.rest || 60),
         label: s.label || `Série ${si + 1}`
       }));
     }
@@ -1265,7 +1230,6 @@ export function initTracker(navigateFn) {
     if (progression && progression[state.setIdx]) {
       const sRest = progression[state.setIdx].rest;
       if (sRest != null) curRestDur = parseInt(sRest);
-      if (isCombinedEx && !isLastOfGroup) curRestDur = 0;
     }
 
     const now = Date.now();
