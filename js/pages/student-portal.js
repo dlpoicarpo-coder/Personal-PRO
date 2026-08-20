@@ -912,24 +912,39 @@ async function loadSection(section) {
     case 'home': content.innerHTML = renderHome(student, sessions, workouts, schedules, macrocycles, finances, assessments, biofeedbacks); break;
     case 'treinar': {
       // Filtrar treinos do macrociclo ATIVO mais recente + treinos avulsos
-      const studentMacros = (macrocycles || []).filter(m => m.studentId === sid);
+      const studentMacros = (macrocycles || []).filter(m =>
+        String(m.studentId || m.student_id) === String(sid));
       const activeMacros = studentMacros.filter(m => m.status === 'active');
 
-      // 1a tentativa: macrociclo dentro da janela normal
+      // 1a tentativa: macrociclo ativo dentro da janela normal
       let currentMacro = activeMacros
         .filter(m => Calc.getMacrocycleStatus(m).daysLeft >= -7)
         .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
 
-      // fallback: se nenhum estiver na janela, usar o ativo mais recente
-      // (mesmo vencido) para o aluno nunca ficar sem treino
+      // 2a tentativa (fallback 1): se nenhum estiver na janela, usar o ativo mais recente (mesmo vencido)
       if (!currentMacro) {
         currentMacro = activeMacros
           .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
       }
 
-      const activeWorkouts = workouts.filter(w => !w.macrocycleId || (currentMacro && w.macrocycleId === currentMacro.id));
-      const activeWorkoutIds = new Set(activeWorkouts.map(w => w.id));
-      const activeSchedules = (schedules || []).filter(s => !s.workoutId || activeWorkoutIds.has(s.workoutId));
+      let activeWorkouts;
+      if (currentMacro) {
+        activeWorkouts = workouts.filter(w => !w.macrocycleId || String(w.macrocycleId) === String(currentMacro.id));
+      } else {
+        // 3a tentativa (fallback crítico): pega o macrocycleId do workout mais recente do aluno
+        const sorted = [...workouts].sort((a, b) =>
+          String(b.date || '').localeCompare(String(a.date || '')));
+        const fallbackMacroId = sorted.find(w => w.macrocycleId)?.macrocycleId;
+        if (fallbackMacroId) {
+          activeWorkouts = workouts.filter(w =>
+            !w.macrocycleId || String(w.macrocycleId) === String(fallbackMacroId));
+        } else {
+          activeWorkouts = workouts; // último recurso: mostra tudo
+        }
+      }
+
+      const activeWorkoutIds = new Set(activeWorkouts.map(w => String(w.id)));
+      const activeSchedules = (schedules || []).filter(s => !s.workoutId || activeWorkoutIds.has(String(s.workoutId)));
 
       content.innerHTML = renderTreinar(activeWorkouts, activeSchedules, sessions);
       initTreinar(activeWorkouts, activeSchedules, student, sessions);
