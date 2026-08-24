@@ -7,7 +7,7 @@ import { Calc } from '../utils/calculations.js';
 import { Timer, formatTime, formatTimeHMS } from '../components/timer.js';
 import { notify } from '../components/toast.js';
 import { openModal, closeModal } from '../components/modal.js';
-import { METHOD_PROGRESSIONS, METHOD_CARDIO_META, buildExecutionQueue } from './workouts.js';
+import { METHOD_CARDIO_META, buildExecutionQueue } from './workouts.js';
 
 const isNumeric = (val) => {
   if (val === undefined || val === null || val === '') return true;
@@ -533,17 +533,7 @@ function renderLiveView(students) {
                   defaultReps = Math.round(seg.duration / 60);
                   defaultLoad = seg.load != null ? seg.load : (seg.intensity ? Math.round(seg.intensity) : '');
                 } else {
-                  let progression = ex.seriesProgression;
-                  if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
-                    const progDef = METHOD_PROGRESSIONS[ex.method];
-                    const baseLoad = parseFloat(ex.load) || 0;
-                    progression = progDef.series.map((s, si) => ({
-                      set: si + 1, reps: s.reps,
-                      load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-                      rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
-                      label: s.label || `Série ${si + 1}`
-                    }));
-                  }
+                  const progression = ex.seriesProgression;
                   if (progression && progression[i]) {
                     const sp = progression[i];
                     if (sp.reps) { const m = String(sp.reps).match(/(\d+)/); defaultReps = m ? parseInt(m[1]) : 10; }
@@ -1214,19 +1204,7 @@ export function initTracker(navigateFn) {
     const curEx = (state.session.exercises || [])[state.exIdx] || {};
     let curRestDur = parseInt(curEx.rest) || 60;
 
-    let progression = curEx.seriesProgression;
-    if (!progression && curEx.method && METHOD_PROGRESSIONS[curEx.method]) {
-      const progDef = METHOD_PROGRESSIONS[curEx.method];
-      const baseLoad = parseFloat(curEx.load) || 0;
-      progression = progDef.series.map((s, si) => ({
-        set: si + 1,
-        reps: s.reps,
-        load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-        rest: s.rest != null ? s.rest : parseInt(curEx.rest || 60),
-        label: s.label || `Série ${si + 1}`
-      }));
-    }
-
+    const progression = curEx.seriesProgression;
     if (progression && progression[state.setIdx]) {
       const sRest = progression[state.setIdx].rest;
       if (sRest != null) curRestDur = parseInt(sRest);
@@ -1528,18 +1506,7 @@ export function initTracker(navigateFn) {
     const exSets = parseInt(curEx?.sets || ex?.sets) || 3;
     
     let restDur = parseInt(ex.rest) || 60;
-    let progression = ex.seriesProgression;
-    if (!progression && ex.method && METHOD_PROGRESSIONS[ex.method]) {
-      const progDef = METHOD_PROGRESSIONS[ex.method];
-      const baseLoad = parseFloat(ex.load) || 0;
-      progression = progDef.series.map((s, si) => ({
-        set: si + 1,
-        reps: s.reps,
-        load: baseLoad > 0 ? Math.round(baseLoad * s.loadPct * 2) / 2 : 0,
-        rest: s.rest != null ? s.rest : parseInt(ex.rest || 60),
-        label: s.label || `Série ${si + 1}`
-      }));
-    }
+    const progression = ex.seriesProgression;
     if (progression && progression[i]) {
       const sRest = progression[i].rest;
       if (sRest != null) restDur = parseInt(sRest);

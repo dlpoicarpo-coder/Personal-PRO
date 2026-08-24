@@ -283,8 +283,8 @@ export async function renderWorkouts() {
   `;
 }
 
-function workoutFormHTML(students, workout = {}, allExercises = [], allMethods = []) {
-  const exList = workout.exercises || [{ name: '', sets: 3, reps: '12', load: '', rest: '60', method: '' }];
+function workoutFormHTML(students, workout = {}, allExercises = []) {
+  const exList = workout.exercises || [{ name: '', sets: 3, reps: '12', load: '', rest: '60' }];
   return `
     <form id="workoutForm">
       <div class="form-row">
@@ -332,252 +332,14 @@ function workoutFormHTML(students, workout = {}, allExercises = [], allMethods =
           <button type="button" class="btn btn-secondary btn-sm" id="addExerciseRow">+ Exercício</button>
         </div>
         <div id="exerciseRows">
-          ${exList.map((ex, i) => exerciseRowHTML(i, ex, allExercises, allMethods)).join('')}
+          ${exList.map((ex, i) => exerciseRowHTML(i, ex, allExercises)).join('')}
         </div>
       </div>
     </form>
   `;
 }
 
-// ── DEFINIÇÃO DE PROGRESSÃO POR MÉTODO ───────────────────────
-// Métodos que geram múltiplas sub-séries com reps/carga diferente por série
-export const METHOD_PROGRESSIONS = {
-  'Pirâmide Crescente': {
-    desc: 'DeLorme: carga sobe a cada série, reps caem. Aquecimento progressivo → pico de intensidade. 90-120s descanso.',
-    series: [
-      { reps: '12-15', loadPct: 0.60, label: 'S1 — Leve',        rest: 90  },
-      { reps: '10-12', loadPct: 0.70, label: 'S2 — Moderada',    rest: 90  },
-      { reps: '8-10',  loadPct: 0.80, label: 'S3 — Pesada',      rest: 120 },
-      { reps: '6-8',   loadPct: 0.88, label: 'S4 — Muito Pesada',rest: 0   },
-    ]
-  },
-  'Pirâmide Decrescente': {
-    desc: 'Oxford: inicia pesado sem pré-fadiga → carga cai, volume sobe. 120-180s descanso nos sets pesados.',
-    series: [
-      { reps: '4-6',   loadPct: 0.88, label: 'S1 — Máximo',   rest: 180 },
-      { reps: '6-8',   loadPct: 0.80, label: 'S2 — Pesada',   rest: 150 },
-      { reps: '8-10',  loadPct: 0.72, label: 'S3 — Moderada', rest: 120 },
-      { reps: 'AMRAP', loadPct: 0.67, label: 'S4 — Leve/Máx', rest: 0   },
-    ]
-  },
-  'Pirâmide Dupla': {
-    desc: 'Crescente até o pico, depois decrescente. Séries de descida em AMRAP para avançados. 90-120s descanso.',
-    series: [
-      { reps: '15',    loadPct: 0.60, label: 'S1 — Base',     rest: 90  },
-      { reps: '12',    loadPct: 0.68, label: 'S2 — Leve',     rest: 90  },
-      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada', rest: 120 },
-      { reps: '6-8',   loadPct: 0.85, label: 'S4 — Pico ↑',  rest: 120 },
-      { reps: 'AMRAP', loadPct: 0.75, label: 'S5 — Moderada', rest: 90  },
-      { reps: 'AMRAP', loadPct: 0.68, label: 'S6 — Leve',     rest: 90  },
-      { reps: 'AMRAP', loadPct: 0.60, label: 'S7 — Base ↓',   rest: 0   },
-    ]
-  },
-  'Pirâmide Completa': {
-    desc: 'Pirâmide dupla com pico duplo. 8 séries. Descida em AMRAP. 90-150s descanso. Intermediários/Avançados.',
-    series: [
-      { reps: '15',    loadPct: 0.60, label: 'S1 — Base',      rest: 90  },
-      { reps: '12',    loadPct: 0.68, label: 'S2 — Leve',      rest: 90  },
-      { reps: '10',    loadPct: 0.75, label: 'S3 — Moderada',  rest: 120 },
-      { reps: '8',     loadPct: 0.82, label: 'S4 — Pesada',    rest: 120 },
-      { reps: '6',     loadPct: 0.88, label: 'S5 — Pico ↑',   rest: 150 },
-      { reps: '8',     loadPct: 0.82, label: 'S6 — Pesada',    rest: 120 },
-      { reps: 'AMRAP', loadPct: 0.75, label: 'S7 — Moderada',  rest: 90  },
-      { reps: 'AMRAP', loadPct: 0.65, label: 'S8 — Base ↓',   rest: 0   },
-    ]
-  },
-  'Drop-set': {
-    desc: '75% 1RM até falha → -20% sem pausa → -20% sem pausa. 2-3min descanso após cada drop-set completo.',
-    series: [
-      // Série 1
-      { reps: 'até falha', loadPct: 0.75, label: 'S1 — Principal',   rest: 5   },
-      { reps: 'até falha', loadPct: 0.60, label: 'S1 — Drop 1 -20%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.48, label: 'S1 — Drop 2 -20%', rest: 120 },
-      // Série 2
-      { reps: 'até falha', loadPct: 0.75, label: 'S2 — Principal',   rest: 5   },
-      { reps: 'até falha', loadPct: 0.60, label: 'S2 — Drop 1 -20%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.48, label: 'S2 — Drop 2 -20%', rest: 120 },
-      // Série 3
-      { reps: 'até falha', loadPct: 0.75, label: 'S3 — Principal',   rest: 5   },
-      { reps: 'até falha', loadPct: 0.60, label: 'S3 — Drop 1 -20%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.48, label: 'S3 — Drop 2 -20%', rest: 0   },
-    ]
-  },
-  'Stripping': {
-    desc: 'Drop-set com barra — remover anilhas sem parar. 3-4 strips de -20% por série. 3 séries com 120s descanso.',
-    series: [
-      // Série 1
-      { reps: 'até falha', loadPct: 0.80, label: 'S1 — Carga máx.',   rest: 5   },
-      { reps: 'até falha', loadPct: 0.62, label: 'S1 — Strip 1 -22%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.48, label: 'S1 — Strip 2 -22%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.37, label: 'S1 — Strip 3 -22%', rest: 120 },
-      // Série 2
-      { reps: 'até falha', loadPct: 0.80, label: 'S2 — Carga máx.',   rest: 5   },
-      { reps: 'até falha', loadPct: 0.62, label: 'S2 — Strip 1 -22%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.48, label: 'S2 — Strip 2 -22%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.37, label: 'S2 — Strip 3 -22%', rest: 120 },
-      // Série 3
-      { reps: 'até falha', loadPct: 0.80, label: 'S3 — Carga máx.',   rest: 5   },
-      { reps: 'até falha', loadPct: 0.62, label: 'S3 — Strip 1 -22%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.48, label: 'S3 — Strip 2 -22%', rest: 5   },
-      { reps: 'até falha', loadPct: 0.37, label: 'S3 — Strip 3 -22%', rest: 0   },
-    ]
-  },
-  'Rest-Pause': {
-    desc: '80-85% 1RM até a falha, pausa 20s intra-série, pausa 2-3min entre clusters. Repete 2-3 clusters.',
-    series: [
-      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Série',    rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Pausa 1',  rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'C1 — Pausa 2',  rest: 150 },
-      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Série',    rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Pausa 1',  rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'C2 — Pausa 2',  rest: 150 },
-      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Série',    rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Pausa 1',  rest: 20  },
-      { reps: 'até falha', loadPct: 0.82, label: 'C3 — Pausa 2',  rest: 0   },
-    ]
-  },
-  'Cluster': {
-    desc: '88% 1RM · 2-3 reps · pausa 30s intra-série · 5 mini-séries por set · 3-5 min entre sets. Força máxima.',
-    series: [
-      // Set 1 — 5 clusters
-      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 1', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 2', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 3', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 4', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 1 — Mini 5', rest: 210 },
-      // Set 2 — 5 clusters
-      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 1', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 2', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 3', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 4', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 2 — Mini 5', rest: 210 },
-      // Set 3 — 5 clusters
-      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 1', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 2', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 3', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 4', rest: 30 },
-      { reps: '2-3', loadPct: 0.88, label: 'Set 3 — Mini 5', rest: 0  },
-    ]
-  },
-  'FST-7': {
-    desc: '7 séries do isolador · 65% 1RM · 30-45s descanso com ALONGAMENTO ATIVO do músculo-alvo entre as séries. Alta congestão.',
-    series: Array.from({length:7}, (_,i) => ({ reps:'12-15', loadPct:0.65, label:`S${i+1} — alongar 30s`, rest: i===6 ? 0 : 40 }))
-  },
 
-  // ── MÉTODOS SEM VARIAÇÃO DE CARGA POR SÉRIE ───────────────────────────────
-  // Usam carga constante — loadPct 1.0 em todas as séries
-  'Unilateral': {
-    desc: 'Usar 1RM UNILATERAL (10-20% maior que metade do bilateral). 30s entre lados, 90s entre séries completas.',
-    series: [
-      { reps:'10-12', loadPct:0.72, label:'S1 — Lado D', rest:30  },
-      { reps:'10-12', loadPct:0.72, label:'S1 — Lado E', rest:90  },
-      { reps:'10-12', loadPct:0.72, label:'S2 — Lado D', rest:30  },
-      { reps:'10-12', loadPct:0.72, label:'S2 — Lado E', rest:90  },
-      { reps:'10-12', loadPct:0.72, label:'S3 — Lado D', rest:30  },
-      { reps:'10-12', loadPct:0.72, label:'S3 — Lado E', rest:0   },
-    ]
-  },
-  'Excêntrico Acentuado': {
-    desc: '4-6s na descida · 75% 1RM · alto TUT · maior DOMS. 150-180s descanso (recuperação muscular completa).',
-    series: [
-      { reps:'6-8', loadPct:0.75, label:'S1 — 4s excêntrico', rest:150 },
-      { reps:'6-8', loadPct:0.75, label:'S2 — 4s excêntrico', rest:150 },
-      { reps:'6-8', loadPct:0.75, label:'S3 — 4s excêntrico', rest:150 },
-      { reps:'6-8', loadPct:0.75, label:'S4 — 4s excêntrico', rest:0   },
-    ]
-  },
-  'Isometria': {
-    desc: 'Definir ÂNGULO de execução (ganho específico ±15°). Hipertrofia: 65% × 6-10s. Força: 80% × 3-6s. 3 reps por posição.',
-    series: [
-      { reps:'6-10s × 3', loadPct:0.65, label:'S1 — Ângulo A (def. o°)', rest:90 },
-      { reps:'6-10s × 3', loadPct:0.65, label:'S2 — Ângulo A',           rest:90 },
-      { reps:'6-10s × 3', loadPct:0.65, label:'S3 — Ângulo A',           rest:0  },
-    ]
-  },
-  '21s': {
-    desc: 'Ordem: 7 parcial inferior (0°-90°) → 7 parcial superior (90°-180°) → 7 completas. ~52% 1RM. 90-120s descanso.',
-    series: [
-      { reps:'21 (7+7+7)', loadPct:0.52, label:'S1 — Inf→Sup→Completo', rest:100 },
-      { reps:'21 (7+7+7)', loadPct:0.52, label:'S2 — Inf→Sup→Completo', rest:100 },
-      { reps:'21 (7+7+7)', loadPct:0.52, label:'S3 — Inf→Sup→Completo', rest:0   },
-    ]
-  },
-  'Pré-exaustão': {
-    desc: 'Isolamento (~65%) → Composto (~62% real pós-fadiga). ATENÇÃO: evidência científica questionada (Gentil 2007). Use RPE 8 como guia.',
-    series: [
-      { reps:'12-15', loadPct:0.65, label:'Isolamento S1',  rest:0   },
-      { reps:'6-8',   loadPct:0.62, label:'Composto S1',    rest:120 },
-      { reps:'12-15', loadPct:0.65, label:'Isolamento S2',  rest:0   },
-      { reps:'6-8',   loadPct:0.62, label:'Composto S2',    rest:120 },
-      { reps:'12-15', loadPct:0.65, label:'Isolamento S3',  rest:0   },
-      { reps:'6-8',   loadPct:0.62, label:'Composto S3',    rest:0   },
-    ]
-  },
-  'Super-série Agonista': {
-    desc: 'Mesmo grupo · sem pausa entre Ex A e Ex B · Ex B perde 10-25% de performance. 90-120s após o par.',
-    series: [
-      { reps:'10-12', loadPct:0.68, label:'Ex A — S1', rest:0   },
-      { reps:'8-10',  loadPct:0.62, label:'Ex B — S1', rest:100 },
-      { reps:'10-12', loadPct:0.68, label:'Ex A — S2', rest:0   },
-      { reps:'8-10',  loadPct:0.62, label:'Ex B — S2', rest:100 },
-      { reps:'10-12', loadPct:0.68, label:'Ex A — S3', rest:0   },
-      { reps:'8-10',  loadPct:0.62, label:'Ex B — S3', rest:0   },
-    ]
-  },
-  'Super-série Antagonista': {
-    desc: 'Grupos opostos alternados sem pausa. Ex: Rosca + Tríceps. Facilitação recíproca permite manter 70% em ambos.',
-    series: [
-      { reps:'10-12', loadPct:0.70, label:'Agonista S1',   rest:0   },
-      { reps:'10-12', loadPct:0.70, label:'Antagonista S1',rest:60  },
-      { reps:'10-12', loadPct:0.70, label:'Agonista S2',   rest:0   },
-      { reps:'10-12', loadPct:0.70, label:'Antagonista S2',rest:60  },
-      { reps:'10-12', loadPct:0.70, label:'Agonista S3',   rest:0   },
-      { reps:'10-12', loadPct:0.70, label:'Antagonista S3',rest:0   },
-    ]
-  },
-  'Bi-set': {
-    desc: 'Mesmo músculo · Ex B com carga menor (fadiga acumulada) · 90-120s após o par. Similiar à super-série agonista.',
-    series: [
-      { reps:'10-12', loadPct:0.68, label:'Ex A — S1', rest:0   },
-      { reps:'8-10',  loadPct:0.62, label:'Ex B — S1', rest:100 },
-      { reps:'10-12', loadPct:0.68, label:'Ex A — S2', rest:0   },
-      { reps:'8-10',  loadPct:0.62, label:'Ex B — S2', rest:100 },
-      { reps:'10-12', loadPct:0.68, label:'Ex A — S3', rest:0   },
-      { reps:'8-10',  loadPct:0.62, label:'Ex B — S3', rest:0   },
-    ]
-  },
-  'Tri-set': {
-    desc: '3 exercícios consecutivos sem descanso. Alto estímulo metabólico. 120s após cada tri-set completo.',
-    series: [
-      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S1', rest:0   },
-      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S1', rest:0   },
-      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S1', rest:120 },
-      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S2', rest:0   },
-      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S2', rest:0   },
-      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S2', rest:120 },
-      { reps:'10-12', loadPct:0.68, label:'Ex 1 — S3', rest:0   },
-      { reps:'10-12', loadPct:0.65, label:'Ex 2 — S3', rest:0   },
-      { reps:'10-12', loadPct:0.62, label:'Ex 3 — S3', rest:0   },
-    ]
-  },
-  'Série Gigante': {
-    desc: '4 exercícios seguidos sem pausa · 60-65% 1RM · 180s descanso após cada bloco completo · 3 blocos.',
-    series: [
-      { reps:'10-15', loadPct:0.64, label:'Bloco 1 — Ex 1', rest:0   },
-      { reps:'10-15', loadPct:0.62, label:'Bloco 1 — Ex 2', rest:0   },
-      { reps:'10-15', loadPct:0.61, label:'Bloco 1 — Ex 3', rest:0   },
-      { reps:'10-15', loadPct:0.60, label:'Bloco 1 — Ex 4', rest:180 },
-      { reps:'10-15', loadPct:0.64, label:'Bloco 2 — Ex 1', rest:0   },
-      { reps:'10-15', loadPct:0.62, label:'Bloco 2 — Ex 2', rest:0   },
-      { reps:'10-15', loadPct:0.61, label:'Bloco 2 — Ex 3', rest:0   },
-      { reps:'10-15', loadPct:0.60, label:'Bloco 2 — Ex 4', rest:180 },
-      { reps:'10-15', loadPct:0.64, label:'Bloco 3 — Ex 1', rest:0   },
-      { reps:'10-15', loadPct:0.62, label:'Bloco 3 — Ex 2', rest:0   },
-      { reps:'10-15', loadPct:0.61, label:'Bloco 3 — Ex 3', rest:0   },
-      { reps:'10-15', loadPct:0.60, label:'Bloco 3 — Ex 4', rest:0   },
-    ]
-  },
-};
 
 // ── METADADOS DE CARDIO (FC Alvo, duração, zonas) ─────────────────────────────
 // Usado na seleção de carga da periodização para métodos de cardio
@@ -632,492 +394,14 @@ export const METHOD_CARDIO_META = {
   },
 };
 
-export function generateDynamicSeries(methodName, totalRows, restBase = 60) {
-  const n = parseInt(totalRows) || 3;
-  const list = [];
-
-  switch (methodName) {
-    case 'Unilateral': {
-      for (let si = 0; si < n; si++) {
-        const setNum = Math.floor(si / 2) + 1;
-        const isEsq = si % 2 === 1;
-        list.push({
-          reps: '10-12',
-          loadPct: 0.72,
-          label: `S${setNum} — Lado ${isEsq ? 'E' : 'D'}`,
-          rest: isEsq ? (si === n - 1 ? 0 : 90) : 30
-        });
-      }
-      return list;
-    }
-    case 'Drop-set': {
-      for (let si = 0; si < n; si++) {
-        const setNum = Math.floor(si / 3) + 1;
-        const type = si % 3;
-        let label = `S${setNum} — Principal`;
-        let loadPct = 0.75;
-        let rest = 5;
-        if (type === 1) {
-          label = `S${setNum} — Drop 1 -20%`;
-          loadPct = 0.60;
-          rest = 5;
-        } else if (type === 2) {
-          label = `S${setNum} — Drop 2 -20%`;
-          loadPct = 0.48;
-          rest = si === n - 1 ? 0 : 120;
-        }
-        list.push({ reps: 'até falha', loadPct, label, rest });
-      }
-      return list;
-    }
-    case 'Stripping': {
-      for (let si = 0; si < n; si++) {
-        const setNum = Math.floor(si / 4) + 1;
-        const type = si % 4;
-        let label = `S${setNum} — Carga máx.`;
-        let loadPct = 0.80;
-        let rest = 5;
-        if (type === 1) {
-          label = `S${setNum} — Strip 1 -22%`;
-          loadPct = 0.62;
-        } else if (type === 2) {
-          label = `S${setNum} — Strip 2 -22%`;
-          loadPct = 0.48;
-        } else if (type === 3) {
-          label = `S${setNum} — Strip 3 -22%`;
-          loadPct = 0.37;
-          rest = si === n - 1 ? 0 : 120;
-        }
-        list.push({ reps: 'até falha', loadPct, label, rest });
-      }
-      return list;
-    }
-    case 'Rest-Pause': {
-      for (let si = 0; si < n; si++) {
-        const setNum = Math.floor(si / 3) + 1;
-        const type = si % 3;
-        let label = `C${setNum} — Série`;
-        let rest = 20;
-        if (type === 1) {
-          label = `C${setNum} — Pausa 1`;
-        } else if (type === 2) {
-          label = `C${setNum} — Pausa 2`;
-          rest = si === n - 1 ? 0 : 150;
-        }
-        list.push({ reps: 'até falha', loadPct: 0.82, label, rest });
-      }
-      return list;
-    }
-    case 'Cluster': {
-      for (let si = 0; si < n; si++) {
-        const setNum = Math.floor(si / 5) + 1;
-        const type = si % 5;
-        const label = `Set ${setNum} — Mini ${type + 1}`;
-        const rest = type === 4 ? (si === n - 1 ? 0 : 210) : 30;
-        list.push({ reps: '2-3', loadPct: 0.88, label, rest });
-      }
-      return list;
-    }
-    case 'FST-7': {
-      for (let si = 0; si < n; si++) {
-        list.push({
-          reps: '12-15',
-          loadPct: 0.65,
-          label: `S${si + 1} — alongar 30s`,
-          rest: si === n - 1 ? 0 : 40
-        });
-      }
-      return list;
-    }
-    case 'Excêntrico Acentuado': {
-      for (let si = 0; si < n; si++) {
-        list.push({
-          reps: '6-8',
-          loadPct: 0.75,
-          label: `S${si + 1} — 4s excêntrico`,
-          rest: si === n - 1 ? 0 : 150
-        });
-      }
-      return list;
-    }
-    case 'Isometria': {
-      for (let si = 0; si < n; si++) {
-        list.push({
-          reps: '6-10s × 3',
-          loadPct: 0.65,
-          label: `S${si + 1} — Ângulo A`,
-          rest: si === n - 1 ? 0 : 90
-        });
-      }
-      return list;
-    }
-    case '21s': {
-      for (let si = 0; si < n; si++) {
-        list.push({
-          reps: '21 (7+7+7)',
-          loadPct: 0.52,
-          label: `S${si + 1} — Inf→Sup→Completo`,
-          rest: si === n - 1 ? 0 : 100
-        });
-      }
-      return list;
-    }
-    case 'Pirâmide Crescente': {
-      for (let si = 0; si < n; si++) {
-        const pct = n <= 1 ? 0.88 : 0.60 + (si / (n - 1)) * (0.88 - 0.60);
-        const reps = si === 0 ? '12-15' : si === n - 1 ? '6-8' : (n === 3 ? '8-10' : '10-12');
-        const rest = si === n - 1 ? 0 : (si === n - 2 ? 120 : 90);
-        const labels = ['Leve', 'Moderada', 'Pesada', 'Muito Pesada'];
-        const lbl = si === 0 ? 'Leve' : si === n - 1 ? 'Muito Pesada' : labels[Math.min(labels.length - 2, si)] || 'Pesada';
-        list.push({
-          reps,
-          loadPct: parseFloat(pct.toFixed(2)),
-          label: `S${si + 1} — ${lbl}`,
-          rest
-        });
-      }
-      return list;
-    }
-    case 'Pirâmide Decrescente': {
-      for (let si = 0; si < n; si++) {
-        const pct = n <= 1 ? 0.88 : 0.88 - (si / (n - 1)) * (0.88 - 0.67);
-        const reps = si === 0 ? '4-6' : si === n - 1 ? 'AMRAP' : (n === 3 ? '8-10' : '6-8');
-        const rest = si === n - 1 ? 0 : (si === 0 ? 180 : (si === 1 ? 150 : 120));
-        const labels = ['Máximo', 'Pesada', 'Moderada', 'Leve/Máx'];
-        const lbl = si === 0 ? 'Máximo' : si === n - 1 ? 'Leve/Máx' : labels[Math.min(labels.length - 2, si)] || 'Moderada';
-        list.push({
-          reps,
-          loadPct: parseFloat(pct.toFixed(2)),
-          label: `S${si + 1} — ${lbl}`,
-          rest
-        });
-      }
-      return list;
-    }
-    case 'Pirâmide Dupla': {
-      for (let si = 0; si < n; si++) {
-        const half = Math.floor(n / 2);
-        let pct;
-        if (si <= half) {
-          pct = n <= 1 ? 0.85 : 0.60 + (si / Math.max(1, half)) * (0.85 - 0.60);
-        } else {
-          pct = 0.85 - ((si - half) / Math.max(1, n - 1 - half)) * (0.85 - 0.60);
-        }
-        const reps = si === half ? '6-8' : (si < half ? '12' : 'AMRAP');
-        const rest = si === n - 1 ? 0 : 90;
-        list.push({
-          reps,
-          loadPct: parseFloat(pct.toFixed(2)),
-          label: `S${si + 1} — ${si === half ? 'Pico ↑' : si < half ? 'Crescente' : 'Decrescente'}`,
-          rest
-        });
-      }
-      return list;
-    }
-    case 'Pirâmide Completa': {
-      for (let si = 0; si < n; si++) {
-        const half = Math.floor(n / 2);
-        let pct;
-        if (si <= half) {
-          pct = n <= 1 ? 0.88 : 0.60 + (si / Math.max(1, half)) * (0.88 - 0.60);
-        } else {
-          pct = 0.88 - ((si - half) / Math.max(1, n - 1 - half)) * (0.88 - 0.65);
-        }
-        const reps = si === half ? '6' : (si < half ? '12' : 'AMRAP');
-        const rest = si === n - 1 ? 0 : 120;
-        list.push({
-          reps,
-          loadPct: parseFloat(pct.toFixed(2)),
-          label: `S${si + 1} — ${si === half ? 'Pico ↑' : si < half ? 'Crescente' : 'Decrescente'}`,
-          rest
-        });
-      }
-      return list;
-    }
-    default:
-      return null;
-  }
-}
-
-export function rebuildMethodSeriesPanel(row, index, preserveExisting = true) {
-  const methodName = row.querySelector('.ex-method')?.value || '';
-  
-  // Stash existing custom inputs
-  const existingValues = [];
-  if (preserveExisting) {
-    row.querySelectorAll('.method-series-panel div[data-serie]').forEach(sr => {
-      const si = parseInt(sr.dataset.serie);
-      const loadInp = sr.querySelector('.serie-load');
-      const restInp = sr.querySelector('.serie-rest');
-      if (loadInp || restInp) {
-        existingValues[si] = {
-          load: loadInp ? loadInp.value : '',
-          rest: restInp ? restInp.value : ''
-        };
-      }
-    });
-  }
-
-  // Remove existing panels
-  row.querySelectorAll('.method-series-panel').forEach(p => p.remove());
-  row.querySelectorAll('.method-tip').forEach(p => p.remove());
-
-  if (!methodName) {
-    const setsEl = row.querySelector(`[name="ex_sets_${index}"]`);
-    const repsEl = row.querySelector(`[name="ex_reps_${index}"]`);
-    const loadEl = row.querySelector(`[name="ex_load_${index}"]`);
-    if (setsEl) setsEl.closest('div').style.opacity = '';
-    if (repsEl) repsEl.closest('div').style.opacity = '';
-    if (loadEl) loadEl.closest('div').style.opacity = '';
-    return;
-  }
-
-  const isCombinedMethod = COMBINED_METHODS.has(methodName);
-  const progression = !isCombinedMethod ? METHOD_PROGRESSIONS[methodName] : null;
-
-  if (isCombinedMethod) {
-    return;
-  }
-
-  if (!progression) {
-    return;
-  }
-
-  const setsEl = row.querySelector(`[name="ex_sets_${index}"]`);
-  const repsEl = row.querySelector(`[name="ex_reps_${index}"]`);
-  const restEl = row.querySelector(`[name="ex_rest_${index}"]`);
-  const baseLoad = parseFloat(row.querySelector(`[name="ex_load_${index}"]`)?.value) || 0;
-  const loadType = row.querySelector(`[name="ex_loadtype_${index}"]`)?.value || 'weight';
-  const isTime = loadType === 'time';
-
-  const setsCount = parseInt(setsEl?.value) || (progression.series ? progression.series.length : 3);
-  const dynamicSeries = generateDynamicSeries(methodName, setsCount, restEl?.value || '60') || progression.series;
-
-  const panel = document.createElement('div');
-  panel.className = 'method-series-panel';
-  panel.style.cssText = 'grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px';
-
-  const seriesHeader = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div>
-        <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${methodName}</span>
-        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:0.65rem;color:var(--text-muted)">Carga base (kg):</span>
-        <input type="number" step="0.5" value="${baseLoad||''}" placeholder="kg"
-          class="form-input method-base-load" data-index="${index}"
-          style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
-      </div>
-    </div>`;
-
-  const isClusterMethod = methodName === 'Rest-Pause' || methodName === 'Cluster';
-
-  const seriesHTML = dynamicSeries.map((s, si) => {
-    const existing = existingValues[si];
-    let loadVal = '';
-    let restVal = s.rest != null ? s.rest : (restEl?.value || '60');
-
-    if (existing) {
-      loadVal = existing.load;
-      restVal = existing.rest;
-    } else {
-      loadVal = baseLoad > 0 && !isTime ? Math.round(baseLoad * s.loadPct * 2) / 2 : '';
-    }
-
-    // Separador visual entre clusters
-    const prevLabel = si > 0 ? (dynamicSeries[si-1].label || '') : '';
-    const curLabel  = s.label || '';
-    const isNewCluster = isClusterMethod && si > 0 && (() => {
-      const pm = prevLabel.match(/Cluster\s*(\d+)/i);
-      const cm = curLabel.match(/Cluster\s*(\d+)/i);
-      return pm && cm && pm[1] !== cm[1];
-    })();
-
-    return `
-      ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0" title="Próximo cluster — 2-3min descanso"></div>` : ''}
-      <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
-        <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
-        <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
-        <div>
-          <input type="${isTime?'text':'number'}" ${isTime?'':'step="0.5"'} value="${loadVal}" placeholder="${isTime?'vel, lvl, %':'kg'}"
-            class="form-input serie-load" data-serie="${si}" data-index="${index}"
-            style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${loadVal?`color:var(--primary)`:''}"/>
-        </div>
-        <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
-          ${isTime ? s.reps : `${s.reps} reps`}
-        </div>
-        <div title="${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'Pausa intra-série (20s). Entre clusters: 2-3min.' : ''}">
-          <input type="number" value="${restVal}"
-            class="form-input serie-rest" data-serie="${si}"
-            style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
-            placeholder="s" title="Descanso (s)"/>
-        </div>
-      </div>`;
-  }).join('');
-
-  const seriesLegend = `
-    <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
-      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
-      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
-      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
-      <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
-    </div>`;
-
-  panel.innerHTML = seriesHeader + seriesLegend + seriesHTML;
-  row.appendChild(panel);
-
-  // Recalcular cargas quando carga base muda
-  panel.querySelector('.method-base-load')?.addEventListener('input', e => {
-    const newBase = parseFloat(e.target.value) || 0;
-    const mainLoad = row.querySelector(`[name="ex_load_${index}"]`);
-    if (mainLoad && newBase) mainLoad.value = newBase;
-    panel.querySelectorAll('.serie-load').forEach((inp, si) => {
-      const s = dynamicSeries[si];
-      if (s && newBase > 0 && !isTime) {
-        const calc = Math.round(newBase * s.loadPct * 2) / 2;
-        inp.value = calc;
-        inp.style.color = 'var(--primary)';
-      }
-    });
-  });
-
-  // Sincronizar carga base se já preenchida
-  const mainLoadEl = row.querySelector(`[name="ex_load_${index}"]`);
-  if (mainLoadEl) {
-    mainLoadEl.addEventListener('input', e => {
-      const newBase = parseFloat(e.target.value) || 0;
-      const baseInp = panel.querySelector('.method-base-load');
-      if (baseInp) baseInp.value = newBase || '';
-      panel.querySelectorAll('.serie-load').forEach((inp, si) => {
-        const s = dynamicSeries[si];
-        if (s && newBase > 0 && !isTime) {
-          inp.value = Math.round(newBase * s.loadPct * 2) / 2;
-          inp.style.color = 'var(--primary)';
-        }
-      });
-    });
-  }
-}
-
-function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
+function exerciseRowHTML(index, ex = {}, allExercises = []) {
   const loadType = ex.loadType || 'weight';
   const isTime   = loadType === 'time';
   const isBW     = loadType === 'bodyweight';
 
-  const progression = ex.method ? METHOD_PROGRESSIONS[ex.method] : null;
-  const isCombined  = COMBINED_METHODS.has(ex.method || '');
-  let methodPanelHTML = '';
-
-  if (progression && !isCombined) {
-    // Métodos NÃO combinados: mostrar painel de séries com % 1RM normalmente
-    const baseLoad = parseFloat(ex.load) || 0;
-    const restElVal = ex.rest || '60';
-    const isClusterMethod = ex.method === 'Rest-Pause' || ex.method === 'Cluster';
-    const setsCount = parseInt(ex.sets) || (ex.seriesProgression ? ex.seriesProgression.length : (progression.series ? progression.series.length : 3));
-    const dynamicSeries = generateDynamicSeries(ex.method, setsCount, restElVal) || progression.series;
-
-    const seriesHTML = dynamicSeries.map((s, si) => {
-      const savedSerie = ex.seriesProgression?.[si];
-      // Para linhas extras (clusters 2 e 3 sem save), propagar a carga da série 0
-      const baseLoadFallback = ex.seriesProgression?.[0]?.load || baseLoad;
-      const loadVal = savedSerie?.load != null
-        ? savedSerie.load
-        : (baseLoadFallback > 0 && !isTime ? Math.round(baseLoadFallback * s.loadPct * 2) / 2 : '');
-      const restVal = savedSerie?.rest != null ? savedSerie.rest : (s.rest != null ? s.rest : restElVal);
-
-      // Separador entre clusters
-      const prevLabel = si > 0 ? (dynamicSeries[si-1].label || '') : '';
-      const curLabel  = s.label || '';
-      const isNewCluster = isClusterMethod && si > 0 && (() => {
-        const pm = prevLabel.match(/Cluster\s*(\d+)/i);
-        const cm = curLabel.match(/Cluster\s*(\d+)/i);
-        return pm && cm && pm[1] !== cm[1];
-      })();
-
-      return `
-        ${isNewCluster ? `<div style="grid-column:1/-1;height:1px;background:rgba(245,158,11,0.2);margin:3px 0"></div>` : ''}
-        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(148,163,184,0.08)" data-serie="${si}">
-          <div style="font-size:0.7rem;font-weight:600;color:${isClusterMethod && curLabel.toLowerCase().includes('pausa') ? 'var(--warning)' : 'var(--text-secondary)'}">${s.label}</div>
-          <div style="font-size:0.72rem;color:var(--text-muted)">${s.reps}</div>
-          <div>
-            <input type="${isTime?'text':'number'}" ${isTime?'':'step="0.5"'} value="${loadVal}" placeholder="${isTime?'vel, lvl, %':'kg'}"
-              class="form-input serie-load" data-serie="${si}" data-index="${index}"
-              style="width:100%;padding:3px 6px;font-size:0.82rem;text-align:center;font-weight:600;${loadVal?`color:var(--primary)`:''}"/>
-          </div>
-          <div style="font-size:0.72rem;color:var(--primary);font-weight:600;text-align:center">
-            ${isTime ? s.reps : `${s.reps} reps`}
-          </div>
-          <div>
-            <input type="number" value="${restVal}"
-              class="form-input serie-rest" data-serie="${si}"
-              style="width:100%;padding:3px 6px;font-size:0.78rem;text-align:center;color:${restVal==0?'var(--accent)':'var(--text-muted)'}"
-              placeholder="s" title="Descanso (s)"/>
-          </div>
-        </div>`;
-    }).join('');
-
-    methodPanelHTML = `
-      <div class="method-series-panel" style="grid-column:1/-1;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div>
-            <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${ex.method}</span>
-            <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:0.65rem;color:var(--text-muted)">Carga base (kg):</span>
-            <input type="number" step="0.5" value="${baseLoad||''}" placeholder="kg"
-              class="form-input method-base-load" data-index="${index}"
-              style="width:64px;padding:3px 6px;font-size:0.78rem;text-align:center" />
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:100px 1fr 72px 72px 56px;gap:6px;margin-bottom:4px">
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">${isClusterMethod ? 'Mini-série' : 'Série'}</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Descrição</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Carga</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Desc.(s)</div>
-        </div>
-        ${seriesHTML}
-      </div>
-    `;
-  } else if (isCombined) {
-    // Métodos combinados: banner de pareamento — sem painel de séries individual
-    const COMBINED_LABELS = {
-      'Bi-set':                  'Execute este exercício imediatamente em sequência com o próximo da lista. Descanse apenas após completar o par.',
-      'Super-série Agonista':    'Mesmo grupo muscular, sem pausa entre os dois. Descanse após o segundo exercício do par.',
-      'Super-série Antagonista': 'Grupos opostos (ex: Bíceps → Tríceps) sem pausa. Descanse após o segundo.',
-      'Tri-set':                 '3 exercícios consecutivos sem pausa. Descanse apenas após o terceiro.',
-      'Série Gigante':           '4+ exercícios sem pausa, cargas reduzidas (~60%). Descanse após o último do grupo.',
-      'Pré-exaustão':            'Isolamento executado antes do composto, sem pausa. O isolamento fatiga o músculo-alvo primeiro.',
-    };
-    const desc = COMBINED_LABELS[ex.method] || `Execute em sequência com o exercício adjacente. Descanse apenas após o grupo completo.`;
-    methodPanelHTML = `
-      <div style="grid-column:1/-1;margin-top:4px;padding:8px 10px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:8px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-          <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${ex.method}</span>
-          <span style="font-size:0.65rem;color:var(--text-muted);background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:8px">Descanso pós-par: ${ex.rest || 90}s</span>
-        </div>
-        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.4">${desc}</div>
-        <div style="font-size:0.65rem;color:var(--accent);margin-top:4px">
-          Certifique-se de que o exercício parceiro também está marcado com o mesmo método e logo abaixo na lista.
-        </div>
-      </div>`;
-  } else if (ex.method) {
-    const methodOpt = allMethods.find(m => m.name === ex.method);
-    const desc = methodOpt?.description;
-    if (desc) {
-      methodPanelHTML = `
-        <div class="method-tip" style="font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)">
-          <strong>${ex.method}</strong> — ${desc}
-        </div>`;
-    }
-  }
-
   return `
     <div class="exercise-row" style="
-      display:grid;grid-template-columns:2fr 50px 60px 68px 55px 90px 125px 28px 28px;
+      display:grid;grid-template-columns:2fr 55px 65px 75px 65px 100px 28px 28px;
       gap:5px;align-items:end;padding:8px 10px;border-radius:8px;
       background:var(--bg-page);margin-bottom:6px" data-index="${index}">
       <div>
@@ -1146,7 +430,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Desc.(s)</label>
         <select class="form-select" name="ex_rest_${index}" style="font-size:0.78rem;padding:4px 6px">
-          <option value="0"   ${ex.rest=='0'?'selected':''}>0 (par)</option>
+          <option value="0"   ${ex.rest=='0'?'selected':''}>0</option>
           <option value="15"  ${ex.rest=='15'?'selected':''}>15</option>
           <option value="30"  ${ex.rest=='30'?'selected':''}>30</option>
           <option value="45"  ${ex.rest=='45'?'selected':''}>45</option>
@@ -1166,29 +450,6 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           <option value="time"       ${loadType==='time'?'selected':''}>Tempo/Int.</option>
         </select>
       </div>
-      <div>
-        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Método</label>
-        <select class="form-select ex-method" name="ex_method_${index}" data-index="${index}"
-          style="font-size:0.78rem;padding:4px 6px">
-          <option value="">— Nenhum —</option>
-          ${(() => {
-            const groups = {};
-            allMethods.forEach(m => {
-              const cat = m.category || 'Geral';
-              if (!groups[cat]) groups[cat] = [];
-              groups[cat].push(m);
-            });
-            const ORDER = ['Hipertrofia','Força','Geral','Cardio','Resistência','Potência'];
-            const sorted = [...ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !ORDER.includes(c))];
-            return sorted.map(cat => `
-              <optgroup label="${cat}">
-                ${groups[cat].map(m => `<option value="${m.name}" ${ex.method===m.name?'selected':''}
-                  data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}"
-                  data-desc="${m.description||''}">${m.name}</option>`).join('')}
-              </optgroup>`).join('');
-          })()}
-        </select>
-      </div>
       <button type="button" class="btn btn-ghost btn-icon remove-exercise" data-index="${index}"
         style="color:var(--danger);padding:4px;align-self:flex-end;margin-bottom:2px" title="Remover">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
@@ -1197,7 +458,6 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
         style="color:var(--primary);padding:4px;align-self:flex-end;margin-bottom:2px;visibility:${isTime ? 'visible' : 'hidden'}" title="Ver Gráfico de Ritmo">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m18.7 8-5.1 5.2-2.8-2.7L7 14.3"/></svg>
       </button>
-      ${methodPanelHTML}
       <!-- Observações do personal para este exercício -->
       <div style="grid-column:1/-1;margin-top:4px">
         <input class="form-input ex-notes-input" name="ex_notes_${index}"
@@ -1206,44 +466,6 @@ function exerciseRowHTML(index, ex = {}, allExercises = [], allMethods = []) {
           style="font-size:0.75rem;color:var(--text-muted);background:rgba(16,185,129,0.03);border-color:rgba(16,185,129,0.15)" />
       </div>
     </div>`;
-}
-
-// Métodos combinados — descanso é compartilhado pós-último exercício do par
-export const COMBINED_METHODS = new Set([
-  'Bi-set','Super-série Agonista','Super-série Antagonista',
-  'Tri-set','Série Gigante','Pré-exaustão'
-]);
-
-export const COMBINED_DESC = {
-  'Bi-set': 'Execute com o próximo exercício sem descanso. Descanse apenas após completar o par.',
-  'Super-série Agonista': 'Mesmo grupo muscular em sequência sem pausa. Descanse após o par.',
-  'Super-série Antagonista': 'Grupos opostos (ex: Bíceps → Tríceps) sem pausa. Descanse após o par.',
-  'Tri-set': '3 exercícios consecutivos sem pausa. Descanse após o terceiro.',
-  'Série Gigante': '4+ exercícios consecutivos sem pausa. Cargas reduzidas ~60%. Descanse após o último.',
-  'Pré-exaustão': 'Isolamento → Composto sem pausa. Fatiga o músculo-alvo primeiro.',
-};
-
-export function renderCombinedBanner(row, methodName, onAddPairClick) {
-  row?.querySelectorAll('.method-series-panel,.method-tip,.combined-banner').forEach(p => p.remove());
-  const banner = document.createElement('div');
-  banner.className = 'combined-banner';
-  banner.style.cssText = 'grid-column:1/-1;margin-top:4px;padding:8px 12px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.3);border-radius:8px';
-  banner.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <div>
-        <span style="font-size:0.72rem;font-weight:700;color:#f59e0b"> ${methodName}</span>
-        <span style="font-size:0.68rem;color:var(--text-muted);margin-left:8px">${COMBINED_DESC[methodName] || ''}</span>
-      </div>
-      <button type="button" class="btn-add-pair btn btn-ghost btn-sm" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);font-size:0.7rem;white-space:nowrap;flex-shrink:0">
-        + Adicionar par
-      </button>
-    </div>`;
-  row?.appendChild(banner);
-
-  if (onAddPairClick) {
-    banner.querySelector('.btn-add-pair').onclick = onAddPairClick;
-  }
-  return banner;
 }
 
 export function buildExecutionQueue(rawExercises = []) {
@@ -1285,72 +507,17 @@ function collectExercises() {
     const name = row.querySelector(`[name="ex_name_${i}"]`)?.value;
     if (!name) return;
 
-    const method      = row.querySelector(`[name="ex_method_${i}"]`)?.value || '';
     const loadType    = row.querySelector(`[name="ex_loadtype_${i}"]`)?.value || 'weight';
     const trainerNotes = row.querySelector(`[name="ex_notes_${i}"]`)?.value?.trim() || '';
-    const isCombined  = COMBINED_METHODS.has(method);
-    const seriesPanel = row.querySelector('.method-series-panel');
 
-    if (seriesPanel && METHOD_PROGRESSIONS[method]) {
-      const serieRows  = seriesPanel.querySelectorAll('div[data-serie]');
-      const setsCount  = serieRows.length;
-      const restEl     = row.querySelector(`[name="ex_rest_${i}"]`);
-      const restVal    = parseInt(restEl?.value) || 60;
-      const dynamicSeries = generateDynamicSeries(method, setsCount, restVal) || [];
-      const serieLogs  = [];
-      serieRows.forEach((sr, si) => {
-        const loadEl = sr.querySelector('.serie-load');
-        const restEl = sr.querySelector('.serie-rest');
-        const s      = dynamicSeries[si];
-        serieLogs.push({
-          set:   si + 1,
-          reps:  s?.reps || '—',
-          load:  parseFloat(loadEl?.value) || 0,
-          rest:  parseInt(restEl?.value)  || 60,
-          label: s?.label || `Série ${si+1}`,
-        });
-      });
-      exercises.push({
-        name, method, loadType, trainerNotes,
-        isCombined,
-        sets:              serieLogs.length,
-        reps:              serieLogs.map(s=>s.reps).join('→'),
-        load:              serieLogs[0]?.load || '',
-        rest:              serieLogs[0]?.rest || 60,
-        seriesProgression: serieLogs,
-      });
-    } else {
-      exercises.push({
-        name, method, loadType, trainerNotes,
-        isCombined,
-        sets:     parseInt(row.querySelector(`[name="ex_sets_${i}"]`)?.value) || 3,
-        reps:     row.querySelector(`[name="ex_reps_${i}"]`)?.value || '12',
-        load:     row.querySelector(`[name="ex_load_${i}"]`)?.value || '',
-        rest:     row.querySelector(`[name="ex_rest_${i}"]`)?.value || '60',
-      });
-    }
+    exercises.push({
+      name, loadType, trainerNotes,
+      sets:     parseInt(row.querySelector(`[name="ex_sets_${i}"]`)?.value) || 3,
+      reps:     row.querySelector(`[name="ex_reps_${i}"]`)?.value || '12',
+      load:     row.querySelector(`[name="ex_load_${i}"]`)?.value || '',
+      rest:     row.querySelector(`[name="ex_rest_${i}"]`)?.value || '60',
+    });
   });
-  // Atribuir groupId compartilhado para exercícios consecutivos com mesmo método combinado
-  let groupCounter = 0;
-  for (let i = 0; i < exercises.length; i++) {
-    const ex = exercises[i];
-    if (!COMBINED_METHODS.has(ex.method || '')) continue;
-    if (ex.groupId) continue; // já atribuído
-    // Agrupar todos os consecutivos com mesmo método
-    const groupId = `grp_${++groupCounter}`;
-    ex.groupId = groupId;
-    let membersInGroup = 1;
-    const maxGroupSize = (ex.method === 'Bi-set') ? 2 : Infinity;
-    for (let j = i + 1; j < exercises.length; j++) {
-      if (membersInGroup >= maxGroupSize) break;
-      if (exercises[j].method === ex.method) {
-        exercises[j].groupId = groupId;
-        membersInGroup++;
-      } else {
-        break; // para na primeira quebra de sequência
-      }
-    }
-  }
 
   return exercises;
 }
@@ -1359,13 +526,12 @@ export function initWorkouts(navigateFn) {
   const openAddModal = async () => {
     const students  = (await db.getAll('students')).filter(s => s.status === 'Ativo');
     const allEx     = await db.getAll('exercises');
-    const allMethods= await db.getAll('methods');
     let exIndex     = 1;
 
     openModal({
       title: '+ Novo Treino', size: 'xl',
       preventBackdropClose: true,
-      content: workoutFormHTML(students, {}, allEx, allMethods) +
+      content: workoutFormHTML(students, {}, allEx) +
         `<datalist id="exerciseList">${allEx.map(e => `<option value="${e.name}">`).join('')}</datalist>`,
       actions: [
         { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
@@ -1382,18 +548,17 @@ export function initWorkouts(navigateFn) {
       ]
     });
 
-    // Substituir primeira linha com métodos
     setTimeout(() => {
       const firstRow = document.querySelector('.exercise-row');
       if (firstRow) {
-        firstRow.outerHTML = exerciseRowHTML(0, {}, allEx, allMethods);
+        firstRow.outerHTML = exerciseRowHTML(0, {}, allEx);
       }
       document.getElementById('addExerciseRow')?.addEventListener('click', () => {
         const container = document.getElementById('exerciseRows');
-        container.insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, allEx, allMethods));
-        bindExerciseRowHandlers(allEx, allMethods);
+        container.insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, allEx));
+        bindExerciseRowHandlers(allEx);
       });
-      bindExerciseRowHandlers(allEx, allMethods);
+      bindExerciseRowHandlers(allEx);
     }, 100);
   };
 
@@ -1558,7 +723,7 @@ export function initWorkouts(navigateFn) {
           <h4 class="mb-xs">Treino Prescrito</h4>
           <div class="table-container mb-lg">
             <table class="data-table">
-              <thead><tr><th>#</th><th>Exercício</th><th>Séries</th><th>Reps</th><th>Carga</th><th>Desc.</th><th>Método</th><th>Tipo</th></tr></thead>
+              <thead><tr><th>#</th><th>Exercício</th><th>Séries</th><th>Reps</th><th>Carga</th><th>Desc.</th><th>Tipo</th></tr></thead>
               <tbody>
                 ${(w.exercises||[]).map((e, i) => {
                   const isTime = e.loadType === 'time';
@@ -1573,7 +738,6 @@ export function initWorkouts(navigateFn) {
                     <td style="text-align:center">${e.reps}</td>
                     <td style="text-align:center;color:var(--primary);font-weight:600">${loadDisplay}</td>
                     <td style="text-align:center">${e.rest ? e.rest + 's' : '-'}</td>
-                    <td>${e.method || '-'}</td>
                     <td><span style="font-size:0.72rem;color:${typeColor}">${typeLabel}</span></td>
                   </tr>`;
                 }).join('')}
@@ -1651,7 +815,6 @@ export function initWorkouts(navigateFn) {
                             const bestSet = exSets.reduce((best, s) => (!best || (s.load||0) > (best.load||0)) ? s : best, null);
                             const oneRM = (bestSet && bestSet.load > 0 && bestSet.reps > 0) ? Math.round(bestSet.load * (1 + bestSet.reps / 30)) : null;
 
-                            const methodLabel = ex.method ? `<div style="font-size:0.62rem;color:var(--primary);margin-top:1px">${ex.method}</div>` : '';
                             const setsExpanded = realSets ? `
                               <div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">
                                 ${exSets.map((s, idx) => {
@@ -1669,7 +832,6 @@ export function initWorkouts(navigateFn) {
                             return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
                               <td style="padding:7px 6px;vertical-align:top">
                                 <strong style="font-size:0.78rem">${ex.name}</strong>
-                                ${methodLabel}
                                 ${setsExpanded}
                               </td>
                               <td style="padding:7px 6px;text-align:center;vertical-align:top">${realSets || '—'}</td>
@@ -1681,6 +843,11 @@ export function initWorkouts(navigateFn) {
                               <td style="padding:7px 6px;text-align:center;vertical-align:top;color:var(--text-muted);font-weight:600">${oneRM ? oneRM + 'kg' : '—'}</td>
                             </tr>`;
                           }).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>`;
+                }).join('')}
                         </tbody>
                       </table>
                     </div>
@@ -1728,7 +895,6 @@ export function initWorkouts(navigateFn) {
       if (!w) return;
       const students   = await db.getAll('students');
       const allEx      = await db.getAll('exercises');
-      const allMethods = await db.getAll('methods');   // ← carrega métodos
       let exIndex      = (w.exercises || []).length;
 
       // Find last completed session for this workout using normalized name comparisons
@@ -1778,7 +944,7 @@ export function initWorkouts(navigateFn) {
             ? (sets.reduce((t, s) => t + (s.pse || 0), 0) / sets.filter(s => s.pse).length).toFixed(1)
             : null;
           const setsHTML = sets.map(s => {
-            const pColor = s.pse ? (s.pse >= 9 ? 'var(--danger)' : s.pse >= 7 ? 'var(--warning)' : 'var(--success)') : '';
+            const pColor = s.pse ? (s.pse >= 9 ? 'var(--danger)' : lsPse >= 7 ? 'var(--warning)' : 'var(--success)') : '';
             return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(148,163,184,0.08);font-size:0.72rem">
               <span style="min-width:24px;color:var(--text-muted);font-weight:600">S${s.setIdx != null ? s.setIdx + 1 : '?'}</span>
               <span style="font-weight:700;color:var(--text-primary)">${s.reps || 0} × ${s.load || 0}kg</span>
@@ -1808,7 +974,7 @@ export function initWorkouts(navigateFn) {
           <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;margin-bottom:16px;overflow:hidden">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none" onclick="const d=this.nextElementSibling;d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.ls-chevron').style.transform=d.style.display==='none'?'':'rotate(180deg)'">
               <div style="display:flex;align-items:center;gap:10px">
-                <span style="font-size:0.85rem;font-weight:700;color:var(--success)">📊 Último treino: ${new Date(lastSession.date).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' })}</span>
+                <span style="font-size:0.85rem;font-weight:700;color:var(--success)">📊緬 Último treino: ${new Date(lastSession.date).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' })}</span>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
                   <span style="font-size:0.72rem;background:var(--bg-card);padding:2px 8px;border-radius:10px;border:1px solid var(--border-color)">⏱ ${durMin}min</span>
                   <span style="font-size:0.72rem;background:var(--bg-card);padding:2px 8px;border-radius:10px;border:1px solid var(--border-color)">🏋️ ${lastSession.totalVolume || 0}kg</span>
@@ -1827,7 +993,7 @@ export function initWorkouts(navigateFn) {
 
       openModal({
         title: 'Editar Treino', size: 'xl',
-        content: lastSessionBanner + workoutFormHTML(students, w, allEx, allMethods) + `<datalist id="exerciseList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>`,
+        content: lastSessionBanner + workoutFormHTML(students, w, allEx) + `<datalist id="exerciseList">${allEx.map(e=>`<option value="${e.name}">`).join('')}</datalist>`,
         actions: [
           { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
           { label: 'Salvar', class: 'btn-primary', onClick: async (e) => {
@@ -1866,11 +1032,11 @@ export function initWorkouts(navigateFn) {
 
       setTimeout(() => {
         document.getElementById('addExerciseRow')?.addEventListener('click', () => {
-          document.getElementById('exerciseRows').insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, allEx, allMethods));
-          bindExerciseRowHandlers(allEx, allMethods);
+          document.getElementById('exerciseRows').insertAdjacentHTML('beforeend', exerciseRowHTML(exIndex++, {}, allEx));
+          bindExerciseRowHandlers(allEx);
           bindRemoveExercise();
         });
-        bindExerciseRowHandlers(allEx, allMethods);
+        bindExerciseRowHandlers(allEx);
         bindRemoveExercise();
       }, 100);
     });
@@ -1880,117 +1046,13 @@ export function initWorkouts(navigateFn) {
 function bindRemoveExercise() {
   document.querySelectorAll('.remove-exercise').forEach(btn => {
     btn.onclick = () => {
-      const row = btn.closest('.exercise-row');
-      // Remover também o conector logo após a linha
-      const next = row?.nextElementSibling;
-      if (next?.classList.contains('combined-connector')) next.remove();
-      row?.remove();
-      refreshCombinedVisuals();
+      btn.closest('.exercise-row')?.remove();
     };
   });
 }
 
-function bindExerciseRowHandlers(allExercises, allMethods) {
+function bindExerciseRowHandlers(allExercises) {
   bindRemoveExercise();
-  refreshCombinedVisuals();
-
-  // ── Auto-preenchimento ao selecionar MÉTODO ─────────────────
-  document.querySelectorAll('.ex-method').forEach(sel => {
-    sel.onchange = () => {
-      const opt      = sel.selectedOptions[0];
-      const i        = sel.dataset.index;
-      const row      = sel.closest('.exercise-row');
-      const methodName = opt?.value || '';
-      console.log('[DEBUG BISET] onchange disparou, method:', methodName, 'isCombined:', typeof COMBINED_METHODS !== 'undefined' && COMBINED_METHODS.has(methodName));
-
-      // Remover painel de sub-séries anterior
-      row?.querySelectorAll('.method-series-panel').forEach(p => p.remove());
-      row?.querySelectorAll('.method-tip').forEach(p => p.remove());
-
-      if (!methodName) {
-        // Limpar indicação de método
-        const setsEl = row?.querySelector(`[name="ex_sets_${i}"]`);
-        const repsEl = row?.querySelector(`[name="ex_reps_${i}"]`);
-        const loadEl = row?.querySelector(`[name="ex_load_${i}"]`);
-        if (setsEl) setsEl.closest('div').style.opacity = '';
-        if (repsEl) repsEl.closest('div').style.opacity = '';
-        if (loadEl) loadEl.closest('div').style.opacity = '';
-        return;
-      }
-
-      // Preencher séries/reps/descanso padrão
-      const setsEl = row?.querySelector(`[name="ex_sets_${i}"]`);
-      const repsEl = row?.querySelector(`[name="ex_reps_${i}"]`);
-      const restEl = row?.querySelector(`[name="ex_rest_${i}"]`);
-      const sets   = opt?.dataset.sets;
-      const reps   = opt?.dataset.reps;
-      const rest   = opt?.dataset.rest;
-
-      const isCombinedMethod = COMBINED_METHODS.has(methodName);
-
-      if (!isCombinedMethod && sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
-      if (reps && repsEl) repsEl.value = reps;
-      if (rest && restEl) {
-        const match = rest.match(/(\d+)/);
-        if (match) restEl.value = match[1];
-      }
-
-      // ── Verificar se o método tem progressão definida ────────
-      const progression = !isCombinedMethod ? METHOD_PROGRESSIONS[methodName] : null;
-
-      // ── MÉTODO COMBINADO: banner + auto-adicionar exercício par ──
-      if (isCombinedMethod) {
-        if (restEl) restEl.value = '0';
-        renderCombinedBanner(row, methodName, () => {
-          const container = document.getElementById('exerciseRows');
-          if (!container) return;
-          const rows = Array.from(container.querySelectorAll('.exercise-row'));
-          const curIdx = rows.indexOf(row);
-          const exIndex = rows.length;
-          const newHTML = exerciseRowHTML(exIndex, { method: methodName, rest: '0' }, allExercises, allMethods);
-
-          let insertAfter = row;
-          for (let j = curIdx + 1; j < rows.length; j++) {
-            const m = rows[j].querySelector('.ex-method')?.value;
-            if (m === methodName) insertAfter = rows[j];
-            else break;
-          }
-          insertAfter.insertAdjacentHTML('afterend', newHTML);
-          bindExerciseRowHandlers(allExercises, allMethods);
-          refreshCombinedVisuals();
-        });
-
-        refreshCombinedVisuals();
-        return;
-      }
-
-      if (!progression) {
-        const desc = opt?.dataset.desc;
-        if (desc) {
-          const tip = document.createElement('div');
-          tip.className = 'method-tip';
-          tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;grid-column:1/-1;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
-          tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
-          row?.appendChild(tip);
-        }
-        return;
-      }
-
-      rebuildMethodSeriesPanel(row, i, false);
-    };
-  });
-
-  // ── Atualizar painel ao mudar número de SÉRIES ───────────────
-  document.querySelectorAll('[name^="ex_sets_"]').forEach(inp => {
-    inp.oninput = () => {
-      const row = inp.closest('.exercise-row');
-      const i = row?.dataset.index;
-      const methodName = row?.querySelector('.ex-method')?.value || '';
-      if (row && methodName && METHOD_PROGRESSIONS[methodName]) {
-        rebuildMethodSeriesPanel(row, i, true);
-      }
-    };
-  });
 
   // ── Auto-preencher tipo de carga ao selecionar exercício ────
   document.querySelectorAll('.ex-name-input').forEach(inp => {
@@ -2026,77 +1088,11 @@ function bindExerciseRowHandlers(allExercises, allMethods) {
 
       const viewChartBtn = row.querySelector('.view-cardio-chart');
       if (viewChartBtn) viewChartBtn.style.visibility = lt === 'time' ? 'visible' : 'hidden';
-
-      const methodName = row.querySelector('.ex-method')?.value || '';
-      if (methodName && METHOD_PROGRESSIONS[methodName]) {
-        rebuildMethodSeriesPanel(row, i, true);
-      }
     };
-  });
-
-  // ── Sincronizar painéis de métodos pré-existentes (na edição) ──
-  document.querySelectorAll('.exercise-row').forEach(row => {
-    const i = row.dataset.index;
-    const methodName = row.querySelector('.ex-method')?.value;
-    if (methodName && METHOD_PROGRESSIONS[methodName]) {
-      rebuildMethodSeriesPanel(row, i, true);
-    }
   });
 
   // ── Ritmo / Cardio chart preview ──
   bindCardioChartPreview();
-}
-
-// ── Atualizar visual de pares combinados na lista de exercícios ──
-function refreshCombinedVisuals() {
-  const container = document.getElementById('exerciseRows');
-  if (!container) return;
-
-  // Remover conectores antigos
-  container.querySelectorAll('.combined-connector').forEach(el => el.remove());
-
-  const rows = Array.from(container.querySelectorAll('.exercise-row'));
-
-  rows.forEach((row, idx) => {
-    const method = row.querySelector('.ex-method')?.value;
-    if (!COMBINED_METHODS.has(method)) {
-      row.style.borderLeft = '';
-      row.style.background = '';
-      row.style.marginBottom = '';
-      return;
-    }
-
-    const prevMethod = rows[idx - 1]?.querySelector('.ex-method')?.value;
-    const nextMethod = rows[idx + 1]?.querySelector('.ex-method')?.value;
-    const isLast = nextMethod !== method;
-
-    // Borda laranja esquerda em todo o grupo
-    row.style.borderLeft = '3px solid rgba(245,158,11,0.55)';
-    row.style.background = 'rgba(245,158,11,0.025)';
-    row.style.marginBottom = isLast ? '10px' : '0';
-    row.style.borderRadius = prevMethod !== method
-      ? '8px 8px 0 0' : isLast ? '0 0 8px 8px' : '0';
-
-    // Conector "→ sem descanso" entre exercícios do grupo
-    if (!isLast) {
-      const connector = document.createElement('div');
-      connector.className = 'combined-connector';
-      connector.style.cssText = [
-        'display:flex', 'align-items:center', 'gap:6px',
-        'padding:3px 14px',
-        'background:rgba(245,158,11,0.08)',
-        'border-left:3px solid rgba(245,158,11,0.55)',
-        'font-size:0.68rem', 'font-weight:700', 'color:#f59e0b',
-        'margin:0', 'line-height:1.8'
-      ].join(';');
-      connector.innerHTML = `
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="3">
-          <polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>
-        </svg>
-        sem descanso → continuar`;
-      row.insertAdjacentElement('afterend', connector);
-    }
-  });
 }
 
 // ── CARDIO GRAPH HELPERS & MODAL FOR TRAINER ────────────────────────

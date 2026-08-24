@@ -6,7 +6,6 @@ import db from '../db.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { notify } from '../components/toast.js';
 import { BUILT_IN_TEMPLATES, getTemplatesByCategory } from '../utils/workout-templates.js';
-import { METHOD_PROGRESSIONS, COMBINED_METHODS, renderCombinedBanner } from './workouts.js';
 import { isAdmin } from '../utils/roles.js';
 import { Calc } from '../utils/calculations.js';
 
@@ -37,9 +36,8 @@ const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13
 const ICON_IMG  = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
 
 export async function renderExercisesLibrary() {
-  const [exercises, methods, customTplsRaw, adminMode] = await Promise.all([
+  const [exercises, customTplsRaw, adminMode] = await Promise.all([
     db.getAll('exercises'),
-    db.getAll('methods'),
     db.getAll('cycles'),
     isAdmin(),
   ]);
@@ -61,25 +59,16 @@ export async function renderExercisesLibrary() {
     time:       exercises.filter(e => e.loadType === 'time').length,
   };
 
-  // Agrupar métodos por categoria
-  const methodsByCat = {};
-  methods.forEach(m => {
-    const c = m.category || 'Geral';
-    if (!methodsByCat[c]) methodsByCat[c] = [];
-    methodsByCat[c].push(m);
-  });
-
   return `
     <div class="page-header">
       <div>
         <h1>Biblioteca</h1>
-        <p class="subtitle">${exercises.length} exercícios · ${methods.length} métodos · ${customTpls.length} modelos personalizados</p>
+        <p class="subtitle">${exercises.length} exercícios · ${customTpls.length} modelos personalizados</p>
       </div>
     </div>
 
     <div class="tabs" id="libTabs">
       <button class="tab active" data-tab="exercises">Exercícios (${exercises.length})</button>
-      <button class="tab" data-tab="methods">Métodos (${methods.length})</button>
       <button class="tab" data-tab="templates">Modelos Prontos</button>
       <button class="tab" data-tab="custom">Meus Modelos (${customTpls.length})</button>
     </div>
@@ -153,55 +142,6 @@ export async function renderExercisesLibrary() {
           </div>
         `).join('')}
       </div>
-    </div>
-
-    <!-- ── MÉTODOS ── -->
-    <div id="tabMethods" class="lib-tab-content" style="display:none">
-      <div class="card mb-md">
-        <div class="flex gap-sm items-center">
-          <div style="position:relative;flex:1">
-            <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-muted)" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="form-input" id="methodSearch" placeholder="Buscar método de treinamento..." style="padding-left:32px" />
-          </div>
-          <button class="btn btn-primary btn-sm" id="addMethodBtn">+ Novo Método</button>
-        </div>
-      </div>
-      ${Object.entries(methodsByCat).sort(([a],[b])=>a.localeCompare(b)).map(([cat, ms])=>`
-        <div class="card mb-md">
-          <div class="card-header">
-            <span class="card-title" style="color:var(--primary)">${cat}</span>
-            <span class="badge badge-info">${ms.length}</span>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
-            ${ms.map(m=>`
-              <div class="method-item" data-name="${m.name.toLowerCase()}"
-                style="padding:10px 12px;background:var(--bg-page);border-radius:8px;border:1px solid var(--border-color);${m.is_default&&!adminMode?'border-left:3px solid rgba(99,102,241,0.3)':''}${m.is_default&&adminMode?'border-left:3px solid rgba(239,68,68,0.3)':''}">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-                  <div style="font-weight:700;font-size:0.88rem;color:var(--primary)">${m.name}</div>
-                  <div style="display:flex;align-items:center;gap:4px">
-                    ${m.is_default ? defaultBadge(adminMode) : ''}
-                    ${m.is_default && !adminMode
-                      ? `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" style="opacity:0.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
-                      : ''}
-                    ${m.is_default && adminMode
-                      ? `<button class="btn btn-ghost btn-sm edit-method" data-id="${m.id}" style="padding:2px 4px;color:var(--text-muted)">${ICON_EDIT}</button>
-                         <button class="btn btn-ghost btn-sm delete-method" data-id="${m.id}" style="padding:2px 4px;color:var(--danger)">${ICON_DEL}</button>`
-                      : !m.is_default
-                        ? `<button class="btn btn-ghost btn-sm edit-method" data-id="${m.id}" style="padding:2px 4px;color:var(--text-muted)">${ICON_EDIT}</button>
-                           <button class="btn btn-ghost btn-sm delete-method" data-id="${m.id}" style="padding:2px 4px;color:var(--danger)">${ICON_DEL}</button>`
-                        : ''}
-                  </div>
-                </div>
-                <div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.45;margin-bottom:7px">${m.description||''}</div>
-                <div style="display:flex;gap:12px;flex-wrap:wrap">
-                  ${m.sets?`<span style="font-size:0.68rem"><span style="color:var(--text-muted)">Séries:</span> <strong>${m.sets}</strong></span>`:''}
-                  ${m.repsHint?`<span style="font-size:0.68rem"><span style="color:var(--text-muted)">Reps:</span> <strong>${m.repsHint}</strong></span>`:''}
-                  ${m.restHint?`<span style="font-size:0.68rem"><span style="color:var(--text-muted)">Descanso:</span> <strong>${m.restHint}</strong></span>`:''}
-                </div>
-              </div>`).join('')}
-          </div>
-        </div>
-      `).join('')}
     </div>
 
     <!-- ── MODELOS PRONTOS ── -->
@@ -348,42 +288,7 @@ function exerciseFormHTML(ex = {}, adminMode = false) {
   </form>`;
 }
 
-function methodFormHTML(m = {}, adminMode = false) {
-  const globalToggle = adminMode ? `
-    <div class="form-group" style="margin-top:8px;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;background:rgba(239,68,68,0.04)">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
-        <input type="checkbox" id="methodFormGlobal" ${m.is_default ? 'checked' : ''} style="width:16px;height:16px" />
-        <span>Método global <span style="color:var(--text-muted);font-size:0.75rem">(visível para todos os treinadores)</span></span>
-      </label>
-    </div>` : '';
-  return `<form id="methodForm">
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Nome *</label>
-        <input class="form-input" name="name" value="${m.name||''}" required placeholder="Ex: Cluster Avançado" />
-      </div>
-      <div class="form-group"><label class="form-label">Categoria</label>
-        <select class="form-select" name="category">
-          ${['Hipertrofia','Força','Cardio','Resistência','Funcional','Geral'].map(c=>`<option ${(m.category||'Hipertrofia')===c?'selected':''}>${c}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Descrição / Como executar *</label>
-      <textarea class="form-textarea" name="description" rows="3" required
-        placeholder="Explique como o método funciona e quando usar...">${m.description||''}</textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Séries recomendadas</label>
-        <input class="form-input" name="sets" value="${m.sets||''}" placeholder="Ex: 3-4 ou 7" />
-      </div>
-      <div class="form-group"><label class="form-label">Reps / Tempo recomendado</label>
-        <input class="form-input" name="repsHint" value="${m.repsHint||''}" placeholder="Ex: 8-12 ou 20s esforço" />
-      </div>
-      <div class="form-group"><label class="form-label">Descanso recomendado</label>
-        <input class="form-input" name="restHint" value="${m.restHint||''}" placeholder="Ex: 90-120s" />
-      </div>
-    </div>${globalToggle}
-  </form>`;
-}
+
 
 function setupImageUploadListener() {
   const fileInput = document.getElementById('exFormImageFile');
@@ -470,7 +375,7 @@ export function initExercisesLibrary(navigateFn) {
     document.querySelectorAll('#libTabs .tab').forEach(t => t.classList.remove('active'));
     activeTabBtn.classList.add('active');
     document.querySelectorAll('.lib-tab-content').forEach(c => c.style.display = 'none');
-    const map = { exercises:'tabExercises', methods:'tabMethods', templates:'tabTemplates', custom:'tabCustom' };
+    const map = { exercises:'tabExercises', templates:'tabTemplates', custom:'tabCustom' };
     const el = document.getElementById(map[savedTab]);
     if (el) el.style.display = '';
   }
@@ -496,7 +401,7 @@ export function initExercisesLibrary(navigateFn) {
       document.querySelectorAll('#libTabs .tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       document.querySelectorAll('.lib-tab-content').forEach(c => c.style.display = 'none');
-      const map = { exercises:'tabExercises', methods:'tabMethods', templates:'tabTemplates', custom:'tabCustom' };
+      const map = { exercises:'tabExercises', templates:'tabTemplates', custom:'tabCustom' };
       const el = document.getElementById(map[tab.dataset.tab]);
       if (el) el.style.display = '';
       sessionStorage.setItem('pp_lib_active_tab', tab.dataset.tab);
@@ -532,36 +437,6 @@ export function initExercisesLibrary(navigateFn) {
   
   // Apply filters on load
   filter();
-
-  // Busca métodos
-  document.getElementById('methodSearch')?.addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('.method-item').forEach(el => { el.style.display = el.dataset.name.includes(q)?'':'none'; });
-  });
-
-  // Adicionar método
-  document.getElementById('addMethodBtn')?.addEventListener('click', async () => {
-    const _am = await isAdmin();
-    openModal({
-      title: '+ Novo Método de Treinamento', size: 'md',
-      preventBackdropClose: true,
-      content: methodFormHTML({}, _am),
-      actions: [
-        { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-        { label: 'Salvar Método', class: 'btn-primary', onClick: async () => {
-          const fd = new FormData(document.getElementById('methodForm'));
-          const d  = Object.fromEntries(fd);
-          if (!d.name || !d.description) { notify.error('Nome e descrição são obrigatórios'); return; }
-          const globalCheck = document.getElementById('methodFormGlobal');
-          d.is_default = (_am && globalCheck && globalCheck.checked) ? true : false;
-          await db.add('methods', d);
-          notify.success('Método criado!');
-          closeModal();
-          navigateFn('/exercicios');
-        }}
-      ]
-    });
-  });
 
   const openAddEx = async () => {
     const _am = await isAdmin();
@@ -666,51 +541,7 @@ export function initExercisesLibrary(navigateFn) {
     });
   });
 
-  // Editar método
-  document.querySelectorAll('.edit-method').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const m = await db.get('methods', btn.dataset.id);
-      if (!m) return;
-      const _am = await isAdmin();
-      if (m.is_default && !_am) { notify.warning('Apenas admins podem editar métodos padrão.'); return; }
-      openModal({
-        title: 'Editar Método de Treinamento', size: 'md',
-        preventBackdropClose: true,
-        content: methodFormHTML(m, _am),
-        actions: [
-          { label: 'Cancelar', class: 'btn-secondary', onClick: () => closeModal() },
-          { label: 'Salvar Método', class: 'btn-primary', onClick: async () => {
-            const fd = new FormData(document.getElementById('methodForm'));
-            const d  = Object.fromEntries(fd);
-            if (!d.name || !d.description) { notify.error('Nome e descrição são obrigatórios'); return; }
-            const globalCheck = document.getElementById('methodFormGlobal');
-            const is_default = (_am && globalCheck) ? globalCheck.checked : (m.is_default === true);
-            await db.put('methods', { ...m, ...d, is_default });
-            notify.success('Método atualizado!');
-            closeModal();
-            navigateFn('/exercicios');
-          }}
-        ]
-      });
-    });
-  });
 
-  // Excluir método — com verificação admin
-  document.querySelectorAll('.delete-method').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const m = await db.get('methods', btn.dataset.id);
-      if (!m) return;
-      const _am = await isAdmin();
-      if (m.is_default && !_am) { notify.warning('Apenas admins podem excluir métodos padrão.'); return; }
-      if (!window.confirm(`Excluir método "${m.name}"?`)) return;
-      const res = await db.delete('methods', btn.dataset.id);
-      if (res && res.error) {
-        notify.error('Não foi possível excluir: ' + res.error);
-        return;
-      }
-      notify.success('Método excluído.'); navigateFn('/exercicios');
-    });
-  });
 
   // Ver modelo pronto
   document.querySelectorAll('.view-template').forEach(btn => {
@@ -727,8 +558,8 @@ export function initExercisesLibrary(navigateFn) {
             <div style="margin-bottom:16px">
               <h4 style="margin-bottom:8px;color:var(--primary)">${w.name}</h4>
               <table class="data-table" style="font-size:0.8rem">
-                <thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Desc.</th><th>Método</th></tr></thead>
-                <tbody>${(w.exercises||[]).map(e=>`<tr><td>${e.name}</td><td>${e.sets||3}</td><td>${e.reps||'12'}</td><td>${e.rest||'60'}s</td><td>${e.method||'-'}</td></tr>`).join('')}</tbody>
+                <thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Desc.</th></tr></thead>
+                <tbody>${(w.exercises||[]).map(e=>`<tr><td>${e.name}</td><td>${e.sets||3}</td><td>${e.reps||'12'}</td><td>${e.rest||'60'}s</td></tr>`).join('')}</tbody>
               </table>
             </div>`).join('')}`,
         actions: [
@@ -784,8 +615,8 @@ export function initExercisesLibrary(navigateFn) {
               <h4 style="margin-bottom:8px;color:var(--primary)">${w.name}</h4>
               <div class="table-container">
                 <table class="data-table" style="font-size:0.8rem">
-                  <thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Desc.</th><th>Método</th></tr></thead>
-                  <tbody>${(w.exercises||[]).map(e=>`<tr><td>${e.name}</td><td>${e.sets||3}</td><td>${e.reps||'12'}</td><td>${e.rest||'60'}s</td><td>${e.method||'-'}</td></tr>`).join('')}</tbody>
+                  <thead><tr><th>Exercício</th><th>Séries</th><th>Reps</th><th>Desc.</th></tr></thead>
+                  <tbody>${(w.exercises||[]).map(e=>`<tr><td>${e.name}</td><td>${e.sets||3}</td><td>${e.reps||'12'}</td><td>${e.rest||'60'}s</td></tr>`).join('')}</tbody>
                 </table>
               </div>
             </div>`).join('')}`,
@@ -803,12 +634,11 @@ export function initExercisesLibrary(navigateFn) {
       const tpl = await db.get('cycles', btn.dataset.id);
       if (!tpl) return;
       const allEx  = await db.getAll('exercises');
-      const allMet = await db.getAll('methods');
       let wkCount  = tpl.workouts ? tpl.workouts.length : 0;
       
       const workoutsHTML = tpl.workouts && tpl.workouts.length
-        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, allMet, w, allEx)).join('')
-        : buildTplWorkoutHTML(0, allMet, null, allEx);
+        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, w, allEx)).join('')
+        : buildTplWorkoutHTML(0, null, allEx);
 
       openModal({
         title: 'Editar Modelo de Treino', size: 'xl',
@@ -881,7 +711,6 @@ export function initExercisesLibrary(navigateFn) {
                     speed,
                     fc,
                     rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
-                    method: fd.get(`wk_${wi}_method_${ei}`)||'',
                   });
                 }
               });
@@ -896,10 +725,10 @@ export function initExercisesLibrary(navigateFn) {
 
       setTimeout(() => {
         document.getElementById('addTplWorkoutEdit')?.addEventListener('click', () => {
-          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet, null, allEx));
-          bindTplEventsEdit(allMet, allEx);
+          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, null, allEx));
+          bindTplEventsEdit(allEx);
         });
-        bindTplEventsEdit(allMet, allEx);
+        bindTplEventsEdit(allEx);
       }, 100);
     });
   });
@@ -911,12 +740,11 @@ export function initExercisesLibrary(navigateFn) {
       const tpl = BUILT_IN_TEMPLATES.find(t => t.id === tplId);
       if (!tpl) return;
       const allEx  = await db.getAll('exercises');
-      const allMet = await db.getAll('methods');
       let wkCount  = tpl.workouts ? tpl.workouts.length : 0;
       
       const workoutsHTML = tpl.workouts && tpl.workouts.length
-        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, allMet, w, allEx)).join('')
-        : buildTplWorkoutHTML(0, allMet, null, allEx);
+        ? tpl.workouts.map((w, wi) => buildTplWorkoutHTML(wi, w, allEx)).join('')
+        : buildTplWorkoutHTML(0, null, allEx);
 
       openModal({
         title: 'Editar Modelo Padrão (Criar Cópia)', size: 'xl',
@@ -989,7 +817,6 @@ export function initExercisesLibrary(navigateFn) {
                     speed,
                     fc,
                     rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
-                    method: fd.get(`wk_${wi}_method_${ei}`)||'',
                   });
                 }
               });
@@ -1004,26 +831,25 @@ export function initExercisesLibrary(navigateFn) {
 
       setTimeout(() => {
         document.getElementById('addTplWorkoutEdit')?.addEventListener('click', () => {
-          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet, null, allEx));
-          bindTplEventsEdit(allMet, allEx);
+          document.getElementById('tplWorkoutsEdit').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, null, allEx));
+          bindTplEventsEdit(allEx);
         });
-        bindTplEventsEdit(allMet, allEx);
+        bindTplEventsEdit(allEx);
       }, 100);
     });
   });
 
   // Helper bindings for editing
-  function bindTplEventsEdit(allMethods = [], allEx = []) {
+  function bindTplEventsEdit(allEx = []) {
     document.querySelectorAll('#tplWorkoutsEdit .add-tpl-ex').forEach(btn => {
       btn.onclick = () => {
         const wi  = btn.dataset.wi;
         const cnt = document.querySelector(`#tplWorkoutsEdit .tpl-exercises[data-wi="${wi}"]`);
         if (!cnt) return;
         const ei  = cnt.querySelectorAll('.tpl-ex-row').length;
-        cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods, null, allEx));
+        cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, null, allEx));
         bindRemoveTplExEdit();
         const lastRow = cnt.lastElementChild;
-        bindMethodAutoFill(lastRow);
         bindExSelectListener(lastRow);
       };
     });
@@ -1032,7 +858,6 @@ export function initExercisesLibrary(navigateFn) {
     });
     bindRemoveTplExEdit();
     document.querySelectorAll('#tplWorkoutsEdit .tpl-ex-row').forEach(row => {
-      bindMethodAutoFill(row);
       bindExSelectListener(row);
     });
   }
@@ -1046,7 +871,6 @@ export function initExercisesLibrary(navigateFn) {
   // Novo modelo personalizado
   const openCustomTpl = async () => {
     const allEx  = await db.getAll('exercises');
-    const allMet = await db.getAll('methods');
     let wkCount  = 1;
     openModal({
       title: '+ Novo Modelo de Treino', size: 'xl',
@@ -1068,7 +892,7 @@ export function initExercisesLibrary(navigateFn) {
           <textarea class="form-textarea" name="description" rows="2" placeholder="Para quem é indicado, observações..."></textarea>
         </div>
         <div id="tplWorkouts">
-          ${buildTplWorkoutHTML(0, allMet, null, allEx)}
+          ${buildTplWorkoutHTML(0, null, allEx)}
         </div>
         <button type="button" class="btn btn-secondary btn-sm mt-sm" id="addTplWorkout">+ Adicionar Treino</button>
       </form>`,
@@ -1120,7 +944,6 @@ export function initExercisesLibrary(navigateFn) {
                   speed,
                   fc,
                   rest: fd.get(`wk_${wi}_rest_${ei}`)||'60',
-                  method: fd.get(`wk_${wi}_method_${ei}`)||'',
                 });
               }
             });
@@ -1134,10 +957,10 @@ export function initExercisesLibrary(navigateFn) {
     });
     setTimeout(() => {
       document.getElementById('addTplWorkout')?.addEventListener('click', () => {
-        document.getElementById('tplWorkouts').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, allMet, null, allEx));
-        bindTplEvents(allMet, allEx);
+        document.getElementById('tplWorkouts').insertAdjacentHTML('beforeend', buildTplWorkoutHTML(wkCount++, null, allEx));
+        bindTplEvents(allEx);
       });
-      bindTplEvents(allMet, allEx);
+      bindTplEvents(allEx);
     }, 100);
   };
   document.getElementById('addCustomTplBtn')?.addEventListener('click', openCustomTpl);
@@ -1193,11 +1016,11 @@ function bindExSelectListener(row) {
   });
 }
 
-function buildTplWorkoutHTML(wi, allMethods = [], wk = null, allEx = []) {
+function buildTplWorkoutHTML(wi, wk = null, allEx = []) {
   const nameVal = wk ? wk.name : '';
   const exercisesHTML = wk && wk.exercises && wk.exercises.length
-    ? wk.exercises.map((e, ei) => buildTplExRowHTML(wi, ei, allMethods, e, allEx)).join('')
-    : buildTplExRowHTML(wi, 0, allMethods, null, allEx);
+    ? wk.exercises.map((e, ei) => buildTplExRowHTML(wi, ei, e, allEx)).join('')
+    : buildTplExRowHTML(wi, 0, null, allEx);
   
   return `
     <div class="card mb-md tpl-workout" data-wi="${wi}" style="border:1px solid var(--border-active)">
@@ -1212,9 +1035,8 @@ function buildTplWorkoutHTML(wi, allMethods = [], wk = null, allEx = []) {
     </div>`;
 }
 
-function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
+function buildTplExRowHTML(wi, ei, ex = null, allEx = []) {
   const nameVal = ex ? ex.name : '';
-  const methodVal = ex ? ex.method : '';
   const foundEx = allEx.find(e => e.name === nameVal);
   const loadType = ex ? (ex.loadType || foundEx?.loadType || 'weight') : 'weight';
 
@@ -1228,10 +1050,6 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
   if (nameVal && !knownNames.has(nameVal)) {
     extraOption = `<option value="${nameVal}" selected>${nameVal}</option>`;
   }
-
-  // Agrupar métodos
-  const musculoMet = allMethods.filter(m => m.category !== 'Cardio');
-  const cardioMet = allMethods.filter(m => m.category === 'Cardio');
 
   const fieldsHTML = getTplExRowFieldsHTML(wi, ei, loadType, ex);
 
@@ -1255,38 +1073,20 @@ function buildTplExRowHTML(wi, ei, allMethods = [], ex = null, allEx = []) {
         ${fieldsHTML}
       </div>
 
-      <select class="form-select" name="wk_${wi}_method_${ei}" style="width:150px;font-size:0.75rem">
-        <option value="">— Método —</option>
-        ${(() => {
-          const groups = {};
-          allMethods.forEach(m => {
-            const cat = m.category || 'Geral';
-            if (!groups[cat]) groups[cat] = [];
-            groups[cat].push(m);
-          });
-          const ORDER = ['Hipertrofia','Força','Geral','Cardio','Resistência','Potência'];
-          const sorted = [...ORDER.filter(c => groups[c]), ...Object.keys(groups).filter(c => !ORDER.includes(c))];
-          return sorted.map(cat => `
-            <optgroup label="${cat}">
-              ${groups[cat].map(m => `<option value="${m.name}" ${methodVal===m.name?'selected':''} data-sets="${m.sets||''}" data-reps="${m.repsHint||''}" data-rest="${m.restHint||''}" data-desc="${m.description||''}">${m.name}</option>`).join('')}
-            </optgroup>`).join('');
-        })()}
-      </select>
       <button type="button" class="btn btn-ghost btn-sm rm-tpl-ex" style="color:var(--danger);padding:4px 5px">✕</button>
     </div>`;
 }
 
-function bindTplEvents(allMethods = [], allEx = []) {
+function bindTplEvents(allEx = []) {
   document.querySelectorAll('.add-tpl-ex').forEach(btn => {
     btn.onclick = () => {
       const wi  = btn.dataset.wi;
       const cnt = document.querySelector(`.tpl-exercises[data-wi="${wi}"]`);
       if (!cnt) return;
       const ei  = cnt.querySelectorAll('.tpl-ex-row').length;
-      cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, allMethods, null, allEx));
+      cnt.insertAdjacentHTML('beforeend', buildTplExRowHTML(wi, ei, null, allEx));
       bindRemoveTplEx();
       const lastRow = cnt.lastElementChild;
-      bindMethodAutoFill(lastRow, allMethods, allEx);
       bindExSelectListener(lastRow);
     };
   });
@@ -1295,7 +1095,6 @@ function bindTplEvents(allMethods = [], allEx = []) {
   });
   bindRemoveTplEx();
   document.querySelectorAll('#tplWorkouts .tpl-ex-row').forEach(row => {
-    bindMethodAutoFill(row, allMethods, allEx);
     bindExSelectListener(row);
   });
 }
@@ -1344,118 +1143,5 @@ async function showApplyTemplateModal(tpl, navigateFn) {
         closeModal(); navigateFn('/treinos');
       }}
     ]
-  });
-}
-
-function bindMethodAutoFill(row, allMethods = [], allEx = []) {
-  const methodSelect = row.querySelector('select[name*="_method_"]');
-  if (!methodSelect) return;
-  methodSelect.addEventListener('change', () => {
-    const opt = methodSelect.selectedOptions[0];
-    const methodName = opt?.value || '';
-
-    // Remove previous panels/tips/banners
-    row.querySelectorAll('.method-series-panel,.method-tip,.combined-banner').forEach(p => p.remove());
-
-    const setsEl = row.querySelector('input[name*="_sets_"]');
-    const repsEl = row.querySelector('input[name*="_reps_"]');
-    const restEl = row.querySelector('input[name*="_rest_"]');
-
-    if (!methodName) {
-      return;
-    }
-
-    const sets = opt?.dataset.sets;
-    const reps = opt?.dataset.reps;
-    const rest = opt?.dataset.rest;
-
-    const isCombinedMethod = typeof COMBINED_METHODS !== 'undefined' && COMBINED_METHODS.has(methodName);
-
-    if (!isCombinedMethod && sets && setsEl) setsEl.value = (sets.match(/\d+/)?.[0]) || '3';
-    if (reps && repsEl) repsEl.value = reps;
-    if (rest && restEl) {
-      const match = rest.match(/(\d+)/);
-      if (match) restEl.value = match[1];
-    }
-
-    // ── MÉTODO COMBINADO (Bi-set, Tri-set, etc.) ──────────────
-    if (isCombinedMethod) {
-      if (restEl) restEl.value = '0';
-      renderCombinedBanner(row, methodName, () => {
-        const tplWorkout = row.closest('.tpl-workout');
-        if (!tplWorkout) return;
-        const wi = tplWorkout.dataset.wi;
-        const cnt = tplWorkout.querySelector('.tpl-exercises');
-        if (!cnt) return;
-
-        const rows = Array.from(cnt.querySelectorAll('.tpl-ex-row'));
-        const curIdx = rows.indexOf(row);
-        const ei = rows.length;
-
-        const newRowHTML = buildTplExRowHTML(wi, ei, allMethods, { method: methodName, rest: '0' }, allEx);
-
-        let insertAfter = row;
-        for (let j = curIdx + 1; j < rows.length; j++) {
-          const mSelect = rows[j].querySelector('select[name*="_method_"]');
-          if (mSelect && mSelect.value === methodName) insertAfter = rows[j];
-          else break;
-        }
-        insertAfter.insertAdjacentHTML('afterend', newRowHTML);
-        bindRemoveTplEx();
-        const addedRow = insertAfter.nextElementSibling;
-        if (addedRow) {
-          bindMethodAutoFill(addedRow, allMethods, allEx);
-          bindExSelectListener(addedRow);
-        }
-      });
-      return;
-    }
-
-    // ── Verificar se o método tem progressão definida ────────
-    const progression = METHOD_PROGRESSIONS[methodName];
-    if (!progression) {
-      const desc = opt?.dataset.desc;
-      if (desc) {
-        const tip = document.createElement('div');
-        tip.className = 'method-tip';
-        tip.style.cssText = 'font-size:0.72rem;color:var(--accent);margin-top:4px;width:100%;padding:6px 8px;background:rgba(6,182,212,0.07);border-radius:6px;border-left:2px solid var(--accent)';
-        tip.innerHTML = `<strong>${methodName}</strong> — ${desc}`;
-        row.appendChild(tip);
-      }
-      return;
-    }
-
-    // Atualizar contador de séries
-    if (setsEl) setsEl.value = progression.series.length;
-
-    // Criar painel de visualização das sub-séries do método
-    const panel = document.createElement('div');
-    panel.className = 'method-series-panel';
-    panel.style.cssText = 'width:100%;margin-top:6px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:8px 10px';
-
-    const seriesHeader = `
-      <div style="margin-bottom:6px">
-        <span style="font-size:0.75rem;font-weight:700;color:var(--primary)">${methodName}</span>
-        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:6px">${progression.desc}</span>
-      </div>`;
-
-    const seriesLegend = `
-      <div style="display:grid;grid-template-columns:100px 72px 72px;gap:6px;margin-bottom:4px;border-bottom:1px solid rgba(148,163,184,0.1);padding-bottom:2px">
-        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Série</div>
-        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Intensidade</div>
-        <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase">Reps</div>
-      </div>`;
-
-    const seriesHTML = progression.series.map((s, si) => {
-      return `
-        <div style="display:grid;grid-template-columns:100px 72px 72px;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid rgba(148,163,184,0.05)">
-          <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary)">${s.label}</div>
-          <div style="font-size:0.72rem;color:var(--primary);font-weight:600">${Math.round(s.loadPct * 100)}% 1RM</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600">${s.reps}</div>
-        </div>`;
-    }).join('');
-
-    panel.innerHTML = seriesHeader + seriesLegend + seriesHTML;
-    row.appendChild(panel);
   });
 }
