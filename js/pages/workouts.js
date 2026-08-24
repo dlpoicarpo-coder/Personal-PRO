@@ -848,11 +848,6 @@ export function initWorkouts(navigateFn) {
                     </div>
                   </div>`;
                 }).join('')}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>`;
-                }).join('')}
               </div>
             </div>` : `<div style="border-top:1px solid var(--border-color);padding-top:12px;margin-top:12px"><p class="text-xs text-muted">Nenhuma sessão executada deste treino ainda. Inicie o Treino ao Vivo para registrar as cargas reais praticadas.</p></div>`}
         `
