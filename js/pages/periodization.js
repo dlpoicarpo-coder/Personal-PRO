@@ -1156,7 +1156,22 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
                   if (isDeload) load = Math.round(oneRM * 0.5 * 2) / 2;
                 }
 
-                return { ...ex, loadType: exType, load, oneRM, week: w + 1 };
+                const baseSets = parseInt(ex.sets) || 3;
+                const volPct = dayPlan.volumePct || 100;
+                let weekSets = Math.round(baseSets * (volPct / 100));
+                if (weekSets < 2) weekSets = 2; // piso de seguranca: nunca menos de 2 series
+
+                const weekReps = exType === 'time' ? ex.reps : (dayPlan.repsRange || ex.reps);
+
+                return {
+                  ...ex,
+                  sets: weekSets,
+                  reps: weekReps,
+                  loadType: exType,
+                  load,
+                  oneRM,
+                  week: w + 1
+                };
               });
 
               const savedWorkout = await db.add('workouts', {
