@@ -566,7 +566,8 @@ function renderLiveView(students) {
                 const rirVal  = done && done.rir != null ? done.rir : (temp.rir !== undefined ? temp.rir : '');
                 const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
 
-                return `
+                  const isIso = ex.loadType === 'isometry';
+                  return `
                 <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
                   style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
                   border:1px solid ${isActive ? 'rgba(16,185,129,0.35)' : done ? 'rgba(16,185,129,0.15)' : 'var(--border-color)'};
@@ -578,12 +579,12 @@ function renderLiveView(students) {
                     ${badgeBottom ? `<span style="font-size:0.4rem;color:var(--text-muted);line-height:1;margin-top:1px;text-align:center;white-space:nowrap;overflow:hidden;max-width:34px">${badgeBottom}</span>` : ''}
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
-                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${isExCardio ? 'Tempo' : 'Reps'}</span>
-                    <input class="form-input set-reps" style="width:100%;min-width:44px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${isExCardio ? 'text' : 'number'}" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${(isExCardio || isIso) ? 'Tempo' : 'Reps'}</span>
+                    <input class="form-input set-reps" style="width:100%;min-width:44px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${(isExCardio || isIso) ? 'text' : 'number'}" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1.2">
-                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
-                    <input class="form-input set-load" style="width:100%;min-width:50px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${isExCardio ? 'text' : (isNumeric(ex.load) && ex.loadType !== 'time') ? 'number' : 'text'}" step="0.5" placeholder="—" value="${loadVal}" ${done ? 'disabled' : ''} />
+                    <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${isIso ? '—' : ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
+                    <input class="form-input set-load" style="width:100%;min-width:50px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${isExCardio ? 'text' : (isNumeric(ex.load) && ex.loadType !== 'time' && !isIso) ? 'number' : 'text'}" step="0.5" placeholder="—" value="${isIso ? '' : loadVal}" ${(done || isIso) ? 'disabled' : ''} />
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.85" title="PSE — Percepção Subjetiva de Esforço">
                     <span style="font-size:0.48rem;color:var(--warning);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">PSE</span>
@@ -2806,6 +2807,7 @@ function generateSessionPDF(session, student) {
 
 function isCardioExercise(ex) {
   if (!ex) return false;
+  if (ex.loadType === 'isometry') return false;
   const name = String(ex.name || '').toLowerCase();
   const cat = String(ex.category || '').toLowerCase();
   const muscle = String(ex.muscleGroup || ex.muscle || '').toLowerCase();

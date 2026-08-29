@@ -56,6 +56,7 @@ export async function renderExercisesLibrary() {
   const byLoad = {
     weight:     exercises.filter(e => (e.loadType||'weight') === 'weight').length,
     bodyweight: exercises.filter(e => e.loadType === 'bodyweight').length,
+    isometry:   exercises.filter(e => e.loadType === 'isometry').length,
     time:       exercises.filter(e => e.loadType === 'time').length,
   };
 
@@ -255,6 +256,7 @@ function exerciseFormHTML(ex = {}, adminMode = false) {
         <select class="form-select" name="loadType">
           <option value="weight"     ${(ex.loadType||'weight')==='weight'?'selected':''}>Peso (kg)</option>
           <option value="bodyweight" ${ex.loadType==='bodyweight'?'selected':''}>Peso Corporal</option>
+          <option value="isometry"   ${ex.loadType==='isometry'?'selected':''}>Isometria (tempo)</option>
           <option value="time"       ${ex.loadType==='time'?'selected':''}>Tempo / Intensidade</option>
         </select>
       </div>
@@ -693,6 +695,9 @@ export function initExercisesLibrary(navigateFn) {
                     fc = fd.get(`wk_${wi}_fc_${ei}`) || '';
                     reps = duration;
                     load = [speed, fc].filter(Boolean).join(' - ');
+                  } else if (loadType === 'isometry') {
+                    reps = fd.get(`wk_${wi}_reps_${ei}`) || '45s';
+                    load = '';
                   } else if (loadType === 'bodyweight') {
                     reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
                     load = '';
@@ -799,6 +804,9 @@ export function initExercisesLibrary(navigateFn) {
                     fc = fd.get(`wk_${wi}_fc_${ei}`) || '';
                     reps = duration;
                     load = [speed, fc].filter(Boolean).join(' - ');
+                  } else if (loadType === 'isometry') {
+                    reps = fd.get(`wk_${wi}_reps_${ei}`) || '45s';
+                    load = '';
                   } else if (loadType === 'bodyweight') {
                     reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
                     load = '';
@@ -926,6 +934,9 @@ export function initExercisesLibrary(navigateFn) {
                   fc = fd.get(`wk_${wi}_fc_${ei}`) || '';
                   reps = duration;
                   load = [speed, fc].filter(Boolean).join(' - ');
+                } else if (loadType === 'isometry') {
+                  reps = fd.get(`wk_${wi}_reps_${ei}`) || '45s';
+                  load = '';
                 } else if (loadType === 'bodyweight') {
                   reps = fd.get(`wk_${wi}_reps_${ei}`) || '12';
                   load = '';
@@ -982,6 +993,13 @@ function getTplExRowFieldsHTML(wi, ei, loadType, ex = null) {
       <input class="form-input" name="wk_${wi}_duration_${ei}" value="${durationVal}" style="width:70px;text-align:center;font-size:0.82rem" title="Duração" placeholder="Duração" />
       <input class="form-input" name="wk_${wi}_speed_${ei}" value="${speedVal}" style="width:80px;text-align:center;font-size:0.82rem" title="Velocidade/Watts" placeholder="Vel/Watts" />
       <input class="form-input" name="wk_${wi}_fc_${ei}" value="${fcVal}" style="width:65px;text-align:center;font-size:0.82rem" title="FC Alvo" placeholder="FC Alvo" />
+      <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
+    `;
+  } else if (loadType === 'isometry') {
+    return `
+      <input class="form-input" name="wk_${wi}_sets_${ei}" type="number" value="${setsVal}" min="1" style="width:52px;text-align:center;font-size:0.82rem" title="Séries" placeholder="Séries" />
+      <input class="form-input" name="wk_${wi}_reps_${ei}" value="${repsVal || '45s'}" style="width:70px;text-align:center;font-size:0.82rem" title="Tempo (s)" placeholder="Tempo (s)" />
+      <input class="form-input" name="wk_${wi}_load_${ei}" value="" style="width:60px;text-align:center;font-size:0.82rem" title="Sem Carga" placeholder="—" disabled />
       <input class="form-input" name="wk_${wi}_rest_${ei}" value="${restVal}" style="width:52px;text-align:center;font-size:0.82rem" title="Descanso (s)" placeholder="Desc." />
     `;
   } else if (loadType === 'bodyweight') {
@@ -1042,6 +1060,7 @@ function buildTplExRowHTML(wi, ei, ex = null, allEx = []) {
 
   // Agrupar exercícios por tipo de carga
   const bodyweightExs = allEx.filter(e => e.loadType === 'bodyweight').sort((a,b)=>a.name.localeCompare(b.name));
+  const isometryExs = allEx.filter(e => e.loadType === 'isometry').sort((a,b)=>a.name.localeCompare(b.name));
   const weightExs = allEx.filter(e => !e.loadType || e.loadType === 'weight').sort((a,b)=>a.name.localeCompare(b.name));
   const timeExs = allEx.filter(e => e.loadType === 'time').sort((a,b)=>a.name.localeCompare(b.name));
 
@@ -1061,6 +1080,10 @@ function buildTplExRowHTML(wi, ei, ex = null, allEx = []) {
         <optgroup label="── Peso Corporal ──">
           ${bodyweightExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="bodyweight">${e.name}</option>`).join('')}
         </optgroup>
+        ${isometryExs.length ? `
+        <optgroup label="── Isometria (tempo) ──">
+          ${isometryExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="isometry">${e.name}</option>`).join('')}
+        </optgroup>` : ''}
         <optgroup label="── Peso (kg) ──">
           ${weightExs.map(e => `<option value="${e.name}" ${nameVal === e.name ? 'selected' : ''} data-load-type="weight">${e.name}</option>`).join('')}
         </optgroup>

@@ -19,7 +19,7 @@ const ICON_BRAIN  = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="
 function formatLoadWithBpm(ex, student, format = 'full') {
   let loadStr = String(ex.load || '');
   if (!loadStr) return '';
-  let suffix = (ex.loadType === 'bodyweight' || loadStr.includes('%') || ex.loadType === 'time') ? '' : 'kg';
+  let suffix = (ex.loadType === 'bodyweight' || ex.loadType === 'isometry' || loadStr.includes('%') || ex.loadType === 'time') ? '' : 'kg';
   
   if (loadStr.includes('%') && student?.birthDate) {
     const age = Calc.calcularIdade(student.birthDate);
@@ -2613,10 +2613,11 @@ function initTreinar(workouts, schedules, student, sessions = []) {
           <!-- Sets container (suporta séries extras adicionadas dinamicamente) -->
           <div id="sets_container_${ei}">
             ${(() => {
+              const isIso = ex.loadType === 'isometry';
               const isExCardio = isCardioExercise(ex);
               const isExTimeSpeed = isSpeedPowerCardio(ex);
-              const repsPlaceholder = isExCardio ? 'Tempo' : 'Reps';
-              const loadPlaceholder = isExCardio ? (isExTimeSpeed ? 'Ritmo' : 'Zonas') : 'kg';
+              const repsPlaceholder = (isExCardio || isIso) ? 'Tempo' : 'Reps';
+              const loadPlaceholder = isIso ? '—' : isExCardio ? (isExTimeSpeed ? 'Ritmo' : 'Zonas') : 'kg';
 
               const segments = isExCardio ? getCardioSegments(ex) : [];
               const numRows = (isExCardio && segments.length > 0) ? segments.length : (parseInt(ex.sets)||3);
@@ -2636,6 +2637,9 @@ function initTreinar(workouts, schedules, student, sessions = []) {
 
                   repsVal = Math.round(seg.duration / 60);
                   loadVal = seg.load != null ? seg.load : (seg.intensity ? Math.round(seg.intensity) : '');
+                } else if (isIso) {
+                  repsVal = ex.reps || '45s';
+                  loadVal = '';
                 } else {
                   if (ex.seriesProgression && ex.seriesProgression[si]) {
                     const sp = ex.seriesProgression[si];
@@ -2721,8 +2725,8 @@ function initTreinar(workouts, schedules, student, sessions = []) {
                       <span style="font-size:0.72rem;font-weight:800">${setNumLabel}</span>
                       ${setSubLabel ? `<span style="font-size:0.52rem;opacity:0.8;white-space:nowrap">${setSubLabel}</span>` : ''}
                     </span>
-                    <input type="${isExCardio ? 'text' : 'number'}" placeholder="${repsPlaceholder}" class="portal-solo-input" id="sr_${ei}_${si}_reps" ${isExCardio ? '' : 'min="0"'} value="${repsVal}">
-                    <input type="${isExCardio ? 'text' : 'number'}" placeholder="${loadPlaceholder}" class="portal-solo-input" id="sr_${ei}_${si}_load" ${isExCardio ? '' : 'min="0" step="0.5"'} value="${loadVal}">
+                    <input type="${(isExCardio || isIso) ? 'text' : 'number'}" placeholder="${repsPlaceholder}" class="portal-solo-input" id="sr_${ei}_${si}_reps" ${(isExCardio || isIso) ? '' : 'min="0"'} value="${repsVal}">
+                    <input type="${(isExCardio || isIso) ? 'text' : 'number'}" placeholder="${loadPlaceholder}" class="portal-solo-input" id="sr_${ei}_${si}_load" ${(isExCardio || isIso) ? '' : 'min="0" step="0.5"'} value="${loadVal}" ${isIso ? 'disabled' : ''}>
                     <select class="portal-solo-input portal-solo-pse" id="sr_${ei}_${si}_pse" style="display:none;">
                       <option value="" disabled selected>PSE</option>
                       ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -3520,6 +3524,7 @@ function safeFormatDate(dStr, timeStr = '') {
 // -- CARDIO/HIIT METADATA AND GRAPH VISUALIZATION HELPERS -------
 function isCardioExercise(ex) {
   if (!ex) return false;
+  if (ex.loadType === 'isometry') return false;
   const name = String(ex.name || '').toLowerCase();
   const cat = String(ex.category || '').toLowerCase();
   const muscle = String(ex.muscleGroup || ex.muscle || '').toLowerCase();
@@ -6481,6 +6486,7 @@ window.showWorkoutSheet = function(w) {
 
   // Exercises HTML logic reused from old snippet
   const isCardioExercise = (ex) => {
+    if (ex.loadType === 'isometry') return false;
     return ex.name.toLowerCase().includes('cardio') || 
            ex.name.toLowerCase().includes('esteira') || 
            ex.name.toLowerCase().includes('bike') || 

@@ -1143,11 +1143,13 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
               const wkExercises = session.exercises.map(ex => {
                 const oneRM = exerciseLoads[ex.name] || 60;
                 const dbEx = allEx.find(e => e.name.toLowerCase().trim() === ex.name.toLowerCase().trim());
-                let exType = dbEx?.loadType || 'weight';
-                if (isCardioExercise(ex.name, ex.method)) exType = 'time';
+                let exType = ex.loadType || dbEx?.loadType || 'weight';
+                if (isCardioExercise(ex.name, ex.method) && exType !== 'isometry') exType = 'time';
 
                 let load;
-                if (exType === 'time') {
+                if (exType === 'isometry') {
+                  load = '';
+                } else if (exType === 'time') {
                   load = Math.round(oneRM * loadMultiplier);
                 } else if (exType === 'bodyweight') {
                   load = Math.round(oneRM * loadMultiplier * 2) / 2;
@@ -1161,7 +1163,7 @@ async function openMacroModal(macroToEdit = null, navigateFn) {
                 let weekSets = Math.round(baseSets * (volPct / 100));
                 if (weekSets < 2) weekSets = 2; // piso de seguranca: nunca menos de 2 series
 
-                const weekReps = exType === 'time' ? ex.reps : (dayPlan.repsRange || ex.reps);
+                const weekReps = (exType === 'time' || exType === 'isometry') ? ex.reps : (dayPlan.repsRange || ex.reps);
 
                 return {
                   ...ex,

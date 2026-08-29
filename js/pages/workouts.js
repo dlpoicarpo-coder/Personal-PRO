@@ -396,6 +396,7 @@ export const METHOD_CARDIO_META = {
 
 function exerciseRowHTML(index, ex = {}, allExercises = []) {
   const loadType = ex.loadType || 'weight';
+  const isIso    = loadType === 'isometry';
   const isTime   = loadType === 'time';
   const isBW     = loadType === 'bodyweight';
 
@@ -415,16 +416,17 @@ function exerciseRowHTML(index, ex = {}, allExercises = []) {
           style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
-        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65">Reps/Tempo</label>
-        <input class="form-input" name="ex_reps_${index}" value="${ex.reps || ex.defaultReps || '12'}"
-          placeholder="12" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
+        <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65" id="repsLbl_${index}">${isIso ? 'Tempo (s)' : 'Reps/Tempo'}</label>
+        <input class="form-input" name="ex_reps_${index}" value="${ex.reps || ex.defaultReps || (isIso ? '45s' : '12')}"
+          placeholder="${isIso ? '45s' : '12'}" style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
         <label class="form-label" style="font-size:0.65rem;margin-bottom:2px;opacity:0.65" id="loadLbl_${index}">
-          ${isTime ? 'Intensidade' : isBW ? 'Extra (kg)' : 'Carga (kg)'}
+          ${isIso ? '—' : isTime ? 'Intensidade' : isBW ? 'Extra (kg)' : 'Carga (kg)'}
         </label>
-        <input class="form-input" name="ex_load_${index}" value="${ex.load||''}"
-          placeholder="${isTime ? 'vel, lvl, %' : isBW ? '+kg' : 'kg'}"
+        <input class="form-input" name="ex_load_${index}" value="${isIso ? '' : (ex.load||'')}"
+          placeholder="${isIso ? '—' : isTime ? 'vel, lvl, %' : isBW ? '+kg' : 'kg'}"
+          ${isIso ? 'disabled' : ''}
           style="text-align:center;font-size:0.82rem;padding:4px 6px" />
       </div>
       <div>
@@ -447,6 +449,7 @@ function exerciseRowHTML(index, ex = {}, allExercises = []) {
           style="font-size:0.78rem;padding:4px 6px">
           <option value="weight"     ${loadType==='weight'?'selected':''}>Peso (kg)</option>
           <option value="bodyweight" ${loadType==='bodyweight'?'selected':''}>P.Corporal</option>
+          <option value="isometry"   ${loadType==='isometry'?'selected':''}>Isometria</option>
           <option value="time"       ${loadType==='time'?'selected':''}>Tempo/Int.</option>
         </select>
       </div>
@@ -726,11 +729,12 @@ export function initWorkouts(navigateFn) {
               <thead><tr><th>#</th><th>Exercício</th><th>Séries</th><th>Reps</th><th>Carga</th><th>Desc.</th><th>Tipo</th></tr></thead>
               <tbody>
                 ${(w.exercises||[]).map((e, i) => {
+                  const isIso  = e.loadType === 'isometry';
                   const isTime = e.loadType === 'time';
                   const isBW   = e.loadType === 'bodyweight';
-                  const loadDisplay = isTime ? (e.load ? e.load + 's' : '-') : isBW ? (e.load ? '+' + e.load + 'kg' : 'PC') : (e.load ? e.load + 'kg' : '-');
-                  const typeLabel   = isTime ? 'Tempo' : isBW ? 'P.Corporal' : 'Peso';
-                  const typeColor   = isTime ? 'var(--accent)' : isBW ? 'var(--success)' : 'var(--text-muted)';
+                  const loadDisplay = isIso ? '—' : isTime ? (e.load ? e.load : '-') : isBW ? (e.load ? '+' + e.load + 'kg' : 'PC') : (e.load ? e.load + 'kg' : '-');
+                  const typeLabel   = isIso ? 'Isometria' : isTime ? 'Tempo' : isBW ? 'P.Corporal' : 'Peso';
+                  const typeColor   = isIso ? 'var(--warning)' : isTime ? 'var(--accent)' : isBW ? 'var(--success)' : 'var(--text-muted)';
                   return `<tr>
                     <td style="color:var(--text-muted)">${i+1}</td>
                     <td><strong>${e.name}</strong></td>
@@ -1059,10 +1063,26 @@ function bindExerciseRowHandlers(allExercises) {
       if (!row) return;
       const ltSel = row.querySelector(`[name="ex_loadtype_${i}"]`);
       const repsEl= row.querySelector(`[name="ex_reps_${i}"]`);
+      const repsLbl = row.querySelector(`#repsLbl_${i}`);
       const lbl   = row.querySelector(`#loadLbl_${i}`);
+      const loadEl = row.querySelector(`[name="ex_load_${i}"]`);
       if (ex.loadType && ltSel) ltSel.value = ex.loadType;
-      if (ex.defaultReps && repsEl && (!repsEl.value || repsEl.value === '12')) repsEl.value = ex.defaultReps;
-      if (lbl) lbl.textContent = ex.loadType === 'time' ? 'Intensidade' : ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+      const isIso = ex.loadType === 'isometry';
+      if (repsLbl) repsLbl.textContent = isIso ? 'Tempo (s)' : 'Reps/Tempo';
+      if (repsEl && (!repsEl.value || repsEl.value === '12' || repsEl.value === '45s')) {
+        repsEl.value = ex.defaultReps || (isIso ? '45s' : '12');
+      }
+      if (repsEl) repsEl.placeholder = isIso ? '45s' : '12';
+      if (lbl) lbl.textContent = isIso ? '—' : ex.loadType === 'time' ? 'Intensidade' : ex.loadType === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+      if (loadEl) {
+        loadEl.disabled = isIso;
+        if (isIso) {
+          loadEl.value = '';
+          loadEl.placeholder = '—';
+        } else {
+          loadEl.placeholder = ex.loadType === 'time' ? 'km/h/W' : ex.loadType === 'bodyweight' ? '+kg' : 'kg';
+        }
+      }
       
       const viewChartBtn = row.querySelector('.view-cardio-chart');
       if (viewChartBtn) viewChartBtn.style.visibility = ex.loadType === 'time' ? 'visible' : 'hidden';
@@ -1076,10 +1096,26 @@ function bindExerciseRowHandlers(allExercises) {
       const row = sel.closest('.exercise-row');
       if (!row) return;
       const lbl = row.querySelector(`#loadLbl_${i}`);
-      const lt  = sel.value;
-      if (lbl) lbl.textContent = lt === 'time' ? 'Intensidade' : lt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+      const repsLbl = row.querySelector(`#repsLbl_${i}`);
+      const repsEl = row.querySelector(`[name="ex_reps_${i}"]`);
       const loadEl = row.querySelector(`[name="ex_load_${i}"]`);
-      if (loadEl) loadEl.placeholder = lt === 'time' ? 'km/h/W' : lt === 'bodyweight' ? '+kg' : 'kg';
+      const lt  = sel.value;
+      const isIso = lt === 'isometry';
+      if (repsLbl) repsLbl.textContent = isIso ? 'Tempo (s)' : 'Reps/Tempo';
+      if (repsEl && (!repsEl.value || repsEl.value === '12' || repsEl.value === '45s')) {
+        repsEl.value = isIso ? '45s' : '12';
+      }
+      if (repsEl) repsEl.placeholder = isIso ? '45s' : '12';
+      if (lbl) lbl.textContent = isIso ? '—' : lt === 'time' ? 'Intensidade' : lt === 'bodyweight' ? 'Extra (kg)' : 'Carga (kg)';
+      if (loadEl) {
+        loadEl.disabled = isIso;
+        if (isIso) {
+          loadEl.value = '';
+          loadEl.placeholder = '—';
+        } else {
+          loadEl.placeholder = lt === 'time' ? 'km/h/W' : lt === 'bodyweight' ? '+kg' : 'kg';
+        }
+      }
 
       const viewChartBtn = row.querySelector('.view-cardio-chart');
       if (viewChartBtn) viewChartBtn.style.visibility = lt === 'time' ? 'visible' : 'hidden';
@@ -1094,6 +1130,7 @@ function bindExerciseRowHandlers(allExercises) {
 
 function isCardioExercise(ex) {
   if (!ex) return false;
+  if (ex.loadType === 'isometry') return false;
   const name = String(ex.name || '').toLowerCase();
   const cat = String(ex.category || '').toLowerCase();
   const muscle = String(ex.muscleGroup || ex.muscle || '').toLowerCase();
