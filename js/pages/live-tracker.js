@@ -53,6 +53,7 @@ const state = {
   autoSaveInterval: null,
   onVisibilityChange: null,
   onBeforeUnload: null,
+  lastExerciseHistory: {},
 };
 
 function resetState() {
@@ -74,6 +75,7 @@ function resetState() {
 
   state.session = null; state.exIdx = 0; state.setIdx = 0; state.queueIdx = 0; state.executionQueue = [];
   state.setLog = []; state.workSec = 0; state.isResting = false; state.tempSets = {};
+  state.lastExerciseHistory = {};
 }
 
 function totalVolume() {
@@ -133,7 +135,12 @@ export async function renderTracker() {
     }
   }
 
-  if (state.session) return renderLiveView(students);
+  if (state.session) {
+    if (!state.lastExerciseHistory || !Object.keys(state.lastExerciseHistory).length) {
+      await loadStudentExerciseHistory(state.session.studentId);
+    }
+    return renderLiveView(students);
+  }
 
   const allSessions = sessions
     .filter(s => s.status === 'completed')
@@ -190,6 +197,7 @@ export async function renderTracker() {
             <option value="">Selecione o aluno primeiro</option>
           </select>
         </div>
+        <div id="lastWorkoutCard" style="display:none;margin-top:10px;margin-bottom:12px;padding:10px 14px;background:rgba(99,102,241,0.05);border:1px solid rgba(99,102,241,0.2);border-radius:8px"></div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
             <input type="checkbox" id="trkSound" checked /> Bipe ao fim do descanso
@@ -303,6 +311,170 @@ export async function renderTracker() {
       </div>
     </div>` : ''}
   `;
+}
+
+// ── HISTÓRICO DE EXERCÍCIOS E ÚLTIMO TREINO ─────────────────
+function formatDaysAgo(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + (dateStr.length === 10 ? 'T12:00:00' : ''));
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const targetMs = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((todayMs - targetMs) / 86400000);
+  if (diffDays === 0) return 'hoje';
+  if (diffDays === 1) return 'ontem';
+  if (diffDays > 1) return `há ${diffDays} dias`;
+  return '';
+}
+
+async function loadStudentExerciseHistory(studentId) {
+  if (!studentId) {
+    state.lastExerciseHistory = {};
+    return { historyMap: {}, lastSession: null };
+  }
+  const allSessions = await db.getAll('sessions');
+  const studentSessions = allSessions
+    .filter(s => String(s.studentId) === String(studentId) && s.status === 'completed')
+    .sort((a, b) => {
+      const timeB = b.endTime || (b.date ? new Date(b.date).getTime() : 0);
+      const timeA = a.endTime || (a.date ? new Date(a.date).getTime() : 0);
+      return timeB - timeA;
+    });
+
+  const recentSessions = studentSessions.slice(0, 10);
+  const historyMap = {};
+  for (const session of recentSessions) {
+    const exs = session.exercises || [];
+    (session.setLog || []).forEach(set => {
+      const name = (set.exerciseName || exs[set.exIdx]?.name || '')
+        .trim().toLowerCase();
+      if (!name) return;
+      // já existe registro de uma sessão MAIS recente: ignora esta
+      if (historyMap[name] && historyMap[name].sessionId !== session.id) return;
+      if (!historyMap[name]) {
+        historyMap[name] = {
+          sessionId: session.id,
+          date: session.date,
+          loadType: exs[set.exIdx]?.loadType,
+          sets: []
+        };
+      }
+      historyMap[name].sets.push(set);
+    });
+  }
+  state.lastExerciseHistory = historyMap;
+  return { historyMap, lastSession: studentSessions[0] || null };
+}
+
+function renderLastWorkoutCard(lastSession) {
+  const card = document.getElementById('lastWorkoutCard');
+  if (!card) return;
+  if (!lastSession) {
+    card.style.display = 'none';
+    card.innerHTML = '';
+    return;
+  }
+
+  const dateFormatted = Calc.formatDate(lastSession.date);
+  const ago = formatDaysAgo(lastSession.date);
+  const dateDisplay = ago ? `${dateFormatted} (${ago})` : dateFormatted;
+  const durSec = lastSession.totalDuration || (lastSession.endTime && lastSession.startTime ? (lastSession.endTime - lastSession.startTime) / 1000 : 0);
+  const durMin = Math.round(durSec / 60);
+  const durDisplay = durMin > 0 ? `${durMin} min` : '—';
+  const numSets = (lastSession.setLog || []).length;
+
+  // Destaques: até 3 exercícios com maior carga
+  const exs = lastSession.exercises || [];
+  const setLog = lastSession.setLog || [];
+  const maxLoadsByEx = {};
+  setLog.forEach(set => {
+    const exName = (set.exerciseName || exs[set.exIdx]?.name || '').trim();
+    if (!exName) return;
+    const loadVal = parseFloat(String(set.load || '').replace(',', '.'));
+    if (!isNaN(loadVal) && loadVal > 0) {
+      if (!maxLoadsByEx[exName] || loadVal > maxLoadsByEx[exName]) {
+        maxLoadsByEx[exName] = loadVal;
+      }
+    }
+  });
+
+  const topHighlights = Object.entries(maxLoadsByEx)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name, load]) => `${name} ${String(load).replace('.', ',')}kg`);
+
+  let highlightsHTML = '';
+  if (topHighlights.length > 0) {
+    highlightsHTML = `
+      <div style="font-size:0.74rem;color:var(--text-muted);border-top:1px dashed var(--border-color);padding-top:6px;margin-top:6px">
+        <span style="font-weight:600;color:var(--text-secondary)">Destaques:</span> ${topHighlights.join(' · ')}
+      </div>`;
+  }
+
+  card.style.display = 'block';
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <span style="font-size:0.65rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em">Último Treino Realizado</span>
+      <span style="font-size:0.72rem;color:var(--text-muted)">${dateDisplay}</span>
+    </div>
+    <div style="font-weight:700;font-size:0.9rem;color:var(--text-main);margin-bottom:3px">${lastSession.workoutName || 'Treino'}</div>
+    <div style="font-size:0.76rem;color:var(--text-secondary);display:flex;gap:12px;flex-wrap:wrap">
+      <span><strong>Duração:</strong> ${durDisplay}</span>
+      <span><strong>Séries:</strong> ${numSets}</span>
+      ${lastSession.totalVolume ? `<span><strong>Volume:</strong> ${lastSession.totalVolume}kg</span>` : ''}
+    </div>
+    ${highlightsHTML}
+  `;
+}
+
+function formatPreviousSets(historyEntry, exLoadType) {
+  if (!historyEntry || !historyEntry.sets || !historyEntry.sets.length) return null;
+  const sets = [...historyEntry.sets].sort((a, b) => (a.setIdx || 0) - (b.setIdx || 0));
+  const lt = historyEntry.loadType || exLoadType || 'weight';
+
+  const formatLoad = (l) => String(l).replace('.', ',');
+
+  let formatted = '';
+  if (lt === 'isometry') {
+    formatted = sets.map(s => {
+      const r = String(s.reps || '').trim();
+      return r.toLowerCase().endsWith('s') ? r : `${r}s`;
+    }).join(' · ');
+  } else if (lt === 'bodyweight') {
+    formatted = sets.map(s => {
+      const extra = parseFloat(String(s.load || '').replace(',', '.'));
+      if (!isNaN(extra) && extra > 0) {
+        return `+${formatLoad(extra)}kg x ${s.reps}`;
+      }
+      return `${s.reps}`;
+    }).join(' · ');
+    if (!sets.some(s => parseFloat(String(s.load || '').replace(',', '.')) > 0)) {
+      formatted += ' reps';
+    }
+  } else if (lt === 'time') {
+    formatted = sets.map(s => {
+      const r = s.reps ? `${s.reps}` : '';
+      const l = s.load ? ` (${s.load})` : '';
+      return `${r}${l}`.trim();
+    }).filter(Boolean).join(' · ');
+  } else {
+    // weight
+    formatted = sets.map(s => {
+      const hasLoad = s.load !== undefined && s.load !== null && s.load !== '';
+      const hasReps = s.reps !== undefined && s.reps !== null && s.reps !== '';
+      if (hasLoad && hasReps) return `${formatLoad(s.load)}kg x ${s.reps}`;
+      if (hasLoad) return `${formatLoad(s.load)}kg`;
+      if (hasReps) return `${s.reps} reps`;
+      return '—';
+    }).join(' · ');
+  }
+
+  const dateStr = Calc.formatDate(historyEntry.date);
+  return {
+    summary: `${formatted}${dateStr && dateStr !== '—' ? ` (${dateStr})` : ''}`,
+    sets
+  };
 }
 
 // ── RENDER LIVE VIEW ─────────────────────────────────────────
@@ -437,6 +609,20 @@ function renderLiveView(students) {
               })()}
             </div>
 
+            <!-- Histórico anterior do exercício -->
+            ${(() => {
+              const normName = (ex.name || '').trim().toLowerCase();
+              const hist = state.lastExerciseHistory?.[normName];
+              if (!hist) return '';
+              const prevData = formatPreviousSets(hist, ex.loadType);
+              if (!prevData || !prevData.summary) return '';
+              return `
+                <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;padding:5px 9px;background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:6px;margin-bottom:8px">
+                  <span style="font-weight:700;color:var(--accent);text-transform:uppercase;font-size:0.68rem;letter-spacing:0.04em">Anterior:</span>
+                  <span style="color:var(--text-secondary)">${prevData.summary}</span>
+                </div>`;
+            })()}
+
             <!-- Orientações do professor -->
             ${ex.trainerNotes ? `
               <div style="padding:7px 10px;background:rgba(16,185,129,0.07);border-left:3px solid var(--success);border-radius:0 6px 6px 0;margin-bottom:10px">
@@ -567,6 +753,21 @@ function renderLiveView(students) {
                 const setColor = done ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--text-muted)';
 
                   const isIso = ex.loadType === 'isometry';
+                  const normName = (ex.name || '').trim().toLowerCase();
+                  const prevExHist = state.lastExerciseHistory?.[normName];
+                  const prevSet = prevExHist?.sets?.find(s => (s.setIdx || 0) === i);
+
+                  let repsPlaceholder = '—';
+                  if (prevSet && prevSet.reps != null && prevSet.reps !== '') {
+                    repsPlaceholder = `ant: ${prevSet.reps}`;
+                  }
+
+                  let loadPlaceholder = isIso ? '—' : '—';
+                  if (!isIso && prevSet && prevSet.load != null && prevSet.load !== '') {
+                    const loadFmt = String(prevSet.load).replace('.', ',');
+                    loadPlaceholder = `ant: ${loadFmt}`;
+                  }
+
                   return `
                 <div class="set-row ${done ? 'set-done' : ''} ${isActive ? 'set-active' : ''}" data-si="${i}"
                   style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
@@ -580,11 +781,11 @@ function renderLiveView(students) {
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
                     <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${(isExCardio || isIso) ? 'Tempo' : 'Reps'}</span>
-                    <input class="form-input set-reps" style="width:100%;min-width:44px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${(isExCardio || isIso) ? 'text' : 'number'}" placeholder="—" value="${repsVal}" ${done ? 'disabled' : ''} />
+                    <input class="form-input set-reps" style="width:100%;min-width:44px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${(isExCardio || isIso) ? 'text' : 'number'}" placeholder="${repsPlaceholder}" value="${repsVal}" ${done ? 'disabled' : ''} />
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1.2">
                     <span style="font-size:0.48rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">${isIso ? '—' : ex.loadType === 'time' ? 'Zona' : ex.loadType === 'bodyweight' ? '+kg' : 'kg'}</span>
-                    <input class="form-input set-load" style="width:100%;min-width:50px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${isExCardio ? 'text' : (isNumeric(ex.load) && ex.loadType !== 'time' && !isIso) ? 'number' : 'text'}" step="0.5" placeholder="—" value="${isIso ? '' : loadVal}" ${(done || isIso) ? 'disabled' : ''} />
+                    <input class="form-input set-load" style="width:100%;min-width:50px;text-align:center;padding:5px 3px;font-size:0.9rem;font-weight:700;border-radius:7px" type="${isExCardio ? 'text' : (isNumeric(ex.load) && ex.loadType !== 'time' && !isIso) ? 'number' : 'text'}" step="0.5" placeholder="${loadPlaceholder}" value="${isIso ? '' : loadVal}" ${(done || isIso) ? 'disabled' : ''} />
                   </div>
                   <div style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:0.85" title="PSE — Percepção Subjetiva de Esforço">
                     <span style="font-size:0.48rem;color:var(--warning);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">PSE</span>
@@ -973,8 +1174,13 @@ export function initTracker(navigateFn) {
         wSel.innerHTML = '<option>Selecione o aluno primeiro</option>';
         sBtn.disabled = true;
         resetPreBioStatus();
+        renderLastWorkoutCard(null);
         return;
       }
+
+      const { lastSession } = await loadStudentExerciseHistory(sid);
+      renderLastWorkoutCard(lastSession);
+
       const allMacros = await db.getAll('macrocycles');
       const studentMacros = allMacros.filter(m => m.studentId === sid);
       const activeMacros = studentMacros.filter(m => m.status === 'active');
@@ -1153,6 +1359,9 @@ export function initTracker(navigateFn) {
   sBtn?.addEventListener('click', async () => {
     const wk = await db.get('workouts', wSel.value);
     if (!wk) return;
+    if (!state.lastExerciseHistory || !Object.keys(state.lastExerciseHistory).length) {
+      await loadStudentExerciseHistory(wk.studentId);
+    }
     const preBf = { 
       sleep: 8, 
       food: 5, 
